@@ -11,7 +11,7 @@ public class ArquiteturaTests
 	public void Core_nao_referencia_o_Godot()
 	{
 		var core = Path.Combine(RaizDoRepositorio(), "core");
-		var dependenciaDoMotor = new Regex(@"using\s+Godot\b|GodotSharp|Godot\.NET\.Sdk|ProjectReference[^>]*game[\\/]");
+		var dependenciaDoMotor = new Regex(@"using\s+(static\s+)?(\w+\s*=\s*)?Godot\b|\bGodot\.[A-Z]|GodotSharp|Godot\.NET\.Sdk|ProjectReference[^>]*game[\\/]");
 
 		var violacoes = ArquivosDeCodigo(core)
 			.Where(f => dependenciaDoMotor.IsMatch(File.ReadAllText(f)))

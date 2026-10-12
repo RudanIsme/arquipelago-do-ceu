@@ -59,7 +59,7 @@ dotnet build game/ArquipelagoDoCeu.csproj
 & $env:GODOT --headless --path game --quit-after 30
 ```
 
-Para rodar todos os testes (não precisam do Godot aberto):
+Para rodar todos os testes (não precisam do Godot aberto; a CI roda este mesmo comando a cada pull request):
 
 ```powershell
 dotnet test game.tests
