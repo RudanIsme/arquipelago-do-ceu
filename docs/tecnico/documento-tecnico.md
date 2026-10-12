@@ -2,13 +2,13 @@
 
 ## Visão geral
 
-O jogo é um aplicativo Godot que funciona inteiro offline; o servidor em Go só entra para quem cria conta ou consente com telemetria. O conteúdo educativo nasce fora do jogo, é gerado todo dia no servidor, passa por filtros e por revisão pedagógica e chega ao jogo pela API.
+O jogo é um aplicativo Godot que funciona inteiro offline. O conteúdo educativo nasce fora do jogo (missões à mão no build e pacotes gerados e revisados por um serviço separado) e chega em JSON validado.
 
-Se o servidor cair, a criança continua jogando; só a sincronização e a telemetria esperam.
+Sem rede, a criança continua jogando; só a sincronização e a telemetria esperam.
 
 ## Cliente do jogo
 
-O jogo é feito em Godot 4 (versão .NET) com C#, roda 100% offline e só usa a rede para sincronizar, enviar telemetria e baixar missões novas. O Godot suporta C# oficialmente. O backend fica em Go, separado.
+O jogo é feito em Godot 4 (versão .NET) com C#, roda 100% offline e só usa a rede para sincronizar, enviar telemetria e baixar missões novas. O Godot suporta C# oficialmente. O backend é um projeto separado, fora deste repositório.
 
 O Godot com C# não exporta para navegador. Como navegador não é alvo, isso não pesa.
 
@@ -16,11 +16,12 @@ O Godot com C# não exporta para navegador. Como navegador não é alvo, isso n�
 
 | Módulo | Responsabilidade |
 | --- | --- |
-| Core | Estado do jogo, cenas, salvamento local |
+| Core | Estado do jogo, cenas, salvamento local, Perfil |
+| Lobby | Cena do Lobby, Guia, Área de treino, Álbum, portal de fast travel, configurações |
 | World | Gerador de andares inteiros por dungeon, validador, fast travel por andar, troca de itens entre dungeons |
-| Rooms | Cenas de ilha feitas à mão, com pontos de encaixe para pontes e desafios |
+| Rooms | Cenas de sala feitas à mão, com pontos de encaixe para pontes e desafios |
 | Missions | Carrega missões em JSON e executa as mecânicas (compor, comparar, sequência, sílabas, frases) |
-| Characters | Matemático e Escriba, habilidades destravadas por conceito |
+| Characters | Personagem personalizável do Perfil, Papéis (Matemático e Escriba), habilidades destravadas por conceito e Cosméticos |
 | Adaptive | Regra de dificuldade por conceito e caixas de repetição espaçada (Leitner), calculadas no próprio jogo, sem precisar do backend |
 | Accessibility | TTS, legendas, tamanho de texto, remoção de tempo, redução de animações |
 | Net | Login opcional, sincronização e fila de telemetria que espera conexão |
@@ -29,16 +30,18 @@ O Godot com C# não exporta para navegador. Como navegador não é alvo, isso n�
 
 - Cada andar é gerado inteiro, de uma vez, a partir de `(seed do mundo, dungeon, nível, número do andar, versão do gerador)`. A mesma entrada sempre gera o mesmo mapa.
 - Usar um gerador de números aleatórios próprio (PCG32, cerca de 30 linhas) em vez de `System.Random`, para que a sequência não mude entre versões do .NET ou do Godot.
-- O validador confere, antes de mostrar o andar, que toda ilha obrigatória é alcançável e toda porta tem chave. Se falhar, carrega um andar feito à mão.
+- O validador confere, antes de mostrar o andar, que toda sala obrigatória é alcançável e toda porta tem chave. Se falhar, carrega um andar feito à mão.
 - O gerador roda em testes automatizados com milhares de seeds.
 
 **Tema separado da estrutura.** O gerador só conhece funções de sala: combate, puzzle, descanso, fast travel, marco, desafio épico. Um pacote de tema em dados (cenas de sala, objetos, criaturas, música, paleta, vocabulário da narrativa) veste essas salas. Uma disciplina nova, como História, é um pacote de tema mais mecânicas novas, sem mexer no gerador. Um pacote pode ter sub-temas, como uma época histórica por andar.
+
+**Valores de regra em dados.** Nome do jogo e dos Papéis, energia máxima (5 no MVP), limiares da dificuldade adaptativa e intervalos das caixas de Leitner ficam em arquivos de dados, não no código, para mudar sem recompilar regras.
 
 **Nível da dungeon = ano escolar.** A seed do andar inclui o nível, e o distribuidor de desafios só escolhe missões daquele ano, mais as de antecipação (`stretch`) no fim do nível.
 
 ### Salvamento
 
-Arquivo JSON local em `user://`, com número de versão do formato. Guarda a seed, a versão do gerador, andares descobertos, puzzles resolvidos, pontos de fast travel, itens de troca, habilidades, progresso por conceito, caixa de memória e data da próxima revisão, e energia da expedição em andamento. Grava em arquivo temporário e renomeia, para não corromper se o PC desligar. Salva sozinho a cada sala e ao pausar, e também no ponto de fast travel de cada andar.
+Arquivo JSON local em `user://`, com número de versão do formato. Guarda a seed, a versão do gerador, andares descobertos, puzzles resolvidos, pontos de fast travel, itens de troca, habilidades, aparência do Personagem e Cosméticos ganhos, Atalhos de Nível já usados, progresso por conceito, caixa de memória e data da próxima revisão, e energia da expedição em andamento. Grava em arquivo temporário e renomeia, para não corromper se o PC desligar. Salva sozinho a cada sala e ao pausar, e também no ponto de fast travel de cada andar.
 
 ### Voz e câmera
 
@@ -87,91 +90,23 @@ Missões são arquivos JSON versionados no repositório, validados por um JSON S
 
 Dois campos a mais no schema: `year` (ano escolar, 1 a 3 no MVP) e `stretch` (`true` nos desafios de antecipação, que usam conteúdo do ano seguinte e nunca são obrigatórios).
 
-### Geração diária com IA
+### Missões geradas fora do jogo
 
-A geração tem duas partes que não se misturam. A geração procedural, em código, monta o andar: salas, conexões e onde fica cada desafio. A IA só escreve o conteúdo que preenche cada desafio (enunciado, dicas, explicação, contexto), sempre a partir de um template cuja mecânica e parâmetros são definidos por código. A IA nunca inventa mecânica nem calcula resposta.
+O backend (API em Go, banco, geração diária de missões com IA, contas e telemetria) é outro projeto, em outro repositório, e **não faz parte deste**. Aqui só existe o lado cliente: o jogo consome o mesmo JSON de missão, validado pelo mesmo schema, venha ele do build, de uma pasta local ou de um pacote baixado.
 
-Todo dia um job no servidor gera um lote pequeno de missões e as coloca no banco. O jogo baixa as publicadas quando está online e guarda em cache; sem internet, usa o que já tem mais as missões escritas à mão que vêm no build. O jogo também carrega pacotes de missões em JSON de uma pasta local.
+- O cliente só aceita missões que passem no JSON Schema de `content/` e cuja `mechanic` exista no jogo. Missão inválida é ignorada, nunca executada.
+- Missões escritas à mão vêm no build e são a base garantida; pacotes extras ficam em cache em `user://` e entram quando disponíveis.
+- A IA nunca inventa mecânica nem calcula resposta; isso é responsabilidade de quem gera o pacote e está documentado no repositório do backend.
 
-1. O job escolhe conceitos com pouco conteúdo, respeitando uma cota por conceito.
-2. O código sorteia os parâmetros (ex.: alvo 7, peças de 1 a 5) e calcula a resposta.
-3. A IA escreve enunciado, dicas e explicação para esses parâmetros, em JSON no schema da missão.
-4. Filtros automáticos (tabela abaixo). Reprovou em qualquer um, é descartada.
-5. As aprovadas ficam em quarentena, visíveis só para contas de teste, até um educador revisar uma amostra do lote.
-6. Publicadas ficam sob observação: se as crianças erram ou abandonam muito mais que o normal, a missão volta sozinha para a quarentena.
+## Camada de rede do cliente (módulo Net)
 
-| Problema | Filtro |
-| --- | --- |
-| Resposta errada | Resposta calculada por código; em Português, palavras vêm de uma lista curada. O texto precisa citar exatamente os parâmetros sorteados |
-| Ambiguidade | Um segundo modelo resolve a missão sem ver a resposta; se errar ou achar outra resposta válida, descarta |
-| Repetição | Hash do texto normalizado e similaridade com as missões do mesmo conceito; muito parecida, descarta |
-| Linguagem inadequada | Vocabulário permitido por ano escolar, tamanho máximo de frase e filtro de conteúdo |
-| Falso positivo que passou | Amostra com revisão pedagógica, botão "achei estranho" no jogo e retirada automática por estatística |
-| Volume grande demais para revisar | Lote diário pequeno e cota por conceito |
+Tudo aqui é opcional: o jogo funciona 100% sem rede e sem conta.
 
-## Backend e infraestrutura
-
-Um único serviço em Go com PostgreSQL, rodando por Docker Compose. O jogo funciona sem ele; o backend só serve conta opcional, sincronização, telemetria consentida e atualização de conteúdo.
-
-### Stack
-
-| Peça | Escolha | Por quê |
-| --- | --- | --- |
-| API | Go, `net/http` da biblioteca padrão | Um binário, sem framework para manter |
-| Banco | PostgreSQL 16 | Como no documento original |
-| Acesso ao banco | `pgx` + `sqlc` | SQL escrito à mão, código Go gerado e tipado |
-| Migrações | `goose` | Arquivos SQL versionados no repositório |
-| HTTPS | Caddy | Certificado automático, configuração de poucas linhas |
-| Deploy | Docker Compose (Caddy + API + Postgres) | Sobe tudo no VPS com um comando |
-| Backup | `pg_dump` diário, cópia fora do VPS | Perder o VPS não pode perder o progresso das crianças |
-
-Um VPS com 1 vCPU e 2 GB de RAM sobra para o MVP.
-
-### Contas
-
-A conta é do responsável (e-mail e senha com hash argon2id), e cada criança é um perfil dentro dela, com apelido. A criança nunca digita e-mail, e nenhum CPF é pedido. O jogo cria um perfil local sem conta e permite ligar a uma conta depois.
-
-### Endpoints do MVP
-
-| Método e rota | Função |
-| --- | --- |
-| `POST /v1/accounts` | Criar conta de responsável |
-| `POST /v1/sessions` | Login, devolve token |
-| `GET /v1/profiles` | Perfis de criança da conta |
-| `GET /v1/profiles/{id}/save` | Baixar o save mais recente |
-| `PUT /v1/profiles/{id}/save` | Enviar save com número de revisão |
-| `POST /v1/telemetry` | Lote de eventos, só se houver consentimento |
-| `GET /v1/content/manifest` | Missões publicadas desde a última sincronização |
-| `DELETE /v1/profiles/{id}` | Apagar perfil e todos os dados |
-
-**Job diário de missões:** roda dentro do mesmo binário Go com um agendador simples, sem fila nem serviço extra. Grava na tabela `missions` com status (quarentena, publicada, retirada). A chave da IA fica só em variável de ambiente no VPS.
-
-**Conflito de sincronização:** o save leva um número de revisão. Se o servidor tem uma revisão mais nova que a do jogo, o jogo mostra os dois progressos e o responsável escolhe qual manter.
-
-## Dados, privacidade e telemetria
-
-A telemetria é detalhada por criança, mas só é enviada depois que um responsável consente na tela de conta, como pede o art. 14 da LGPD. Sem consentimento, os eventos nem são gravados na fila.
-
-### Tabelas principais
-
-| Tabela | Conteúdo | Dado pessoal |
-| --- | --- | --- |
-| `accounts` | E-mail e hash de senha do responsável | Sim |
-| `consents` | Tipo, versão do texto, data, conta | Sim |
-| `profiles` | Apelido da criança e identificador aleatório | Mínimo |
-| `saves` | Save em JSONB e número de revisão | Não |
-| `telemetry_events` | Perfil, tipo, missão, conceito, acerto, dicas usadas, duração, data | Ligado ao perfil |
-
-### Eventos de telemetria
-
-`mission_started`, `mission_completed`, `hint_used`, `attempt`, `difficulty_changed`, `expedition_ended`, `session_paused`. São eles que mostram onde a criança trava e se a dificuldade adaptativa está funcionando.
-
-### Regras
-
-- Telemetria fica separada da conta: os eventos guardam só o identificador do perfil, nunca o e-mail.
-- Retenção de 12 meses para eventos (proposta); apagar o perfil apaga tudo na hora.
-- Nenhum dado da criança sai do servidor, nem para serviços de IA.
-- Senhas, chaves de API e dados de produção ficam só em variáveis de ambiente no servidor, nunca no código.
+- **Contrato**: o cliente fala com a API definida no repositório do backend. Este repositório guarda só uma cópia do contrato em `docs/tecnico/contrato-api.md`, atualizada quando ele mudar, e a implementação do cliente atrás de uma interface (`IRemoteService`) com uma versão offline/fake para testes.
+- **Conta e perfis**: o jogo cria um perfil local por apelido, sem conta. Ligar a uma conta de responsável é opcional e posterior.
+- **Sincronização**: o save leva número de revisão. Em conflito, o jogo mostra os dois progressos e o responsável escolhe qual manter.
+- **Telemetria**: fila local de eventos (`mission_started`, `mission_completed`, `hint_used`, `attempt`, `difficulty_changed`, `expedition_ended`, `session_paused`), **só gravada depois do consentimento de um responsável** (LGPD, art. 14); sem consentimento, os eventos nem entram na fila. Os eventos levam o identificador do perfil, nunca e-mail ou nome real.
+- **Segredos**: nenhuma chave ou senha de serviço fica no código nem no build do jogo.
 
 ## Estrutura do código e CI
 
@@ -179,10 +114,8 @@ A telemetria é detalhada por criança, mas só é enviada depois que um respons
 /game        projeto Godot (C#)
 /game.tests  testes do gerador, do validador e das mecânicas
 /content     missões base em JSON e o schema
-/docs        documentos do jogo e contrato da API
+/docs        documentos do jogo e cópia do contrato da API
 ```
-
-O backend (API, migrações, geração diária com IA, deploy) fica separado do jogo; os dois só conversam por HTTP, e o contrato da API fica em `docs`.
 
 ### CI a cada pull request
 
