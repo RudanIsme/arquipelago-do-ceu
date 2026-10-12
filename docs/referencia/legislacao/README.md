@@ -13,10 +13,10 @@ Textos que o usuário colou ou enviou em 2026-10-12, depois que os sites do MEC 
 
 1. **Meta:** crianças "alfabetizadas ao final do segundo ano do ensino fundamental" (Lei art. 5º, I), com recomposição "ao longo da trajetória escolar" para quem não chegou lá (art. 4º, I e art. 5º, II). O ciclo de alfabetização é o 1º e o 2º ano. Isso apoia o jogo deixar uma criança mais velha recomeçar no Nível 1 e ter o Atalho de Nível.
 2. **Não há método imposto.** A Lei traz "pluralismo de ideias e de concepções pedagógicas" e "autonomia pedagógica do professor" (art. 3º, IV e VI). Portanto **não existe base legal vigente para chamar a ordem do jogo de "a oficial"**. O Decreto 9.765 (PNA) listava seis componentes essenciais (consciência fonêmica, instrução fônica sistemática, fluência em leitura oral, vocabulário, compreensão de textos e produção de escrita), mas está revogado.
-3. **O que conta como "alfabetizado" ainda não está nestes textos.** A Lei (art. 26) e o Decreto (art. 33) só dizem que a União/MEC, com o Inep, define esse nível. Nenhum dos textos recebidos traz esse nível, e o número 743 (escala Saeb) segue **não verificado**.
+3. **O que conta como "alfabetizado" não está na lei.** A Lei (art. 26) e o Decreto (art. 33) só dizem que a União/MEC, com o Inep, o define. O Inep o fixou no **ponto 743 da escala Saeb do 2º ano** em documento preliminar de maio/2024, em [alfabetizacao/README.md](../alfabetizacao/README.md).
 4. **Avaliação diagnóstica oficial** é feita por escolas e redes, no início e no fim do ciclo (Lei art. 11, IV). O jogo **não** é essa avaliação, e o Atalho de Nível e a Leitner do jogo não devem ser apresentados como tal.
 5. **Indicador:** o Inep mede o Indicador Criança Alfabetizada (ICA) no fim do 2º ano (nota técnica, item 4.4).
 
 ## O que ainda falta
 
-Não li o RENABE (2021), o Caderno da PNA (2019), o texto do Decreto 12.191/2024, a Resolução CNE/CEB nº 1/2022 em fonte primária, nem o padrão de alfabetização do MEC/Inep. Para o jogo, o mais útil é o **padrão de alfabetização** (o que a criança deve saber fazer ao fim do 2º ano).
+O RENABE, o documento do Inep, o PNAIC e o Plano de Trabalho foram enviados depois e estão resumidos em [alfabetizacao/README.md](../alfabetizacao/README.md). Não li o Caderno da PNA, o Decreto 12.191/2024, a Resolução CNE/CEB nº 1/2022 em fonte primária nem a versão final do documento do Inep (o que existe é preliminar).

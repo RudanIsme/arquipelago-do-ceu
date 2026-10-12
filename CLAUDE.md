@@ -11,6 +11,7 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - `docs/produto/documento-de-produto.md`: gameplay, mundo, combate, conteúdo educacional e escopo do MVP.
 - `docs/tecnico/documento-tecnico.md`: módulos do cliente, geração procedural, salvamento, schema de missão, cliente de rede e dados.
 - `docs/referencia/bncc/`: habilidades da BNCC (Matemática e Língua Portuguesa, 1º ao 3º ano), uma pasta por ano e um arquivo por matéria. A ordem de progressão **não está decidida**: exige consenso de profissionais de pedagogia, psicologia e fonoaudiologia (ordem recomendada provisória em `docs/pedagogia/ordem-recomendada-mvp.md`, usada no MVP).
+- `docs/referencia/alfabetizacao/`: resumo do RENABE, do padrão de alfabetização do Inep (743 no Saeb, preliminar), do PNAIC e do Plano de Trabalho do MEC, com o que li e o que não li. Os PDFs ficam fora do repositório.
 - `docs/referencia/legislacao/`: Lei 15.247/2025 (Compromisso Criança Alfabetizada) e decretos anteriores, colados pelo usuário e não conferidos com o DOU. A lei não impõe método; a PNA (2019) está revogada.
 - `GLOSSARY.md`: vocabulário canônico do projeto (Lobby, Dungeon, Nível, Andar, Sala, Expedição, Papel...). Use esses termos e evite os listados em _Avoid_.
 - `docs/arte-e-ux/direcao-de-arte-e-ux.md`: estilo visual, HUD (cores, fonte, tamanhos), acessibilidade e pipeline de arte.
