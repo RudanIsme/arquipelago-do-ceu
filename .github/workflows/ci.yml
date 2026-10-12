@@ -24,3 +24,42 @@ jobs:
           dotnet-version: 8.0.x
       - name: Rodar os testes
         run: dotnet test game.tests
+
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Instalar o Godot e as templates de exportação
+        run: |
+          $base = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_VERSION-stable"
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_mono_win64.zip" -OutFile godot.zip
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_mono_export_templates.tpz" -OutFile templates.zip
+          Expand-Archive godot.zip -DestinationPath "$env:RUNNER_TEMP\godot"
+          Expand-Archive templates.zip -DestinationPath "$env:RUNNER_TEMP\templates"
+          # O Godot procura as templates numa pasta com o nome exato da versão.
+          $destino = "$env:APPDATA\Godot\export_templates\$env:GODOT_VERSION.stable.mono"
+          New-Item -ItemType Directory $destino -Force | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\templates\templates\*" $destino -Recurse
+          $console = Get-ChildItem "$env:RUNNER_TEMP\godot" -Recurse -Filter "*_console.exe" | Select-Object -First 1
+          "GODOT=$($console.FullName)" >> $env:GITHUB_ENV
+      - name: Exportar para Windows
+        run: |
+          New-Item -ItemType Directory build -Force | Out-Null
+          & $env:GODOT --headless --path game --import
+          & $env:GODOT --headless --path game --export-release "Windows Desktop"
+          # O Godot pode terminar com saída 0 mesmo sem exportar; o executável é a prova.
+          if (-not (Test-Path build/ArquipelagoDoCeu.exe)) { Write-Error "A exportação não gerou o executável."; exit 1 }
+      - name: Abrir o executável exportado
+        run: |
+          $saida = & build/ArquipelagoDoCeu.console.exe --headless --quit-after 30 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0 -or $saida -notmatch "Cena inicial pronta") { Write-Error $saida; exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/
