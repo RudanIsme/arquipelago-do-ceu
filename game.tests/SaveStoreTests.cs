@@ -144,6 +144,21 @@ public sealed class SaveStoreTests : IDisposable
 		Assert.Equal(SaveAntigo, File.ReadAllText(Assert.Single(Copias("corrompido"))));
 	}
 
+	[Fact]
+	public void Migracao_que_para_numa_versao_diferente_da_atual_e_tratada_como_save_ilegivel()
+	{
+		Escrever(SaveAntigo);
+		var passo = MigracaoDe0[0];
+		var pulaVersao = new Dictionary<int, Func<JsonObject, JsonObject>>
+		{
+			[0] = antigo => { var novo = passo(antigo); novo["version"] = SaveData.CurrentVersion + 1; return novo; },
+		};
+
+		var lido = new SaveStore(Caminho, pulaVersao).Load().Value!;
+
+		Assert.Equal(SaveNotice.Recovered, lido.Notice);
+	}
+
 	// --- #10: save corrompido
 
 	[Theory]
@@ -152,6 +167,7 @@ public sealed class SaveStoreTests : IDisposable
 	[InlineData("[1, 2]")]
 	[InlineData("""{ "version": "um" }""")]
 	[InlineData("""{ "version": 1 }""")]
+	[InlineData("""{ "version": 1, "profiles": [null] }""")]
 	public void Save_corrompido_e_copiado_e_o_jogo_comeca_limpo(string conteudo)
 	{
 		Escrever(conteudo);

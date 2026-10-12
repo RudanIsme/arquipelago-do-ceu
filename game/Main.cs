@@ -38,16 +38,25 @@ public partial class Main : Node3D
 	// Devolve o aviso para o Responsável, ou "" quando não há nada a avisar.
 	static string LoadSave()
 	{
-		var loaded = new SaveStore(ProjectSettings.GlobalizePath(SavePath)).Load();
+		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
+		var loaded = store.Load();
 		if (!loaded.IsOk) return loaded.Error!;
 
-		return loaded.Value!.Notice switch
+		var outcome = loaded.Value!;
+		if (outcome.Notice == SaveNotice.None) return "";
+
+		// Sem gravar, o save problemático seguiria no disco e geraria uma cópia nova a cada abertura.
+		var written = store.Write(outcome.Data);
+		if (!written.IsOk) return written.Error!;
+
+		if (outcome.Notice == SaveNotice.Migrated)
 		{
-			SaveNotice.Recovered =>
-				"Não foi possível ler o progresso anterior. Ele foi guardado numa cópia e o jogo começou do zero.",
-			SaveNotice.NewerVersion =>
-				"Este progresso é de uma versão mais nova do jogo. Ele foi guardado numa cópia e o jogo começou do zero.",
-			_ => "",
-		};
+			GD.Print($"Save migrado; o original está em {outcome.CopyPath}");
+			return "";
+		}
+
+		return outcome.Notice == SaveNotice.Recovered
+			? "Não foi possível ler o progresso anterior. Ele foi guardado numa cópia e o jogo começou do zero."
+			: "Este progresso é de uma versão mais nova do jogo. Ele foi guardado numa cópia e o jogo começou do zero.";
 	}
 }

@@ -52,7 +52,7 @@ jobs:
         run: |
           New-Item -ItemType Directory build -Force | Out-Null
           & $env:GODOT --headless --path game --import
-          $log = & $env:GODOT --headless --path game --export-release "Windows Desktop" 2>&1 | ForEach-Object { Write-Host $_; $_ }
+          $log = & $env:GODOT --headless --path game --export-release "Windows Desktop" 2>&1 | ForEach-Object { $linha = "$_"; Write-Host $linha; $linha }
           # O Godot termina com saída 0 e gera o executável mesmo quando a exportação deu erro
           # (por exemplo, sem o .sln o código C# fica de fora); por isso a saída também é conferida.
           if ($LASTEXITCODE -ne 0 -or ($log -match '^ERROR:') -or -not (Test-Path build/ArquipelagoDoCeu.exe)) { Write-Error "A exportação falhou."; exit 1 }

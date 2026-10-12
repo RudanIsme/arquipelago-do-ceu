@@ -111,6 +111,8 @@ public sealed class SaveStore(string path, IReadOnlyDictionary<int, Func<JsonObj
 			}
 			catch (Exception e) when (e is IOException or UnauthorizedAccessException)
 			{
+				// Outra instância pode ter ocupado este número entre a checagem e a cópia.
+				if (Path.Exists(destination)) continue;
 				return Result<string>.Fail($"Não foi possível guardar uma cópia do save: {e.Message}");
 			}
 		}
@@ -145,7 +147,7 @@ public sealed class SaveStore(string path, IReadOnlyDictionary<int, Func<JsonObj
 				if (next is null || next <= version) return null;
 				version = next.Value;
 			}
-			return root;
+			return version == SaveData.CurrentVersion ? root : null;
 		}
 		catch (Exception)
 		{
@@ -158,7 +160,7 @@ public sealed class SaveStore(string path, IReadOnlyDictionary<int, Func<JsonObj
 		try
 		{
 			var data = root.Deserialize<SaveData>(Options);
-			return data?.Profiles is null ? null : data;
+			return data?.Profiles is null || data.Profiles.Any(p => p is null) ? null : data;
 		}
 		catch (Exception e) when (e is JsonException or NotSupportedException)
 		{
