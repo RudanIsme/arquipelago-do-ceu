@@ -44,6 +44,23 @@ Quando o fluxo apontar uma mudança que contradiz algo já decidido, o documento
 
 Para rodar o jogo: .NET SDK 8, Godot 4.7.2 (versão .NET) e Node LTS (validação do schema das missões). A variável `GODOT` deve apontar para o executável de console do Godot. O backend não faz parte deste repositório.
 
+### Como rodar
+
+O projeto Godot está em `game/`. No PowerShell, na raiz do repositório (a variável `GODOT` já aponta para o executável de console):
+
+```powershell
+# compilar o C#
+dotnet build game/ArquipelagoDoCeu.csproj
+
+# abrir o jogo (janela)
+& $env:GODOT --path game
+
+# rodar sem janela e sair depois de alguns quadros (teste rápido)
+& $env:GODOT --headless --path game --quit-after 30
+```
+
+Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, ainda é vazia e só imprime uma mensagem no console.
+
 ## Telas de referência
 
 | Torre dos Números | Torre das Letras | Lobby |
