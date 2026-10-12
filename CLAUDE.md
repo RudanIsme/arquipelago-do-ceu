@@ -33,12 +33,13 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - **Privacidade**: sem nome real; perfis por apelido; telemetria só com consentimento do responsável.
 - **Sem ranking, anúncios ou compras**, e sem punição por ficar sem jogar.
 - **Primeiro marco**: Lobby funcional (ver `docs/produto/documento-de-produto.md`). Nomes do jogo e dos Papéis são provisórios e ficam em dados.
-- **Treino no Lobby não conta progresso**; só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
+- **Treino no Lobby é o combate real contra o Boneco, com Energia própria** (zerar só tira a criança da Área de treino), e usa todas as Mecânicas existentes; **não conta progresso**, só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
 
 ## Estrutura planejada do código
 
 ```text
-game/         projeto Godot (C#)
+game/         adaptadores Godot (C#) e raiz de composição
+core/         domínio e aplicação em C# puro, sem Godot (nasce com o primeiro código de regra)
 game.tests/   testes do gerador, do validador e das mecânicas
 content/      missões base em JSON e o schema
 docs/         documentação
@@ -48,6 +49,14 @@ docs/         documentação
 
 - Antes de propor uma mecânica ou sistema, confira se os documentos já decidiram. Se uma mudança contradiz uma decisão, aponte isso e atualize o documento correspondente.
 - Toda mecânica funciona com toque, mouse e teclado; nenhuma informação essencial só por cor ou só por som; nada depende de velocidade ou precisão motora para avançar.
+
+## Como escrever código
+
+- **Hexagonal com DDD pragmático** (`docs/adr/0001-arquitetura-hexagonal-pragmatica.md`, detalhes em "Arquitetura do código" no documento técnico). Regras em C# puro, sem Godot; Godot, disco, voz e rede são adaptadores atrás de portas. As dependências só apontam para dentro.
+- **Poucos arquivos** e nomes iguais aos do `GLOSSARY.md`. Interface só em fronteira real. Sem estrutura "para o futuro".
+- **Resiliência:** dado externo é validado na borda; falha esperada vira resultado, não exceção; voz, rede e save nunca travam a criança.
+- **Legível por quem está começando:** funções curtas, sem herança profunda, testes como exemplo.
+- **Comentários só respondem "por quê"** (restrição, decisão não óbvia, armadilha). Nunca descreva o que o código já diz.
 
 ## Ambiente local (Windows)
 

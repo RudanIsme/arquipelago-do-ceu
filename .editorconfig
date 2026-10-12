@@ -1,0 +1,11 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+[*.{cs,tscn,godot,csproj}]
+end_of_line = lf
+
+[*.cs]
+indent_style = tab
