@@ -59,6 +59,12 @@ dotnet build game/ArquipelagoDoCeu.csproj
 & $env:GODOT --headless --path game --quit-after 30
 ```
 
+Para rodar todos os testes (não precisam do Godot aberto):
+
+```powershell
+dotnet test game.tests
+```
+
 Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, ainda é vazia e só imprime uma mensagem no console.
 
 ## Telas de referência
