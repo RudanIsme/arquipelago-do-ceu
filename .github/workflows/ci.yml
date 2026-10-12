@@ -57,8 +57,11 @@ jobs:
           if (-not (Test-Path build/ArquipelagoDoCeu.exe)) { Write-Error "A exportação não gerou o executável."; exit 1 }
       - name: Abrir o executável exportado
         run: |
-          $saida = & build/ArquipelagoDoCeu.console.exe --headless --quit-after 30 2>&1 | Out-String
-          if ($LASTEXITCODE -ne 0 -or $saida -notmatch "Cena inicial pronta") { Write-Error $saida; exit 1 }
+          Get-ChildItem build -Recurse | ForEach-Object { $_.FullName.Replace("$PWD\", "") }
+          $saida = & build/ArquipelagoDoCeu.console.exe --headless --verbose --quit-after 30 2>&1 | Out-String
+          $codigo = $LASTEXITCODE
+          Write-Host "Saída ($codigo):"; Write-Host $saida
+          if ($codigo -ne 0 -or $saida -notmatch "Cena inicial pronta") { exit 1 }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-build
