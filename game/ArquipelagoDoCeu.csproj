@@ -5,4 +5,8 @@
     <RootNamespace>ArquipelagoDoCeu</RootNamespace>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\core\ArquipelagoDoCeu.Core.csproj" />
+  </ItemGroup>
 </Project>
