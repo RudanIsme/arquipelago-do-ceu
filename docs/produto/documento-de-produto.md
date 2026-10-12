@@ -11,7 +11,7 @@ Um roguelite educativo em português em que a criança explora dungeons no céu 
 
 ## Público e BNCC
 
-O público é de 6 a 10 anos. O MVP cobre do 1º ao 3º ano, e cada nível de dungeon corresponde a um ano escolar. Uma criança de 6 anos começa no nível 1; uma criança mais velha pode começar no nível do seu ano, escolhido pelo responsável ou pelo professor.
+O público é de 6 a 10 anos. O MVP cobre do 1º ao 3º ano, e cada Nível de Dungeon corresponde a um ano escolar. **Todo Perfil começa no Nível 1**, sem escolha de ano na criação (não sabemos o quanto a criança já domina). Quem quiser pode tentar o Atalho de Nível, descrito em Estrutura do mundo.
 
 **Clínicas de fonoaudiologia e psicopedagogia também são público.** Na clínica o jogo é ferramenta de apoio à terapia, nunca de diagnóstico: o terapeuta ajusta as tolerâncias de voz e de traçado para cada criança e acompanha a evolução.
 
@@ -21,36 +21,38 @@ O público é de 6 a 10 anos. O MVP cobre do 1º ao 3º ano, e cada nível de du
 
 ## Gameplay
 
-A criança explora dungeons no céu, uma por disciplina, com personagens fixos, e o combate acontece pelas próprias mecânicas de aprendizado. O tema completo ainda está aberto; a dungeon no céu é o ponto de partida.
+A criança sobe dungeons no céu, uma por disciplina, e o combate acontece pelas próprias mecânicas de aprendizado. O Personagem é um só, personalizável, e assume o Papel da Dungeon. O tema completo ainda está aberto; a dungeon no céu é o ponto de partida.
 
 ### Tema: um mundo que aceita qualquer disciplina
 
 Matemática e Português não têm ambientação própria, mas História, Ciências e Geografia têm. Por isso o tema precisa ser um guarda-chuva em que cada disciplina ganha a sua ambientação, sem mudar a estrutura do jogo.
 
-**Proposta: o Arquipélago do Céu.** Uma névoa do esquecimento cobriu as ilhas do céu e apagou o que elas sabiam: criaturas esqueceram seus nomes, máquinas perderam seus números. O lobby é uma ilha neutra, e cada disciplina é um arquipélago próprio que a criança restaura. Uma disciplina nova é só um novo arquipélago que surge da névoa. O combate não é violento: a criança dissolve a névoa e liberta as criaturas.
+**Proposta: o Arquipélago do Céu.** Uma névoa do esquecimento cobriu as ilhas do céu e apagou o que elas sabiam: criaturas esqueceram seus nomes, máquinas perderam seus números. O Lobby é uma ilha neutra, cercada pelas torres das Dungeons, uma por disciplina, que a criança restaura. Uma disciplina nova é só uma nova torre que surge da névoa. O combate não é violento: a criança dissolve a névoa e liberta as criaturas. Nome do jogo e nomes dos Papéis são provisórios e configuráveis em dados.
 
 | Disciplina | Ambientação | Criaturas |
 | --- | --- | --- |
-| Matemática | Ilhas-oficina: engrenagens, cristais, balanças, relógios | Autômatos com escudos numéricos |
-| Português | Ilhas-biblioteca: livros voadores, letras soltas, pergaminhos | Criaturas feitas de letras apagadas, sem nome |
-| Ciências (depois) | Ilhas-jardim e laboratório: ecossistemas, clima | Animais e plantas a investigar e classificar |
-| História (depois) | Ilhas-memória: cada andar é uma época | Pessoas de cada época que perderam a memória |
-| Geografia (depois) | Ilhas-mapa: relevo, rios, cidades | Viajantes perdidos que precisam de direção |
+| Matemática | Torre-oficina: engrenagens, cristais, balanças, relógios | Autômatos com escudos numéricos |
+| Português | Torre-biblioteca: livros voadores, letras soltas, pergaminhos | Criaturas feitas de letras apagadas, sem nome |
+| Ciências (depois) | Torre-jardim e laboratório: ecossistemas, clima | Animais e plantas a investigar e classificar |
+| História (depois) | Torre-memória: cada andar é uma época | Pessoas de cada época que perderam a memória |
+| Geografia (depois) | Torre-mapa: relevo, rios, cidades | Viajantes perdidos que precisam de direção |
 
 **Regra para a construção:** a estrutura (andares, salas por função, marcos, desafios épicos) é igual para todas as disciplinas. O tema é um pacote de dados que veste essa estrutura, e um pacote pode ter sub-temas, como uma época histórica por andar. Assim História entra com um pacote novo e mecânicas novas, sem refazer o gerador.
 
-**Estilo visual: 3D isométrico detalhado.** O MVP usa assets livres estilizados como provisórios, e a arte detalhada entra em fases, começando pelo lobby e pelas criaturas.
+**Estilo visual: 3D isométrico detalhado.** O MVP usa assets livres estilizados como provisórios, e a arte detalhada entra em fases, começando pelo Lobby e pelas criaturas.
 
-### Personagens
+### Personagem e Papéis
 
-Personagens são fixos, cada um bom em uma área, e as habilidades crescem conforme a criança aprende conceitos novos.
+O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de características, outras características e acessórios. O que o faz Matemático ou Escriba é o **Papel** da Dungeon: roupas, ferramenta e habilidades. As habilidades do Papel crescem conforme a criança aprende conceitos novos nessa Dungeon.
 
-| Personagem (nome provisório) | Área | Exemplo de progressão |
+| Papel (nome provisório) | Área | Exemplo de progressão |
 | --- | --- | --- |
 | Matemático | Matemática | Com as 4 operações compõe números para desarmar inimigos; ao aprender frações, também divide inimigos ou pontes em partes |
 | Escriba | Português | Com sílabas forma palavras que abrem portas; ao aprender frases, ordena mensagens que acalmam criaturas |
 
-Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. A área de treino do lobby sempre oferece o conceito que destrava a habilidade.
+**Cosméticos:** roupas, cores, acessórios e variações visuais da ferramenta (como o tipo de arma). Não mudam o Papel nem dão vantagem. Só se ganham por aprendizado e exploração nas Dungeons (libertar criatura, dominar conceito, concluir Nível), nunca por compra, sorteio ou sequência diária.
+
+Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. Na Área de treino do Lobby ela pratica sem punição, mas **o treino no Lobby não conta para o progresso**: habilidades, caixas de memória e dificuldade adaptativa só mudam com o que acontece nas Dungeons.
 
 ### Combate pelas mecânicas de aprendizado
 
@@ -58,11 +60,11 @@ O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As c
 
 - **Energia:** acertar recupera; errar, ou ser atingida por uma bolha de névoa, tira. Quando a energia acaba, a expedição termina (veja Energia e derrota).
 - **A ação não fica mais difícil com o ano escolar.** Só o conteúdo fica. Ataques de criatura são sempre lentos, avisados e fáceis de desviar.
-- **Modo calmo:** opção que para o tempo por completo durante a montagem e faz as criaturas só reagirem a erros. Serve para crianças menores ou com dificuldade motora, e o jogo sugere ligar se a criança perde muita energia por desvio.
+- **Modo calmo:** opção que para o tempo por completo durante a montagem e faz as criaturas só reagirem a erros. Serve para crianças menores ou com dificuldade motora, e o jogo sugere ligar se a criança perde muita energia por desvio. *Proposta, a fechar quando o combate existir: no Modo calmo as bolhas de névoa não tiram energia, para que qualquer criança conclua o jogo sem depender de reflexo.*
 
 **O ataque da criança é o próprio conhecimento.** A conta montada pelo Matemático vira um raio de energia que dissolve a névoa da criatura; o nome escrito pelo Escriba voa em letras luminosas até ela. O acerto exato é um golpe perfeito, com animação especial.
 
-**O ataque da criatura nunca é violento.** As criaturas lançam bolhas de névoa lentas, com aviso visual e sonoro antes. Se a criança erra uma resposta, a criatura reage na hora com uma travessura: embaralha as peças da bolsa ou esconde uma peça por alguns segundos. Nada de golpes, sangue ou personagem caído: quando a energia acaba, o personagem volta flutuando ao lobby.
+**O ataque da criatura nunca é violento.** As criaturas lançam bolhas de névoa lentas, com aviso visual e sonoro antes. Se a criança erra uma resposta, a criatura reage na hora com uma travessura: embaralha as peças da bolsa ou esconde uma peça por alguns segundos. Nada de golpes, sangue ou personagem caído: quando a energia acaba, o personagem volta flutuando ao Lobby.
 
 Depois de um erro o desafio recomeça com outros números ou outra palavra, para a criança não acertar por eliminação. Dois erros seguidos liberam uma dica.
 
@@ -120,27 +122,29 @@ O Escriba também escreve a letra ou a sílaba desenhando com o dedo, o que trei
 
 Um roguelite precisa de risco, mas o risco não pode virar punição por não saber. Regras propostas:
 
-- A energia começa cheia em cada expedição (ex.: 5 pontos). Acerto recupera 1, golpe perfeito recupera 2, erro tira 1, e ser atingida por uma bolha de névoa também tira 1.
+- A energia começa cheia em cada expedição. O máximo é 5 no MVP e é um valor em dados, que upgrades futuros podem aumentar. Acerto recupera 1, golpe perfeito recupera 2, erro tira 1, e ser atingida por uma bolha de névoa também tira 1.
 - Pedir dica nunca custa energia, e errar desafios de antecipação também não.
 - Antes de confirmar, a criança vê a jogada montada e pode desfazer, para que um clique errado não conte como erro de conceito.
 - Energia zerada encerra a expedição: a criança perde itens e melhorias temporárias, e mantém andares salvos, habilidades e tudo o que aprendeu.
-- Duas derrotas seguidas no mesmo conceito descem a dificuldade adaptativa e oferecem treino daquele conceito no lobby, sem bloquear nada.
+- Duas derrotas seguidas no mesmo conceito descem a dificuldade adaptativa e oferecem treino daquele conceito no Lobby, sem bloquear nada.
 - A mensagem de derrota fala da aventura, nunca da criança: "A névoa ficou forte demais desta vez. Vamos recarregar a energia?"
 
 ### Estrutura do mundo
 
-Cada disciplina tem sua própria dungeon; no MVP são duas, Matemática e Português. Cada dungeon tem níveis, cada nível é uma sequência de andares gerados e termina num desafio épico. Para passar um marco de dificuldade a criança precisa de um item da outra dungeon, e para subir de nível nas duas ela enfrenta um desafio mestre que mistura as disciplinas.
+Cada disciplina tem sua própria Dungeon, uma torre; no MVP são duas, Matemática e Português. Cada Dungeon tem Níveis, cada Nível é uma sequência de Andares gerados, feitos de Salas, e termina num Desafio épico. Para passar um Marco a criança precisa de um Item de troca da outra Dungeon, e para subir de Nível nas duas ela enfrenta um Desafio mestre que mistura as disciplinas.
+
+**Atalho de Nível.** Como não sabemos o quanto a criança já domina, na entrada da Dungeon ela pode tentar passar um Nível inteiro vencendo direto o Desafio épico, com Conceitos sorteados de todo o Nível. Cada Perfil tem **uma única tentativa por Nível em cada Dungeon**: acertando, o Nível conta como concluído; errando, joga o Nível normalmente e não tenta de novo. Erro no Atalho não tira energia.
 
 - **Andar é a unidade gerada.** A geração procedural monta um andar inteiro de uma vez (todas as salas e conexões), não sala por sala.
 - **Cada andar tem um ponto de fast travel**, que também salva o progresso. O jogo também salva sozinho a cada sala e ao pausar.
 - **O item exigido vem sempre do mesmo nível da outra dungeon**, nunca de um nível acima. Assim a criança nunca fica travada esperando algo impossível.
-- **Desafio épico e mestre só usam conceitos já praticados** naquele nível; são uma revisão divertida, não uma prova surpresa.
+- **Desafio épico e mestre só usam conceitos já praticados** naquele nível; são uma revisão divertida, não uma prova surpresa. A exceção é o Atalho de Nível, que sorteia Conceitos de todo o Nível e por isso é opcional e sem punição.
 - **Escopo do MVP:** 3 níveis em cada dungeon, um por ano escolar (1º, 2º e 3º), com desafio mestre entre eles e desafios opcionais de antecipação no fim de cada nível.
 
 ### Expedição e progressão
 
 - **Duração:** 20 minutos ou mais, com pausa a qualquer momento, já que uma criança de 6 anos raramente fica 20 minutos seguidos.
-- **Falha:** quando a energia acaba, volta ao lobby, perde só recursos temporários e pode recomeçar do último ponto de fast travel.
+- **Fim da Expedição:** termina quando a criança decide voltar ou quando a energia acaba. Ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Com energia zerada, volta ao Lobby, perde só recursos temporários e pode recomeçar do último ponto de fast travel.
 - **Narrativa:** mínima no MVP, só o contexto das missões.
 - **Multiplayer e social:** nenhum. Sem ranking entre crianças; a motivação vem de recordes pessoais e metas.
 
@@ -152,6 +156,7 @@ O MVP cobre matemática e português do 1º ao 3º ano: cerca de 60 missões bas
 - **Leitura:** texto com voz sintética (TTS). Toda instrução pode ser ouvida, porque uma criança de 6 anos ainda está aprendendo a ler. O Godot 4 tem TTS embutido que usa as vozes do sistema.
 - **Dificuldade adaptativa:** no MVP é uma regra simples e transparente, por exemplo: três acertos sem dica sobem um nível, duas tentativas com dica descem um nível. Nada de modelo estatístico ainda. Responsáveis e educadores conseguem entender e ajustar a regra.
 - **Revisão:** nenhuma missão vai para a criança sem revisão pedagógica, inclusive as variantes geradas por IA.
+- **Progressão validada por profissionais:** a ordem das habilidades da BNCC, a granularidade dos Conceitos e a progressão de dificuldade só são definitivas depois do **consenso de profissionais de pedagogia, psicologia e fonoaudiologia**. Até lá, vale a [ordem recomendada provisória](../pedagogia/ordem-recomendada-mvp.md), e a progressão fica em dados, para mudar sem alterar o código. A referência das habilidades está em [docs/referencia/bncc/](../referencia/bncc/README.md).
 
 ### Exemplos de missão para o MVP
 
@@ -169,18 +174,18 @@ O jogo traz de volta o que a criança já aprendeu no momento em que ela está c
 
 - **Caixas de memória por conceito (sistema Leitner):** cada conceito fica numa caixa de 1 a 5. Acertou numa revisão, sobe de caixa e volta mais tarde (ex.: 1, 2, 4, 8 e 16 dias). Errou, volta para a caixa 1. A conta é por conceito, não por pergunta decorada.
 - **Revisão é sempre desafio, nunca releitura:** o conceito volta como criatura, porta ou ponte, com outros números e outra mecânica, para a criança puxar da memória em vez de reconhecer a resposta.
-- **Portal da Memória:** no início de cada expedição, uma sala opcional com até 3 conceitos para revisar. Resolver dá energia extra para a expedição.
+- **Portal da Memória:** no início de cada Expedição, uma sala opcional com até 3 conceitos para revisar. Resolver dá uma **Esquiva**: perdoa o primeiro erro da Expedição sem tirar energia, e não ultrapassa o teto.
 - **Mistura de conceitos:** cada andar mistura conceitos novos e antigos, e o desafio mestre é uma revisão misturada das duas dungeons.
-- **Álbum de criaturas (flash cards):** cada criatura libertada vira uma carta na Biblioteca do lobby, com a criatura e o desafio na frente e a explicação no verso. A criança revisa quando quiser, e as cartas prontas para revisão brilham.
+- **Álbum:** cada criatura libertada vira uma carta no Álbum do Lobby, com a criatura e o desafio na frente e a explicação no verso, ao lado dos Cosméticos. No Álbum a criança só revê e relê, sem efeito: as revisões que movem as caixas de memória acontecem só nas Dungeons.
 - **Sem punição por ausência:** não existe sequência diária nem perda por não jogar. Quando a criança volta, as revisões estão esperando.
 
 ## Escopo: MVP e depois
 
-Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda prova a ideia. O que sobra vai para a fase 2. A IA entra como geração diária no servidor, não na hora em que a criança joga.
+Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda prova a ideia. O que sobra vai para a fase 2. O backend (contas, sincronização, telemetria e geração diária de missões com IA) é um projeto separado, fora deste repositório; aqui entra só o lado do jogo, que nunca chama IA durante a partida.
 
 | Recurso | No MVP | Depois |
 | --- | --- | --- |
-| Lobby | Uma ilha pequena com portal, NPC, treino e fast travel | Biblioteca de descobertas, coleção, decoração |
+| Lobby | Ilha cercada por cinco torres (Matemática e Português em construção; Ciências, História e Geografia "em breve"), Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles | Decoração, mais torres |
 | Dungeon | Matemática e Português, 3 níveis cada (1º ao 3º ano), andares gerados inteiros, desafios mestres | Novos biomas e tipos de sala |
 | Fast travel | Um ponto por andar, que também salva | Mapa do mundo completo |
 | Personagens | Matemático e Escriba, 2 a 3 habilidades cada | Mais personagens, Ciências |
@@ -189,9 +194,23 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 | Voz | TTS do sistema | Narração gravada; reconhecimento de fala com tolerância por nível |
 | Conta | Opcional, só para sincronizar entre aparelhos | Conta gerenciada por responsável ou escola |
 | Telemetria | Detalhada por criança, só com consentimento do responsável | Relatórios agregados para pesquisa |
-| IA | Geração diária no servidor com validação automática e amostra com revisão pedagógica; o jogo baixa quando está online | Mais disciplinas e anos escolares no lote diário |
+| IA | Geração diária no backend (outro repositório) com validação e revisão pedagógica; o jogo só baixa e valida o JSON quando está online | Mais disciplinas e anos escolares no lote diário |
 | Painéis | Nenhum | Responsáveis e professores |
 | Plataforma | PC (Windows) | Linux, tablets Android (toque, traçado e voz) |
+
+### Primeiro marco: Lobby funcional
+
+O primeiro marco entregável é o Lobby funcional, sem Dungeons jogáveis. Prova a base técnica (Godot C#, cena 3D isométrica, entrada, salvamento, CI e build Windows) e o contrato de conteúdo.
+
+- Criar e editar o Perfil e o Personagem (apelido, cores, características, acessórios). Todo Perfil começa no Nível 1.
+- Cena 3D caminhável, em greybox seguindo `mockups/lobby.png`; os assets CC0 entram depois, em ticket próprio.
+- Cinco ilhas com torres ao redor: Matemática e Português com placa "em construção", Ciências, História e Geografia com placa "em breve".
+- NPC Guia, que fala por voz sintética.
+- Área de treino com Boneco de treino: Desafios sorteados conforme a dificuldade escolhida, lidos de Missões em JSON validadas pelo schema (Mecânica de compor número). Sem punição e sem contar para o progresso.
+- Álbum de criaturas e de Cosméticos (vazio por enquanto).
+- Portal de fast travel: abre uma seleção que avisa que ainda não há pontos.
+- Configurações de jogo, de acessibilidade (tamanho de texto, voz, redução de animações, fonte para dislexia, Modo calmo) e de controles (mouse, teclado e toque).
+- Salvamento local versionado, CI (schema, testes, build Windows) e todo valor de regra (nomes, energia máxima, limiares adaptativos, intervalos de revisão) em dados.
 
 ## Dados e motivação
 
@@ -224,6 +243,6 @@ Alternativas que mantêm a motivação:
 
 ### Decisões em aberto
 
-- [ ] Aprovar o tema Arquipélago do Céu e os nomes dos personagens
-- [ ] Quais habilidades da BNCC entram primeiro em cada ano
+- [x] Tema Arquipélago do Céu e nomes Matemático e Escriba aprovados como provisórios; nome do jogo e dos Papéis ficam em dados e podem mudar
+- [ ] Quais habilidades da BNCC entram primeiro em cada ano: depende do consenso de pedagogia, psicologia e fonoaudiologia (há uma ordem recomendada provisória, usada no MVP)
 - [ ] Quando entram voz e traçado de letras (padrão: logo após o MVP, junto com tablets)

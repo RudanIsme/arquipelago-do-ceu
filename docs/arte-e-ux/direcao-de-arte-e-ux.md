@@ -22,18 +22,18 @@ O estilo é 3D estilizado em vista isométrica de cima, com luz quente, sombras 
 | Pós-processamento | Desfoque nas bordas, bloom leve só nos itens mágicos, oclusão de ambiente e ACES. |
 | Proporção | Personagens chibi, com cabeça grande e de 1/3 a 1/2 da altura de uma parede. |
 | Densidade | Salas cheias de objetos nas bordas e o centro livre para o combate. |
-| Cor por ilha | Torre dos Números em roxo e dourado, com pedra quente. Ilha das Letras em verde e azul-céu. Ilha-base em azul e amarelo. |
+| Cor por torre | Torre dos Números em roxo e dourado, com pedra quente. Torre das Letras em verde e azul-céu. Lobby em azul e amarelo. |
 | Névoa | Lilás-claro e translúcida. Ela cobre as criaturas que ainda não foram acalmadas. |
 
 Os números, as sílabas e as energias brilham em dourado ou azul. Assim, o que se pode usar se destaca do cenário, que é mais neutro.
 
 ## Personagens, criaturas e névoa
 
-Os heróis são o Matemático e o Escriba. No jogo final eles usam modelos próprios, gerados no Meshy e com o rig ajustado no Blender.
+O Personagem é um só, personalizável (cores, características, acessórios e variações da ferramenta), e assume o Papel de Matemático ou de Escriba conforme a Dungeon, com roupas e ferramenta próprias. No jogo final usa modelos próprios, gerados no Meshy e com o rig ajustado no Blender.
 
-- **Matemático:** roupa com dourado e uma bolsa de números na cintura que brilha. A pose de ataque é lançar um orbe.
-- **Escriba:** chapéu e capa roxos e um livro aberto. A pose de ataque é conjurar as sílabas no ar.
-- **Criaturas da névoa:** corpo redondo e macio, olhos grandes, bochechas rosadas e chifrinhos. Nunca têm dentes, armas nem ossos. Cada ilha tem a sua cor (lilás, azul, rosa, amarelo).
+- **Papel Matemático:** roupa com dourado e uma bolsa de números na cintura que brilha. A pose de ataque é lançar um orbe.
+- **Papel Escriba:** chapéu e capa roxos e um livro aberto. A pose de ataque é conjurar as sílabas no ar.
+- **Criaturas da névoa:** corpo redondo e macio, olhos grandes, bochechas rosadas e chifrinhos. Nunca têm dentes, armas nem ossos. Cada torre tem a sua cor (lilás, azul, rosa, amarelo).
 - **Acalmar:** quando a criança acerta, a névoa se dissolve, a criatura sorri e entra no Álbum de criaturas.
 - **Pedido:** fica num balão acima da criatura. É um número no Matemático e uma imagem (gato) no Escriba, sempre com voz.
 
@@ -61,13 +61,13 @@ As três cenas abaixo foram renderizadas em 3D com modelos CC0 (KayKit) só para
 
 ![Torre dos Números](../../mockups/torre-dos-numeros.png)
 
-**Ilha das Letras (combate do Escriba).** A criatura mostra um gato. O Escriba já conjurou GA e a criança escolhe TO. A tecla F abre o modo de falar o nome.
+**Torre das Letras (combate do Escriba).** A criatura mostra um gato. O Escriba já conjurou GA e a criança escolhe TO. A tecla F abre o modo de falar o nome.
 
-![Ilha das Letras](../../mockups/ilha-das-letras.png)
+![Torre das Letras](../../mockups/torre-das-letras.png)
 
-**Ilha-base.** O Portal da Memória mostra quantas cartas faltam revisar, o Álbum mostra 14 de 40 criaturas e a Expedição leva à próxima torre. O menu de baixo troca a bolsa por quatro destinos.
+**Lobby.** O Portal da Memória mostra quantas cartas faltam revisar, o Álbum mostra 14 de 40 criaturas e a Expedição leva à próxima torre. O menu de baixo troca a bolsa por quatro destinos.
 
-![Ilha-base](../../mockups/ilha-base.png)
+![Lobby](../../mockups/lobby.png)
 
 Ainda faltam o Álbum aberto, a carta do Portal da Memória, a tela de energia zerada e a área do responsável.
 
@@ -86,18 +86,18 @@ Todas as ações funcionam com toque, mouse ou teclado, e nenhuma depende de cor
 
 No MVP, a arte usa kits CC0 para o cenário e modelos próprios só para os dois heróis e as criaturas.
 
-1. Cenário: kits KayKit Dungeon e Medieval Hexagon (CC0), com cores ajustadas por ilha e registrados em CREDITS.md.
+1. Cenário: kits KayKit Dungeon e Medieval Hexagon (CC0), com cores ajustadas por torre e registrados em CREDITS.md.
 2. Heróis: Meshy, depois limpeza e rig no Blender, exportados em glTF para o Godot.
 3. Criaturas: um modelo base redondo com variações de cor, chifre e orelha. Assim 40 criaturas saem de poucos modelos.
 4. Godot: luz quente, SSAO, glow só nos itens mágicos e desfoque de profundidade pela câmera.
 5. HUD: Control nodes com tema único (painéis, fonte e cores desta página).
 
-O MVP inclui duas ilhas (Torre dos Números e Ilha das Letras), a ilha-base, 2 heróis e 12 criaturas. As outras ilhas e criaturas ficam para depois.
+O MVP inclui duas torres (Torre dos Números e Torre das Letras), o Lobby, 2 Papéis (Matemático e Escriba) e 12 criaturas. As outras torres e criaturas ficam para depois.
 
 ## Decisões em aberto
 
-- [ ] Aprovar os nomes Torre dos Números, Ilha das Letras e Ilha-base
-- [ ] Definir o visual final do Matemático e do Escriba 
-- [ ] Escolher entre chão hexagonal ou quadrado nas ilhas abertas
+- [ ] Aprovar os nomes Torre dos Números, Torre das Letras e Lobby
+- [ ] Definir o visual final dos Papéis Matemático e Escriba e do editor de Personagem
+- [ ] Escolher entre chão hexagonal ou quadrado nas salas abertas
 - [ ] Decidir se o desfoque nas bordas fica ligado por padrão em PCs fracos
 - [ ] Testar se os números dentro dos orbes são lidos a 1 metro da tela

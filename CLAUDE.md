@@ -9,25 +9,29 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 ## Onde está cada coisa
 
 - `docs/produto/documento-de-produto.md`: gameplay, mundo, combate, conteúdo educacional e escopo do MVP.
-- `docs/tecnico/documento-tecnico.md`: módulos do cliente, geração procedural, salvamento, schema de missão, backend e dados.
+- `docs/tecnico/documento-tecnico.md`: módulos do cliente, geração procedural, salvamento, schema de missão, cliente de rede e dados.
+- `docs/referencia/bncc/`: habilidades da BNCC (Matemática e Língua Portuguesa, 1º ao 3º ano), uma pasta por ano e um arquivo por matéria. A ordem de progressão **não está decidida**: exige consenso de profissionais de pedagogia, psicologia e fonoaudiologia (ordem recomendada provisória em `docs/pedagogia/ordem-recomendada-mvp.md`, usada no MVP).
+- `GLOSSARY.md`: vocabulário canônico do projeto (Lobby, Dungeon, Nível, Andar, Sala, Expedição, Papel...). Use esses termos e evite os listados em _Avoid_.
 - `docs/arte-e-ux/direcao-de-arte-e-ux.md`: estilo visual, HUD (cores, fonte, tamanhos), acessibilidade e pipeline de arte.
 - `docs/apresentacao/apresentacao.md`: resumo do jogo.
-- `mockups/`: telas de referência da Torre dos Números, Ilha das Letras e Ilha-base.
+- `mockups/`: telas de referência da Torre dos Números, Torre das Letras e Lobby.
 
 ## Decisões principais
 
 - **Engine**: Godot 4 (.NET) com C#. Plataforma do MVP: PC (Windows); depois Linux e tablets Android.
-- **Offline primeiro**: o jogo funciona 100% sem rede. O backend (Go + PostgreSQL) só serve conta opcional, sincronização, telemetria consentida e missões novas.
-- **Estrutura**: duas dungeons no MVP (Matemática e Português), 3 níveis cada, nível = ano escolar (1º ao 3º). O andar é a unidade gerada e tem ponto de fast travel. Avançar numa dungeon exige item do mesmo nível da outra.
+- **Offline primeiro**: o jogo funciona 100% sem rede. O backend (contas, sincronização, telemetria consentida, missões geradas) é um projeto **separado, em outro repositório**; este repositório só contém o jogo e o cliente da API (módulo Net, atrás de uma interface).
+- **Estrutura**: duas Dungeons (torres) no MVP, Matemática e Português, 3 Níveis cada, Nível = ano escolar (1º ao 3º). O Andar é a unidade gerada, feito de Salas, e tem ponto de fast travel. Para passar um Marco é preciso um Item de troca do mesmo Nível da outra Dungeon. Todo Perfil começa no Nível 1; o Atalho de Nível permite uma única tentativa por Nível de vencer direto o Desafio épico.
 - **Geração procedural determinística**: seed = (mundo, dungeon, nível, andar, versão do gerador), PRNG próprio (PCG32), validador de conectividade e andar feito à mão como fallback. Tema separado da estrutura.
 - **Combate**: tempo real com `Engine.TimeScale` reduzido ao montar a resposta; modo calmo para o tempo. Sem violência.
-- **Energia**: 5 segmentos. Erro custa 1; dica nunca custa. Zerar volta à ilha-base e perde só itens temporários.
+- **Energia**: máximo 5 no MVP (valor em dados, upgrades futuros podem aumentar). Erro custa 1; dica nunca custa. Zerar volta ao Lobby e perde só itens temporários. Ao concluir um Desafio épico, a criança escolhe continuar ou voltar.
 - **Conteúdo**: missões em JSON versionadas com JSON Schema. O cliente nunca executa código vindo de fora; o JSON só escolhe uma mecânica existente e passa parâmetros.
-- **IA**: só gera texto de missões no servidor, com filtros e quarentena. Nunca inventa mecânica nem calcula resposta.
+- **IA**: só gera texto de missões, fora do jogo, no serviço separado. O jogo nunca chama IA, nunca inventa mecânica nem calcula resposta.
 - **Voz**: TTS do sistema (`DisplayServer.TtsSpeak`) no MVP. Reconhecimento de fala local e traçado de letras entram depois.
 - **Repetição espaçada**: caixas de Leitner por conceito, calculadas no próprio jogo.
 - **Privacidade**: sem nome real; perfis por apelido; telemetria só com consentimento do responsável.
 - **Sem ranking, anúncios ou compras**, e sem punição por ficar sem jogar.
+- **Primeiro marco**: Lobby funcional (ver `docs/produto/documento-de-produto.md`). Nomes do jogo e dos Papéis são provisórios e ficam em dados.
+- **Treino no Lobby não conta progresso**; só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
 
 ## Estrutura planejada do código
 
@@ -42,3 +46,17 @@ docs/         documentação
 
 - Antes de propor uma mecânica ou sistema, confira se os documentos já decidiram. Se uma mudança contradiz uma decisão, aponte isso e atualize o documento correspondente.
 - Toda mecânica funciona com toque, mouse e teclado; nenhuma informação essencial só por cor ou só por som; nada depende de velocidade ou precisão motora para avançar.
+
+## Ambiente local (Windows)
+
+Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para rodar testes e exportar sem abrir o editor). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.
+
+## Agent skills
+
+### Issue tracker
+
+Os tickets ficam no GitHub Issues de justgu1/arquipelago-do-ceu (via `gh`). Ver `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Contexto único: um `GLOSSARY.md` e `docs/adr/` na raiz. Ver `docs/agents/domain.md`.

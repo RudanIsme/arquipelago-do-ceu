@@ -4,7 +4,7 @@ Roguelite educativo em 3D isométrico, feito em Godot, para crianças de 6 a 10 
 
 ## O jogo
 
-Uma névoa do esquecimento cobriu as ilhas do céu: criaturas esqueceram seus nomes, máquinas perderam seus números. A criança parte da ilha-base e explora dungeons geradas proceduralmente, uma por disciplina, para restaurar cada arquipélago.
+Uma névoa do esquecimento cobriu as ilhas do céu: criaturas esqueceram seus nomes, máquinas perderam seus números. A criança parte do Lobby e sobe as torres das dungeons, geradas proceduralmente, uma por disciplina, para restaurar o que a névoa apagou.
 
 - **Matemático**: carrega uma bolsa de números e operações. Cada criatura mostra um escudo com um número, e a criança monta a conta que chega nele.
 - **Escriba**: as criaturas esqueceram o próprio nome. No 1º ano a criança junta sílabas, no 2º escreve a palavra, no 3º completa frases.
@@ -16,14 +16,36 @@ Uma névoa do esquecimento cobriu as ilhas do céu: criaturas esqueceram seus no
 ```text
 docs/
   produto/       gameplay, mundo, conteúdo educacional e escopo do MVP
-  tecnico/       arquitetura, Godot/C#, geração procedural, conteúdo e backend
+  tecnico/       arquitetura, Godot/C#, geração procedural, conteúdo e cliente de rede (o backend é outro repositório)
   arte-e-ux/     direção de arte, HUD e acessibilidade
   apresentacao/  resumo do jogo
 mockups/         telas de referência em 3D
 ```
 
+## Como trabalhamos
+
+O desenvolvimento segue um fluxo único, com skills do Claude Code instaladas em `.claude/skills/`:
+
+```text
+(/wayfinder | /grill-with-docs)  ->  /to-tickets  ->  /implement
+```
+
+| Etapa | Quando usar | O que produz |
+| --- | --- | --- |
+| `/setup-matt-pocock-skills` | Uma vez por repositório | Define onde ficam os tickets (GitHub Issues ou Markdown local) e grava a configuração no `CLAUDE.md` |
+| `/wayfinder` | O trabalho é grande (várias sessões) e o caminho ainda não está claro | Um mapa de tickets de decisão, resolvidos um a um até não sobrar nada a decidir. Só planeja, não escreve código |
+| `/grill-with-docs` | O trabalho cabe numa sessão e o plano ainda está vago | Entrevista até o plano ficar claro e grava o vocabulário em `GLOSSARY.md` e as decisões difíceis em ADRs |
+| `/to-tickets` | Já existe um plano ou spec | Tickets pequenos, cada um uma fatia completa e demonstrável, com as dependências entre eles |
+| `/implement` | Há um ticket (ex.: `/implement #12`) ou uma spec | Implementa com testes primeiro (TDD), roda os testes, pede revisão e faz commit na branch atual |
+
+Quando o fluxo apontar uma mudança que contradiz algo já decidido, o documento correspondente em `docs/` é atualizado. Guias detalhados de cada skill estão em `docs/referencia/skills/`.
+
+## Ambiente
+
+Para rodar o jogo: .NET SDK 8, Godot 4.7.2 (versão .NET) e Node LTS (validação do schema das missões). A variável `GODOT` deve apontar para o executável de console do Godot. O backend não faz parte deste repositório.
+
 ## Telas de referência
 
-| Torre dos Números | Ilha das Letras | Ilha-base |
+| Torre dos Números | Torre das Letras | Lobby |
 | --- | --- | --- |
-| ![Torre dos Números](mockups/torre-dos-numeros.png) | ![Ilha das Letras](mockups/ilha-das-letras.png) | ![Ilha-base](mockups/ilha-base.png) |
+| ![Torre dos Números](mockups/torre-dos-numeros.png) | ![Torre das Letras](mockups/torre-das-letras.png) | ![Lobby](mockups/lobby.png) |
