@@ -60,7 +60,7 @@ docs/         documentação
 
 ## Ambiente local (Windows)
 
-Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para rodar testes e exportar sem abrir o editor). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.
+Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para exportar e rodar o jogo sem abrir o editor). `dotnet test game.tests` roda os testes de regra, que não abrem o Godot (ainda não há teste que precise do motor). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.
 
 ## Agent skills
 
