@@ -26,6 +26,26 @@ O Godot com C# não exporta para navegador. Como navegador não é alvo, isso n�
 | Accessibility | TTS, legendas, tamanho de texto, remoção de tempo, redução de animações |
 | Net | Login opcional, sincronização e fila de telemetria que espera conexão |
 
+### Arquitetura do código
+
+Hexagonal com DDD pragmático (ver `docs/adr/0001-arquitetura-hexagonal-pragmatica.md`). Três camadas, e as dependências só apontam para dentro:
+
+| Camada | O que tem | Pode depender de |
+| --- | --- | --- |
+| Domínio | Regras puras: Energia, Conceito, Missão, avaliadores, PCG32, Leitner | Nada |
+| Aplicação | Casos de uso e as **portas** (interfaces): salvar, falar, rede, relógio, sorteio | Domínio |
+| Adaptadores | Godot (cenas, nós, entrada), arquivo de save, voz do sistema, cliente de rede | Aplicação e Domínio |
+
+Domínio e Aplicação ficam numa biblioteca C# **sem referência ao Godot**, em `core/`, para o compilador impedir o vazamento. `game/` guarda os adaptadores do Godot e a raiz de composição (`Main`), que monta tudo. A biblioteca `core/` nasce junto com o primeiro código de regra, e não antes. Os testes das duas camadas rodam sem abrir o Godot.
+
+Regras para manter o código simples:
+
+- **DDD só onde ajuda.** O nome de cada tipo de domínio é o termo do `GLOSSARY.md` e não muda. Agregado só onde há invariante a proteger (Perfil, Energia da Expedição). Sem repositório genérico, sem eventos de domínio e sem camadas extras até serem necessários.
+- **Poucos arquivos.** Um arquivo por conceito; tipos pequenos e do mesmo conceito ficam juntos. Interface só nas fronteiras da tabela acima, nunca "por garantia".
+- **Falha esperada é valor, não exceção.** Dado externo (JSON de Missão, save, rede, voz) é validado na borda. Erro esperado volta como resultado explícito; exceção é só para bug. Nenhuma falha de voz, rede ou save pode travar a criança: o jogo cai num comportamento seguro e avisa.
+- **Simples de manter.** Funções curtas, sem herança profunda, composição no lugar de herança, e testes que servem de exemplo de uso.
+- **Comentário responde "por quê".** Só para uma restrição, uma decisão não óbvia ou uma armadilha. Nunca para dizer o que o código já diz.
+
 ### Geração procedural
 
 - Cada andar é gerado inteiro, de uma vez, a partir de `(seed do mundo, dungeon, nível, número do andar, versão do gerador)`. A mesma entrada sempre gera o mesmo mapa.
@@ -113,7 +133,8 @@ Tudo aqui é opcional: o jogo funciona 100% sem rede e sem conta.
 ## Estrutura do código e CI
 
 ```text
-/game        projeto Godot (C#)
+/game        adaptadores Godot (C#) e raiz de composição
+/core        domínio e aplicação em C# puro, sem Godot
 /game.tests  testes do gerador, do validador e das mecânicas
 /content     missões base em JSON e o schema
 /docs        documentos do jogo e cópia do contrato da API
