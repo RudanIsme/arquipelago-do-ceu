@@ -17,7 +17,7 @@ O Godot com C# não exporta para navegador. Como navegador não é alvo, isso n�
 | Módulo | Responsabilidade |
 | --- | --- |
 | Core | Estado do jogo, cenas, salvamento local, Perfil |
-| Lobby | Cena do Lobby, Guia, Área de treino, Álbum, portal de fast travel, configurações |
+| Lobby | Cena do Lobby, Guia, Área de treino (usa o módulo de combate), Álbum, portal de fast travel, configurações |
 | World | Gerador de andares inteiros por dungeon, validador, fast travel por andar, troca de itens entre dungeons |
 | Rooms | Cenas de sala feitas à mão, com pontos de encaixe para pontes e desafios |
 | Missions | Carrega missões em JSON e executa as mecânicas (compor, comparar, sequência, sílabas, frases) |
@@ -51,6 +51,8 @@ Arquivo JSON local em `user://`, com número de versão do formato. Guarda a see
 ### Combate
 
 O combate roda em tempo real com escala de tempo: ao abrir a montagem da resposta, `Engine.TimeScale` cai (ex.: 0,15), ou vai a zero no modo calmo, e volta ao normal quando o ataque sai. A IA das criaturas é simples: patrulhar, avisar, lançar bolha lenta e reagir a erro. A bolsa do Matemático e a de sílabas do Escriba são a mesma estrutura de dados (um baralho de peças com sorteio pela seed), só com peças diferentes. Quem valida a jogada é código: o avaliador de expressões no Matemático e a comparação com o nome esperado no Escriba.
+
+**Combate no Lobby.** O Boneco de treino usa o mesmo módulo de combate das Dungeons, com um contexto de treino: Energia própria (máximo em dados, não entra no save da Expedição), saída da Área de treino ao zerar, e nenhuma escrita em progresso por Conceito, caixas de Leitner, habilidades nem Cosméticos. O contexto é injetado, e o combate não sabe se está no Lobby ou numa Dungeon. Um teste automatizado garante que um treino completo deixa o save de progresso idêntico.
 
 ### Fala (logo após o MVP)
 

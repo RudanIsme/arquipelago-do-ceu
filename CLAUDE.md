@@ -33,7 +33,7 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - **Privacidade**: sem nome real; perfis por apelido; telemetria só com consentimento do responsável.
 - **Sem ranking, anúncios ou compras**, e sem punição por ficar sem jogar.
 - **Primeiro marco**: Lobby funcional (ver `docs/produto/documento-de-produto.md`). Nomes do jogo e dos Papéis são provisórios e ficam em dados.
-- **Treino no Lobby não conta progresso**; só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
+- **Treino no Lobby é o combate real contra o Boneco, com Energia própria** (zerar só tira a criança da Área de treino), e usa todas as Mecânicas existentes; **não conta progresso**, só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
 
 ## Estrutura planejada do código
 

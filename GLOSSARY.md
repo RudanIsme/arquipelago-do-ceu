@@ -15,11 +15,11 @@ O NPC do Lobby que orienta a criança e fala por voz sintética.
 _Avoid_: Tutorial
 
 **Área de treino**:
-Espaço do Lobby onde a criança pratica Conceitos num Boneco de treino, sem punição e sem contar para o progresso (só o que acontece nas Dungeons conta).
+Espaço do Lobby onde a criança pratica Conceitos num Boneco de treino, no mesmo combate das Dungeons. Tem Energia própria: se zera, a criança só sai da Área de treino, sem perder nada. Só treina os Níveis a que o Perfil já tem acesso. Não conta para o progresso (só o que acontece nas Dungeons conta).
 _Avoid_: Sala de treinamento (Sala é de Andar)
 
 **Boneco de treino**:
-Alvo da Área de treino que propõe Desafios sorteados conforme a dificuldade escolhida.
+Criatura de treino da Área de treino. Luta como uma criatura das Dungeons, com bolhas e travessuras, e propõe Desafios sorteados conforme a dificuldade escolhida.
 _Avoid_: Dummy
 
 **Álbum**:

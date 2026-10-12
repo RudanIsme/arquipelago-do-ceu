@@ -52,7 +52,7 @@ O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de car
 
 **Cosméticos:** roupas, cores, acessórios e variações visuais da ferramenta (como o tipo de arma). Não mudam o Papel nem dão vantagem. Só se ganham por aprendizado e exploração nas Dungeons (libertar criatura, dominar conceito, concluir Nível), nunca por compra, sorteio ou sequência diária.
 
-Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. Na Área de treino do Lobby ela pratica sem punição, mas **o treino no Lobby não conta para o progresso**: habilidades, caixas de memória e dificuldade adaptativa só mudam com o que acontece nas Dungeons.
+Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. Na Área de treino do Lobby ela pratica o mesmo combate das Dungeons contra o Boneco de treino, com uma Energia própria; se a Energia zera, a criança só sai da Área de treino, sem perder nada. **O treino no Lobby não conta para o progresso**: habilidades, caixas de memória e dificuldade adaptativa só mudam com o que acontece nas Dungeons.
 
 ### Combate pelas mecânicas de aprendizado
 
@@ -200,13 +200,15 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 
 ### Primeiro marco: Lobby funcional
 
-O primeiro marco entregável é o Lobby funcional, sem Dungeons jogáveis. Prova a base técnica (Godot C#, cena 3D isométrica, entrada, salvamento, CI e build Windows) e o contrato de conteúdo.
+O primeiro marco entregável é o Lobby funcional, sem Dungeons jogáveis. Prova a base técnica (Godot C#, cena 3D isométrica, entrada, salvamento, CI e build Windows), o contrato de conteúdo e o combate real, jogado contra o Boneco de treino.
 
 - Criar e editar o Perfil e o Personagem (apelido, cores, características, acessórios). Todo Perfil começa no Nível 1.
 - Cena 3D caminhável, em greybox seguindo `mockups/lobby.png`; os assets CC0 entram depois, em ticket próprio.
 - Cinco ilhas com torres ao redor: Matemática e Português com placa "em construção", Ciências, História e Geografia com placa "em breve".
 - NPC Guia, que fala por voz sintética.
-- Área de treino com Boneco de treino: Desafios sorteados conforme a dificuldade escolhida, lidos de Missões em JSON validadas pelo schema (Mecânica de compor número). Sem punição e sem contar para o progresso.
+- Área de treino com Boneco de treino: **o mesmo combate real das Dungeons** (botão de ataque, tempo que desacelera, golpe perfeito, bolhas de névoa avisadas e travessuras no erro, dicas, Modo calmo), contra um Boneco que também ataca. Usa **tudo o que já existir**: as Mecânicas de Matemática (compor número, com a bolsa e o cajado do Matemático) e de Português (formar palavras com sílabas, com o Escriba), com Desafios sorteados conforme a dificuldade escolhida, lidos de Missões em JSON validadas pelo schema.
+- **A criança só treina os Níveis a que o Perfil já tem acesso** (no começo, o Nível 1), em cada Papel. O treino nunca libera um Nível.
+- A Área de treino tem **Energia própria**, com o mesmo máximo das Expedições (valor em dados). Zerar a Energia só tira a criança da Área de treino, sem perder nada e sem tela de derrota. O treino não conta para o progresso: nenhum Conceito, caixa de memória, habilidade, Cosmético ou dificuldade adaptativa muda.
 - Álbum de criaturas e de Cosméticos (vazio por enquanto).
 - Portal de fast travel: abre uma seleção que avisa que ainda não há pontos.
 - Configurações de jogo, de acessibilidade (tamanho de texto, voz, redução de animações, fonte para dislexia, Modo calmo) e de controles (mouse, teclado e toque).
