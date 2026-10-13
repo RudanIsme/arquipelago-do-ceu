@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
@@ -21,6 +22,7 @@ public partial class Main : Node3D
 	CharacterEditor? editor;
 	Button characterButton = null!;
 	ProfileSave? current;
+	Player player = null!;
 
 	public override void _Ready()
 	{
@@ -39,7 +41,11 @@ public partial class Main : Node3D
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		profiles = new ProfileService(store, rules, save.Value!, () => Guid.NewGuid().ToString("N"));
 
-		AddChild(GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate());
+		Controls.Register();
+		var lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
+		AddChild(lobby);
+		player = new Player(lobby.Grid, lobby.Camera) { Visible = false, ReduceMotion = OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes") };
+		AddChild(player);
 		var hud = new HBoxContainer();
 		hud.AddThemeConstantOverride("separation", 8);
 		hud.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
@@ -106,6 +112,7 @@ public partial class Main : Node3D
 		screen = new ProfileScreen(profiles);
 		screen.Chosen += Enter;
 		ui.AddChild(screen);
+		UpdatePlayerControl();
 	}
 
 	void Enter(ProfileSave profile)
@@ -117,6 +124,9 @@ public partial class Main : Node3D
 		current = profile;
 		characterButton.Visible = true;
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
+		player.Visible = true;
+		ApplyAppearance();
+		UpdatePlayerControl();
 		GD.Print($"Perfil ativo: {profile.Nickname}");
 	}
 
@@ -124,11 +134,24 @@ public partial class Main : Node3D
 	{
 		if (editor is not null || screen is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
+		editor.Changed += ApplyAppearance;
 		editor.Done += () =>
 		{
 			editor?.QueueFree();
 			editor = null;
+			UpdatePlayerControl();
 		};
 		ui.AddChild(editor);
+		UpdatePlayerControl();
 	}
+
+	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
+	void ApplyAppearance()
+	{
+		if (current is null) return;
+		player.Apply(profiles.AppearanceOf(profiles.Find(current.Id).Value!));
+	}
+
+	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
+	void UpdatePlayerControl() => player.Enabled = current is not null && screen is null && editor is null;
 }

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using ArquipelagoDoCeu.World;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -21,9 +23,14 @@ public partial class Lobby : Node3D
 
 	readonly Dictionary<Vector2I, Kind> tiles = new();
 
+	// O chão que o Personagem pode pisar: a ilha, menos a lagoa e as árvores.
+	public HexGrid Grid { get; private set; } = null!;
+	public Camera3D Camera { get; private set; } = null!;
+
 	public override void _Ready()
 	{
 		BuildMap();
+		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells());
 		AddEnvironment();
 		AddCamera();
 		AddTerrain();
@@ -47,6 +54,9 @@ public partial class Lobby : Node3D
 				tiles[new Vector2I(q, r)] = onPond ? Kind.Water : onPath ? Kind.Path : flowery ? Kind.Flowers : Kind.Grass;
 			}
 	}
+
+	IEnumerable<HexCell> BlockedCells() =>
+		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y));
 
 	void AddEnvironment()
 	{
@@ -73,9 +83,9 @@ public partial class Lobby : Node3D
 	// Ortográfica e isométrica de verdade: a câmera olha a origem a 35,264 graus de elevação.
 	void AddCamera()
 	{
-		var camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 18f, Current = true };
-		AddChild(camera);
-		camera.LookAtFromPosition(new Vector3(12f, 12f, 12f), Vector3.Zero, Vector3.Up);
+		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 18f, Current = true };
+		AddChild(Camera);
+		Camera.LookAtFromPosition(new Vector3(12f, 12f, 12f), Vector3.Zero, Vector3.Up);
 	}
 
 	// Uma malha só para todos os tiles. O shader desenha grama, flores, água e os caminhos,

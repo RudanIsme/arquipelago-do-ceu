@@ -10,7 +10,7 @@ namespace ArquipelagoDoCeu;
 public partial class CharacterView : Node3D
 {
 	const string ModelPath = "res://assets/modelos/personagem-andando.glb";
-	const float Height = 1.2f;
+	const float Height = 1.5f;
 
 	// Categoria do catálogo -> parâmetro do shader. Categorias sem entrada aqui (acessórios, por
 	// enquanto) são ignoradas até existir arte para elas.
@@ -20,7 +20,22 @@ public partial class CharacterView : Node3D
 		["clothesColor"] = "cloth_color",
 	};
 
+	const float BreathAmount = 0.015f;
+	const float BreathSpeed = 2f;
+
 	ShaderMaterial? material;
+	Node3D? model;
+	Skeleton3D? skeleton;
+	AnimationPlayer? animations;
+	string? walkClip;
+	Vector3 restScale = Vector3.One;
+	bool moving;
+	double clock;
+
+	// Redução de animações: o Personagem fica na pose de repouso, sem respirar e sem balançar os braços e pernas ao andar.
+	public bool ReduceMotion { get; set; }
+
+	public bool IsWalkingAnimation => animations?.IsPlaying() == true;
 
 	public override void _Ready()
 	{
@@ -30,10 +45,11 @@ public partial class CharacterView : Node3D
 			GD.PushError($"Não foi possível carregar o modelo do Personagem em {ModelPath}.");
 			return;
 		}
-		var model = scene.Instantiate<Node3D>();
+		model = scene.Instantiate<Node3D>();
 		AddChild(model);
 		SetUpMaterial(model);
 		StandOnGround(model);
+		SetUpAnimations(model);
 	}
 
 	public void Apply(IEnumerable<ChosenOption> chosen)
@@ -42,6 +58,48 @@ public partial class CharacterView : Node3D
 		foreach (var item in chosen)
 			if (ShaderParams.TryGetValue(item.Category.Id, out var param))
 				material.SetShaderParameter(param, Color.FromHtml(item.Option.Color));
+	}
+
+	// O modelo traz só o ciclo de andar. Parado é a pose de repouso com uma respiração leve, feita no código.
+	void SetUpAnimations(Node3D root)
+	{
+		skeleton = root.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault();
+		animations = root.FindChildren("*", "AnimationPlayer", true, false).OfType<AnimationPlayer>().FirstOrDefault();
+		restScale = root.Scale;
+		walkClip = animations?.GetAnimationList().FirstOrDefault(name => name != "RESET");
+		if (animations is null || walkClip is null)
+		{
+			GD.PushWarning("O modelo do Personagem não trouxe animação de andar.");
+			return;
+		}
+		animations.GetAnimation(walkClip).LoopMode = Animation.LoopModeEnum.Linear;
+	}
+
+	public void SetMoving(bool isMoving)
+	{
+		if (moving != isMoving)
+		{
+			moving = isMoving;
+			if (!moving) BackToRest();
+		}
+		if (moving && !ReduceMotion && animations is not null && walkClip is not null && !animations.IsPlaying())
+			animations.Play(walkClip);
+		if ((!moving || ReduceMotion) && animations is { } player && player.IsPlaying()) BackToRest();
+	}
+
+	public override void _Process(double delta)
+	{
+		if (model is null) return;
+		clock += delta;
+		// Respirar é um vai e vem da altura; com a redução de animações o corpo fica parado.
+		var breath = moving || ReduceMotion ? 0f : Mathf.Sin((float)clock * BreathSpeed) * BreathAmount;
+		model.Scale = new Vector3(restScale.X, restScale.Y * (1f + breath), restScale.Z);
+	}
+
+	void BackToRest()
+	{
+		animations?.Stop();
+		skeleton?.ResetBonePoses();
 	}
 
 	void SetUpMaterial(Node3D model)
@@ -64,7 +122,7 @@ public partial class CharacterView : Node3D
 		var scale = Height / box.Size.Y;
 		model.Scale = Vector3.One * scale;
 		model.Position = new Vector3(-(box.Position.X + box.Size.X / 2f) * scale, -box.Position.Y * scale, -(box.Position.Z + box.Size.Z / 2f) * scale);
-		GD.Print($"Personagem: altura original {box.Size.Y:0.00}, escala {scale:0.00}");
+
 	}
 
 	// A caixa da malha em repouso engana nos modelos rigados (a pele reescala na hora de desenhar),

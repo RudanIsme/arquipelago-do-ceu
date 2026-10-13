@@ -65,7 +65,19 @@ Para rodar todos os testes (não precisam do Godot aberto; a CI roda este mesmo 
 dotnet test game.tests
 ```
 
-Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, ainda é vazia e só imprime uma mensagem no console.
+Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil e as telas de Perfil e de Personagem.
+
+Controles no Lobby: WASD ou setas (relativo à tela), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa).
+
+### Piloto de desenvolvimento
+
+O `DevDriver` percorre o jogo como uma criança faria (clica, digita, segura teclas) e grava capturas. Só liga com argumentos de usuário, depois do `--`; rode com janela, não com `--headless`, para as capturas saírem:
+
+```powershell
+& $env:GODOT --path game -- --driver=movimento --saida=C:\caminho\da\pasta
+```
+
+Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse` e `animacao` (imprime no console se a animação de andar está ligada). `--reduzir-animacoes` liga a redução de animações. Ele usa o save do usuário do Godot (`%APPDATA%\Godot\app_userdata\`), então faça uma cópia antes se quiser preservar seus Perfis.
 
 ## Telas de referência
 

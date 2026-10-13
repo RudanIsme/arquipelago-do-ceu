@@ -52,6 +52,25 @@ public partial class DevDriver : Node
 		await Wait(0.3);
 	}
 
+	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
+
+	// Segura uma ação de movimento, como uma tecla pressionada.
+	public async Task Hold(string action, double seconds)
+	{
+		Input.ActionPress(action);
+		await Wait(seconds);
+		Input.ActionRelease(action);
+	}
+
+	// Clica no centro de um hexágono do Lobby, como o mouse faria.
+	public async Task ClickHex(int q, int r)
+	{
+		var camera = GetViewport().GetCamera3D();
+		var screen = camera.UnprojectPosition(Lobby.HexToWorld(q, r));
+		Input.ParseInputEvent(new InputEventMouseButton { Position = screen, GlobalPosition = screen, ButtonIndex = MouseButton.Left, Pressed = true });
+		await Wait(0.1);
+	}
+
 	public async Task Type(string text)
 	{
 		var input = GetTree().Root.FindChildren("*", "LineEdit", true, false).Cast<LineEdit>().FirstOrDefault(l => l.IsVisibleInTree());
@@ -99,6 +118,34 @@ static class Scenarios
 				await d.Shot("03-editor-cafe-azul");
 				await d.Press("Pronto");
 				await d.Shot("04-fechado");
+				break;
+			case "movimento":
+				await d.Shot("01-parado");
+				await d.Hold(Controls.Right, 0.8);
+				await d.Shot("02-andou-para-a-direita");
+				await d.Hold(Controls.Left, 2.6);
+				await d.Shot("03-contra-a-arvore");
+				await d.Hold(Controls.Up, 4.0);
+				await d.Shot("04-contra-a-borda");
+				break;
+			case "animacao":
+				GD.Print($"Parado: andando={d.Player!.IsWalkingAnimation}");
+				Input.ActionPress(Controls.Right);
+				await d.Wait(0.5);
+				GD.Print($"Andando: andando={d.Player.IsWalkingAnimation}");
+				Input.ActionRelease(Controls.Right);
+				await d.Wait(0.4);
+				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
+				break;
+			case "mouse":
+				await d.ClickHex(3, -4);
+				await d.Wait(0.9);
+				await d.Shot("01-a-caminho");
+				await d.Wait(2.5);
+				await d.Shot("02-chegou");
+				await d.ClickHex(-3, 1);
+				await d.Wait(4.5);
+				await d.Shot("03-clique-na-arvore");
 				break;
 			default:
 				GD.PushError($"Piloto: cenário '{name}' não existe.");
