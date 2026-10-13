@@ -42,6 +42,8 @@ public partial class Player : Node3D
 
 	public bool IsWalkingAnimation => view.IsWalkingAnimation;
 
+	public Vector2 GroundPosition => mover.Position;
+
 	public bool ReduceMotion
 	{
 		get => view.ReduceMotion;

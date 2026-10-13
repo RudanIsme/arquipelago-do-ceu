@@ -17,7 +17,7 @@ public sealed class ProfileServiceTests : IDisposable
 	ProfileService Abrir()
 	{
 		var store = new SaveStore(Caminho);
-		return new ProfileService(store, regras, store.Load().Value!.Data, () => $"id-{++contador}");
+		return new ProfileService(new SaveSession(store, store.Load().Value!.Data), regras, () => $"id-{++contador}");
 	}
 
 	// --- #11: criar
@@ -243,7 +243,7 @@ public sealed class ProfileServiceTests : IDisposable
 			Appearance = new AppearanceCatalog([new AppearanceCategory("skinTone", "Tom de pele", [new AppearanceOption("marfim", "Marfim", "#F7D9C4")])]),
 		};
 		var store = new SaveStore(Caminho);
-		var reaberto = new ProfileService(store, catalogoMenor, store.Load().Value!.Data, () => "x");
+		var reaberto = new ProfileService(new SaveSession(store, store.Load().Value!.Data), catalogoMenor, () => "x");
 
 		Assert.Equal("marfim", reaberto.AppearanceOf(reaberto.Find(id).Value!).Single().Option.Id);
 	}

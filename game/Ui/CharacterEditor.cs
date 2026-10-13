@@ -71,7 +71,7 @@ public partial class CharacterEditor : Control
 
 		var camera = new Camera3D { Fov = 28f, Current = true };
 		viewport.AddChild(camera);
-		camera.LookAtFromPosition(new Vector3(0f, 0.65f, 3.4f), new Vector3(0f, 0.6f, 0f), Vector3.Up);
+		camera.LookAtFromPosition(new Vector3(0f, 0.8f, 4.5f), new Vector3(0f, 0.75f, 0f), Vector3.Up);
 		viewport.AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-35f, -25f, 0f), LightEnergy = 1.2f });
 		viewport.AddChild(new WorldEnvironment
 		{

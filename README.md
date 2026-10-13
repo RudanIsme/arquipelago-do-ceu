@@ -67,7 +67,7 @@ dotnet test game.tests
 
 Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil e as telas de Perfil e de Personagem.
 
-Controles no Lobby: WASD ou setas (relativo à tela), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa).
+Controles no Lobby: WASD ou setas (relativo à tela), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
 
 ### Piloto de desenvolvimento
 
@@ -77,7 +77,7 @@ O `DevDriver` percorre o jogo como uma criança faria (clica, digita, segura tec
 & $env:GODOT --path game -- --driver=movimento --saida=C:\caminho\da\pasta
 ```
 
-Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse` e `animacao` (imprime no console se a animação de andar está ligada). `--reduzir-animacoes` liga a redução de animações. Ele usa o save do usuário do Godot (`%APPDATA%\Godot\app_userdata\`), então faça uma cópia antes se quiser preservar seus Perfis.
+Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config` e `animacao` (imprime no console se a animação de andar está ligada). `--reduzir-animacoes` liga a redução de animações. Ele usa o save do usuário do Godot (`%APPDATA%\Godot\app_userdata\`), então faça uma cópia antes se quiser preservar seus Perfis.
 
 ## Telas de referência
 

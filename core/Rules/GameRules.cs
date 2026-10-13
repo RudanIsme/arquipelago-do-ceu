@@ -15,7 +15,9 @@ public sealed record GameRules(
 	AdaptiveRules Adaptive,
 	IReadOnlyList<int> LeitnerIntervalsDays,
 	ProfileRules Profile,
-	AppearanceCatalog Appearance)
+	AppearanceCatalog Appearance,
+	SettingsRules Settings,
+	LobbyRules Lobby)
 {
 	// Limites que impedem um arquivo editado à mão de deixar o jogo injogável (Energia 0, por exemplo).
 	const int MaxEnergyLimit = 99;
@@ -46,7 +48,9 @@ public sealed record GameRules(
 			?? CheckAdaptive(dto.Adaptive)
 			?? CheckLeitner(dto.LeitnerIntervalsDays)
 			?? CheckProfile(dto.Profile)
-			?? AppearanceChecks.Check(dto.Appearance);
+			?? AppearanceChecks.Check(dto.Appearance)
+			?? LobbyChecks.CheckSettings(dto.Settings)
+			?? LobbyChecks.CheckLobby(dto.Lobby);
 		if (error is not null) return Fail(error);
 
 		return Result<GameRules>.Ok(new GameRules(
@@ -59,7 +63,9 @@ public sealed record GameRules(
 				dto.Adaptive.HintsToLevelDown!.Value),
 			Array.AsReadOnly(dto.LeitnerIntervalsDays!),
 			new ProfileRules(dto.Profile!.MaxNicknameLength!.Value, dto.Profile.MaxProfiles!.Value),
-			AppearanceChecks.Build(dto.Appearance!)));
+			AppearanceChecks.Build(dto.Appearance!),
+			LobbyChecks.BuildSettings(dto.Settings!),
+			LobbyChecks.BuildLobby(dto.Lobby!)));
 	}
 
 	static string? CheckNames(Dto dto)
@@ -123,7 +129,9 @@ public sealed record GameRules(
 		AdaptiveDto? Adaptive,
 		int[]? LeitnerIntervalsDays,
 		ProfileDto? Profile,
-		AppearanceDto? Appearance);
+		AppearanceDto? Appearance,
+		SettingsDto? Settings,
+		LobbyDto? Lobby);
 
 	sealed record ProfileDto(int? MaxNicknameLength, int? MaxProfiles);
 
