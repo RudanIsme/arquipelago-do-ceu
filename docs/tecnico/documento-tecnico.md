@@ -36,7 +36,7 @@ Hexagonal com DDD pragmático (ver `docs/adr/0001-arquitetura-hexagonal-pragmati
 | Aplicação | Casos de uso e as **portas** (interfaces): salvar, falar, rede, relógio, sorteio | Domínio |
 | Adaptadores | Godot (cenas, nós, entrada), arquivo de save, voz do sistema, cliente de rede | Aplicação e Domínio |
 
-Domínio e Aplicação ficam numa biblioteca C# **sem referência ao Godot**, em `core/`, para o compilador impedir o vazamento. `game/` guarda os adaptadores do Godot e a raiz de composição (`Main`), que monta tudo. A biblioteca `core/` nasce junto com o primeiro código de regra, e não antes. Os testes das duas camadas rodam sem abrir o Godot.
+Domínio e Aplicação ficam numa biblioteca C# **sem referência ao Godot**, em `core/`, para o compilador impedir o vazamento. `game/` guarda os adaptadores do Godot e a raiz de composição (`Main`), que monta tudo. A biblioteca `core/` nasce junto com o primeiro código de regra, e não antes. Os testes das duas camadas rodam sem abrir o Godot. Adaptadores que não precisam do Godot, como o arquivo de save (`System.IO` e JSON), também ficam em `core/`, para serem testados sem o motor; o Godot só informa o caminho (`user://`) ao criá-los.
 
 Regras para manter o código simples:
 

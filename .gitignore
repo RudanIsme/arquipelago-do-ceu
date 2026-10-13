@@ -29,3 +29,6 @@ bin/
 obj/
 .vs/
 *.user
+
+# Saída da exportação
+build/
