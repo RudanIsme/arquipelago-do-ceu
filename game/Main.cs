@@ -3,6 +3,8 @@ using System.Linq;
 using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
+using ArquipelagoDoCeu.Settings;
+using ArquipelagoDoCeu.World;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -12,23 +14,33 @@ public partial class Main : Node3D
 {
 	const string RulesPath = "res://data/rules.json";
 	const string SavePath = "user://save.json";
+	const string DyslexiaFontPath = "res://assets/fontes/OpenDyslexic-Regular.otf";
+	const int DyslexiaLetterSpacing = 1;
 
 	CanvasLayer ui = null!;
+	Control uiRoot = null!;
 	Label title = null!;
 	Label notice = null!;
+	Label controlHint = null!;
 	GameRules rules = null!;
 	ProfileService profiles = null!;
+	SettingsService settings = null!;
 	ProfileScreen? screen;
 	CharacterEditor? editor;
+	OverlayScreen? overlay;
 	Button characterButton = null!;
+	Button interactButton = null!;
+	Control bottomBar = null!;
 	ProfileSave? current;
+	Lobby lobby = null!;
 	Player player = null!;
+	string? interactTarget;
+	float uiScale = 1f;
 
 	public override void _Ready()
 	{
 		ui = GetNode<CanvasLayer>("Interface");
-		title = GetNode<Label>("Interface/Message");
-		notice = GetNode<Label>("Interface/Notice");
+		BuildUiRoot();
 
 		var loadedRules = LoadRules();
 		if (!loadedRules.IsOk) { Stop(loadedRules.Error!); return; }
@@ -39,24 +51,82 @@ public partial class Main : Node3D
 		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
-		profiles = new ProfileService(store, rules, save.Value!, () => Guid.NewGuid().ToString("N"));
+		var session = new SaveSession(store, save.Value!);
+		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
+		settings = new SettingsService(session, rules);
 
 		Controls.Register();
-		var lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
+		lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
+		lobby.Rules = rules.Lobby;
 		AddChild(lobby);
-		player = new Player(lobby.Grid, lobby.Camera) { Visible = false, ReduceMotion = OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes") };
+		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
 		AddChild(player);
+
+		BuildHud();
+		settings.Changed += ApplySettings;
+		ApplySettings(settings.Current);
+		StartFlow();
+		DevDriver.AttachIfRequested(this);
+
+		GD.Print("Cena inicial pronta.");
+	}
+
+	// Toda a interface vive num Control que muda de escala: o tamanho do texto vale na hora em todas as telas,
+	// e o Control cobre a janela inteira na nova escala para as âncoras continuarem certas.
+	void BuildUiRoot()
+	{
+		uiRoot = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+		ui.AddChild(uiRoot);
+		foreach (var name in new[] { "Message", "Notice" })
+		{
+			var label = ui.GetNode<Label>(name);
+			ui.RemoveChild(label);
+			uiRoot.AddChild(label);
+		}
+		title = uiRoot.GetNode<Label>("Message");
+		notice = uiRoot.GetNode<Label>("Notice");
+		title.HorizontalAlignment = HorizontalAlignment.Right;
+		title.OffsetRight = -16;
+		UiKit.Outline(title);
+		UiKit.Outline(notice);
+		GetViewport().SizeChanged += FitUiRoot;
+		FitUiRoot();
+	}
+
+	void FitUiRoot()
+	{
+		uiRoot.Scale = Vector2.One * uiScale;
+		uiRoot.Size = GetViewport().GetVisibleRect().Size / uiScale;
+	}
+
+	void BuildHud()
+	{
 		var hud = new HBoxContainer();
 		hud.AddThemeConstantOverride("separation", 8);
 		hud.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
 		characterButton = UiKit.BigButton("Personagem", ShowEditor, 220);
 		characterButton.Visible = false;
 		hud.AddChild(characterButton);
-		ui.AddChild(hud);
-		StartFlow();
-		DevDriver.AttachIfRequested(this);
+		hud.AddChild(UiKit.BigButton("Configurações", ShowSettings, 260));
+		uiRoot.AddChild(hud);
 
-		GD.Print("Cena inicial pronta.");
+		// O botão de interação e a dica de controle ficam embaixo, centralizados, longe das telas do alto.
+		var bottom = bottomBar = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End, MouseFilter = Control.MouseFilterEnum.Ignore };
+		bottom.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomWide);
+		bottom.OffsetTop = -200;
+		bottom.OffsetBottom = -90;
+		bottom.AddThemeConstantOverride("separation", 8);
+		interactButton = UiKit.BigButton("", () => Interact(interactTarget), 380);
+		interactButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+		interactButton.Visible = false;
+		bottom.AddChild(interactButton);
+		controlHint = UiKit.Hint("");
+		controlHint.CustomMinimumSize = new Vector2(760, 0);
+		var hintBar = UiKit.HintBar(controlHint);
+		hintBar.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+
+		bottom.AddChild(hintBar);
+		uiRoot.AddChild(bottom);
 	}
 
 	void Stop(string text)
@@ -99,6 +169,24 @@ public partial class Main : Node3D
 		return written;
 	}
 
+	// Aplica as configurações em tudo que já está na tela; é chamado ao abrir o jogo e a cada mudança.
+	void ApplySettings(GameSettings s)
+	{
+		uiScale = s.TextScale;
+		FitUiRoot();
+
+		Font? font = null;
+		if (s.DyslexiaFont && GD.Load<FontFile>(DyslexiaFontPath) is { } file)
+			font = new FontVariation { BaseFont = file, SpacingGlyph = DyslexiaLetterSpacing };
+		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
+		lobby.SetFont(font);
+
+		player.ReduceMotion = s.ReduceMotion || OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes");
+		lobby.ReduceMotion = player.ReduceMotion;
+		controlHint.Text = ControlHints.For(s.Controls);
+		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
+	}
+
 	// Um só Perfil entra direto; zero ou vários passam pela tela de Perfis.
 	void StartFlow()
 	{
@@ -108,10 +196,10 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
-		if (screen is not null) return;
+		if (screen is not null || overlay is not null || editor is not null) return;
 		screen = new ProfileScreen(profiles);
 		screen.Chosen += Enter;
-		ui.AddChild(screen);
+		uiRoot.AddChild(screen);
 		UpdatePlayerControl();
 	}
 
@@ -132,7 +220,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
-		if (editor is not null || screen is not null || current is null) return;
+		if (editor is not null || screen is not null || overlay is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
 		editor.Done += () =>
@@ -141,8 +229,39 @@ public partial class Main : Node3D
 			editor = null;
 			UpdatePlayerControl();
 		};
-		ui.AddChild(editor);
+		uiRoot.AddChild(editor);
 		UpdatePlayerControl();
+	}
+
+	void ShowSettings() => ShowOverlay(new SettingsScreen(settings, current?.Nickname, ShowProfiles));
+
+	void ShowOverlay(OverlayScreen next)
+	{
+		if (overlay is not null || screen is not null || editor is not null)
+		{
+			next.QueueFree();
+			return;
+		}
+		overlay = next;
+		next.Closed += () =>
+		{
+			next.QueueFree();
+			overlay = null;
+			UpdatePlayerControl();
+		};
+		uiRoot.AddChild(next);
+		UpdatePlayerControl();
+	}
+
+	void Interact(string? target)
+	{
+		if (target is null || !player.Enabled) return;
+		switch (target)
+		{
+			case "album": ShowOverlay(new AlbumScreen()); break;
+			case "portal": ShowOverlay(new PortalScreen()); break;
+			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
+		}
 	}
 
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
@@ -153,5 +272,35 @@ public partial class Main : Node3D
 	}
 
 	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
-	void UpdatePlayerControl() => player.Enabled = current is not null && screen is null && editor is null;
+	void UpdatePlayerControl()
+	{
+		player.Enabled = current is not null && screen is null && editor is null && overlay is null;
+		bottomBar.Visible = player.Enabled;
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
+	}
+
+	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
+	public override void _Process(double delta)
+	{
+		if (player is null) return;
+		var target = player.Enabled
+			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach)?.Id
+			: null;
+		if (target != interactTarget)
+		{
+			interactTarget = target;
+			lobby.Highlight(target);
+			interactButton.Visible = target is not null;
+			if (target is not null)
+			{
+				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
+				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
+			}
+		}
+
+	}
 }

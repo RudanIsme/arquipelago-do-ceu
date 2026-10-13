@@ -43,5 +43,32 @@
       },
       { "id": "accessory", "name": "Acessório", "options": [] }
     ]
+  },
+  "settings": {
+    "textSizes": [
+      { "id": "normal", "name": "Normal", "scale": 1.0 },
+      { "id": "grande", "name": "Grande", "scale": 1.2 },
+      { "id": "muito-grande", "name": "Muito grande", "scale": 1.4 }
+    ],
+    "controls": [
+      { "id": "mouse", "name": "Mouse" },
+      { "id": "teclado", "name": "Teclado" },
+      { "id": "toque", "name": "Toque" }
+    ],
+    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse" }
+  },
+  "lobby": {
+    "interactionReach": 2.2,
+    "places": [
+      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -13.4, "z": 4.9 },
+      { "id": "portugues", "name": "Torre das Letras", "sign": "Em construção", "model": "torre-letras", "x": 4.9, "z": -13.4 },
+      { "id": "ciencias", "name": "Ilha das Ciências", "sign": "Em breve", "x": -7.8, "z": 14.8 },
+      { "id": "historia", "name": "Ilha da História", "sign": "Em breve", "x": 11.3, "z": 11.3 },
+      { "id": "geografia", "name": "Ilha da Geografia", "sign": "Em breve", "x": 14.9, "z": -7.8 }
+    ],
+    "objects": [
+      { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
+      { "id": "portal", "name": "Portal de viagem", "prompt": "Usar o portal", "model": "portal", "q": -1, "r": 4 }
+    ]
   }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.World;
 using Godot;
 
@@ -12,6 +13,9 @@ public partial class Lobby : Node3D
 	const float TileSize = 1f;         // do centro ao vértice; a grade de colisão (HexGrid) também assume 1
 	const float TileThickness = 0.5f;
 	const float TileGap = 0.98f;       // fresta fina entre os hexágonos
+	const float PortalHeight = 2.8f;
+	const float LecternHeight = 1.4f;
+	const float TowerHeight = 5f;
 
 	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3 }
 
@@ -27,6 +31,18 @@ public partial class Lobby : Node3D
 	public HexGrid Grid { get; private set; } = null!;
 	public Camera3D Camera { get; private set; } = null!;
 
+	// Lugares, objetos e alcance vêm dos dados; quem instancia o Lobby define isto antes de adicioná-lo à cena.
+	public LobbyRules Rules { get; set; } = null!;
+
+	public IReadOnlyList<Interactable> Interactables { get; private set; } = [];
+
+	// Sem animação o indicador do objeto fica parado.
+	public bool ReduceMotion { get; set; }
+
+	readonly List<Label3D> signs = new();
+	readonly Dictionary<string, Node3D> markers = new();
+	double clock;
+
 	public override void _Ready()
 	{
 		BuildMap();
@@ -36,6 +52,8 @@ public partial class Lobby : Node3D
 		AddTerrain();
 		AddRock();
 		AddTrees();
+		AddObjects();
+		AddPlaces();
 	}
 
 	// Hexágono "flat-top": vértices à esquerda e à direita, como nos mockups.
@@ -56,7 +74,8 @@ public partial class Lobby : Node3D
 	}
 
 	IEnumerable<HexCell> BlockedCells() =>
-		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y));
+		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
+			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R)));
 
 	void AddEnvironment()
 	{
@@ -83,7 +102,7 @@ public partial class Lobby : Node3D
 	// Ortográfica e isométrica de verdade: a câmera olha a origem a 35,264 graus de elevação.
 	void AddCamera()
 	{
-		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 18f, Current = true };
+		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 28f, Current = true };
 		AddChild(Camera);
 		Camera.LookAtFromPosition(new Vector3(12f, 12f, 12f), Vector3.Zero, Vector3.Up);
 	}
@@ -228,6 +247,160 @@ public partial class Lobby : Node3D
 			lowest = Mathf.Min(lowest, box.Position.Y);
 		}
 		model.Position = lowest == float.MaxValue ? ground : ground - new Vector3(0f, lowest, 0f);
+	}
+
+	// Objetos com que a criança interage: o modelo, os hexágonos bloqueados (em BlockedCells) e um indicador
+	// em forma de seta, que só aparece quando o Personagem está ao alcance (a cor nunca é a única pista).
+	void AddObjects()
+	{
+		var list = new List<Interactable>();
+		foreach (var item in Rules.Objects)
+		{
+			var ground = HexToWorld(item.Q, item.R);
+			list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
+			var height = item.Id == "portal" ? PortalHeight : LecternHeight;
+			var top = height;
+			if (LoadModel(item.Model) is { } model)
+			{
+				AddChild(model);
+				top = FitToHeight(model, height, ground);
+			}
+			var marker = new MeshInstance3D
+			{
+				Mesh = new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0f, Height = 0.55f, RadialSegments = 4, Rings = 0 },
+				MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#F2B632"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+				Position = ground + new Vector3(0f, top + 0.7f, 0f),
+				Visible = false,
+			};
+			AddChild(marker);
+			markers[item.Id] = marker;
+		}
+		Interactables = list;
+	}
+
+	// Ilhas e torres ao redor, cada uma com a placa; torre sem modelo vira uma torre simples em greybox.
+	void AddPlaces()
+	{
+		foreach (var place in Rules.Places)
+		{
+			var center = new Vector3(place.X, 0f, place.Z);
+			AddIslet(center);
+			var top = 5.2f;
+			if (LoadModel(place.Model) is { } model)
+			{
+				AddChild(model);
+				top = FitToHeight(model, TowerHeight, center + new Vector3(0f, 0.2f, 0f));
+			}
+			else AddGreyboxTower(center + new Vector3(0f, 0.2f, 0f));
+
+			var sign = new Label3D
+			{
+				Text = $"{place.Name}\n{place.Sign}",
+				Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+				FontSize = 56,
+				PixelSize = 0.012f,
+				OutlineSize = 16,
+				OutlineModulate = Color.FromHtml("#1B1424"),
+				Modulate = Color.FromHtml("#FFF6E0"),
+				NoDepthTest = true,
+				Position = center + new Vector3(0f, top + 1.1f, 0f),
+			};
+			AddChild(sign);
+			signs.Add(sign);
+		}
+	}
+
+	void AddIslet(Vector3 center)
+	{
+		var grass = new MeshInstance3D
+		{
+			Mesh = new CylinderMesh { TopRadius = 2.3f, BottomRadius = 2.3f, Height = 0.4f, RadialSegments = 6, Rings = 0 },
+			MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#5DB84A"), Roughness = 1f },
+			Position = center + new Vector3(0f, -0.2f, 0f),
+		};
+		var rock = new MeshInstance3D
+		{
+			Mesh = new CylinderMesh { TopRadius = 2.1f, BottomRadius = 0.5f, Height = 2.8f, RadialSegments = 6, Rings = 0 },
+			MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#A99A8C"), Roughness = 1f },
+			Position = center + new Vector3(0f, -1.6f, 0f),
+		};
+		AddChild(grass);
+		AddChild(rock);
+	}
+
+	void AddGreyboxTower(Vector3 ground)
+	{
+		var body = new MeshInstance3D
+		{
+			Mesh = new CylinderMesh { TopRadius = 0.8f, BottomRadius = 1.0f, Height = 3.4f, RadialSegments = 8, Rings = 0 },
+			MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#D8CFC0"), Roughness = 1f },
+			Position = ground + new Vector3(0f, 1.7f, 0f),
+		};
+		var roof = new MeshInstance3D
+		{
+			Mesh = new CylinderMesh { TopRadius = 0f, BottomRadius = 1.2f, Height = 1.8f, RadialSegments = 8, Rings = 0 },
+			MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#7A44D1"), Roughness = 1f },
+			Position = ground + new Vector3(0f, 4.3f, 0f),
+		};
+		AddChild(body);
+		AddChild(roof);
+	}
+
+	static Node3D? LoadModel(string? name)
+	{
+		if (name is null) return null;
+		var path = $"res://assets/modelos/{name}.glb";
+		var scene = GD.Load<PackedScene>(path);
+		if (scene is null) GD.PushError($"Não foi possível carregar o modelo {path}.");
+		return scene?.Instantiate<Node3D>();
+	}
+
+	// Escala o modelo para a altura do jogo e assenta a base no chão; devolve a altura do topo no mundo.
+	static float FitToHeight(Node3D model, float height, Vector3 ground)
+	{
+		var box = WorldBox(model);
+		if (box.Size.Y > 0.0001f) model.Scale = Vector3.One * (height / box.Size.Y);
+		PlaceOnGround(model, ground);
+		return ground.Y + height;
+	}
+
+	static Aabb WorldBox(Node3D model)
+	{
+		Aabb? merged = null;
+		foreach (var node in model.FindChildren("*", "MeshInstance3D", true, false))
+		{
+			var mesh = (MeshInstance3D)node;
+			var box = mesh.GlobalTransform * mesh.GetAabb();
+			merged = merged is null ? box : merged.Value.Merge(box);
+		}
+		return merged ?? new Aabb();
+	}
+
+	// Mostra o indicador só no objeto ao alcance (ou em nenhum, com null).
+	public void Highlight(string? objectId)
+	{
+		foreach (var (id, marker) in markers) marker.Visible = id == objectId;
+	}
+
+	public void SetFont(Font? font)
+	{
+		foreach (var sign in signs) sign.Font = font;
+	}
+
+	public override void _Process(double delta)
+	{
+		clock += delta;
+		var bob = ReduceMotion ? 0f : Mathf.Sin((float)clock * 4f) * 0.15f;
+		foreach (var marker in markers.Values)
+			if (marker.Visible) marker.Position = new Vector3(marker.Position.X, MarkerBaseY(marker) + bob, marker.Position.Z);
+	}
+
+	readonly Dictionary<Node3D, float> markerBase = new();
+
+	float MarkerBaseY(Node3D marker)
+	{
+		if (!markerBase.TryGetValue(marker, out var y)) markerBase[marker] = y = marker.Position.Y;
+		return y;
 	}
 
 	static float Hash01(int n)

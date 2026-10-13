@@ -27,6 +27,7 @@ void fragment() {
 
 	vec3 as_skin = a * (skin_color / skin_base);
 	vec3 as_cloth = a * (cloth_color / cloth_base);
-	ALBEDO = mix(mix(a, as_skin, skin), as_cloth, cloth);
+	// A luz do Lobby é forte; sem este ajuste os tons claros estouram para branco.
+	ALBEDO = clamp(mix(mix(a, as_skin, skin), as_cloth, cloth), 0.0, 1.0) * 0.8;
 	ROUGHNESS = 0.85;
 }

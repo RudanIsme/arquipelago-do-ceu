@@ -9,3 +9,7 @@ Gerados com a **Meshy** (https://www.meshy.ai) pela API de Image to 3D, a partir
 ## Cenário provisório
 
 Os kits CC0 da KayKit (Dungeon e Medieval Hexagon) estão previstos como cenário provisório; serão listados aqui quando entrarem.
+
+## Fonte para dislexia (`game/assets/fontes/`)
+
+**OpenDyslexic Regular**, de Abbie Gonzalez (https://opendyslexic.org), sob a **SIL Open Font License 1.1**, que permite usar e distribuir a fonte junto com o jogo, desde que o aviso e a licença acompanhem (`OFL-OpenDyslexic.txt`). Baixada de https://github.com/antijingoist/opendyslexic.

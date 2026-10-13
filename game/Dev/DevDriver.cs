@@ -71,6 +71,23 @@ public partial class DevDriver : Node
 		await Wait(0.1);
 	}
 
+	// Aperta e solta uma ação por um instante, como um toque de tecla.
+	public async Task Tap(string action)
+	{
+		Input.ParseInputEvent(new InputEventAction { Action = action, Pressed = true });
+		await Wait(0.1);
+		Input.ParseInputEvent(new InputEventAction { Action = action, Pressed = false });
+		await Wait(0.3);
+	}
+
+	public async Task PressKey(Key key)
+	{
+		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = true });
+		await Wait(0.1);
+		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
+		await Wait(0.3);
+	}
+
 	public async Task Type(string text)
 	{
 		var input = GetTree().Root.FindChildren("*", "LineEdit", true, false).Cast<LineEdit>().FirstOrDefault(l => l.IsVisibleInTree());
@@ -127,6 +144,56 @@ static class Scenarios
 				await d.Shot("03-contra-a-arvore");
 				await d.Hold(Controls.Up, 4.0);
 				await d.Shot("04-contra-a-borda");
+				break;
+			case "lobby":
+				await d.Shot("01-visao-geral");
+				break;
+			case "album":
+				await d.ClickHex(-2, -2);
+				await d.Wait(3.2);
+				await d.Shot("01-perto-do-album");
+				await d.Press("Abrir o Álbum");
+				await d.Shot("02-album-criaturas");
+				await d.Press("Cosméticos");
+				await d.Shot("03-album-cosmeticos");
+				await d.Press("Fechar");
+				await d.Shot("04-de-volta-ao-lobby");
+				break;
+			case "portal":
+				await d.ClickHex(-1, 4);
+				await d.Wait(3.5);
+				await d.Shot("01-perto-do-portal");
+				await d.Press("Usar o portal");
+				await d.Shot("02-portal");
+				await d.Press("Fechar");
+				await d.Shot("03-de-volta-ao-lobby");
+				break;
+			case "tecla":
+				await d.ClickHex(-2, -2);
+				await d.Wait(3.2);
+				await d.Tap(Controls.Interact);
+				await d.Shot("01-abriu-com-a-tecla");
+				await d.PressKey(Key.Escape);
+				await d.Shot("02-fechou-com-esc");
+				break;
+			case "config":
+				await d.Press("Configurações");
+				await d.Shot("01-jogo");
+				await d.Press("Acessibilidade");
+				await d.Shot("02-acessibilidade");
+				await d.Press("Muito grande");
+				await d.Shot("03-texto-muito-grande");
+				await d.Press("Fonte para dislexia: Desligado");
+				await d.Shot("04-fonte-dislexia");
+				await d.Press("Normal");
+				await d.Press("Redução de animações: Desligado");
+				await d.Press("Modo calmo: Desligado");
+				await d.Shot("05-opcoes-ligadas");
+				await d.Press("Controles");
+				await d.Press("Teclado");
+				await d.Shot("06-controles-teclado");
+				await d.Press("Fechar");
+				await d.Shot("07-lobby-com-dica-de-teclado");
 				break;
 			case "animacao":
 				GD.Print($"Parado: andando={d.Player!.IsWalkingAnimation}");
