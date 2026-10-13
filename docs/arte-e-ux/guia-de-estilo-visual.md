@@ -35,7 +35,7 @@ Cor viva, nunca pastel. O erro mais comum das primeiras folhas foi o chão sair 
 
 ## 3. Chão hexagonal (decidido)
 
-O chão do Lobby e das salas é de **hexágonos**, como nos mockups. O padrão de geração é a folha `18-chao-hexagonal-lobby-b` (peças lisas e simples, que se encaixam numa grade), com as cores da seção 1.
+O chão do Lobby e das salas é de **hexágonos**, como nos mockups. O padrão de **forma** é a folha `18-chao-hexagonal-lobby-b` (peças lisas e simples, que se encaixam numa grade) e o de **cor e vida** é a `30-chao-hexagonal-vivo`, que é a mesma folha repintada com as cores da seção 1.
 
 - Um prisma hexagonal por tile, com topo e uma lateral de terra ou rocha visível.
 - Variantes: grama lisa, grama com flores, caminho (reto, curva, T, ponta), água, borda de penhasco com rocha embaixo, ponte, poço de pedra.
@@ -56,6 +56,8 @@ Há **um corpo base só**, neutro, sem gênero marcado. A aparência vem de part
 | Roupa e acessórios | Pelo Papel e pelos Cosméticos | os kits do Matemático e do Escriba |
 
 O rosto **não troca de malha**, só de textura, para não quebrar as expressões. O cabelo é gerado em tom neutro e ganha cor no Godot.
+
+**O corpo base tem de sair com o rosto liso**, sem olhos, sobrancelhas nem boca pintados, porque essas partes entram por cima, como decalque. No primeiro teste de Image to 3D o rosto veio com olhos e sobrancelhas na textura, o que impede a troca. Olhos podem ser gerados por IA (a folha `31a-olhos` serve); **sobrancelhas e bocas são formas simples e devem ser desenhadas em vetor**, com a paleta do guia, porque a IA gerou bocas com dentes e sobrancelhas que pareciam bigode.
 
 ## 5. Criaturas
 
@@ -97,3 +99,30 @@ Cada torre tem uma identidade própria que se vê de longe e se move devagar. **
 5. Confira a folha contra o checklist abaixo antes de passar para o 3D. Refazer uma folha custa 3 créditos.
 
 **Checklist de aprovação:** cores da paleta e saturação viva; silhueta legível; sem texto, letra, número ou etiqueta; sem dente, arma ou osso; chanfros e arredondados; combina com as outras folhas aprovadas.
+
+## 8. Orçamento de polígonos e texturas
+
+A otimização é requisito: o jogo roda em PC e em tablets Android de gama média. Os limites abaixo são **proposta** e devem ser confirmados na prova técnica, medindo em tablet real. Valem para **triângulos por modelo**, depois da redução.
+
+| Asset | Limite |
+| --- | --- |
+| Corpo base com roupa básica | 3.500 |
+| Cabelo (por peça) | 600 |
+| Roupa do Papel (conjunto) | 1.000 |
+| Acessório ou ferramenta | 400 |
+| Criatura | 2.500 (chefe: 5.000) |
+| Guia e outros NPCs | 3.000 |
+| Tile hexagonal | 100, instanciado em lote (um mesmo modelo repetido) |
+| Árvore, pedra e prop pequeno | 300 a 600 |
+| Prop grande (casa, ponte) | 1.500 |
+| Torre | 6.000 |
+| Peça que orbita a torre (medalhão, peça de madeira) | 150, no máximo 40 por torre, instanciadas |
+| Tudo o que aparece numa sala ou no Lobby | 100.000 a 150.000 (a medir em tablet) |
+
+**Texturas:** um material por modelo, **só cor base** (sem normal, metálico nem rugosidade, porque o estilo é pintado à mão). 1024 pixels para personagem e criatura, 512 para prop e atlas compartilhado de 1024 para os tiles, com compressão de GPU no import do Godot.
+
+**Como chegar lá no Meshy** (medido no corpo base):
+
+- O Image to 3D com `target_polycount` 12.000 gerou **12.461 triângulos** e uma textura de 2048 pixels (2,7 MB). Muito para um personagem chibi.
+- O *remesh* da Meshy (5 créditos) levou o mesmo modelo para **3.671 triângulos** com o visual praticamente idêntico, **mas** devolveu 3 texturas PNG (2048, 2048 e 4096 pixels, 8 MB no total). Só a cor base é usada; o resto se descarta.
+- Portanto: gerar com `should_remesh` e `target_polycount` já no limite da tabela, e **medir os triângulos do arquivo** antes de aceitar. Uma verificação automática de triângulos dos modelos na CI é recomendada quando houver modelos no repositório.
