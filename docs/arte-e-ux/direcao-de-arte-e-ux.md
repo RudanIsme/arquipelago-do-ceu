@@ -82,7 +82,7 @@ Todas as ações funcionam com toque, mouse ou teclado, e nenhuma depende de cor
 - **Modo calmo:** sem tempo, sem câmera lenta, menos partículas e criaturas que esperam paradas.
 - **Contraste:** texto claro sobre painéis escuros com razão de pelo menos 4,5:1. Números e sílabas sempre com contorno.
 - **Daltonismo:** os heróis se distinguem pelo anel e pelo ícone, não só pela cor.
-- **Movimento:** há opções para desligar o desfoque e o tremor da câmera.
+- **Movimento e efeitos:** a redução de animações para a câmera de deslizar e o zoom de se aproximar aos poucos; a opção "Efeitos visuais reduzidos" (nas configurações de acessibilidade) desliga o desfoque de profundidade, o brilho e o SSAO. O SSAO só é desenhado no renderizador Forward+; o jogo usa o Mobile, que o ignora.
 
 ## Pipeline de arte e escopo do MVP
 

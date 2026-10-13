@@ -1,0 +1,16 @@
+{
+  "id": "por-ccv-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-ccv",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "prato", "image": "prato" },
+  "prompt": "Esta criatura se chama prato. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: prato. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 5 letras e termina com a letra O."],
+  "explanation": "O nome é PRATO, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

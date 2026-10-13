@@ -1,0 +1,16 @@
+{
+  "id": "mat-subt99-005",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "subtracao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 25, "pieces": [20,10,5], "maxPieces": 3 },
+  "prompt": "Faça 25 juntando e tirando.",
+  "hints": ["Junte 20 e 10 primeiro: dá 30.", "30 passou de 25. Quanto precisa tirar?", "30 menos 5 dá 25."],
+  "explanation": "20 + 10 - 5 = 25.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

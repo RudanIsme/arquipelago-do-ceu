@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "banco", "image": "banco" },
+  "prompt": "Esta criatura se chama banco. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: banco. Pense nos sons, um de cada vez.", "A primeira letra é a B.", "A palavra tem 5 letras e termina com a letra O."],
+  "explanation": "O nome é BANCO, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

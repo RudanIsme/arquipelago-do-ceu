@@ -1,0 +1,16 @@
+{
+  "id": "por-pbtdfv-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-p-b-t-d-f-v",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "bata", "image": "bata" },
+  "prompt": "Esta criatura se chama bata. É bata com B, não pata com P. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: bata. Pense nos sons, um de cada vez.", "A primeira letra é a B.", "A palavra tem 4 letras e termina com a letra A."],
+  "explanation": "O nome é BATA, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

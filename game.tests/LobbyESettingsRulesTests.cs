@@ -57,7 +57,7 @@ public sealed class LobbyESettingsRulesTests
 		Assert.Equal(["normal", "grande"], Regras.Settings.TextSizes.Select(t => t.Id));
 		Assert.Equal(1.25f, Regras.Settings.TextSizes[1].Scale);
 		Assert.Equal(["mouse", "teclado", "toque"], Regras.Settings.Controls.Select(c => c.Id));
-		Assert.Equal(new SettingsDefaults("normal", true, false, false, false, "mouse", "normal"), Regras.Settings.Defaults);
+		Assert.Equal(new SettingsDefaults("normal", true, false, false, false, "mouse", "normal", false), Regras.Settings.Defaults);
 	}
 
 	[Theory]

@@ -27,7 +27,7 @@ public sealed class SettingsServiceTests : IDisposable
 	{
 		var atual = Abrir().Current;
 
-		Assert.Equal(new GameSettings("normal", 1.0f, true, false, false, false, "mouse", null, "normal", 1.0f), atual);
+		Assert.Equal(new GameSettings("normal", 1.0f, true, false, false, false, "mouse", null, "normal", 1.0f, false), atual);
 	}
 
 	[Fact]
@@ -38,7 +38,7 @@ public sealed class SettingsServiceTests : IDisposable
 		Assert.True(servico.Change(s => s with { TextSize = "grande", ReduceMotion = true, DyslexiaFont = true, CalmMode = true, Voice = false, Controls = "toque" }).IsOk);
 
 		var reaberto = Abrir().Current;
-		Assert.Equal(new GameSettings("grande", 1.25f, false, true, true, true, "toque", null, "normal", 1.0f), reaberto);
+		Assert.Equal(new GameSettings("grande", 1.25f, false, true, true, true, "toque", null, "normal", 1.0f, false), reaberto);
 	}
 
 	[Fact]

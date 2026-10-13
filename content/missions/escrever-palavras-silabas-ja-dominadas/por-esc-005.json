@@ -1,0 +1,16 @@
+{
+  "id": "por-esc-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-palavras-silabas-ja-dominadas",
+  "bncc": ["EF02LP01","EF01LP02"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "jato", "image": "jato" },
+  "prompt": "Esta criatura se chama jato. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: jato. Pense nos sons, um de cada vez.", "A primeira letra é a J.", "A palavra tem 4 letras e termina com a letra O."],
+  "explanation": "O nome é JATO, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

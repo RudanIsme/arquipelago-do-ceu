@@ -71,6 +71,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
 		AddChild(player);
+		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion));
 		SetUpTraining();
 
 		BuildHud();
@@ -157,6 +158,8 @@ public partial class Main : Node3D
 	// Com o piloto de desenvolvimento, o jogo trabalha numa cópia do save: nada do que o piloto clica volta para o real.
 	static string ChooseSavePath()
 	{
+		// O teste de ponta a ponta fecha e reabre o jogo no mesmo save, então `--save=` aponta um arquivo que fica de uma execução para a outra.
+		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--save="))?["--save=".Length..] is { Length: > 0 } fixedPath) return fixedPath;
 		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
 		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
 		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
@@ -208,6 +211,7 @@ public partial class Main : Node3D
 			font = new FontVariation { BaseFont = file, SpacingGlyph = DyslexiaLetterSpacing };
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
+		lobby.SetEffects(s.ReduceEffects);
 		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
@@ -325,10 +329,18 @@ public partial class Main : Node3D
 		dummy = new TrainingDummy();
 		lobby.AddChild(dummy);
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
-			() => current?.Level ?? 1, () => player.Enabled, ShowOverlay, Notify);
+			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
 		AddChild(training);
 	}
 
+
+	// O Nível a que o Perfil tem acesso. Em build de depuração, `--nivel=N` o força, só para o piloto de desenvolvimento testar os Níveis 2 e 3.
+	int UnlockedLevel()
+	{
+		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--nivel="))?["--nivel=".Length..] is { } text && int.TryParse(text, out var forced))
+			return forced;
+		return current?.Level ?? 1;
+	}
 	// Avisos curtos sobre a cena somem sozinhos e também são ditos pela voz.
 	void Notify(string text)
 	{

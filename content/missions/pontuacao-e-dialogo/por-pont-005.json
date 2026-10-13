@@ -1,0 +1,16 @@
+{
+  "id": "por-pont-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "pontuacao-e-dialogo",
+  "bncc": ["EF03LP07"],
+  "year": 3,
+  "difficulty": 3,
+  "mechanic": "completar_frase",
+  "params": { "before": "Venha cá, meu amigo", "after": "", "answer": "!", "options": [".","!","?"], "image": "amigo" },
+  "prompt": "Qual sinal fecha este chamado animado?",
+  "hints": ["Chamar alguém com alegria usa o ponto de exclamação.", "O sinal tem uma linha e um ponto embaixo.", "É o ponto de exclamação."],
+  "explanation": "Chamado animado termina com ponto de exclamação.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

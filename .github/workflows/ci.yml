@@ -71,3 +71,45 @@ jobs:
         with:
           name: windows-build
           path: build/
+  e2e-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Instalar o Godot e as templates de exportação
+        run: |
+          $base = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_VERSION-stable"
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_mono_win64.zip" -OutFile godot.zip
+          Invoke-WebRequest "$base/Godot_v$env:GODOT_VERSION-stable_mono_export_templates.tpz" -OutFile templates.zip
+          Expand-Archive godot.zip -DestinationPath "$env:RUNNER_TEMP\godot"
+          Expand-Archive templates.zip -DestinationPath "$env:RUNNER_TEMP\templates"
+          $destino = "$env:APPDATA\Godot\export_templates\$env:GODOT_VERSION.stable.mono"
+          New-Item -ItemType Directory $destino -Force | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\templates\templates\*" $destino -Recurse
+          $console = Get-ChildItem "$env:RUNNER_TEMP\godot" -Recurse -Filter "*_console.exe" | Select-Object -First 1
+          "GODOT=$($console.FullName)" >> $env:GITHUB_ENV
+      - name: Copiar o conteúdo para o projeto do jogo
+        run: |
+          New-Item -ItemType Directory game/content -Force | Out-Null
+          Copy-Item content/* game/content -Recurse -Force
+      # O roteiro usa o piloto de desenvolvimento, que só existe em build de depuração; por isso este job exporta a versão de depuração.
+      - name: Exportar a versão de depuração
+        run: |
+          New-Item -ItemType Directory build-e2e -Force | Out-Null
+          & $env:GODOT --headless --path game --import
+          $log = & $env:GODOT --headless --path game --export-debug "Windows Desktop" "../build-e2e/ArquipelagoDoCeu.exe" 2>&1 | ForEach-Object { $linha = "$_"; Write-Host $linha; $linha }
+          if ($LASTEXITCODE -ne 0 -or ($log -match '^ERROR:') -or -not (Test-Path build-e2e/ArquipelagoDoCeu.console.exe)) { Write-Error "A exportação falhou."; exit 1 }
+      - name: Teste de ponta a ponta no executável (criar Perfil, andar, treinar nos dois Papéis, fechar e reabrir)
+        run: |
+          $save = Join-Path $PWD "e2e-save.json"
+          Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue
+          foreach ($etapa in "e2e-1", "e2e-2") {
+            Write-Host "== $etapa"
+            & build-e2e/ArquipelagoDoCeu.console.exe --headless -- --driver=$etapa --save=$save
+            if ($LASTEXITCODE -ne 0) { Write-Error "A etapa $etapa falhou."; exit 1 }
+          }

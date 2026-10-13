@@ -113,7 +113,7 @@ public sealed class Staff
 	public IReadOnlyList<Token> Tokens => placed.Select(p => p.Token).ToList();
 
 	// Um número vem depois de um sinal (ou abre a conta); um sinal vem depois de um número.
-	public bool CanPlaceNumber => placed.Count == 0 || placed[^1].Token.Kind == TokenKind.Plus;
+	public bool CanPlaceNumber => placed.Count == 0 || placed[^1].Token.IsOperator;
 
 	public bool CanPlaceOperator => placed.Count > 0 && placed[^1].Token.Kind == TokenKind.Number;
 
@@ -126,8 +126,8 @@ public sealed class Staff
 
 	public bool PlaceOperator(string symbol)
 	{
-		if (!CanPlaceOperator || symbol != "+" || !operators.Contains(symbol)) return false;
-		placed.Add((-1, Token.Plus));
+		if (!CanPlaceOperator || !operators.Contains(symbol)) return false;
+		placed.Add((-1, symbol == "-" ? Token.Minus : Token.Plus));
 		return true;
 	}
 

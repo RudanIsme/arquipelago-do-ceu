@@ -1,0 +1,16 @@
+{
+  "id": "mat-subt99-003",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "subtracao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 12, "pieces": [20,10,2], "maxPieces": 3 },
+  "prompt": "Faça 12 usando o sinal de menos.",
+  "hints": ["Comece pela peça 20.", "20 - 10 = 10. Faltam 2 para chegar a 12.", "Depois de tirar, some a peça 2."],
+  "explanation": "20 - 10 + 2 = 12. Dá para tirar e juntar na mesma conta.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

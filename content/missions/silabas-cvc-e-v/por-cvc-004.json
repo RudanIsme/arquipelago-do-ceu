@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "barco", "image": "barco" },
+  "prompt": "Esta criatura se chama barco. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: barco. Pense nos sons, um de cada vez.", "A primeira letra é a B.", "A palavra tem 5 letras e termina com a letra O."],
+  "explanation": "O nome é BARCO, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

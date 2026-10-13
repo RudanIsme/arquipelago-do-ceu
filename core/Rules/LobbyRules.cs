@@ -7,7 +7,11 @@ public sealed record LobbyPlace(string Id, string Name, string Sign, string? Mod
 // Lines são as falas de um objeto que conversa (o Guia); vazio nos demais.
 public sealed record LobbyObject(string Id, string Name, string Prompt, string? Model, int Q, int R, IReadOnlyList<string> Lines);
 
-public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects);
+// A câmera do Lobby: tamanho inicial e limites do zoom (em unidades do mundo vistas na altura da tela), quanto cada passo de zoom muda,
+// a suavidade do acompanhamento, a folga (a câmera só segue quando o Personagem sai dela) e até onde a câmera pode se afastar do centro.
+public sealed record CameraRules(float Size, float MinSize, float MaxSize, float ZoomStep, float FollowSharpness, float DeadZone, float MaxPan);
+
+public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera);
 
 public sealed record TextSizeOption(string Id, string Name, float Scale);
 
@@ -15,11 +19,13 @@ public sealed record ControlOption(string Id, string Name);
 
 public sealed record VoiceSpeedOption(string Id, string Name, float Rate);
 
-public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls, string VoiceSpeed);
+public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls, string VoiceSpeed, bool ReduceEffects);
 
 public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, IReadOnlyList<VoiceSpeedOption> VoiceSpeeds, SettingsDefaults Defaults);
 
-sealed record LobbyDto(float? InteractionReach, List<PlaceDto?>? Places, List<ObjectDto?>? Objects);
+sealed record LobbyDto(float? InteractionReach, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
+
+sealed record CameraDto(float? Size, float? MinSize, float? MaxSize, float? ZoomStep, float? FollowSharpness, float? DeadZone, float? MaxPan);
 
 sealed record PlaceDto(string? Id, string? Name, string? Sign, string? Model, float? X, float? Z);
 
@@ -33,7 +39,7 @@ sealed record ControlDto(string? Id, string? Name);
 
 sealed record VoiceSpeedDto(string? Id, string? Name, float? Rate);
 
-sealed record SettingsDefaultsDto(string? TextSize, bool? Voice, bool? ReduceMotion, bool? DyslexiaFont, bool? CalmMode, string? Controls, string? VoiceSpeed);
+sealed record SettingsDefaultsDto(string? TextSize, bool? Voice, bool? ReduceMotion, bool? DyslexiaFont, bool? CalmMode, string? Controls, string? VoiceSpeed, bool? ReduceEffects);
 
 // Validação do Lobby e das configurações; devolve a primeira mensagem de erro, ou null se está tudo certo.
 static class LobbyChecks
@@ -53,6 +59,7 @@ static class LobbyChecks
 			return $"Regras inválidas: '{"lobby.interactionReach"}' deve estar entre {MinReach} e {MaxReach} (veio {lobby.InteractionReach}).";
 		if (lobby.Places is null) return Required("lobby.places");
 		if (lobby.Objects is null) return Required("lobby.objects");
+		if (CheckCamera(lobby.Camera) is { } cameraError) return cameraError;
 
 		var placeIds = new HashSet<string>();
 		for (var i = 0; i < lobby.Places.Count; i++)
@@ -83,10 +90,27 @@ static class LobbyChecks
 		return null;
 	}
 
+	static string? CheckCamera(CameraDto? camera)
+	{
+		if (camera is null) return Required("lobby.camera");
+		foreach (var (field, value, min, max) in new (string, float?, float, float)[]
+		{
+			("size", camera.Size, 4f, 100f), ("minSize", camera.MinSize, 4f, 100f), ("maxSize", camera.MaxSize, 4f, 100f), ("zoomStep", camera.ZoomStep, 0.5f, 20f),
+			("followSharpness", camera.FollowSharpness, 0.5f, 30f), ("deadZone", camera.DeadZone, 0f, 10f), ("maxPan", camera.MaxPan, 0f, 30f),
+		})
+		{
+			if (value is null) return Required($"lobby.camera.{field}");
+			if (value < min || value > max) return $"Regras inválidas: 'lobby.camera.{field}' deve estar entre {min} e {max} (veio {value}).";
+		}
+		if (camera.MinSize > camera.Size || camera.Size > camera.MaxSize) return "Regras inválidas: 'lobby.camera' precisa de minSize <= size <= maxSize.";
+		return null;
+	}
+
 	public static LobbyRules BuildLobby(LobbyDto lobby) => new(
 		lobby.InteractionReach!.Value,
 		lobby.Places!.Select(p => new LobbyPlace(p!.Id!, p.Name!, p.Sign!, Blank(p.Model) ? null : p.Model, p.X!.Value, p.Z!.Value)).ToList(),
-		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList());
+		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList(),
+		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value));
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{
@@ -137,6 +161,7 @@ static class LobbyChecks
 		if (defaults.ReduceMotion is null) return Required("settings.defaults.reduceMotion");
 		if (defaults.DyslexiaFont is null) return Required("settings.defaults.dyslexiaFont");
 		if (defaults.CalmMode is null) return Required("settings.defaults.calmMode");
+		if (defaults.ReduceEffects is null) return Required("settings.defaults.reduceEffects");
 		if (defaults.TextSize is null || !sizeIds.Contains(defaults.TextSize))
 			return $"Regras inválidas: '{"settings.defaults.textSize"}' deve ser um dos tamanhos de 'settings.textSizes' (veio '{defaults.TextSize}').";
 		if (defaults.Controls is null || !controlIds.Contains(defaults.Controls))
@@ -157,7 +182,8 @@ static class LobbyChecks
 			settings.Defaults.DyslexiaFont!.Value,
 			settings.Defaults.CalmMode!.Value,
 			settings.Defaults.Controls!,
-			settings.Defaults.VoiceSpeed!));
+			settings.Defaults.VoiceSpeed!,
+			settings.Defaults.ReduceEffects!.Value));
 
 	static bool Blank(string? text) => string.IsNullOrWhiteSpace(text);
 

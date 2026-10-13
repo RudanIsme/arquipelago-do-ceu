@@ -1,0 +1,16 @@
+{
+  "id": "por-nasal-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nasalidade-m-n-til",
+  "bncc": ["EF02LP05"],
+  "year": 2,
+  "difficulty": 4,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "limão", "image": "limao" },
+  "prompt": "Esta criatura se chama limão. O til fica em cima do A. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: limão. Pense nos sons, um de cada vez.", "A primeira letra é a L.", "A palavra tem 5 letras e termina com a letra O."],
+  "explanation": "O nome é LIMÃO, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

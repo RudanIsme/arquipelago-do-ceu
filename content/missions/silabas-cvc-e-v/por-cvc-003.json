@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "festa", "image": "festa" },
+  "prompt": "Esta criatura se chama festa. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: festa. Pense nos sons, um de cada vez.", "A primeira letra é a F.", "A palavra tem 5 letras e termina com a letra A."],
+  "explanation": "O nome é FESTA, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

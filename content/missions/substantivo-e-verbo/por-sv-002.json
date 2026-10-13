@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["A","flor","abre"], "pool": ["canta","corre","mesa"], "distractors": 2, "image": "flor" },
+  "prompt": "Ponha as palavras na ordem para contar o que a flor faz.",
+  "hints": ["Toda frase começa com quem faz a ação.", "Primeiro vem A, depois quem faz a ação.", "A última palavra é a ação."],
+  "explanation": "A flor abre: flor é o substantivo e abre é o verbo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

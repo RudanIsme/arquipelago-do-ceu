@@ -1,0 +1,16 @@
+{
+  "id": "por-nasal-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nasalidade-m-n-til",
+  "bncc": ["EF02LP05"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "pente", "image": "pente" },
+  "prompt": "Esta criatura se chama pente. Antes de T se usa a letra N. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: pente. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 5 letras e termina com a letra E."],
+  "explanation": "O nome é PENTE, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

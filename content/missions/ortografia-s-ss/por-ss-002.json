@@ -1,0 +1,16 @@
+{
+  "id": "por-ss-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-s-ss",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "A ", "after": " é doce.", "answer": "massa", "options": ["maça","massa","maza"], "image": "massa" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["O som de s entre vogais se escreve com SS.", "Massa tem S dobrado.", "A palavra certa tem duas letras S."],
+  "explanation": "MASSA se escreve com SS.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

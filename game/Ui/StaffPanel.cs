@@ -16,6 +16,7 @@ public partial class StaffPanel : OverlayScreen
 {
 	const int KeySize = 96;
 	const int PanelWidth = 4 * KeySize + 3 * 8;
+	const double TensWaitSeconds = 0.7;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
 	static readonly Color Gold = Color.FromHtml("#D9A64A");
@@ -35,6 +36,8 @@ public partial class StaffPanel : OverlayScreen
 	Button undoButton = null!;
 	bool tracing;
 	bool composing;
+	int pendingDigit;
+	int pendingVersion;
 	int tracingSlot;
 
 	// `inRange` diz se o Personagem está perto o bastante para a conta valer como ataque.
@@ -162,7 +165,7 @@ public partial class StaffPanel : OverlayScreen
 		actions.AddChild(UiKit.BigButton("Atacar", Confirm, 196));
 		keypad.AddChild(actions);
 
-		var keys = UiKit.Hint("Teclado: digite os números e +, Backspace apaga, Enter ataca, Esc solta o alvo.");
+		var keys = UiKit.Hint("Teclado: digite os números (10 e 20: o algarismo e o 0), + e -, Backspace apaga, Enter ataca, Esc solta o alvo.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);
 		keypad.AddChild(keys);
 	}
@@ -287,6 +290,10 @@ public partial class StaffPanel : OverlayScreen
 	public override void _Input(InputEvent @event)
 	{
 		if (tracing || @event is not InputEventKey { Pressed: true, Echo: false } key) return;
+		var digit = (int)key.Unicode - '0';
+		var isDigit = digit is >= 0 and <= 9 && key.Unicode != 0;
+		// Qualquer outra tecla encerra a espera pelo segundo algarismo e solta o número já digitado.
+		if (!isDigit) FlushPendingDigit();
 		switch (key.Keycode)
 		{
 			case Key.Enter or Key.KpEnter:
@@ -301,14 +308,52 @@ public partial class StaffPanel : OverlayScreen
 				GetViewport().SetInputAsHandled();
 				PlaceOperator("+");
 				return;
+			case Key.Minus or Key.KpSubtract:
+				GetViewport().SetInputAsHandled();
+				PlaceOperator("-");
+				return;
 		}
+		if (isDigit && TypeDigit(digit)) GetViewport().SetInputAsHandled();
+	}
 
-		var digit = (int)key.Unicode - '0';
-		if (digit is < 1 or > 9) return;
-		var slot = SlotWith(digit);
-		if (slot < 0) return;
-		GetViewport().SetInputAsHandled();
-		PlaceNumber(slot);
+	// Peças de 1 a 9 se escolhem pelo algarismo. As dezenas (10, 20...) se digitam com os dois algarismos: o 1 e depois o 0.
+	// Se a mão tem o 1 e o 10, o jogo espera um instante pelo 0 antes de escolher o 1.
+	bool TypeDigit(int digit)
+	{
+		if (pendingDigit > 0)
+		{
+			var first = pendingDigit;
+			pendingDigit = 0;
+			if (digit == 0 && SlotWith(first * 10) is var tens and >= 0)
+			{
+				PlaceNumber(tens);
+				return true;
+			}
+			if (SlotWith(first) is var single and >= 0) PlaceNumber(single);
+		}
+		if (digit == 0) return false;
+		if (SlotWith(digit * 10) >= 0)
+		{
+			pendingDigit = digit;
+			var mine = ++pendingVersion;
+			GetTree().CreateTimer(TensWaitSeconds, true, false, true).Timeout += () =>
+			{
+				if (IsInsideTree() && mine == pendingVersion) FlushPendingDigit();
+			};
+			return true;
+		}
+		if (SlotWith(digit) < 0) return false;
+		PlaceNumber(SlotWith(digit));
+		return true;
+	}
+
+	void FlushPendingDigit()
+	{
+		if (pendingDigit == 0) return;
+		var first = pendingDigit;
+		pendingDigit = 0;
+		pendingVersion++;
+		if (SlotWith(first) is var slot and >= 0) PlaceNumber(slot);
 	}
 
 	int SlotWith(int value)
@@ -348,8 +393,14 @@ partial class DotsView : Control
 		}
 	}
 
+	// Até 9 vira bolinhas; de 10 em diante cada dezena é uma barra e as unidades que sobram são bolinhas, como no material dourado.
 	public override void _Draw()
 	{
+		if (count >= 10)
+		{
+			DrawTens();
+			return;
+		}
 		var rows = Mathf.CeilToInt(count / (float)PerRow);
 		for (var i = 0; i < count; i++)
 		{
@@ -358,6 +409,28 @@ partial class DotsView : Control
 			var x = Size.X / 2f + (i % PerRow - (inRow - 1) / 2f) * (Radius * 2.6f);
 			var y = Size.Y / 2f + (row - (rows - 1) / 2f) * (Radius * 2.6f);
 			DrawCircle(new Vector2(x, y), Radius, Colors.White);
+		}
+	}
+
+	void DrawTens()
+	{
+		const float BarWidth = 9f;
+		const float Gap = 5f;
+		var tens = count / 10;
+		var ones = count % 10;
+		var width = tens * (BarWidth + Gap) + (ones > 0 ? Radius * 5.2f : 0f) - Gap;
+		var x = (Size.X - width) / 2f;
+		var height = Mathf.Max(8f, Size.Y - 6f);
+		for (var i = 0; i < tens; i++)
+		{
+			DrawRect(new Rect2(x, (Size.Y - height) / 2f, BarWidth, height), Colors.White);
+			x += BarWidth + Gap;
+		}
+		for (var i = 0; i < ones; i++)
+		{
+			var column = i % 2;
+			var row = i / 2;
+			DrawCircle(new Vector2(x + Radius + column * Radius * 2.6f, Size.Y / 2f + (row - (Mathf.CeilToInt(ones / 2f) - 1) / 2f) * Radius * 2.6f), Radius, Colors.White);
 		}
 	}
 }

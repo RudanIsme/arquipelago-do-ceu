@@ -1,0 +1,16 @@
+{
+  "id": "por-adj-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "adjetivo",
+  "bncc": ["EF03LP09"],
+  "year": 3,
+  "difficulty": 3,
+  "mechanic": "completar_frase",
+  "params": { "before": "O cachorro ", "after": " levou o osso.", "answer": "esperto", "options": ["correr","esperto","mesa"], "image": "cachorro" },
+  "prompt": "Escolha a palavra que combina com o cachorro.",
+  "hints": ["O adjetivo diz como o cachorro é.", "Qual palavra descreve o cachorro?", "Correr é verbo; mesa é coisa."],
+  "explanation": "ESPERTO diz como o cachorro é, por isso é adjetivo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

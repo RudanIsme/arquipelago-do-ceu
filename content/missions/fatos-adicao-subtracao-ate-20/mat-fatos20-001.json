@@ -1,0 +1,16 @@
+{
+  "id": "mat-fatos20-001",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "fatos-adicao-subtracao-ate-20",
+  "bncc": ["EF02MA05"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "compor_numero",
+  "params": { "target": 14, "pieces": [10,4,5], "maxPieces": 2 },
+  "prompt": "Faça 14 com uma dezena e uma unidade.",
+  "hints": ["Comece pela peça 10.", "10 e mais quanto dá 14?", "A peça 4 completa."],
+  "explanation": "10 + 4 = 14.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

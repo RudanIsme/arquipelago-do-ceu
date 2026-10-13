@@ -1,0 +1,16 @@
+{
+  "id": "por-pbtdfv-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-p-b-t-d-f-v",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "pata", "image": "pata" },
+  "prompt": "Esta criatura se chama pata. É pata com P, não bata com B. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: pata. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 4 letras e termina com a letra A."],
+  "explanation": "O nome é PATA, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

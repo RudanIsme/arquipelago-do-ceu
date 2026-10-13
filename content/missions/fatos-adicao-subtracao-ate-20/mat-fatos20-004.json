@@ -1,0 +1,16 @@
+{
+  "id": "mat-fatos20-004",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "fatos-adicao-subtracao-ate-20",
+  "bncc": ["EF02MA05"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 13, "pieces": [10,3,5], "maxPieces": 2 },
+  "prompt": "Faça 13 com a dezena.",
+  "hints": ["Comece pela peça 10.", "10 e mais quanto dá 13?", "A peça 3 completa."],
+  "explanation": "10 + 3 = 13.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

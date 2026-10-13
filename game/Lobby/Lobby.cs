@@ -19,6 +19,9 @@ public partial class Lobby : Node3D
 	const float DummyHeight = 1.7f;
 	const float TowerHeight = 5f;
 
+	// O Mobile não desenha SSAO e avisa a cada vez que ele é ligado; só o Forward+ e o Compatibility o têm.
+	static bool SsaoAvailable => RenderingServer.GetCurrentRenderingMethod() != "mobile";
+
 	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3 }
 
 	// Vizinhos em coordenadas axiais; a ordem é a mesma dos bits da máscara no shader.
@@ -45,6 +48,8 @@ public partial class Lobby : Node3D
 	readonly Dictionary<string, Node3D> markers = new();
 	readonly Dictionary<string, (Vector3 Ground, float Top)> footprints = new();
 	double clock;
+	Godot.Environment? environment;
+	CameraAttributesPractical? attributes;
 
 	public override void _Ready()
 	{
@@ -52,6 +57,7 @@ public partial class Lobby : Node3D
 		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells());
 		AddEnvironment();
 		AddCamera();
+		AddDepthOfField();
 		AddTerrain();
 		AddRock();
 		AddTrees();
@@ -80,26 +86,57 @@ public partial class Lobby : Node3D
 		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
 			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R)));
 
+	// Luz quente e sombras suaves, como pede a direção de arte. O brilho (glow) só pega o que passa do limite de luz, ou seja, só os
+	// itens mágicos que têm emissão (o raio do ataque, por exemplo), e nunca os números nem o pontilhado, que são interface 2D.
+	// O SSAO está ligado nos dados do ambiente, mas só o renderizador Forward+ o desenha; no Mobile (o do jogo) ele é ignorado.
 	void AddEnvironment()
 	{
-		AddChild(new WorldEnvironment
+		environment = new Godot.Environment
 		{
-			Environment = new Godot.Environment
-			{
-				BackgroundMode = Godot.Environment.BGMode.Color,
-				BackgroundColor = Color.FromHtml("#A8D1F5"),
-				AmbientLightSource = Godot.Environment.AmbientSource.Color,
-				AmbientLightColor = Color.FromHtml("#CFE0FF"),
-				AmbientLightEnergy = 0.7f,
-			},
-		});
+			BackgroundMode = Godot.Environment.BGMode.Color,
+			BackgroundColor = Color.FromHtml("#A8D1F5"),
+			AmbientLightSource = Godot.Environment.AmbientSource.Color,
+			AmbientLightColor = Color.FromHtml("#D6E2FF"),
+			AmbientLightEnergy = 0.7f,
+			SsaoEnabled = SsaoAvailable,
+			SsaoRadius = 1.2f,
+			SsaoIntensity = 1.4f,
+			GlowEnabled = true,
+			GlowHdrThreshold = 1.1f,
+			GlowIntensity = 0.7f,
+			GlowBloom = 0f,
+		};
+		AddChild(new WorldEnvironment { Environment = environment });
 		AddChild(new DirectionalLight3D
 		{
-			LightColor = Color.FromHtml("#FFF1D6"),
-			LightEnergy = 1.1f,
+			LightColor = Color.FromHtml("#FFE4BC"),
+			LightEnergy = 1.2f,
 			ShadowEnabled = true,
+			ShadowBlur = 2f,
 			RotationDegrees = new Vector3(-50f, -30f, 0f),
 		});
+	}
+
+	// Desfoque leve das bordas (efeito maquete): só o que está bem longe da câmera, para os números e as criaturas ficarem nítidos.
+	void AddDepthOfField()
+	{
+		attributes = new CameraAttributesPractical
+		{
+			DofBlurFarEnabled = true,
+			DofBlurFarDistance = 60f,
+			DofBlurFarTransition = 20f,
+			DofBlurAmount = 0.01f,
+		};
+		Camera.Attributes = attributes;
+	}
+
+	// Opção de acessibilidade: desliga o desfoque, o brilho e o SSAO.
+	public void SetEffects(bool reduced)
+	{
+		if (environment is null || attributes is null) return;
+		environment.GlowEnabled = !reduced;
+		environment.SsaoEnabled = SsaoAvailable && !reduced;
+		attributes.DofBlurFarEnabled = !reduced;
 	}
 
 	// Ortográfica e isométrica de verdade: a câmera olha a origem a 35,264 graus de elevação.
@@ -312,6 +349,7 @@ public partial class Lobby : Node3D
 			};
 			AddChild(sign);
 			signs.Add(sign);
+			sign.AddToGroup(CameraController.LabelGroup);
 		}
 	}
 

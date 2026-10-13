@@ -1,0 +1,16 @@
+{
+  "id": "mat-subt99-004",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "subtracao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 8, "pieces": [10,2], "maxPieces": 2 },
+  "prompt": "Tire 2 de 10 para fazer 8.",
+  "hints": ["Use o sinal de menos.", "Comece pela peça 10.", "10 menos 2 dá quanto?"],
+  "explanation": "10 - 2 = 8.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

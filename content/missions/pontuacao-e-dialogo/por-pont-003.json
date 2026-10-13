@@ -1,0 +1,16 @@
+{
+  "id": "por-pont-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "pontuacao-e-dialogo",
+  "bncc": ["EF03LP07"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "Que susto o gato me deu", "after": "", "answer": "!", "options": [".","!","?"], "image": "gato" },
+  "prompt": "Qual sinal fecha esta frase de susto?",
+  "hints": ["Frase de susto ou alegria usa o ponto de exclamação.", "O sinal tem uma linha e um ponto embaixo.", "É o ponto de exclamação."],
+  "explanation": "Susto e alegria terminam com ponto de exclamação.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

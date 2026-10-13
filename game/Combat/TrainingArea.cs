@@ -94,6 +94,7 @@ public partial class TrainingArea : Node
 		{
 			case StaffPanel staff: staff.Abandon(); break;
 			case NamePanel name: name.Abandon(); break;
+			case WordPanel word: word.Abandon(); break;
 		}
 	}
 
@@ -149,11 +150,15 @@ public partial class TrainingArea : Node
 			dummy.ShowCreature(null);
 			dummy.Reset(math.Shield.Remaining, "Escudo");
 		}
+		else if (session.Name is { } name)
+		{
+			dummy.ShowCreature(name.Image);
+			dummy.Reset(name.Remaining, name.Kind switch { NameKind.Sentence => "Palavras que faltam", NameKind.Gap => "Lacunas que faltam", _ => "Sílabas que faltam" });
+		}
 		else
 		{
-			var name = session.Name!;
-			dummy.ShowCreature(name.Image);
-			dummy.Reset(name.Remaining, "Sílabas que faltam");
+			dummy.ShowCreature(session.Word!.Image);
+			dummy.Reset(session.Word.Remaining, "Palavras que faltam");
 		}
 	}
 
@@ -164,7 +169,7 @@ public partial class TrainingArea : Node
 		Action<string> tell = _ => { };
 		if (session.Math is { } math)
 		{
-			var staff = new StaffPanel(math, rules.Combat, voice, InTargetRange);
+			var staff = new StaffPanel(math, session.Rules, voice, InTargetRange);
 			staff.Attacked += OnAttacked;
 			staff.ComposingChanged += OnComposing;
 			staff.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
@@ -172,15 +177,25 @@ public partial class TrainingArea : Node
 			tell = staff.Tell;
 			opened = staff;
 		}
-		else
+		else if (session.Name is { } nameBattle)
 		{
-			var name = new NamePanel(session.Name!, rules.Combat.Tracing, voice);
+			var name = new NamePanel(nameBattle, rules.Combat.Tracing, voice);
 			name.Checked += OnChecked;
 			name.ComposingChanged += OnComposing;
 			name.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
 			name.ReadRequested += () => { if (session is not null) tell(session.Mission.Prompt); };
 			tell = name.Tell;
 			opened = name;
+		}
+		else
+		{
+			var word = new WordPanel(session.Word!, voice);
+			word.Checked += OnWordChecked;
+			word.ComposingChanged += OnComposing;
+			word.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
+			word.ReadRequested += () => { if (session is not null) tell(session.Mission.Prompt); };
+			tell = word.Tell;
+			opened = word;
 		}
 
 		panel = opened;
@@ -217,6 +232,7 @@ public partial class TrainingArea : Node
 		{
 			case StaffPanel staff: staff.Tell(text); break;
 			case NamePanel name: name.Tell(text); break;
+			case WordPanel word: word.Tell(text); break;
 			default: voice.Say(text, interrupt: true); break;
 		}
 	}
@@ -265,22 +281,50 @@ public partial class TrainingArea : Node
 			dummy.Ray(from, perfect: verdict.Freed);
 			dummy.Reduced(name.Remaining);
 		}
-		var struck = strikes switch { 0 => "", 1 => "1 sílaba certa, 1 golpe! ", _ => $"{strikes} sílabas certas, {strikes} golpes! " };
+		var piece = name.Kind == NameKind.Syllables ? "sílaba" : "palavra";
+		var struck = strikes switch { 0 => "", 1 => $"1 {piece} certa, 1 golpe! ", _ => $"{strikes} {piece}s certas, {strikes} golpes! " };
 
 		if (verdict.Freed)
 		{
 			dummy.Dissolved();
 			session.Hit(perfect: false);
 			UpdateEnergy();
-			Say("Nome certo!", $"{struck}Muito bem! O nome é {name.Word.ToUpperInvariant()}. A criatura foi libertada.");
+			var done = name.Kind switch
+			{
+				NameKind.Sentence => $"Muito bem! A frase ficou assim: {name.Completed}",
+				NameKind.Gap => $"Muito bem! A frase completa é: {name.Completed}",
+				_ => $"Muito bem! O nome é {name.Word.ToUpperInvariant()}. A criatura foi libertada.",
+			};
+			Say(name.Kind == NameKind.Syllables ? "Nome certo!" : "Frase certa!", $"{struck}{done}");
 			NextChallengeSoon();
 		}
 		else if (verdict.Mistaken)
 		{
 			dummy.Overshoot();
-			Mistake("Sílaba errada!", $"{struck}Uma sílaba está errada.");
+			Mistake(name.Kind switch { NameKind.Sentence => "Fora de ordem!", NameKind.Gap => "Palavra errada!", _ => "Sílaba errada!" },
+				$"{struck}{name.Kind switch { NameKind.Sentence => "Uma palavra está fora do lugar.", NameKind.Gap => "Essa palavra não completa a frase.", _ => "Uma sílaba está errada." }}");
 		}
-		else Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : "Ainda faltam sílabas no nome. Escolha mais uma.");
+		else Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : $"Ainda faltam {piece}s. Escolha mais uma.");
+	}
+
+	// O Escriba do 2º ano: a palavra inteira, com a grafia exata. Acertar liberta a criatura; errar é erro.
+	void OnWordChecked(WordResult result)
+	{
+		if (session?.Word is not { } word) return;
+		var from = player.GlobalPosition + Vector3.Up * 1f;
+		AttackAnimation();
+		if (result == WordResult.Freed)
+		{
+			dummy.Ray(from, perfect: true);
+			dummy.Dissolved();
+			session.Hit(perfect: false);
+			UpdateEnergy();
+			Say("Nome certo!", $"Muito bem! Você escreveu {word.Word.ToUpperInvariant()}. A criatura foi libertada.");
+			NextChallengeSoon();
+			return;
+		}
+		dummy.Overshoot();
+		Mistake("Grafia errada!", $"Você escreveu {word.Typed.ToUpperInvariant()}, mas não é assim que se escreve.");
 	}
 
 	// --- Erro, travessura, dica
@@ -343,6 +387,7 @@ public partial class TrainingArea : Node
 		{
 			case StaffPanel staff: staff.Refresh(); break;
 			case NamePanel name: name.Reload(); break;
+			case WordPanel word: word.Reload(); break;
 		}
 	}
 

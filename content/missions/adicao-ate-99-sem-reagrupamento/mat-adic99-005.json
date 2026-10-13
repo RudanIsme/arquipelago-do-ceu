@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-005",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 58, "pieces": [20,20,10,5,3], "maxPieces": 5 },
+  "prompt": "Monte 58 com as dezenas e as unidades da mão.",
+  "hints": ["Some primeiro as dezenas: 20, 20 e 10.", "20 + 20 + 10 = 50. Faltam 8.", "5 e 3 fazem 8."],
+  "explanation": "20 + 20 + 10 + 5 + 3 = 58.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "por-eo-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogal-atona-final-e-o",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "bule", "image": "bule" },
+  "prompt": "Esta criatura se chama bule. No fim, o som de i se escreve com E. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: bule. Pense nos sons, um de cada vez.", "A primeira letra é a B.", "A palavra tem 4 letras e termina com a letra E."],
+  "explanation": "O nome é BULE, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

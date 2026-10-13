@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "porta", "image": "porta" },
+  "prompt": "Esta criatura se chama porta. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: porta. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 5 letras e termina com a letra A."],
+  "explanation": "O nome é PORTA, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

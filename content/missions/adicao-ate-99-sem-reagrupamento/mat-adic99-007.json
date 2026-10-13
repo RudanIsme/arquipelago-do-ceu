@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-007",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 4,
+  "mechanic": "compor_numero",
+  "params": { "target": 72, "pieces": [20,20,20,10,2], "maxPieces": 5 },
+  "prompt": "Dissolva a névoa de 72 com as dezenas e a unidade.",
+  "hints": ["Três peças de 20 fazem 60.", "60 + 10 = 70. Faltam 2.", "Use a peça 2 para chegar a 72."],
+  "explanation": "20 + 20 + 20 + 10 + 2 = 72.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

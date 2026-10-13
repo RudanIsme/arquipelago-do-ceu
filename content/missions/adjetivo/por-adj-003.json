@@ -1,0 +1,16 @@
+{
+  "id": "por-adj-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "adjetivo",
+  "bncc": ["EF03LP09"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "O pato ", "after": " nadou no lago.", "answer": "pequeno", "options": ["pulou","pequeno","janela"], "image": "pato" },
+  "prompt": "Escolha a palavra que combina com o pato.",
+  "hints": ["O adjetivo diz como o pato é.", "Qual palavra descreve o pato?", "Pulou é verbo; janela é coisa."],
+  "explanation": "PEQUENO diz como o pato é, por isso é adjetivo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

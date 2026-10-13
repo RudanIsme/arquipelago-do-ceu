@@ -1,0 +1,16 @@
+{
+  "id": "por-adj-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "adjetivo",
+  "bncc": ["EF03LP09"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "A flor ", "after": " abriu de manhã.", "answer": "bonita", "options": ["cantar","bonita","livro"], "image": "flor" },
+  "prompt": "Escolha a palavra que combina com a flor.",
+  "hints": ["O adjetivo diz como a flor é.", "Qual palavra descreve a flor?", "Cantar é verbo; livro é coisa."],
+  "explanation": "BONITA diz como a flor é, por isso é adjetivo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

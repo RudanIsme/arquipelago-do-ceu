@@ -759,3 +759,110 @@ public class PortugueseContentTests
 			Assert.All(m.Params["syllables"].EnumerateArray().Select(s => s.GetString()!), s => Assert.All(s, c => Assert.Contains(c, allowed))));
 	}
 }
+
+public class Year2MathTests
+{
+	static Token N(int n) => Token.Number(n);
+
+	[Fact]
+	public void Subtracao_tira_do_primeiro_numero()
+	{
+		var result = ExpressionEvaluator.Evaluate([N(20), Token.Minus, N(5)], shield: 15);
+
+		Assert.Equal(15, result.Value!.Total);
+		Assert.Equal(Comparison.Equal, result.Value.Comparison);
+	}
+
+	[Fact]
+	public void Juntar_e_tirar_na_mesma_conta_vai_da_esquerda_para_a_direita()
+	{
+		var result = ExpressionEvaluator.Evaluate([N(20), Token.Minus, N(10), Token.Plus, N(2)], shield: 12);
+
+		Assert.Equal(12, result.Value!.Total);
+	}
+
+	[Theory]
+	[InlineData(5, 5)]
+	[InlineData(3, 5)]
+	public void Conta_que_da_zero_ou_menos_nao_vale_e_nao_e_excecao(int first, int second)
+	{
+		var result = ExpressionEvaluator.Evaluate([N(first), Token.Minus, N(second)], shield: 5);
+
+		Assert.False(result.IsOk);
+		Assert.Contains("zero", result.Error);
+	}
+
+	[Fact]
+	public void O_cajado_so_aceita_menos_quando_os_dados_do_ano_trazem_o_sinal()
+	{
+		var year1 = new Staff(new MathBag(TrainingFixtures.Rules, new Pcg32(1)), TrainingFixtures.Rules);
+		var rules2 = TrainingFixtures.Rules.ForYear(2);
+		var year2 = new Staff(new MathBag(rules2, new Pcg32(1)), rules2);
+		year1.Place(0);
+		year2.Place(0);
+
+		Assert.False(year1.PlaceOperator("-"));
+		Assert.True(year2.PlaceOperator("-"));
+		Assert.Equal("-", year2.Tokens[1].ToString());
+	}
+
+	[Fact]
+	public void A_bolsa_do_2o_ano_inclui_as_dezenas_e_o_1o_ano_nao()
+	{
+		Assert.DoesNotContain(10, TrainingFixtures.Rules.ForYear(1).BagNumbers);
+		Assert.Contains(10, TrainingFixtures.Rules.ForYear(2).BagNumbers);
+		Assert.Contains(20, TrainingFixtures.Rules.ForYear(2).BagNumbers);
+	}
+
+	[Fact]
+	public void O_3o_ano_usa_as_regras_do_2o_ate_existir_multiplicacao()
+	{
+		Assert.Equal(TrainingFixtures.Rules.ForYear(2).BagNumbers, TrainingFixtures.Rules.ForYear(3).BagNumbers);
+	}
+
+	[Fact]
+	public void A_sessao_do_2o_ano_usa_a_bolsa_e_os_sinais_do_2o_ano()
+	{
+		var missions = new[] { TrainingFixtures.MathMission("a", 30, year: 2) };
+
+		var year2 = TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 2, year: 2).Value!;
+
+		Assert.Contains(20, year2.Rules.BagNumbers);
+		Assert.Contains("-", year2.Rules.Operators);
+		year2.Math!.Staff.Place(0);
+		Assert.True(year2.Math.Staff.PlaceOperator("-"));
+	}
+
+	[Fact]
+	public void So_aparece_para_quem_tem_acesso_ao_Nivel_2()
+	{
+		var missions = new[] { TrainingFixtures.MathMission("a", 30, year: 2) };
+
+		Assert.False(TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 1, year: 2).IsOk);
+		Assert.True(TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 2, year: 2).IsOk);
+	}
+
+	[Theory]
+	[InlineData("\"year\": 2,", "\"year\": 1,")]
+	[InlineData("\"operators\": [\"+\", \"-\"]", "\"operators\": [\"*\"]")]
+	[InlineData("[1, 2, 3, 4, 5, 10, 20]", "[1, 2]")]
+	[InlineData("[1, 2, 3, 4, 5, 10, 20]", "[1, 100]")]
+	public void Ano_mal_escrito_nos_dados_e_recusado(string from, string to)
+	{
+		var result = GameRules.Parse(TestJson.Rules.Replace(from, to));
+
+		Assert.False(result.IsOk);
+		Assert.Contains("combat", result.Error);
+	}
+
+	[Fact]
+	public void Missoes_do_2o_ano_de_Matematica_cobrem_dezenas_e_subtracao()
+	{
+		var loaded = MissionLoader.Create(File.ReadAllText(MissionFiles.SchemaPath)).Value!.Load(MissionFiles.All());
+		var year2 = loaded.Missions.Where(m => m.Discipline == "matematica" && m.Year == 2).ToList();
+
+		Assert.Contains(year2, m => m.Concept == "adicao-ate-99-sem-reagrupamento");
+		Assert.Contains(year2, m => m.Concept == "subtracao-ate-99-sem-reagrupamento");
+		Assert.All(year2.GroupBy(m => m.Concept), g => Assert.True(g.Select(m => m.Difficulty).Distinct().Count() >= 3));
+	}
+}

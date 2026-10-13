@@ -1,0 +1,16 @@
+{
+  "id": "por-rr-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-r-rr",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "O ", "after": " é um animal pequeno.", "answer": "rato", "options": ["rrato","rato"], "image": "rato" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["No começo da palavra, o R já tem som forte.", "Rato começa com um R só.", "No começo da palavra não se dobra o R."],
+  "explanation": "RATO se escreve com um R só, porque o R está no começo da palavra.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

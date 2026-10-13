@@ -1,0 +1,114 @@
+using System.Collections.Generic;
+using ArquipelagoDoCeu.Rules;
+using ArquipelagoDoCeu.World;
+using Godot;
+using Vector2 = System.Numerics.Vector2;
+
+namespace ArquipelagoDoCeu;
+
+// Liga a câmera do Lobby ao CameraRig: zoom com a roda do mouse, a pinça (toque ou touchpad) e as teclas Page Up, Page Down e
+// Home, e acompanhamento suave do Personagem. O tempo da câmera é o real, para ela não parar nem se arrastar quando o jogo
+// fica em câmera lenta durante a montagem. O texto 3D da cena cresce com o afastamento, para continuar legível em qualquer zoom.
+public partial class CameraController : Node
+{
+	// A câmera olha de cima, de um canto da ilha: este é o afastamento fixo entre o ponto focado e a câmera.
+	static readonly Vector3 Offset = new(12f, 12f, 12f);
+	public const string LabelGroup = "zoom_labels";
+
+	readonly Camera3D camera;
+	readonly Player player;
+	readonly CameraRig rig;
+	readonly CameraRules rules;
+	readonly System.Func<bool> reduceMotion;
+	readonly Dictionary<int, Godot.Vector2> touches = new();
+	ulong lastTicks;
+	float lastSize;
+	int lastLabels;
+
+	public CameraController(Camera3D camera, Player player, CameraRules rules, System.Func<bool> reduceMotion)
+	{
+		this.camera = camera;
+		this.player = player;
+		this.rules = rules;
+		this.reduceMotion = reduceMotion;
+		rig = new CameraRig(rules);
+	}
+
+	public float Size => rig.Size;
+
+	public override void _Ready() => lastTicks = Time.GetTicksUsec();
+
+	public override void _Process(double delta)
+	{
+		var now = Time.GetTicksUsec();
+		var seconds = Mathf.Min((now - lastTicks) / 1_000_000f, 0.1f);
+		lastTicks = now;
+
+		rig.Update(player.GroundPosition, seconds, reduceMotion());
+		Apply();
+	}
+
+	void Apply()
+	{
+		var focus = new Vector3(rig.Focus.X, 0f, rig.Focus.Y);
+		camera.Size = rig.Size;
+		camera.LookAtFromPosition(focus + Offset, focus, Vector3.Up);
+		// O texto 3D só muda de escala quando o zoom muda, e rótulos novos (popup, criatura) entram na escala certa na hora.
+		if (Mathf.IsEqualApprox(rig.Size, lastSize) && GetTree().GetNodeCountInGroup(LabelGroup) == lastLabels) return;
+		lastSize = rig.Size;
+		lastLabels = GetTree().GetNodeCountInGroup(LabelGroup);
+		GetTree().CallGroup(LabelGroup, Node3D.MethodName.SetScale, Vector3.One * (rig.Size / rules.Size));
+	}
+
+	public override void _Input(InputEvent @event)
+	{
+		switch (@event)
+		{
+			case InputEventScreenTouch touch:
+				if (touch.Pressed) touches[touch.Index] = touch.Position;
+				else touches.Remove(touch.Index);
+				Controls.Pinching = touches.Count >= 2;
+				break;
+			case InputEventScreenDrag drag when touches.ContainsKey(drag.Index):
+				Pinch(drag);
+				break;
+			case InputEventMagnifyGesture magnify:
+				rig.Pinch(magnify.Factor);
+				break;
+		}
+	}
+
+	// Com dois dedos, a distância entre eles antes e depois do movimento dá o fator de zoom.
+	void Pinch(InputEventScreenDrag drag)
+	{
+		if (touches.Count < 2) return;
+		var before = Spread();
+		touches[drag.Index] = drag.Position;
+		var after = Spread();
+		if (before > 1f && after > 1f) rig.Pinch(after / before);
+	}
+
+	float Spread()
+	{
+		var points = new List<Godot.Vector2>(touches.Values);
+		return points[0].DistanceTo(points[1]);
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		switch (@event)
+		{
+			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.WheelUp }:
+				rig.ZoomSteps(1f);
+				break;
+			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.WheelDown }:
+				rig.ZoomSteps(-1f);
+				break;
+			default:
+				if (@event.IsActionPressed(Controls.ZoomIn)) rig.ZoomSteps(1f);
+				else if (@event.IsActionPressed(Controls.ZoomOut)) rig.ZoomSteps(-1f);
+				else if (@event.IsActionPressed(Controls.ZoomReset)) rig.ResetZoom();
+				break;
+		}
+	}
+}

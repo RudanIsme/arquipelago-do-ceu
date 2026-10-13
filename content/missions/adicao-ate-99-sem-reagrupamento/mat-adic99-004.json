@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-004",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 35, "pieces": [10,20,5,2], "maxPieces": 3 },
+  "prompt": "Faça 35 juntando dezenas e unidades.",
+  "hints": ["Comece pelas dezenas: 20 e 10 fazem quanto?", "20 + 10 = 30. Faltam 5.", "Use a peça 5 para completar."],
+  "explanation": "20 + 10 + 5 = 35. Trinta e cinco é trinta mais cinco.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

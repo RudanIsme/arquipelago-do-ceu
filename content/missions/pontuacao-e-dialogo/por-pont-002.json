@@ -1,0 +1,16 @@
+{
+  "id": "por-pont-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "pontuacao-e-dialogo",
+  "bncc": ["EF03LP07"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "O gato dorme no sofá", "after": "", "answer": ".", "options": [".","!","?"], "image": "gato" },
+  "prompt": "Qual sinal fecha esta frase?",
+  "hints": ["A frase só conta algo, sem perguntar nem gritar.", "Frases que só contam algo terminam com ponto final.", "É o ponto final."],
+  "explanation": "Frase que conta algo termina com ponto final.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}
