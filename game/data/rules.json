@@ -10,5 +10,38 @@
     "mistakesToLevelDown": 2,
     "hintsToLevelDown": 2
   },
-  "leitnerIntervalsDays": [1, 2, 4, 8, 16]
+  "leitnerIntervalsDays": [1, 2, 4, 8, 16],
+  "profile": {
+    "maxNicknameLength": 12,
+    "maxProfiles": 6
+  },
+  "appearance": {
+    "categories": [
+      {
+        "id": "skinTone",
+        "name": "Tom de pele",
+        "options": [
+          { "id": "marfim", "name": "Marfim", "color": "#F7D9C4" },
+          { "id": "areia", "name": "Areia", "color": "#EBC4A0" },
+          { "id": "mel", "name": "Mel", "color": "#D9A573" },
+          { "id": "caramelo", "name": "Caramelo", "color": "#B97C4F" },
+          { "id": "cafe", "name": "Café", "color": "#8D5A3A" },
+          { "id": "chocolate", "name": "Chocolate", "color": "#5E3B26" }
+        ]
+      },
+      {
+        "id": "clothesColor",
+        "name": "Cor da roupa",
+        "options": [
+          { "id": "bege", "name": "Bege", "color": "#C9BBA3" },
+          { "id": "azul", "name": "Azul", "color": "#2E7DE8" },
+          { "id": "verde", "name": "Verde", "color": "#35B96A" },
+          { "id": "roxo", "name": "Roxo", "color": "#7A44D1" },
+          { "id": "amarelo", "name": "Amarelo", "color": "#F2B632" },
+          { "id": "coral", "name": "Coral", "color": "#F0705F" }
+        ]
+      },
+      { "id": "accessory", "name": "Acessório", "options": [] }
+    ]
+  }
 }

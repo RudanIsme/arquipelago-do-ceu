@@ -160,7 +160,7 @@ public sealed class SaveStore(string path, IReadOnlyDictionary<int, Func<JsonObj
 		try
 		{
 			var data = root.Deserialize<SaveData>(Options);
-			return data?.Profiles is null || data.Profiles.Any(p => p is null) ? null : data;
+			return data?.Profiles is null || data.Profiles.Any(p => p?.Id is null || p.Nickname is null) ? null : data;
 		}
 		catch (Exception e) when (e is JsonException or NotSupportedException)
 		{

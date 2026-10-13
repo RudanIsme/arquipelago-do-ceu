@@ -13,12 +13,16 @@ public sealed record GameRules(
 	RoleNames Roles,
 	int MaxEnergy,
 	AdaptiveRules Adaptive,
-	IReadOnlyList<int> LeitnerIntervalsDays)
+	IReadOnlyList<int> LeitnerIntervalsDays,
+	ProfileRules Profile,
+	AppearanceCatalog Appearance)
 {
 	// Limites que impedem um arquivo editado à mão de deixar o jogo injogável (Energia 0, por exemplo).
 	const int MaxEnergyLimit = 99;
 	const int AdaptiveLimit = 10;
 	const int LeitnerBoxesLimit = 10;
+	const int NicknameLengthLimit = 32;
+	const int ProfilesLimit = 20;
 
 	public static Result<GameRules> Parse(string json)
 	{
@@ -40,7 +44,9 @@ public sealed record GameRules(
 		var error = CheckNames(dto)
 			?? CheckRange("maxEnergy", dto.MaxEnergy, MaxEnergyLimit)
 			?? CheckAdaptive(dto.Adaptive)
-			?? CheckLeitner(dto.LeitnerIntervalsDays);
+			?? CheckLeitner(dto.LeitnerIntervalsDays)
+			?? CheckProfile(dto.Profile)
+			?? AppearanceChecks.Check(dto.Appearance);
 		if (error is not null) return Fail(error);
 
 		return Result<GameRules>.Ok(new GameRules(
@@ -51,7 +57,9 @@ public sealed record GameRules(
 				dto.Adaptive!.StreakToLevelUp!.Value,
 				dto.Adaptive.MistakesToLevelDown!.Value,
 				dto.Adaptive.HintsToLevelDown!.Value),
-			Array.AsReadOnly(dto.LeitnerIntervalsDays!)));
+			Array.AsReadOnly(dto.LeitnerIntervalsDays!),
+			new ProfileRules(dto.Profile!.MaxNicknameLength!.Value, dto.Profile.MaxProfiles!.Value),
+			AppearanceChecks.Build(dto.Appearance!)));
 	}
 
 	static string? CheckNames(Dto dto)
@@ -85,6 +93,13 @@ public sealed record GameRules(
 		return null;
 	}
 
+	static string? CheckProfile(ProfileDto? profile)
+	{
+		if (profile is null) return Required("profile");
+		return CheckRange("profile.maxNicknameLength", profile.MaxNicknameLength, NicknameLengthLimit)
+			?? CheckRange("profile.maxProfiles", profile.MaxProfiles, ProfilesLimit);
+	}
+
 	static string? CheckRange(string field, int? value, int max)
 	{
 		if (value is null) return Required(field);
@@ -106,7 +121,11 @@ public sealed record GameRules(
 		RolesDto? Roles,
 		int? MaxEnergy,
 		AdaptiveDto? Adaptive,
-		int[]? LeitnerIntervalsDays);
+		int[]? LeitnerIntervalsDays,
+		ProfileDto? Profile,
+		AppearanceDto? Appearance);
+
+	sealed record ProfileDto(int? MaxNicknameLength, int? MaxProfiles);
 
 	sealed record RolesDto(string? Mathematics, string? Portuguese);
 

@@ -1,31 +1,53 @@
+using System;
+using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
 using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Raiz de composição: liga os adaptadores do Godot às regras de core/.
+// Raiz de composição: liga os adaptadores do Godot às regras de core/ e conduz o fluxo das telas.
 public partial class Main : Node3D
 {
 	const string RulesPath = "res://data/rules.json";
 	const string SavePath = "user://save.json";
 
+	CanvasLayer ui = null!;
+	Label title = null!;
+	Label notice = null!;
+	GameRules rules = null!;
+	ProfileService profiles = null!;
+	ProfileScreen? screen;
+
 	public override void _Ready()
 	{
-		var rules = LoadRules();
-		var text = rules.IsOk ? rules.Value!.GameName : rules.Error!;
+		ui = GetNode<CanvasLayer>("Interface");
+		title = GetNode<Label>("Interface/Message");
+		notice = GetNode<Label>("Interface/Notice");
 
-		GetNode<Label>("Interface/Message").Text = text;
-		if (rules.IsOk) GD.Print($"Regras carregadas: {text}");
-		else GD.PushError(text);
+		var loadedRules = LoadRules();
+		if (!loadedRules.IsOk) { Stop(loadedRules.Error!); return; }
+		rules = loadedRules.Value!;
+		title.Text = rules.GameName;
+		GD.Print($"Regras carregadas: {rules.GameName}");
 
-		var notice = LoadSave();
-		GetNode<Label>("Interface/Notice").Text = notice;
-		if (notice != "") GD.PushWarning(notice);
+		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
+		var save = OpenSave(store);
+		if (!save.IsOk) { Stop(save.Error!); return; }
+		profiles = new ProfileService(store, rules, save.Value!, () => Guid.NewGuid().ToString("N"));
 
 		AddChild(GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate());
+		ui.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
+		StartFlow();
+		DevDriver.AttachIfRequested(this);
 
 		GD.Print("Cena inicial pronta.");
+	}
+
+	void Stop(string text)
+	{
+		title.Text = text;
+		GD.PushError(text);
 	}
 
 	static Result<GameRules> LoadRules()
@@ -37,28 +59,51 @@ public partial class Main : Node3D
 		return GameRules.Parse(file.GetAsText());
 	}
 
-	// Devolve o aviso para o Responsável, ou "" quando não há nada a avisar.
-	static string LoadSave()
+	// Abre o save; se precisou recuperá-lo ou migrá-lo, grava o estado novo para o problema não se repetir
+	// e avisa o Responsável na tela.
+	Result<SaveData> OpenSave(SaveStore store)
 	{
-		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
 		var loaded = store.Load();
-		if (!loaded.IsOk) return loaded.Error!;
+		if (!loaded.IsOk) return Result<SaveData>.Fail(loaded.Error!);
 
 		var outcome = loaded.Value!;
-		if (outcome.Notice == SaveNotice.None) return "";
+		if (outcome.Notice == SaveNotice.None) return Result<SaveData>.Ok(outcome.Data);
 
-		// Sem gravar, o save problemático seguiria no disco e geraria uma cópia nova a cada abertura.
 		var written = store.Write(outcome.Data);
-		if (!written.IsOk) return written.Error!;
+		if (!written.IsOk) return written;
 
 		if (outcome.Notice == SaveNotice.Migrated)
-		{
 			GD.Print($"Save migrado; o original está em {outcome.CopyPath}");
-			return "";
+		else
+		{
+			notice.Text = outcome.Notice == SaveNotice.Recovered
+				? "Não foi possível ler o progresso anterior. Ele foi guardado numa cópia e o jogo começou do zero."
+				: "Este progresso é de uma versão mais nova do jogo. Ele foi guardado numa cópia e o jogo começou do zero.";
+			GD.PushWarning(notice.Text);
 		}
+		return written;
+	}
 
-		return outcome.Notice == SaveNotice.Recovered
-			? "Não foi possível ler o progresso anterior. Ele foi guardado numa cópia e o jogo começou do zero."
-			: "Este progresso é de uma versão mais nova do jogo. Ele foi guardado numa cópia e o jogo começou do zero.";
+	// Um só Perfil entra direto; zero ou vários passam pela tela de Perfis.
+	void StartFlow()
+	{
+		if (profiles.Profiles.Count == 1) Enter(profiles.Profiles[0]);
+		else ShowProfiles();
+	}
+
+	void ShowProfiles()
+	{
+		if (screen is not null) return;
+		screen = new ProfileScreen(profiles);
+		screen.Chosen += Enter;
+		ui.AddChild(screen);
+	}
+
+	void Enter(ProfileSave profile)
+	{
+		screen?.QueueFree();
+		screen = null;
+		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
+		GD.Print($"Perfil ativo: {profile.Nickname}");
 	}
 }
