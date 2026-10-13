@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-003",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 43, "pieces": [20,20,3], "maxPieces": 3 },
+  "prompt": "Monte 43 com dezenas e unidades.",
+  "hints": ["Duas dezenas de 20 fazem 40.", "20 + 20 = 40. Faltam quantos para 43?", "Use a peça 3 para chegar a 43."],
+  "explanation": "20 + 20 + 3 = 43. Quarenta e três é quarenta mais três.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

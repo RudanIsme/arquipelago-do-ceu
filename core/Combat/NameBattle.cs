@@ -3,14 +3,19 @@ using ArquipelagoDoCeu.Missions;
 
 namespace ArquipelagoDoCeu.Combat;
 
-// O que a conferência do nome decidiu. `NewStrikes` conta só as sílabas certas ainda não golpeadas;
-// `Mistaken` é verdadeiro quando alguma sílaba posta está errada (sílaba que falta não é erro).
+// O que o Escriba monta: sílabas do nome (1º ano), palavras de uma frase na ordem ou a palavra que completa uma frase (3º ano).
+public enum NameKind { Syllables, Sentence, Gap }
+
+// O que a conferência do nome decidiu. `NewStrikes` conta só as peças certas ainda não golpeadas;
+// `Mistaken` é verdadeiro quando alguma peça posta está errada (peça que falta não é erro).
 public sealed record NameVerdict(IReadOnlyList<bool> Correct, int NewStrikes, bool Freed, bool Mistaken);
 
 // A luta do Escriba: a criatura esqueceu o nome. A criança monta as sílabas da bolsa; cada sílaba certa é um
 // golpe e o nome completo liberta a criatura. O nome vem de uma Missão de formar palavras; o jogo só o confere.
 public sealed class NameBattle
 {
+	public static readonly IReadOnlyList<string> Mechanics = ["formar_palavras", "ordenar_frases", "completar_frase"];
+
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
 	readonly List<int> chosen = [];
@@ -30,8 +35,23 @@ public sealed class NameBattle
 
 	public IReadOnlyList<string> Name { get; private set; }
 
-	// A palavra inteira, para a voz dizer o nome da criatura.
+	// As peças juntas, para a voz dizer o nome da criatura.
 	public string Word => string.Concat(Name);
+
+	public NameKind Kind => Mission.Mechanic switch { "ordenar_frases" => NameKind.Sentence, "completar_frase" => NameKind.Gap, _ => NameKind.Syllables };
+
+	// O que vem antes e depois da lacuna de uma frase a completar.
+	public string Before { get; private set; } = "";
+
+	public string After { get; private set; } = "";
+
+	// A resposta certa por extenso: o nome, a frase ordenada ou a frase completa.
+	public string Completed => Kind switch
+	{
+		NameKind.Sentence => string.Join(" ", Name),
+		NameKind.Gap => $"{Before}{Name[0]}{After}".Trim(),
+		_ => Word,
+	};
 
 	// A imagem da criatura (um nome de arquivo sem extensão): a criança não precisa ler.
 	public string Image { get; private set; } = "";
@@ -48,8 +68,8 @@ public sealed class NameBattle
 
 	public static Result<NameBattle> Start(IEnumerable<Mission> available, Pcg32 rng)
 	{
-		var usable = available.Where(m => m.Mechanic == "formar_palavras").ToList();
-		if (usable.Count == 0) return Result<NameBattle>.Fail("Não há Missão de formar palavras para o Boneco.");
+		var usable = available.Where(m => Mechanics.Contains(m.Mechanic)).ToList();
+		if (usable.Count == 0) return Result<NameBattle>.Fail("Não há Missão de nome, sílabas ou frase para o Boneco.");
 
 		var battle = new NameBattle(usable, rng);
 		var dealt = battle.Deal(usable[rng.NextInt(usable.Count)]);
@@ -131,35 +151,55 @@ public sealed class NameBattle
 		var parsed = Parse(mission);
 		if (!parsed.IsOk) return Result<bool>.Fail(parsed.Error!);
 
-		var (name, pool, distractors, image) = parsed.Value;
-		var dealt = SyllableBag.Deal(name, pool, distractors, rng);
+		var p = parsed.Value!;
+		var dealt = SyllableBag.Deal(p.Name, p.Pool, p.Distractors, rng);
 		if (!dealt.IsOk) return Result<bool>.Fail($"{mission.Id}: {dealt.Error}");
 
 		Mission = mission;
-		Name = name;
-		Image = image;
+		Name = p.Name;
+		Image = p.Image;
+		Before = p.Before;
+		After = p.After;
 		pieces = [.. dealt.Value!];
 		chosen.Clear();
 		hidden.Clear();
-		struck = new bool[name.Count];
+		struck = new bool[p.Name.Count];
 		return Result<bool>.Ok(true);
 	}
 
-	static Result<(List<string> Name, List<string> Pool, int Distractors, string Image)> Parse(Mission mission)
+	sealed record Parsed(List<string> Name, List<string> Pool, int Distractors, string Image, string Before, string After);
+
+	// Cada Mecânica tem seus parâmetros: sílabas do nome, palavras da frase na ordem, ou a resposta da lacuna e as opções.
+	static Result<Parsed> Parse(Mission mission)
 	{
 		try
 		{
-			var name = mission.Params["syllables"].EnumerateArray().Select(s => s.GetString()!).ToList();
-			var pool = mission.Params["pool"].EnumerateArray().Select(s => s.GetString()!).ToList();
-			var distractors = mission.Params["distractors"].GetInt32();
-			var image = mission.Params["image"].GetString()!;
-			return name.Count == 0
-				? Result<(List<string>, List<string>, int, string)>.Fail($"{mission.Id}: a Missão não tem sílabas.")
-				: Result<(List<string>, List<string>, int, string)>.Ok((name, pool, distractors, image));
+			var p = mission.Params;
+			var image = p["image"].GetString()!;
+			Parsed parsed;
+			switch (mission.Mechanic)
+			{
+				case "ordenar_frases":
+					parsed = new Parsed(Strings(p["words"]), Strings(p["pool"]), p["distractors"].GetInt32(), image, "", "");
+					break;
+				case "completar_frase":
+					var answer = p["answer"].GetString()!;
+					var options = Strings(p["options"]);
+					parsed = new Parsed([answer], options, options.Where(o => !string.Equals(o, answer, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).Count(), image, p["before"].GetString()!, p["after"].GetString()!);
+					break;
+				default:
+					parsed = new Parsed(Strings(p["syllables"]), Strings(p["pool"]), p["distractors"].GetInt32(), image, "", "");
+					break;
+			}
+			return parsed.Name.Count == 0
+				? Result<Parsed>.Fail($"{mission.Id}: a Missão não tem peças.")
+				: Result<Parsed>.Ok(parsed);
 		}
 		catch (Exception e) when (e is KeyNotFoundException or InvalidOperationException or FormatException)
 		{
-			return Result<(List<string>, List<string>, int, string)>.Fail($"{mission.Id}: parâmetros de formar palavras inválidos ({e.Message}).");
+			return Result<Parsed>.Fail($"{mission.Id}: parâmetros de {mission.Mechanic} inválidos ({e.Message}).");
 		}
 	}
+
+	static List<string> Strings(System.Text.Json.JsonElement array) => array.EnumerateArray().Select(s => s.GetString()!).ToList();
 }

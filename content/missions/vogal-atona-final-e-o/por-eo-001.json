@@ -1,0 +1,16 @@
+{
+  "id": "por-eo-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogal-atona-final-e-o",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "gato", "image": "gato" },
+  "prompt": "Esta criatura se chama gato. No fim, o som de u se escreve com O. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: gato. Pense nos sons, um de cada vez.", "A primeira letra é a G.", "A palavra tem 4 letras e termina com a letra O."],
+  "explanation": "O nome é GATO, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

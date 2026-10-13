@@ -92,7 +92,7 @@ public partial class Player : Node3D
 				WalkTo(click.Position);
 				break;
 			// Com o toque também chega um clique emulado; os dois levam ao mesmo ponto, então não atrapalha.
-			case InputEventScreenTouch { Pressed: true } touch:
+			case InputEventScreenTouch { Pressed: true } touch when !Controls.Pinching:
 				WalkTo(touch.Position);
 				break;
 		}

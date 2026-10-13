@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 3,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["Eu","libertei","a","criatura","da","névoa"], "pool": ["prendi","casa","tu"], "distractors": 3, "image": "criatura" },
+  "prompt": "Ponha as palavras na ordem para contar o que você fez.",
+  "hints": ["Comece com quem faz: Eu.", "Depois vem a ação, libertei.", "Termine dizendo de onde: da névoa."],
+  "explanation": "Eu libertei a criatura da névoa.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

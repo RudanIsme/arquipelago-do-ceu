@@ -1,0 +1,16 @@
+{
+  "id": "por-ss-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-s-ss",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "O pato ", "after": " pela ponte.", "answer": "passou", "options": ["pasou","passou","pazou"], "image": "pato" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["O som de s entre vogais se escreve com SS.", "Passou tem S dobrado no meio.", "A palavra certa tem duas letras S."],
+  "explanation": "PASSOU se escreve com SS, para o som de s entre vogais.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

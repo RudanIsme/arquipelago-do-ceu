@@ -67,7 +67,7 @@ dotnet test game.tests
 
 Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil e as telas de Perfil e de Personagem.
 
-Controles no Lobby: WASD ou setas (relativo à tela), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
+Controles no Lobby: WASD ou setas (relativo à tela), roda do mouse, pinça ou Page Up e Page Down para o zoom (Home reinicia), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
 
 ### Piloto de desenvolvimento
 
@@ -77,7 +77,17 @@ O `DevDriver` percorre o jogo como uma criança faria (clica, digita, segura tec
 & $env:GODOT --path game -- --driver=movimento --saida=C:\caminho\da\pasta
 ```
 
-Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config` e `animacao` (imprime no console se a animação de andar está ligada). `--reduzir-animacoes` liga a redução de animações. Ele usa o save do usuário do Godot (`%APPDATA%\Godot\app_userdata\`), então faça uma cópia antes se quiser preservar seus Perfis.
+Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config`, `animacao` (imprime no console se a animação de andar está ligada), `camera`, `efeitos`, `boneco`, `boneco-dislexia`, `erro`, `energia`, `bolha`, `calmo`, `treino-nivel`, `nome`, `nome-erro`, `nivel2-matematica`, `nivel2-escrita` e `nivel3-frase`. `--reduzir-animacoes` liga a redução de animações e `--nivel=N` libera os Níveis até N no treino. O piloto trabalha numa cópia do save do usuário, então não mexe nos seus Perfis.
+
+### Teste de ponta a ponta
+
+O roteiro `e2e-1` cria o Perfil, anda, treina nos dois Papéis e confere que o save não mudou; o `e2e-2`, num segundo processo, reabre o jogo e confere que o Perfil e o progresso são os mesmos. Uma verificação que falha faz o jogo sair com código 1. A CI roda os dois no executável de depuração exportado (job `e2e-windows`). Para rodar aqui, sem janela:
+
+```powershell
+$save = "$env:TEMP\e2e-save.json"; Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue
+& $env:GODOT --headless --path game -- --driver=e2e-1 --save=$save
+& $env:GODOT --headless --path game -- --driver=e2e-2 --save=$save
+```
 
 ## Telas de referência
 

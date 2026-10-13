@@ -1,0 +1,16 @@
+{
+  "id": "por-pont-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "pontuacao-e-dialogo",
+  "bncc": ["EF03LP07"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "Onde está o meu gato", "after": "", "answer": "?", "options": [".","!","?"], "image": "gato" },
+  "prompt": "Qual sinal fecha esta pergunta?",
+  "hints": ["Quando a frase pergunta algo, usamos o ponto de interrogação.", "O sinal tem a forma de um gancho com um ponto.", "É o ponto de interrogação."],
+  "explanation": "Pergunta termina com ponto de interrogação.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

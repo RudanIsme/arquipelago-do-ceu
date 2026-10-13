@@ -1,0 +1,16 @@
+{
+  "id": "por-rr-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-r-rr",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "completar_frase",
+  "params": { "before": "O gato olhou o ", "after": " vermelho.", "answer": "carro", "options": ["caro","carro"], "image": "carro" },
+  "prompt": "Complete a frase da criatura com a palavra bem escrita.",
+  "hints": ["O som forte de r entre vogais se escreve com RR.", "Carro é o veículo com rodas.", "A palavra certa tem duas letras R."],
+  "explanation": "CARRO se escreve com RR, porque o som é forte entre duas vogais.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

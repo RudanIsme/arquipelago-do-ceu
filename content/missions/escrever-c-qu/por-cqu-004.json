@@ -1,0 +1,16 @@
+{
+  "id": "por-cqu-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-c-qu",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "queijo", "image": "queijo" },
+  "prompt": "Esta criatura se chama queijo. O som de k antes de e e i se escreve com QU. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: queijo. Pense nos sons, um de cada vez.", "A primeira letra é a Q.", "A palavra tem 6 letras e termina com a letra O."],
+  "explanation": "O nome é QUEIJO, escrito com 6 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

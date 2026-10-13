@@ -24,15 +24,19 @@ public sealed record MistakeOutcome(bool Empty, bool HintOffered, Prank? Prank);
 public sealed class TrainingSession
 {
 	readonly CombatRules rules;
+
+	// As regras do ano escolhido: a bolsa e os sinais mudam com o Nível, o resto (tempo, Energia, bolha) é igual.
+	public CombatRules Rules => rules;
 	int hintIndex;
 
-	TrainingSession(CombatRules rules, int maxEnergy, TrainingSetup setup, TrainingBattle? math, NameBattle? name)
+	TrainingSession(CombatRules rules, int maxEnergy, TrainingSetup setup, TrainingBattle? math, NameBattle? name, WordBattle? word)
 	{
 		this.rules = rules;
 		Energy = new Energy(maxEnergy);
 		Setup = setup;
 		Math = math;
 		Name = name;
+		Word = word;
 	}
 
 	public Energy Energy { get; }
@@ -44,7 +48,9 @@ public sealed class TrainingSession
 
 	public NameBattle? Name { get; }
 
-	public Mission Mission => Math?.Mission ?? Name!.Mission;
+	public WordBattle? Word { get; }
+
+	public Mission Mission => Math?.Mission ?? Name?.Mission ?? Word!.Mission;
 
 	public int MistakeStreak { get; private set; }
 
@@ -52,8 +58,9 @@ public sealed class TrainingSession
 
 	public bool IsOver => Energy.IsEmpty;
 
-	public static Result<TrainingSession> Start(CombatRules rules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng)
+	public static Result<TrainingSession> Start(CombatRules baseRules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng)
 	{
+		var rules = baseRules.ForYear(setup.Year);
 		if (setup.Year < 1 || setup.Year > unlockedLevel)
 			return Result<TrainingSession>.Fail("Esse Nível ainda não está liberado para treinar.");
 
@@ -63,17 +70,26 @@ public sealed class TrainingSession
 		if (pool.Count == 0)
 			return Result<TrainingSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
 
+		// Escrever a palavra só serve o treino se não houver Missão de nome, sílabas ou frase no mesmo ano e dificuldade.
+		if (setup.Discipline == TrainingSetup.Portuguese && pool.Any(m => m.Mechanic == "escrever_palavra") && !pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic)))
+		{
+			var word = WordBattle.Start(pool, rng);
+			return word.IsOk
+				? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, null, null, word.Value))
+				: Result<TrainingSession>.Fail(word.Error!);
+		}
+
 		if (setup.Discipline == TrainingSetup.Portuguese)
 		{
 			var name = NameBattle.Start(pool, rng);
 			return name.IsOk
-				? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, null, name.Value))
+				? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, null, name.Value, null))
 				: Result<TrainingSession>.Fail(name.Error!);
 		}
 
 		var math = TrainingBattle.Start(rules, pool, rng);
 		return math.IsOk
-			? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, math.Value, null))
+			? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, math.Value, null, null))
 			: Result<TrainingSession>.Fail(math.Error!);
 	}
 
@@ -94,8 +110,9 @@ public sealed class TrainingSession
 
 		Math?.Next();
 		Name?.Next();
+		Word?.Next();
 		hintIndex = 0;
-		var prank = Math?.Bag.PlayPrank() ?? Name!.PlayPrank();
+		var prank = Math?.Bag.PlayPrank() ?? Name?.PlayPrank() ?? Word!.PlayPrank();
 		return new MistakeOutcome(false, HintOffered, prank);
 	}
 
@@ -119,6 +136,7 @@ public sealed class TrainingSession
 	{
 		Math?.Bag.Reveal();
 		Name?.Reveal();
+		Word?.Reveal();
 	}
 
 	// Depois de dissolver o escudo ou libertar a criatura, vem o próximo Desafio.
@@ -126,6 +144,7 @@ public sealed class TrainingSession
 	{
 		Math?.Next();
 		Name?.Next();
+		Word?.Next();
 		hintIndex = 0;
 	}
 }

@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["O","pato","nada","no","lago"], "pool": ["pula","mesa","rio"], "distractors": 3, "image": "pato" },
+  "prompt": "Ponha as palavras na ordem para contar onde o pato nada.",
+  "hints": ["Comece com O e quem faz a ação.", "Depois vem a ação, nada.", "O final diz onde: no lago."],
+  "explanation": "O pato nada no lago.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "por-ss-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-s-ss",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "A ", "after": " é um bom lugar para dormir.", "answer": "casa", "options": ["caza","casa","cassa"], "image": "casa" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["Entre vogais, o som de z se escreve com S.", "Casa tem um S só.", "Não precisa dobrar o S aqui."],
+  "explanation": "CASA tem som de z e se escreve com um S só.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

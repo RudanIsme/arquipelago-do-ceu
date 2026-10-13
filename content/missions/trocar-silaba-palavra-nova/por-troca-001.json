@@ -1,0 +1,16 @@
+{
+  "id": "por-troca-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "trocar-silaba-palavra-nova",
+  "bncc": ["EF02LP02"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "pato", "image": "pato" },
+  "prompt": "Esta criatura se chama pato. Troque a primeira sílaba de gato para fazer o nome. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: pato. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 4 letras e termina com a letra O."],
+  "explanation": "O nome é PATO, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

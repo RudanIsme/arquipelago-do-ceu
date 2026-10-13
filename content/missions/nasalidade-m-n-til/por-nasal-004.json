@@ -1,0 +1,16 @@
+{
+  "id": "por-nasal-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nasalidade-m-n-til",
+  "bncc": ["EF02LP05"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "mão", "image": "mao" },
+  "prompt": "Esta criatura se chama mão. O til fica em cima do A. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: mão. Pense nos sons, um de cada vez.", "A primeira letra é a M.", "A palavra tem 3 letras e termina com a letra O."],
+  "explanation": "O nome é MÃO, escrito com 3 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

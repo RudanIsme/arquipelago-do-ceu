@@ -1,0 +1,16 @@
+{
+  "id": "por-ccv-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-ccv",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "trem", "image": "trem" },
+  "prompt": "Esta criatura se chama trem. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: trem. Pense nos sons, um de cada vez.", "A primeira letra é a T.", "A palavra tem 4 letras e termina com a letra M."],
+  "explanation": "O nome é TREM, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

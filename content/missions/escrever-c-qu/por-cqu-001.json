@@ -1,0 +1,16 @@
+{
+  "id": "por-cqu-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-c-qu",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "casa", "image": "casa" },
+  "prompt": "Esta criatura se chama casa. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: casa. Pense nos sons, um de cada vez.", "A primeira letra é a C.", "A palavra tem 4 letras e termina com a letra A."],
+  "explanation": "O nome é CASA, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

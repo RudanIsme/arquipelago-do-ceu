@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["A","criatura","sorri","para","mim"], "pool": ["chora","casa","ele"], "distractors": 3, "image": "criatura" },
+  "prompt": "Ponha as palavras na ordem para contar o que a criatura faz.",
+  "hints": ["Comece com A e quem faz a ação.", "Depois vem a ação, sorri.", "O final diz para quem: para mim."],
+  "explanation": "A criatura sorri para mim.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

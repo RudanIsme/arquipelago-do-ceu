@@ -1,0 +1,16 @@
+{
+  "id": "por-rr-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-r-rr",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 3,
+  "mechanic": "completar_frase",
+  "params": { "before": "Ele ", "after": " pelo parque.", "answer": "correu", "options": ["coreu","correu"], "image": "parque" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["O som forte de r entre vogais se escreve com RR.", "Correu tem R dobrado no meio.", "A palavra certa tem duas letras R."],
+  "explanation": "CORREU se escreve com RR.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

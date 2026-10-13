@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-006",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 47, "pieces": [20,10,10,5,2], "maxPieces": 5 },
+  "prompt": "Faça 47 sem passar do valor.",
+  "hints": ["Quarenta é quatro dezenas: 20, 10 e 10.", "20 + 10 + 10 = 40. Faltam 7.", "5 e 2 fazem 7."],
+  "explanation": "20 + 10 + 10 + 5 + 2 = 47.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

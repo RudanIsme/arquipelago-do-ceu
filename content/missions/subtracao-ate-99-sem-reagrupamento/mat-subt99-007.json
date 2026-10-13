@@ -1,0 +1,16 @@
+{
+  "id": "mat-subt99-007",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "subtracao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06"],
+  "year": 2,
+  "difficulty": 4,
+  "mechanic": "compor_numero",
+  "params": { "target": 33, "pieces": [20,20,10,3], "maxPieces": 4 },
+  "prompt": "Faça 33 juntando e tirando dezenas.",
+  "hints": ["Duas peças de 20 fazem 40.", "40 passou de 33. Tire uma dezena.", "40 - 10 = 30. Faltam 3."],
+  "explanation": "20 + 20 - 10 + 3 = 33.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

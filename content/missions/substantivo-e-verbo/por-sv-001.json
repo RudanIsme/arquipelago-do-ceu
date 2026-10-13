@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 1,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["O","gato","dorme"], "pool": ["pula","come","casa"], "distractors": 2, "image": "gato" },
+  "prompt": "Ponha as palavras na ordem para contar o que o gato faz.",
+  "hints": ["Toda frase começa com quem faz a ação.", "Primeiro vem O, depois quem faz a ação.", "A última palavra é a ação."],
+  "explanation": "O gato dorme: O é o artigo, gato é o substantivo e dorme é o verbo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

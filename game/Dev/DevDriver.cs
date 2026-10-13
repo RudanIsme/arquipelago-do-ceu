@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -14,6 +15,19 @@ public partial class DevDriver : Node
 	string scenario = "";
 	string outputDir = "";
 
+	// Cada verificação do teste de ponta a ponta que falha entra aqui; o jogo sai com código 1 se houver alguma.
+	public int Failures { get; private set; }
+
+	public void Expect(bool ok, string what)
+	{
+		GD.Print($"{(ok ? "OK" : "FALHOU")}: {what}");
+		if (!ok) Failures++;
+	}
+
+	public string Arg(string name) => OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith($"--{name}="))?[$"--{name}=".Length..] ?? "";
+
+	public bool HasVisible(string text) => GetTree().Root.FindChildren("*", "Label", true, false).Cast<Label>().Any(l => l.IsVisibleInTree() && l.Text.Contains(text));
+
 	public static void AttachIfRequested(Node parent)
 	{
 		var args = OS.GetCmdlineUserArgs();
@@ -27,8 +41,12 @@ public partial class DevDriver : Node
 	{
 		await Wait(0.6);
 		try { await Scenarios.Run(this, scenario); }
-		catch (System.Exception e) { GD.PushError($"Piloto: {e}"); }
-		GetTree().Quit();
+		catch (System.Exception e)
+		{
+			GD.PushError($"Piloto: {e}");
+			Failures++;
+		}
+		GetTree().Quit(Failures > 0 ? 1 : 0);
 	}
 
 	public async Task Wait(double seconds) => await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
@@ -132,6 +150,15 @@ public partial class DevDriver : Node
 	}
 
 	NamePanel? Names => GetTree().Root.FindChildren("*", "", true, false).OfType<NamePanel>().FirstOrDefault();
+
+	WordPanel? Words => GetTree().Root.FindChildren("*", "", true, false).OfType<WordPanel>().FirstOrDefault();
+
+	// Escreve a palavra do Desafio no teclado, letra por letra (só letras sem acento).
+	public async Task TypeWord()
+	{
+		if (Words is not { } panel) { GD.PushError("Piloto: não há escrita de palavra na tela."); return; }
+		foreach (var letter in panel.ExpectedWord) await PressKey((Key)char.ToUpperInvariant(letter));
+	}
 
 	// Escolhe as sílabas do nome pelas teclas 1 a 9; com `wrong`, troca a última por uma que não é do nome.
 	public async Task TypeName(bool wrong = false)
@@ -413,6 +440,74 @@ static class Scenarios
 				await d.Press("Começar");
 				await d.Shot("02-sem-desafios-nessa-dificuldade");
 				break;
+			case "nivel2-matematica":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Nível 2");
+				await d.Shot("01-escolha-nivel-2");
+				await d.Press("Começar");
+				await d.Shot("02-dezenas-na-mao");
+				await d.PressKey(Key.Key1);
+				await d.PressKey(Key.Key0);
+				await d.Shot("03-dez-na-conta");
+				await d.PressKey(Key.Minus);
+				await d.Shot("04-sinal-de-menos");
+				break;
+			case "nivel2-escrita":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Press("Nível 2");
+				await d.Press("Começar");
+				await d.Shot("01-teclado-na-tela");
+				await d.Press("Sugerir letra");
+				await d.Shot("02-letra-sugerida");
+				await d.TypeWord();
+				await d.Shot("03-palavra-escrita");
+				await d.PressKey(Key.Enter);
+				await d.Shot("04-palavra-certa");
+				break;
+			case "nivel3-frase":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Press("Nível 3");
+				await d.Press("Começar");
+				await d.Shot("01-frase");
+				await d.TypeName();
+				await d.Shot("02-frase-montada");
+				await d.PressKey(Key.Enter);
+				await d.Shot("03-frase-certa");
+				break;
+			case "camera":
+				await d.Shot("01-zoom-padrao");
+				for (var i = 0; i < 3; i++) await d.PressKey(Key.Pageup);
+				await d.Wait(1.2);
+				await d.Shot("02-zoom-perto");
+				await d.ClickHex(-4, 3);
+				await d.Wait(4.5);
+				await d.Shot("03-camera-seguiu-o-personagem");
+				for (var i = 0; i < 8; i++) await d.PressKey(Key.Pagedown);
+				await d.Wait(1.2);
+				await d.Shot("04-zoom-longe");
+				await d.PressKey(Key.Home);
+				await d.Wait(1.2);
+				await d.Shot("05-zoom-reiniciado");
+				break;
+			case "efeitos":
+				await d.Shot("01-com-efeitos");
+				await d.Press("Configurações");
+				await d.Press("Acessibilidade");
+				await d.Press("Efeitos visuais reduzidos: Desligado");
+				await d.Press("Fechar");
+				await d.Shot("02-efeitos-reduzidos");
+				break;
+			case "e2e-1":
+				await E2E.First(d);
+				break;
+			case "e2e-2":
+				await E2E.Reopen(d);
+				break;
 			case "mouse":
 				await d.ClickHex(3, -4);
 				await d.Wait(0.9);
@@ -427,5 +522,58 @@ static class Scenarios
 				GD.PushError($"Piloto: cenário '{name}' não existe.");
 				break;
 		}
+	}
+}
+
+// Roteiro de ponta a ponta, feito para rodar no executável do build (CI): cria o Perfil, anda, treina nos dois Papéis e
+// confere que o save não mudou; depois um segundo processo reabre o jogo e confere que o Perfil e o progresso continuam iguais.
+// Uso: <jogo> --headless -- --driver=e2e-1 --save=<arquivo>, e depois o mesmo com --driver=e2e-2.
+static class E2E
+{
+	public static async Task First(DevDriver d)
+	{
+		var save = d.Arg("save");
+		d.Expect(save != "", "o roteiro recebeu --save=<arquivo>");
+
+		await d.Press("Criar");
+		await d.Type("Luna");
+		await d.Press("Criar");
+		d.Expect(d.Button("Personagem") is not null, "o Perfil foi criado e o Lobby abriu");
+		d.Expect(File.Exists(save), "o Perfil foi gravado no save");
+		var before = File.ReadAllBytes(save);
+
+		var start = d.Player!.GroundPosition;
+		// Sem mouse: o teste anda e escolhe a criatura só com ações, que funcionam também sem janela (--headless).
+		await d.Hold(Controls.Down, 1.5);
+		d.Expect(System.Numerics.Vector2.Distance(start, d.Player.GroundPosition) > 0.5f, "o Personagem andou");
+
+		await d.Tap(Controls.Target);
+		d.Expect(d.Button("Começar") is not null, "a escolha do treino abriu");
+		await d.Press("Começar");
+		d.Expect(d.Button("Atacar") is not null, "o treino de Matemática começou");
+		await d.PressNumberKey();
+		await d.PressKey(Key.Escape);
+		await d.Press("Sair do treino");
+
+		await d.Tap(Controls.Target);
+		await d.Press("Escriba");
+		await d.Press("Começar");
+		d.Expect(d.Button("Conferir") is not null, "o treino de Português começou");
+		await d.TypeName();
+		await d.PressKey(Key.Enter);
+		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "o nome certo libertou a criatura");
+		await d.Press("Sair do treino");
+
+		d.Expect(File.ReadAllBytes(save).AsSpan().SequenceEqual(before), "treinar nos dois Papéis não mudou o save");
+		File.WriteAllBytes(save + ".snapshot", File.ReadAllBytes(save));
+	}
+
+	public static async Task Reopen(DevDriver d)
+	{
+		var save = d.Arg("save");
+		await d.Wait(0.5);
+		d.Expect(d.Button("Personagem") is not null, "o Perfil foi aberto sozinho ao reabrir o jogo");
+		d.Expect(d.HasVisible("Luna"), "o apelido do Perfil continua o mesmo");
+		d.Expect(File.Exists(save + ".snapshot") && File.ReadAllBytes(save).AsSpan().SequenceEqual(File.ReadAllBytes(save + ".snapshot")), "o progresso continua idêntico depois de fechar e reabrir");
 	}
 }

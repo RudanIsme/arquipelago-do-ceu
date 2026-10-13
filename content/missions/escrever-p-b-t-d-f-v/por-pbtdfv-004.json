@@ -1,0 +1,16 @@
+{
+  "id": "por-pbtdfv-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-p-b-t-d-f-v",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "vaca", "image": "vaca" },
+  "prompt": "Esta criatura se chama vaca. É vaca com V, não faca com F. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: vaca. Pense nos sons, um de cada vez.", "A primeira letra é a V.", "A palavra tem 4 letras e termina com a letra A."],
+  "explanation": "O nome é VACA, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

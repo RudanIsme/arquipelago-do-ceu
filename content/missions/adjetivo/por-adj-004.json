@@ -1,0 +1,16 @@
+{
+  "id": "por-adj-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "adjetivo",
+  "bncc": ["EF03LP09"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "A casa ", "after": " fica na ilha.", "answer": "azul", "options": ["comer","azul","cadeira"], "image": "casa" },
+  "prompt": "Escolha a palavra que combina com a casa.",
+  "hints": ["O adjetivo diz como a casa é.", "Qual palavra descreve a casa?", "Comer é verbo; cadeira é coisa."],
+  "explanation": "AZUL diz como a casa é, por isso é adjetivo.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

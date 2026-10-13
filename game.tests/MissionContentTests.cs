@@ -61,17 +61,25 @@ public class MissionContentTests
 	{
 		Assert.All(Loaded.Missions, m =>
 		{
-			Assert.All(m.Bncc, code => Assert.StartsWith($"EF0{m.Year}", code));
+			// Uma Missão pode reaproveitar uma habilidade do ano anterior (por exemplo, escrever palavras do 1º ano no 2º).
+			Assert.All(m.Bncc, code => Assert.True(code.StartsWith($"EF0{m.Year}") || code.StartsWith($"EF0{m.Year - 1}"), $"{m.Id}: {code}"));
 			Assert.All(m.Hints, h => Assert.False(string.IsNullOrWhiteSpace(h)));
 		});
 	}
 
+	// Com subtração (2º ano), vale juntar e tirar: o primeiro número entra somando e os outros entram com + ou -.
 	static bool TemSolucao(int target, List<int> pieces, int maxPieces)
 	{
 		for (var mask = 1; mask < 1 << pieces.Count; mask++)
 		{
-			var chosen = Enumerable.Range(0, pieces.Count).Where(i => (mask & 1 << i) != 0).ToList();
-			if (chosen.Count >= 2 && chosen.Count <= maxPieces && chosen.Sum(i => pieces[i]) == target) return true;
+			var chosen = Enumerable.Range(0, pieces.Count).Where(i => (mask & 1 << i) != 0).Select(i => pieces[i]).ToList();
+			if (chosen.Count < 2 || chosen.Count > maxPieces) continue;
+			for (var signs = 0; signs < 1 << (chosen.Count - 1); signs++)
+			{
+				var total = chosen[0];
+				for (var i = 1; i < chosen.Count; i++) total += (signs & 1 << (i - 1)) != 0 ? -chosen[i] : chosen[i];
+				if (total == target) return true;
+			}
 		}
 		return false;
 	}

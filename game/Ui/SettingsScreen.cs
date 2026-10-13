@@ -103,6 +103,7 @@ public partial class SettingsScreen : OverlayScreen
 		AddToggle(box, "Redução de animações", current.ReduceMotion, (s, on) => s with { ReduceMotion = on });
 		AddToggle(box, "Fonte para dislexia", current.DyslexiaFont, (s, on) => s with { DyslexiaFont = on });
 		AddToggle(box, "Modo calmo", current.CalmMode, (s, on) => s with { CalmMode = on });
+		AddToggle(box, "Efeitos visuais reduzidos", current.ReduceEffects, (s, on) => s with { ReduceEffects = on });
 	}
 
 	void VoiceSection(VBoxContainer box)

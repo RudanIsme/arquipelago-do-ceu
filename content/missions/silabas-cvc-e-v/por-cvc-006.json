@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 4,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "carta", "image": "carta" },
+  "prompt": "Esta criatura se chama carta. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: carta. Pense nos sons, um de cada vez.", "A primeira letra é a C.", "A palavra tem 5 letras e termina com a letra A."],
+  "explanation": "O nome é CARTA, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

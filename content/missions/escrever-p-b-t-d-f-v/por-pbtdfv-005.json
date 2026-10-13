@@ -1,0 +1,16 @@
+{
+  "id": "por-pbtdfv-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-p-b-t-d-f-v",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "tia", "image": "tia" },
+  "prompt": "Esta criatura se chama tia. É tia com T, não dia com D. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: tia. Pense nos sons, um de cada vez.", "A primeira letra é a T.", "A palavra tem 3 letras e termina com a letra A."],
+  "explanation": "O nome é TIA, escrito com 3 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

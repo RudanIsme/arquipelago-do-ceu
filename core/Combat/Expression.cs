@@ -4,7 +4,7 @@ public enum Comparison { Below, Equal, Above }
 
 public sealed record ExpressionResult(int Total, Comparison Comparison);
 
-public enum TokenKind { Number, Plus }
+public enum TokenKind { Number, Plus, Minus }
 
 // Uma peça da conta: um número da bolsa ou um sinal da calculadora.
 public readonly record struct Token(TokenKind Kind, int Value = 0)
@@ -13,7 +13,11 @@ public readonly record struct Token(TokenKind Kind, int Value = 0)
 
 	public static readonly Token Plus = new(TokenKind.Plus);
 
-	public override string ToString() => Kind == TokenKind.Plus ? "+" : Value.ToString();
+	public static readonly Token Minus = new(TokenKind.Minus);
+
+	public bool IsOperator => Kind != TokenKind.Number;
+
+	public override string ToString() => Kind switch { TokenKind.Plus => "+", TokenKind.Minus => "-", _ => Value.ToString() };
 }
 
 // A conta é calculada aqui, em código, sobre as peças montadas: nenhum texto de fora vira conta.
@@ -26,13 +30,16 @@ public static class ExpressionEvaluator
 		if (tokens.Count < 3) return Result<ExpressionResult>.Fail("Monte uma conta com um sinal e pelo menos dois números.");
 
 		long total = 0;
+		var subtract = false;
 		for (var i = 0; i < tokens.Count; i++)
 		{
-			var expected = i % 2 == 0 ? TokenKind.Number : TokenKind.Plus;
-			if (tokens[i].Kind != expected) return Result<ExpressionResult>.Fail("A conta precisa alternar número e sinal, e terminar em um número.");
-			if (expected == TokenKind.Number) total += tokens[i].Value;
+			var isNumberSlot = i % 2 == 0;
+			if (tokens[i].IsOperator == isNumberSlot) return Result<ExpressionResult>.Fail("A conta precisa alternar número e sinal, e terminar em um número.");
+			if (!isNumberSlot) subtract = tokens[i].Kind == TokenKind.Minus;
+			else total += subtract ? -tokens[i].Value : tokens[i].Value;
 		}
 		if (tokens.Count % 2 == 0) return Result<ExpressionResult>.Fail("A conta precisa alternar número e sinal, e terminar em um número.");
+		if (total < 1) return Result<ExpressionResult>.Fail("A conta não pode dar zero nem menos que zero. Tente outra.");
 		if (total > int.MaxValue) return Result<ExpressionResult>.Fail("A conta ficou grande demais.");
 
 		var comparison = total < shield ? Comparison.Below : total == shield ? Comparison.Equal : Comparison.Above;

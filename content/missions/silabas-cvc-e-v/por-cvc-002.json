@@ -1,0 +1,16 @@
+{
+  "id": "por-cvc-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "silabas-cvc-e-v",
+  "bncc": ["EF02LP04"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "pasta", "image": "pasta" },
+  "prompt": "Esta criatura se chama pasta. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: pasta. Pense nos sons, um de cada vez.", "A primeira letra é a P.", "A palavra tem 5 letras e termina com a letra A."],
+  "explanation": "O nome é PASTA, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

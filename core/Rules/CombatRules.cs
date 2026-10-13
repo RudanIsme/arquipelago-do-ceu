@@ -4,8 +4,22 @@ namespace ArquipelagoDoCeu.Rules;
 // `MinCoverage` dos pontos tocados e no máximo `MaxStray` do traço fora do guia. Tudo em pixels da área de desenho.
 public sealed record TracingRules(int DotSpacing, float Tolerance, float MinCoverage, float MaxStray);
 
+// A bolsa e os sinais de um ano escolar: a partir do 2º ano entram as dezenas como peça e a subtração.
+public sealed record YearBag(int Year, IReadOnlyList<int> BagNumbers, IReadOnlyList<string> Operators);
+
 // Bolsa do Matemático, sinais da calculadora, tempo da montagem, traçado, Energia, travessura, dica e bolha; todo valor vem de dados.
-public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing, int MistakesForHint, float PrankSeconds, EnergyRules Energy, BubbleRules Bubble);
+// `BagNumbers` e `Operators` são os do 1º ano; `Years` traz os dos anos seguintes.
+public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing, int MistakesForHint, float PrankSeconds, EnergyRules Energy, BubbleRules Bubble, IReadOnlyList<YearBag> Years)
+{
+	// As regras do ano pedido: o último ano definido que não passa dele (o 3º usa os do 2º até existir multiplicação).
+	public CombatRules ForYear(int year)
+	{
+		var bag = Years.Where(y => y.Year <= year).OrderByDescending(y => y.Year).FirstOrDefault();
+		return bag is null ? this : this with { BagNumbers = bag.BagNumbers, Operators = bag.Operators };
+	}
+}
+
+sealed record YearBagDto(int? Year, int[]? BagNumbers, string[]? Operators);
 
 // Quanto cada acontecimento muda a Energia: acerto, golpe perfeito, erro e bolha de névoa.
 public sealed record EnergyRules(int Hit, int Perfect, int Mistake, int Bubble);
@@ -19,16 +33,16 @@ sealed record BubbleDto(float? IntervalSeconds, float? WarningSeconds, float? Sp
 
 sealed record TracingDto(int? DotSpacing, float? Tolerance, float? MinCoverage, float? MaxStray);
 
-sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble);
+sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble, YearBagDto[]? Years);
 
 static class CombatChecks
 {
 	const int HandLimit = 9;
-	const int PieceLimit = 9; // o teclado digita uma tecla por peça; peças maiores esperam a digitação de vários dígitos
+	const int PieceLimit = 99; // no teclado, 10 a 99 se digitam com os dois algarismos
 	const int CopiesLimit = 9;
 	const float MinSlowScale = 0.05f;
 	const float MaxTargetRange = 30f;
-	static readonly string[] SupportedOperators = ["+"];
+	static readonly string[] SupportedOperators = ["+", "-"];
 
 	public static string? Check(CombatDto? combat)
 	{
@@ -51,9 +65,28 @@ static class CombatChecks
 		if (combat.Operators.Length == 0) return "Regras inválidas: 'combat.operators' precisa de ao menos um sinal.";
 		if (combat.Operators.Any(o => !SupportedOperators.Contains(o)))
 			return $"Regras inválidas: 'combat.operators' só aceita {string.Join(", ", SupportedOperators)} por enquanto (veio {string.Join(", ", combat.Operators)}).";
-		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble);
+		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble) ?? CheckYears(combat);
 	}
 
+
+	// `years` é opcional; cada ano repete o que muda: as peças da bolsa e os sinais.
+	static string? CheckYears(CombatDto combat)
+	{
+		if (combat.Years is null) return null;
+		var seen = new HashSet<int>();
+		foreach (var year in combat.Years)
+		{
+			if (year.Year is null) return Required("combat.years[].year");
+			if (year.Year < 2 || year.Year > 3 || !seen.Add(year.Year.Value)) return $"Regras inválidas: 'combat.years[].year' deve ser 2 ou 3 e sem repetição (veio {year.Year}).";
+			if (year.BagNumbers is null || year.BagNumbers.Length == 0) return Required($"combat.years[{year.Year}].bagNumbers");
+			if (year.BagNumbers.Any(n => n < 1 || n > PieceLimit)) return OutOfRange($"combat.years[{year.Year}].bagNumbers", $"1 e {PieceLimit}", string.Join(", ", year.BagNumbers));
+			if (year.BagNumbers.Distinct().Count() != year.BagNumbers.Length) return $"Regras inválidas: 'combat.years[{year.Year}].bagNumbers' tem peças repetidas.";
+			if (combat.HandSize > year.BagNumbers.Length * combat.BagCopies) return $"Regras inválidas: a bolsa de 'combat.years[{year.Year}]' tem menos peças que a mão.";
+			if (year.Operators is null || year.Operators.Length == 0) return Required($"combat.years[{year.Year}].operators");
+			if (year.Operators.Any(o => !SupportedOperators.Contains(o))) return $"Regras inválidas: 'combat.years[{year.Year}].operators' só aceita {string.Join(", ", SupportedOperators)}.";
+		}
+		return null;
+	}
 	static string? CheckFeedback(CombatDto combat)
 	{
 		if (combat.MistakesForHint is null) return Required("combat.mistakesForHint");
@@ -109,7 +142,8 @@ static class CombatChecks
 			new TracingRules(combat.Tracing!.DotSpacing!.Value, combat.Tracing.Tolerance!.Value, combat.Tracing.MinCoverage!.Value, combat.Tracing.MaxStray!.Value),
 			combat.MistakesForHint!.Value, combat.PrankSeconds!.Value,
 			new EnergyRules(combat.Energy!.Hit!.Value, combat.Energy.Perfect!.Value, combat.Energy.Mistake!.Value, combat.Energy.Bubble!.Value),
-			new BubbleRules(combat.Bubble!.IntervalSeconds!.Value, combat.Bubble.WarningSeconds!.Value, combat.Bubble.Speed!.Value, combat.Bubble.Radius!.Value, combat.Bubble.Range!.Value));
+			new BubbleRules(combat.Bubble!.IntervalSeconds!.Value, combat.Bubble.WarningSeconds!.Value, combat.Bubble.Speed!.Value, combat.Bubble.Radius!.Value, combat.Bubble.Range!.Value),
+			[.. (combat.Years ?? []).Select(y => new YearBag(y.Year!.Value, [.. y.BagNumbers!], [.. y.Operators!]))]);
 
 	static string Required(string field) => $"Regras inválidas: o campo '{field}' é obrigatório.";
 

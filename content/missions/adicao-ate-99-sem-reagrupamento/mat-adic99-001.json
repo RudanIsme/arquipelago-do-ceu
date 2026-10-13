@@ -1,0 +1,16 @@
+{
+  "id": "mat-adic99-001",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06","EF02MA04"],
+  "year": 2,
+  "difficulty": 1,
+  "mechanic": "compor_numero",
+  "params": { "target": 30, "pieces": [10,20,5], "maxPieces": 2 },
+  "prompt": "Junte as dezenas para fazer 30 e desfazer a névoa.",
+  "hints": ["A peça 10 vale dez. Quantas dezenas faltam para 30?", "Comece pela peça 20.", "20 e mais quanto dá 30?"],
+  "explanation": "20 + 10 = 30. Juntamos duas dezenas e chegamos a 30.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

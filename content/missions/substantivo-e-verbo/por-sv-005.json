@@ -1,0 +1,16 @@
+{
+  "id": "por-sv-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "substantivo-e-verbo",
+  "bncc": ["EF03LP08"],
+  "year": 3,
+  "difficulty": 3,
+  "mechanic": "ordenar_frases",
+  "params": { "words": ["O","cachorro","esperto","achou","o","osso"], "pool": ["dorme","mesa","bola"], "distractors": 3, "image": "cachorro" },
+  "prompt": "Ponha as palavras na ordem para contar o que o cachorro achou.",
+  "hints": ["Comece com O e quem faz a ação.", "Depois vem como ele é, esperto, e a ação, achou.", "O final é o osso."],
+  "explanation": "O cachorro esperto achou o osso.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

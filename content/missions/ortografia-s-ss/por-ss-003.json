@@ -1,0 +1,16 @@
+{
+  "id": "por-ss-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "ortografia-s-ss",
+  "bncc": ["EF03LP01"],
+  "year": 3,
+  "difficulty": 2,
+  "mechanic": "completar_frase",
+  "params": { "before": "Eu ", "after": " o gato no colo.", "answer": "segurei", "options": ["seguirei","segurei","sequrei"], "image": "gato" },
+  "prompt": "Complete a frase com a palavra bem escrita.",
+  "hints": ["No começo da palavra, o S tem som de s sem dobrar.", "Segurei começa com um S só.", "Depois vem a letra E e a letra G."],
+  "explanation": "SEGUREI começa com S só.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

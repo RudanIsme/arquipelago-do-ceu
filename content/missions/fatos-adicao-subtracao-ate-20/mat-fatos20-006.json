@@ -1,0 +1,16 @@
+{
+  "id": "mat-fatos20-006",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "fatos-adicao-subtracao-ate-20",
+  "bncc": ["EF02MA05"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 19, "pieces": [20,1,5], "maxPieces": 2 },
+  "prompt": "Faça 19 tirando de 20.",
+  "hints": ["Comece pela peça 20 e use o sinal de menos.", "20 menos quanto dá 19?", "A peça 1 serve."],
+  "explanation": "20 - 1 = 19.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

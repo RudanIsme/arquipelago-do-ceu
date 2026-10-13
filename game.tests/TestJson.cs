@@ -29,12 +29,14 @@ static class TestJson
 		    "voiceSpeeds": [
 		      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
 		      { "id": "normal", "name": "Normal", "rate": 1.0 } ],
-		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" } },
+		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal", "reduceEffects": false } },
 		  "combat": { "handSize": 5, "bagNumbers": [1, 2, 3, 4, 5], "bagCopies": 2, "slowTimeScale": 0.25, "targetRange": 5, "operators": ["+"], "tracing": { "dotSpacing": 16, "tolerance": 26, "minCoverage": 0.8, "maxStray": 0.25 },
 		    "mistakesForHint": 2, "prankSeconds": 4, "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
-		    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 } },
+		    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 },
+		    "years": [{ "year": 2, "bagNumbers": [1, 2, 3, 4, 5, 10, 20], "operators": ["+", "-"] }] },
 		  "lobby": {
 		    "interactionReach": 2.0,
+		    "camera": { "size": 28, "minSize": 12, "maxSize": 44, "zoomStep": 3, "followSharpness": 4, "deadZone": 1.5, "maxPan": 9 },
 		    "places": [
 		      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -10, "z": -6 },
 		      { "id": "ciencias", "name": "Ilha das Ciências", "sign": "Em breve", "x": 10, "z": 6 } ],

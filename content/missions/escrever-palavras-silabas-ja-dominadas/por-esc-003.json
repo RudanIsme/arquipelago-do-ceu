@@ -1,0 +1,16 @@
+{
+  "id": "por-esc-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "escrever-palavras-silabas-ja-dominadas",
+  "bncc": ["EF02LP01","EF01LP02"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "sapo", "image": "sapo" },
+  "prompt": "Esta criatura se chama sapo. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: sapo. Pense nos sons, um de cada vez.", "A primeira letra é a S.", "A palavra tem 4 letras e termina com a letra O."],
+  "explanation": "O nome é SAPO, escrito com 4 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

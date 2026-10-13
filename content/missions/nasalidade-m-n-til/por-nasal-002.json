@@ -1,0 +1,16 @@
+{
+  "id": "por-nasal-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nasalidade-m-n-til",
+  "bncc": ["EF02LP05"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "bomba", "image": "bomba" },
+  "prompt": "Esta criatura se chama bomba. Antes de B se usa a letra M. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: bomba. Pense nos sons, um de cada vez.", "A primeira letra é a B.", "A palavra tem 5 letras e termina com a letra A."],
+  "explanation": "O nome é BOMBA, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -12,6 +12,12 @@ public static class Controls
 	public const string Right = "move_right";
 	public const string Interact = "interact";
 	public const string Target = "target";
+	public const string ZoomIn = "zoom_in";
+	public const string ZoomOut = "zoom_out";
+	public const string ZoomReset = "zoom_reset";
+
+	// Verdadeiro durante o gesto de pinça: os dedos que afastam ou aproximam não mandam o Personagem andar.
+	public static bool Pinching { get; set; }
 
 	public static void Register()
 	{
@@ -22,10 +28,24 @@ public static class Controls
 		// Só a tecla E: Espaço e Enter já acionam o botão em foco.
 		Bind(Interact, Key.E);
 		Bind(Target, Key.F, Key.Tab);
+		Bind(ZoomIn, Key.Pageup);
+		Bind(ZoomOut, Key.Pagedown);
+		Bind(ZoomReset, Key.Home);
 	}
 
 	// x para a direita, y para cima, tamanho no máximo 1.
-	public static Vector2 Direction() => Godot.Input.GetVector(Left, Right, Down, Up);
+	// Com a criança escrevendo letras no teclado, W A S D são letras e só as setas andam; o resto do jogo (mouse, toque) segue igual.
+	// Um contador, não um sinalizador: se um painel novo abre no mesmo quadro em que o velho sai, o aviso não se perde.
+	public static int TypingPanels { get; set; }
+
+	static bool TypingLetters => TypingPanels > 0;
+
+	public static Vector2 Direction()
+	{
+		if (!TypingLetters) return Godot.Input.GetVector(Left, Right, Down, Up);
+		static float Axis(Key positive, Key negative) => (Godot.Input.IsPhysicalKeyPressed(positive) ? 1f : 0f) - (Godot.Input.IsPhysicalKeyPressed(negative) ? 1f : 0f);
+		return new Vector2(Axis(Key.Right, Key.Left), Axis(Key.Up, Key.Down)).LimitLength(1f);
+	}
 
 	static void Bind(string action, params Key[] keys)
 	{
@@ -41,8 +61,8 @@ public static class ControlHints
 {
 	public static string For(string controls) => controls switch
 	{
-		"teclado" => "Use as setas ou W A S D para andar, E para usar um objeto e F para escolher a criatura mais perto.",
-		"toque" => "Toque no chão para andar. Toque no botão que aparece para usar um objeto. Toque numa criatura para lutar.",
-		_ => "Clique no chão para andar. Clique no botão que aparece para usar um objeto. Clique numa criatura para lutar.",
+		"teclado" => "Use as setas ou W A S D para andar, E para usar um objeto, F para escolher a criatura mais perto e Page Up e Page Down para o zoom.",
+		"toque" => "Toque no chão para andar. Toque no botão que aparece para usar um objeto. Toque numa criatura para lutar. Use dois dedos para o zoom.",
+		_ => "Clique no chão para andar. Clique no botão que aparece para usar um objeto. Clique numa criatura para lutar. A roda do mouse faz o zoom.",
 	};
 }

@@ -1,0 +1,16 @@
+{
+  "id": "mat-subt99-006",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "subtracao-ate-99-sem-reagrupamento",
+  "bncc": ["EF02MA06"],
+  "year": 2,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 14, "pieces": [20,10,4], "maxPieces": 3 },
+  "prompt": "Faça 14 com as peças 20, 10 e 4.",
+  "hints": ["Tire 10 de 20 primeiro.", "20 - 10 = 10. Faltam 4.", "Junte a peça 4."],
+  "explanation": "20 - 10 + 4 = 14.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

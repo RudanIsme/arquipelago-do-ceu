@@ -1,0 +1,16 @@
+{
+  "id": "por-eo-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogal-atona-final-e-o",
+  "bncc": ["EF02LP03"],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "escrever_palavra",
+  "params": { "word": "dente", "image": "dente" },
+  "prompt": "Esta criatura se chama dente. No fim, o som de i se escreve com E. Escreva o nome dela, letra por letra.",
+  "hints": ["Ouça de novo: dente. Pense nos sons, um de cada vez.", "A primeira letra é a D.", "A palavra tem 5 letras e termina com a letra E."],
+  "explanation": "O nome é DENTE, escrito com 5 letras.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

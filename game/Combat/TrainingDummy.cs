@@ -26,7 +26,7 @@ public partial class TrainingDummy : Node3D
 	readonly MeshInstance3D ring = new()
 	{
 		Mesh = new TorusMesh { InnerRadius = 1.0f, OuterRadius = 1.25f, Rings = 32, RingSegments = 8 },
-		MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#F2B632"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+		MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#F2B632"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, EmissionEnabled = true, Emission = Color.FromHtml("#F2B632"), EmissionEnergyMultiplier = 2f },
 		Scale = new Vector3(1f, 0.15f, 1f),
 		Visible = false,
 	};
@@ -79,6 +79,7 @@ public partial class TrainingDummy : Node3D
 		popup.Position = new Vector3(ground.X, top + 3.3f, ground.Z);
 		AddChild(mist);
 		AddChild(shieldLabel);
+		foreach (var label in new Label3D[] { shieldLabel, popup, creatureMark }) label.AddToGroup(CameraController.LabelGroup);
 		AddChild(popup);
 		AddChild(sound);
 		creature.Position = new Vector3(ground.X, top + 0.5f, ground.Z);
@@ -140,7 +141,7 @@ public partial class TrainingDummy : Node3D
 		var beam = new MeshInstance3D
 		{
 			Mesh = new CylinderMesh { TopRadius = perfect ? 0.4f : 0.25f, BottomRadius = perfect ? 0.4f : 0.25f, Height = length, RadialSegments = 8 },
-			MaterialOverride = new StandardMaterial3D { AlbedoColor = Gold, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, NoDepthTest = true },
+			MaterialOverride = new StandardMaterial3D { AlbedoColor = Gold, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, NoDepthTest = true, EmissionEnabled = true, Emission = Gold, EmissionEnergyMultiplier = 2.5f },
 		};
 		AddChild(beam);
 		beam.GlobalPosition = (from + to) / 2f;

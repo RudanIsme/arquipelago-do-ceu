@@ -91,7 +91,7 @@ public partial class NamePanel : OverlayScreen
 		column.AddThemeConstantOverride("separation", 10);
 		panel.AddChild(column);
 
-		var heading = UiKit.Heading("Qual é o nome da criatura?");
+		var heading = UiKit.Heading(battle.Kind switch { NameKind.Sentence => "Ponha as palavras na ordem", NameKind.Gap => "Complete a frase", _ => "Qual é o nome da criatura?" });
 		heading.CustomMinimumSize = new Vector2(PanelWidth, 0);
 		heading.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		column.AddChild(heading);
@@ -127,7 +127,7 @@ public partial class NamePanel : OverlayScreen
 		actions.AddChild(UiKit.BigButton("Conferir", Check, 196));
 		content.AddChild(actions);
 
-		var keys = UiKit.Hint("Teclado: 1 a 9 escolhem a sílaba, Backspace desfaz, Enter confere, Esc solta o alvo.");
+		var keys = UiKit.Hint("Teclado: 1 a 9 escolhem a peça, Backspace desfaz, Enter confere, Esc solta o alvo.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);
 		content.AddChild(keys);
 
@@ -168,12 +168,17 @@ public partial class NamePanel : OverlayScreen
 
 	public void Refresh()
 	{
-		var slots = Enumerable.Range(0, battle.Name.Count).Select(i => i < battle.Chosen.Count ? battle.Pieces[battle.Chosen[i]].ToUpperInvariant() : "__");
-		nameLabel.Text = string.Join("  ·  ", slots);
+		var slots = Enumerable.Range(0, battle.Name.Count).Select(i => i < battle.Chosen.Count ? Label(battle.Pieces[battle.Chosen[i]]) : "__");
+		nameLabel.Text = battle.Kind switch
+		{
+			NameKind.Sentence => string.Join(" ", slots),
+			NameKind.Gap => $"{battle.Before}{slots.First()}{battle.After}",
+			_ => string.Join("  ·  ", slots),
+		};
 		for (var i = 0; i < pieceButtons.Count; i++)
 		{
 			var hidden = battle.IsHidden(i);
-			pieceButtons[i].Text = hidden ? "?" : battle.Pieces[i].ToUpperInvariant();
+			pieceButtons[i].Text = hidden ? "?" : Label(battle.Pieces[i]);
 			pieceButtons[i].Disabled = hidden || battle.Chosen.Contains(i);
 			// A peça escondida fica no lugar, esmaecida e com "?", para as outras não pularem de posição.
 			pieceButtons[i].Modulate = new Color(1f, 1f, 1f, hidden ? 0.4f : 1f);
@@ -182,10 +187,19 @@ public partial class NamePanel : OverlayScreen
 		NotifyComposing();
 	}
 
+	// Sílabas vão em maiúscula, como no pontilhado; palavras de frases ficam como foram escritas, com a ortografia à vista.
+	string Label(string piece) => battle.Kind == NameKind.Syllables ? piece.ToUpperInvariant() : piece;
+
 	// Com o mouse ou o dedo, tocar na sílaba a diz e abre o pontilhado; ela só entra no nome depois de desenhada.
+	// Palavras de frases entram direto: no 3º ano a criança já escreve, e o desafio é a ordem e a ortografia.
 	async void ChooseWithDrawing(int index)
 	{
 		if (tracing || battle.Chosen.Contains(index) || battle.IsHidden(index) || battle.Chosen.Count >= battle.Name.Count) return;
+		if (battle.Kind != NameKind.Syllables)
+		{
+			Choose(index);
+			return;
+		}
 		tracing = true;
 		tracingPiece = index;
 		content.Visible = false;
@@ -241,7 +255,7 @@ public partial class NamePanel : OverlayScreen
 		}
 		var verdict = battle.Check();
 		// Cada sílaba leva a palavra "certa" ou "errada": a cor sozinha nunca diz o resultado.
-		var parts = battle.Chosen.Select((piece, i) => $"{battle.Pieces[piece].ToUpperInvariant()}: {(verdict.Correct[i] ? "certa" : "errada")}");
+		var parts = battle.Chosen.Select((piece, i) => $"{Label(battle.Pieces[piece])}: {(verdict.Correct[i] ? "certa" : "errada")}");
 		resultLabel.Text = string.Join("   ", parts);
 		Refresh();
 		Checked?.Invoke(verdict);
