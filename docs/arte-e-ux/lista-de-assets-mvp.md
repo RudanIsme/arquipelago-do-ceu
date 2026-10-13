@@ -1,35 +1,31 @@
-# Lista de assets do MVP
+# Lista de assets para testar a ideia
 
-O que precisa existir para o MVP (duas torres, o Lobby, dois Papéis e 12 criaturas), separado por como cada coisa é feita. **Proposta**, a confirmar. Os limites de triângulos estão no [guia de estilo visual](guia-de-estilo-visual.md), seção 8. Custos em créditos do Meshy, medidos: modelo `latest` = 30, `meshy-6-lite` = 15 (visual faceteado, bom para fundo), remesh = 5.
+Escopo **mínimo** para validar o jogo: andar no Lobby, treinar contra o Boneco e ver uma criatura de cada torre. **Sem customização por enquanto:** nada de cabelos, partes do rosto, roupas por Papel nem criaturas extras. Os limites de triângulos estão no [guia de estilo visual](guia-de-estilo-visual.md), seção 8. Custos medidos em créditos do Meshy: modelo `latest` = 30, `meshy-6-lite` = 15, remesh e rig = 5.
 
-## 1. Gerar no Meshy (Image to 3D)
+## Modelos gerados (todos em `docs/arte-e-ux/meshy/modelos/`, fora do Git)
 
-| Grupo | Assets | Modelo | Créditos |
-| --- | --- | --- | --- |
-| Personagem | Corpo base com **rosto liso** (inclui gerar a imagem nova) | latest | 33 |
-| | 4 cabelos (curto bagunçado, afro, longo ondulado, maria-chiquinha) | lite | 60 |
-| | 2 ferramentas (cajado de ábaco, cajado do Escriba) | lite | 30 |
-| NPCs | Guia (3.000 triângulos) e Boneco de treino (amigável, nova imagem) | latest | 63 |
-| Lobby | Portal da Memória, atril do Álbum, canteiro em construção, 2 árvores, 1 pedra | lite | 90 |
-| | Torre das Letras | latest | 30 |
-| Criaturas de Números | 5 novas (coruja com ábaco, pássaro de engrenagens, pardal com hélice, coruja-relógio, coruja grande); a coruja básica já está pronta | latest | 150 |
-| Criaturas de Letras | 6 (pato, bode, sapo, gato, mula, bota) | latest | 180 |
-| **Total** | **27 modelos** | | **cerca de 636** |
+| Grupo | Asset | Triângulos | Limite | Modelo |
+| --- | --- | --- | --- | --- |
+| Personagem | Corpo base, com rig de 24 ossos, andar e correr | 3.671 | 3.500 | latest + remesh + rig |
+| Lobby | Boneco de treino | 2.529 | 2.500 | latest |
+| | Guia | 3.132 | 3.000 | latest |
+| | Portal de fast travel | 1.469 | 1.500 | lite |
+| | Atril do Álbum | 796 | 800 | lite |
+| | Grupo de árvores | 420 | 600 | lite |
+| Torres | Torre dos Números | 5.851 | 6.000 | latest |
+| | Torre das Letras | 5.849 | 6.000 | latest |
+| Criaturas | Coruja mecânica (Números) | 2.580 | 2.500 | latest |
+| | Pato (Letras) | 2.615 | 2.500 | latest |
 
-Saldo em 2026-10-13: 880. A torre dos Números e a coruja básica já estão gerados.
+Os arquivos têm 1 textura de 2048 px (o do Personagem, 3), mas só a cor base será usada, a 1024 px no import do Godot. Os que passam um pouco do limite (até 5%) foram aceitos para o teste.
 
-## 2. Sem modelo do Meshy
+## Sem modelo do Meshy
 
-- **Chão hexagonal:** um prisma hexagonal de poucos triângulos, feito no Godot, com texturas pintadas a partir da folha `30-chao-hexagonal-vivo`.
-- **Água, nuvens, névoa, efeitos:** shaders e partículas do Godot.
-- **Rosto do Personagem:** olhos por IA (folha `31a`), sobrancelhas e bocas em vetor.
+- **Chão hexagonal:** um prisma hexagonal simples no Godot, com texturas pintadas a partir da folha `30-chao-hexagonal-vivo`.
+- **Água, nuvens, névoa e efeitos:** shaders e partículas do Godot.
+- **Animação de criaturas e torres:** no Godot, sem esqueleto (seção 9 do guia).
 - **Interface:** Control nodes com a fonte do HUD.
 
-## 3. Fica para depois do MVP
+## Fica para depois
 
-Roupas completas dos Papéis ajustadas ao corpo (exigem Blender), as outras três torres, criaturas além das 12, objetos de interior das salas e o balão e as ilhas do céu.
-
-## 4. Pendências de decisão
-
-- Confirmar a lista e os limites de triângulos.
-- Como vestir o Personagem no MVP: peças modulares ajustadas no Blender, ou modelos completos por Papel.
+Customização do Personagem (cabelos, partes do rosto, roupas e ferramentas dos Papéis, que exigem Blender), criaturas além de uma por torre, as outras três torres, interiores das salas, balão e ilhas do céu.
