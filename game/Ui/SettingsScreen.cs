@@ -1,5 +1,6 @@
 using System;
 using ArquipelagoDoCeu.Settings;
+using ArquipelagoDoCeu.Voice;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -7,15 +8,19 @@ namespace ArquipelagoDoCeu;
 // Configurações do aparelho em três seções. Cada mudança é gravada na hora e vale na hora em todas as telas.
 public partial class SettingsScreen : OverlayScreen
 {
+	const string TestPhrase = "Olá! Eu sou a voz do jogo.";
+
 	readonly SettingsService settings;
+	readonly VoiceService voice;
 	readonly string? nickname;
 	readonly Action openProfiles;
 	string section = "jogo";
 	string? error;
 
-	public SettingsScreen(SettingsService settings, string? nickname, Action openProfiles)
+	public SettingsScreen(SettingsService settings, VoiceService voice, string? nickname, Action openProfiles)
 	{
 		this.settings = settings;
+		this.voice = voice;
 		this.nickname = nickname;
 		this.openProfiles = openProfiles;
 	}
@@ -26,6 +31,13 @@ public partial class SettingsScreen : OverlayScreen
 		Build();
 	}
 
+	// A frase de teste não continua falando depois que a tela fecha.
+	public override void _ExitTree()
+	{
+		base._ExitTree();
+		voice.Stop();
+	}
+
 	void Build()
 	{
 		var focus = UiKit.FocusIndex(this);
@@ -34,6 +46,7 @@ public partial class SettingsScreen : OverlayScreen
 		switch (section)
 		{
 			case "acessibilidade": Accessibility(box); break;
+			case "voz": VoiceSection(box); break;
 			case "controles": ControlsSection(box); break;
 			default: Game(box); break;
 		}
@@ -47,10 +60,10 @@ public partial class SettingsScreen : OverlayScreen
 		var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
 		row.AddThemeConstantOverride("separation", 10);
 		var group = new ButtonGroup();
-		foreach (var (id, name) in new[] { ("jogo", "Jogo"), ("acessibilidade", "Acessibilidade"), ("controles", "Controles") })
+		foreach (var (id, name) in new[] { ("jogo", "Jogo"), ("acessibilidade", "Acessibilidade"), ("voz", "Voz"), ("controles", "Controles") })
 		{
 			var target = id;
-			var tab = UiKit.BigButton(name, () => { section = target; Build(); }, 200);
+			var tab = UiKit.BigButton(name, () => { section = target; Build(); }, 190);
 			tab.ToggleMode = true;
 			tab.ButtonGroup = group;
 			tab.ButtonPressed = id == section;
@@ -87,10 +100,60 @@ public partial class SettingsScreen : OverlayScreen
 		}
 		box.AddChild(sizes);
 
-		AddToggle(box, "Voz", current.Voice, (s, on) => s with { Voice = on });
 		AddToggle(box, "Redução de animações", current.ReduceMotion, (s, on) => s with { ReduceMotion = on });
 		AddToggle(box, "Fonte para dislexia", current.DyslexiaFont, (s, on) => s with { DyslexiaFont = on });
 		AddToggle(box, "Modo calmo", current.CalmMode, (s, on) => s with { CalmMode = on });
+	}
+
+	void VoiceSection(VBoxContainer box)
+	{
+		var current = settings.Current;
+		AddToggle(box, "Voz", current.Voice, (s, on) => s with { Voice = on });
+		if (!current.Voice)
+		{
+			box.AddChild(UiKit.Hint("Com a voz desligada, o jogo só mostra os textos."));
+			return;
+		}
+
+		if (voice.MissingVoiceNotice is { } missing)
+		{
+			box.AddChild(UiKit.Hint(missing));
+			return;
+		}
+
+		box.AddChild(UiKit.Hint("Velocidade da fala"));
+		var speeds = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+		speeds.AddThemeConstantOverride("separation", 8);
+		var speedGroup = new ButtonGroup();
+		foreach (var speed in settings.Options.VoiceSpeeds)
+		{
+			var id = speed.Id;
+			var button = UiKit.BigButton(speed.Name, () => Apply(s => s with { VoiceSpeed = id }), 190);
+			button.ToggleMode = true;
+			button.ButtonGroup = speedGroup;
+			button.ButtonPressed = speed.Id == current.VoiceSpeed;
+			speeds.AddChild(button);
+		}
+		box.AddChild(speeds);
+
+		var voices = voice.PortugueseVoices();
+		if (voices.Count > 1)
+		{
+			box.AddChild(UiKit.Hint("Voz"));
+			var voiceGroup = new ButtonGroup();
+			var chosen = voice.Chosen()?.Id;
+			foreach (var option in voices)
+			{
+				var id = option.Id;
+				var button = UiKit.BigButton(option.Name, () => Apply(s => s with { VoiceId = id }), 420);
+				button.ToggleMode = true;
+				button.ButtonGroup = voiceGroup;
+				button.ButtonPressed = id == chosen;
+				box.AddChild(button);
+			}
+		}
+
+		box.AddChild(UiKit.BigButton("Ouvir a voz", () => voice.Say(TestPhrase, interrupt: true), 420));
 	}
 
 	void ControlsSection(VBoxContainer box)

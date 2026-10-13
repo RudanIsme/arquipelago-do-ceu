@@ -4,6 +4,7 @@ using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Settings;
+using ArquipelagoDoCeu.Voice;
 using ArquipelagoDoCeu.World;
 using Godot;
 
@@ -25,6 +26,7 @@ public partial class Main : Node3D
 	GameRules rules = null!;
 	ProfileService profiles = null!;
 	SettingsService settings = null!;
+	VoiceService voice = null!;
 	ProfileScreen? screen;
 	CharacterEditor? editor;
 	OverlayScreen? overlay;
@@ -54,6 +56,7 @@ public partial class Main : Node3D
 		var session = new SaveSession(store, save.Value!);
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
+		voice = new VoiceService(new GodotSpeechEngine(), settings);
 
 		Controls.Register();
 		lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
@@ -66,6 +69,11 @@ public partial class Main : Node3D
 		settings.Changed += ApplySettings;
 		ApplySettings(settings.Current);
 		StartFlow();
+		if (voice.MissingVoiceNotice is { } missing && string.IsNullOrEmpty(notice.Text))
+		{
+			notice.Text = missing;
+			GD.PushWarning(missing);
+		}
 		DevDriver.AttachIfRequested(this);
 
 		GD.Print("Cena inicial pronta.");
@@ -244,7 +252,7 @@ public partial class Main : Node3D
 		UpdatePlayerControl();
 	}
 
-	void ShowSettings() => ShowOverlay(new SettingsScreen(settings, current?.Nickname, ShowProfiles));
+	void ShowSettings() => ShowOverlay(new SettingsScreen(settings, voice, current?.Nickname, ShowProfiles));
 
 	void ShowOverlay(OverlayScreen next)
 	{
@@ -271,8 +279,20 @@ public partial class Main : Node3D
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(new PortalScreen()); break;
+			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
+	}
+
+	void ShowGuide()
+	{
+		var guide = rules.Lobby.Objects.First(o => o.Id == "guia");
+		if (guide.Lines.Count == 0)
+		{
+			GD.PushWarning("O Guia não tem falas em rules.json.");
+			return;
+		}
+		ShowOverlay(new GuideScreen(guide.Name, guide.Lines, voice));
 	}
 
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.

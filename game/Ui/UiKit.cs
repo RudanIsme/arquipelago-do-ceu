@@ -66,6 +66,15 @@ public static class UiKit
 		return label;
 	}
 
+	// Fala escrita (legenda): maior que a dica, para uma criança que ainda aprende a ler.
+	public static Label Caption(string text)
+	{
+		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
+		label.AddThemeFontSizeOverride("font_size", 32);
+		label.AddThemeColorOverride("font_color", Soft);
+		return label;
+	}
+
 	// Texto sobre a cena: painel escuro translúcido para o texto ler bem sobre o céu e o chão claros.
 	public static PanelContainer HintBar(Label label)
 	{

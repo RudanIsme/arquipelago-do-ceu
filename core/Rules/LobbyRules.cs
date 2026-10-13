@@ -4,7 +4,8 @@ namespace ArquipelagoDoCeu.Rules;
 public sealed record LobbyPlace(string Id, string Name, string Sign, string? Model, float X, float Z);
 
 // Objeto com que a criança interage na ilha central; Id é o que o jogo reconhece ("album", "portal").
-public sealed record LobbyObject(string Id, string Name, string Prompt, string? Model, int Q, int R);
+// Lines são as falas de um objeto que conversa (o Guia); vazio nos demais.
+public sealed record LobbyObject(string Id, string Name, string Prompt, string? Model, int Q, int R, IReadOnlyList<string> Lines);
 
 public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects);
 
@@ -12,23 +13,27 @@ public sealed record TextSizeOption(string Id, string Name, float Scale);
 
 public sealed record ControlOption(string Id, string Name);
 
-public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls);
+public sealed record VoiceSpeedOption(string Id, string Name, float Rate);
 
-public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, SettingsDefaults Defaults);
+public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls, string VoiceSpeed);
+
+public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, IReadOnlyList<VoiceSpeedOption> VoiceSpeeds, SettingsDefaults Defaults);
 
 sealed record LobbyDto(float? InteractionReach, List<PlaceDto?>? Places, List<ObjectDto?>? Objects);
 
 sealed record PlaceDto(string? Id, string? Name, string? Sign, string? Model, float? X, float? Z);
 
-sealed record ObjectDto(string? Id, string? Name, string? Prompt, string? Model, int? Q, int? R);
+sealed record ObjectDto(string? Id, string? Name, string? Prompt, string? Model, int? Q, int? R, List<string?>? Lines);
 
-sealed record SettingsDto(List<TextSizeDto?>? TextSizes, List<ControlDto?>? Controls, SettingsDefaultsDto? Defaults);
+sealed record SettingsDto(List<TextSizeDto?>? TextSizes, List<ControlDto?>? Controls, List<VoiceSpeedDto?>? VoiceSpeeds, SettingsDefaultsDto? Defaults);
 
 sealed record TextSizeDto(string? Id, string? Name, float? Scale);
 
 sealed record ControlDto(string? Id, string? Name);
 
-sealed record SettingsDefaultsDto(string? TextSize, bool? Voice, bool? ReduceMotion, bool? DyslexiaFont, bool? CalmMode, string? Controls);
+sealed record VoiceSpeedDto(string? Id, string? Name, float? Rate);
+
+sealed record SettingsDefaultsDto(string? TextSize, bool? Voice, bool? ReduceMotion, bool? DyslexiaFont, bool? CalmMode, string? Controls, string? VoiceSpeed);
 
 // Validação do Lobby e das configurações; devolve a primeira mensagem de erro, ou null se está tudo certo.
 static class LobbyChecks
@@ -37,6 +42,8 @@ static class LobbyChecks
 	const float MaxReach = 10f;
 	const float MinScale = 0.75f;
 	const float MaxScale = 2f;
+	const float MinRate = 0.5f;
+	const float MaxRate = 2f;
 
 	public static string? CheckLobby(LobbyDto? lobby)
 	{
@@ -71,6 +78,7 @@ static class LobbyChecks
 			if (Blank(item.Prompt)) return Required($"{path}.prompt");
 			if (item.Q is null) return Required($"{path}.q");
 			if (item.R is null) return Required($"{path}.r");
+			if (item.Lines?.Any(Blank) == true) return Required($"{path}.lines");
 		}
 		return null;
 	}
@@ -78,13 +86,14 @@ static class LobbyChecks
 	public static LobbyRules BuildLobby(LobbyDto lobby) => new(
 		lobby.InteractionReach!.Value,
 		lobby.Places!.Select(p => new LobbyPlace(p!.Id!, p.Name!, p.Sign!, Blank(p.Model) ? null : p.Model, p.X!.Value, p.Z!.Value)).ToList(),
-		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value)).ToList());
+		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList());
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{
 		if (settings is null) return Required("settings");
 		if (settings.TextSizes is null || settings.TextSizes.Count == 0) return Required("settings.textSizes");
 		if (settings.Controls is null || settings.Controls.Count == 0) return Required("settings.controls");
+		if (settings.VoiceSpeeds is null || settings.VoiceSpeeds.Count == 0) return Required("settings.voiceSpeeds");
 		if (settings.Defaults is null) return Required("settings.defaults");
 
 		var sizeIds = new HashSet<string>();
@@ -110,6 +119,19 @@ static class LobbyChecks
 			if (Blank(control.Name)) return Required($"{path}.name");
 		}
 
+		var speedIds = new HashSet<string>();
+		for (var i = 0; i < settings.VoiceSpeeds.Count; i++)
+		{
+			var path = $"settings.voiceSpeeds[{i}]";
+			var speed = settings.VoiceSpeeds[i];
+			if (speed is null || Blank(speed.Id)) return Required($"{path}.id");
+			if (!speedIds.Add(speed.Id!)) return Duplicate("velocidade de voz", speed.Id!, "settings.voiceSpeeds");
+			if (Blank(speed.Name)) return Required($"{path}.name");
+			if (speed.Rate is null) return Required($"{path}.rate");
+			if (speed.Rate < MinRate || speed.Rate > MaxRate)
+				return $"Regras inválidas: '{path}.rate' deve estar entre {MinRate} e {MaxRate} (veio {speed.Rate}).";
+		}
+
 		var defaults = settings.Defaults;
 		if (defaults.Voice is null) return Required("settings.defaults.voice");
 		if (defaults.ReduceMotion is null) return Required("settings.defaults.reduceMotion");
@@ -119,19 +141,23 @@ static class LobbyChecks
 			return $"Regras inválidas: '{"settings.defaults.textSize"}' deve ser um dos tamanhos de 'settings.textSizes' (veio '{defaults.TextSize}').";
 		if (defaults.Controls is null || !controlIds.Contains(defaults.Controls))
 			return $"Regras inválidas: '{"settings.defaults.controls"}' deve ser um dos controles de 'settings.controls' (veio '{defaults.Controls}').";
+		if (defaults.VoiceSpeed is null || !speedIds.Contains(defaults.VoiceSpeed))
+			return $"Regras inválidas: '{"settings.defaults.voiceSpeed"}' deve ser uma das velocidades de 'settings.voiceSpeeds' (veio '{defaults.VoiceSpeed}').";
 		return null;
 	}
 
 	public static SettingsRules BuildSettings(SettingsDto settings) => new(
 		settings.TextSizes!.Select(t => new TextSizeOption(t!.Id!, t.Name!, t.Scale!.Value)).ToList(),
 		settings.Controls!.Select(c => new ControlOption(c!.Id!, c.Name!)).ToList(),
+		settings.VoiceSpeeds!.Select(v => new VoiceSpeedOption(v!.Id!, v.Name!, v.Rate!.Value)).ToList(),
 		new SettingsDefaults(
 			settings.Defaults!.TextSize!,
 			settings.Defaults.Voice!.Value,
 			settings.Defaults.ReduceMotion!.Value,
 			settings.Defaults.DyslexiaFont!.Value,
 			settings.Defaults.CalmMode!.Value,
-			settings.Defaults.Controls!));
+			settings.Defaults.Controls!,
+			settings.Defaults.VoiceSpeed!));
 
 	static bool Blank(string? text) => string.IsNullOrWhiteSpace(text);
 
