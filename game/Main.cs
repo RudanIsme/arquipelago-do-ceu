@@ -23,6 +23,8 @@ public partial class Main : Node3D
 		GetNode<Label>("Interface/Notice").Text = notice;
 		if (notice != "") GD.PushWarning(notice);
 
+		AddChild(GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate());
+
 		GD.Print("Cena inicial pronta.");
 	}
 
