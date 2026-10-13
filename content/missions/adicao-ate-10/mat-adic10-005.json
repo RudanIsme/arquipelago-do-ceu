@@ -1,0 +1,20 @@
+{
+  "id": "mat-adic10-005",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-10",
+  "bncc": ["EF01MA06"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 8, "pieces": [5,3,6,1], "maxPieces": 2 },
+  "prompt": "Some duas peças para montar o 8 e atravessar a ponte.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 8.",
+    "Comece pela peça 5.",
+    "5 e mais quanto dá 8?"
+  ],
+  "explanation": "5 + 3 = 8. Juntamos as peças e chegamos a 8.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

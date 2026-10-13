@@ -1,0 +1,20 @@
+{
+  "id": "mat-adic10-001",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-10",
+  "bncc": ["EF01MA06"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "compor_numero",
+  "params": { "target": 3, "pieces": [1,2,5], "maxPieces": 2 },
+  "prompt": "Quanto é 1 + 2? Monte o 3 para acender a lanterna!",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 3.",
+    "Comece pela peça 1.",
+    "1 e mais quanto dá 3?"
+  ],
+  "explanation": "1 + 2 = 3. Juntamos as peças e chegamos a 3.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

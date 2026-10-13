@@ -1,0 +1,20 @@
+{
+  "id": "mat-adic10-004",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-10",
+  "bncc": ["EF01MA06"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 7, "pieces": [3,4,6,2], "maxPieces": 2 },
+  "prompt": "Quanto é 3 + 4? Monte o 7 para desfazer a nuvem de tempestade!",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 7.",
+    "Comece pela peça 3.",
+    "3 e mais quanto dá 7?"
+  ],
+  "explanation": "3 + 4 = 7. Juntamos as peças e chegamos a 7.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

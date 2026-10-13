@@ -1,0 +1,20 @@
+{
+  "id": "mat-comp5-006",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "composicao-ate-5",
+  "bncc": ["EF01MA07", "EF01MA02"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 5, "pieces": [1,2,3,4], "maxPieces": 2 },
+  "prompt": "Monte o número 5 para soltar o balão preso!",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 5.",
+    "Comece pela peça 1.",
+    "1 e mais quanto dá 5?"
+  ],
+  "explanation": "1 + 4 = 5. Juntamos as peças e chegamos a 5.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

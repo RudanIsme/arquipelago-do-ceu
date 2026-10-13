@@ -1,0 +1,20 @@
+{
+  "id": "mat-comp10-004",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "composicao-ate-10",
+  "bncc": ["EF01MA07"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": { "target": 9, "pieces": [4,5,7,3], "maxPieces": 2 },
+  "prompt": "Faça 9 com duas peças para religar a ponte de nuvens.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 9.",
+    "Comece pela peça 4.",
+    "4 e mais quanto dá 9?"
+  ],
+  "explanation": "4 + 5 = 9. Juntamos as peças e chegamos a 9.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

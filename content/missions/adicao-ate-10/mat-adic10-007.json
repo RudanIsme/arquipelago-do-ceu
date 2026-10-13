@@ -1,0 +1,20 @@
+{
+  "id": "mat-adic10-007",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-10",
+  "bncc": ["EF01MA06"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 10, "pieces": [6,4,3,8], "maxPieces": 2 },
+  "prompt": "Quais duas peças somam 10? Monte o 10 para abrir o portão.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 10.",
+    "Comece pela peça 6.",
+    "6 e mais quanto dá 10?"
+  ],
+  "explanation": "6 + 4 = 10. Juntamos as peças e chegamos a 10.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}
