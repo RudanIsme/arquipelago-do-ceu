@@ -60,32 +60,48 @@ public sealed class MathBag
 	}
 }
 
-// O cajado: onde a criança monta a conta antes de confirmar. Montar e desfazer não são resposta;
-// só Confirm gasta as peças e devolve a avaliação.
+// O cajado: a calculadora onde a criança monta a conta antes de confirmar, número, sinal, número...
+// Montar e desfazer não são resposta; só Confirm gasta as peças e devolve a avaliação. Quem soma é a
+// criança: o cajado nunca expõe o total antes da confirmação.
 public sealed class Staff
 {
 	readonly MathBag bag;
-	readonly List<(int Slot, int Piece)> placed = [];
+	readonly IReadOnlyList<string> operators;
+	readonly List<(int Slot, Token Token)> placed = [];
 
-	public Staff(MathBag bag) => this.bag = bag;
+	public Staff(MathBag bag, CombatRules rules)
+	{
+		this.bag = bag;
+		operators = rules.Operators;
+	}
 
-	public IReadOnlyList<int> Pieces => placed.Select(p => p.Piece).ToList();
+	public IReadOnlyList<Token> Tokens => placed.Select(p => p.Token).ToList();
 
-	public int Total => placed.Sum(p => p.Piece);
+	// Um número vem depois de um sinal (ou abre a conta); um sinal vem depois de um número.
+	public bool CanPlaceNumber => placed.Count == 0 || placed[^1].Token.Kind == TokenKind.Plus;
+
+	public bool CanPlaceOperator => placed.Count > 0 && placed[^1].Token.Kind == TokenKind.Number;
 
 	public bool Place(int slot)
 	{
-		if (bag.Take(slot) is not { } piece) return false;
-		placed.Add((slot, piece));
+		if (!CanPlaceNumber || bag.Take(slot) is not { } piece) return false;
+		placed.Add((slot, Token.Number(piece)));
+		return true;
+	}
+
+	public bool PlaceOperator(string symbol)
+	{
+		if (!CanPlaceOperator || symbol != "+" || !operators.Contains(symbol)) return false;
+		placed.Add((-1, Token.Plus));
 		return true;
 	}
 
 	public bool Undo()
 	{
 		if (placed.Count == 0) return false;
-		var (slot, piece) = placed[^1];
+		var (slot, token) = placed[^1];
 		placed.RemoveAt(placed.Count - 1);
-		bag.Return(slot, piece);
+		if (token.Kind == TokenKind.Number) bag.Return(slot, token.Value);
 		return true;
 	}
 
@@ -96,7 +112,7 @@ public sealed class Staff
 
 	public Result<ExpressionResult> Confirm(int shield)
 	{
-		var result = ExpressionEvaluator.Evaluate(Pieces, shield);
+		var result = ExpressionEvaluator.Evaluate(Tokens, shield);
 		if (!result.IsOk) return result;
 
 		// Passar do valor não vale: a conta fica à vista no resultado, mas as peças voltam para a mão e a criança tenta outra combinação.
@@ -106,7 +122,7 @@ public sealed class Staff
 			return result;
 		}
 
-		var used = Pieces;
+		var used = placed.Where(p => p.Token.Kind == TokenKind.Number).Select(p => p.Token.Value).ToList();
 		placed.Clear();
 		bag.Spend(used);
 		return result;

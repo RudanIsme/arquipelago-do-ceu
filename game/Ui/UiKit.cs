@@ -30,6 +30,8 @@ public static class UiKit
 		button.AddThemeStyleboxOverride("pressed", ButtonStyle(Gold, Gold));
 		button.AddThemeStyleboxOverride("hover_pressed", ButtonStyle(Gold, Gold));
 		button.AddThemeStyleboxOverride("focus", ButtonStyle(Color.FromHtml("#43335C"), Soft));
+		button.AddThemeStyleboxOverride("disabled", ButtonStyle(Color.FromHtml("#241C31"), Color.FromHtml("#5A4B72")));
+		button.AddThemeColorOverride("font_disabled_color", Color.FromHtml("#8D82A3"));
 		button.Pressed += onPressed;
 		return button;
 	}

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -52,6 +53,65 @@ public partial class DevDriver : Node
 		await Wait(0.3);
 	}
 
+
+	// Aperta a primeira tecla de número habilitada da calculadora (o texto é "3" e os pontos, em duas linhas).
+	public async Task PressNumberKey()
+	{
+		var key = Buttons().FirstOrDefault(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'));
+		if (key is null) GD.PushError("Piloto: nenhuma tecla de número habilitada.");
+		else key.EmitSignal(BaseButton.SignalName.Pressed);
+		await Wait(0.3);
+	}
+
+	// Os números das teclas habilitadas, como teclas do teclado, na ordem da mão.
+	public Key[] NumberKeyDigits() =>
+		Buttons().Where(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'))
+			.Select(b => (Key)(int)b.Text[0]).ToArray();
+
+	IEnumerable<Button> Buttons() => GetTree().Root.FindChildren("*", "Button", true, false).Cast<Button>().Where(b => b.IsVisibleInTree());
+
+	TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
+
+	// Passa o dedo pelo pontilhado, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
+	public async Task TraceGuide()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var remaining = pad.GuideOnScreen().ToList();
+		var current = remaining.OrderBy(p => p.Y).ThenBy(p => p.X).First();
+		var down = false;
+		while (remaining.Count > 0)
+		{
+			var next = remaining.OrderBy(p => p.DistanceTo(current)).First();
+			remaining.Remove(next);
+			if (down && next.DistanceTo(current) > 40f) { Click(current, false); down = false; }
+			if (!down) { Click(next, true); down = true; }
+			else Input.ParseInputEvent(new InputEventMouseMotion { Position = next, GlobalPosition = next, ButtonMask = MouseButtonMask.Left });
+			current = next;
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		if (down) Click(current, false);
+		await Wait(0.2);
+	}
+
+	// Um rabisco que passa longe do pontilhado.
+	public async Task Scribble()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var dots = pad.GuideOnScreen();
+		var origin = new Vector2(dots.Min(p => p.X) - 60, dots.Min(p => p.Y) - 20);
+		Click(origin, true);
+		for (var i = 1; i <= 12; i++)
+		{
+			Input.ParseInputEvent(new InputEventMouseMotion { Position = origin + new Vector2(0, i * 18), GlobalPosition = origin + new Vector2(0, i * 18), ButtonMask = MouseButtonMask.Left });
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		Click(origin + new Vector2(0, 12 * 18), false);
+		await Wait(0.3);
+	}
+
+	static void Click(Vector2 position, bool pressed) =>
+		Input.ParseInputEvent(new InputEventMouseButton { Position = position, GlobalPosition = position, ButtonIndex = MouseButton.Left, Pressed = pressed });
+
 	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
 
 	// Segura uma ação de movimento, como uma tecla pressionada.
@@ -82,7 +142,8 @@ public partial class DevDriver : Node
 
 	public async Task PressKey(Key key)
 	{
-		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = true });
+		var unicode = (int)key is >= 32 and <= 126 ? (uint)key : 0u;
+		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Unicode = unicode, Pressed = true });
 		await Wait(0.1);
 		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
 		await Wait(0.3);
@@ -210,31 +271,43 @@ static class Scenarios
 				await d.Shot("01-perto-do-boneco");
 				await d.Press("Atacar o Boneco");
 				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
-				await d.Shot("02-montagem-aberta");
-				await d.PressKey(Key.Key1);
-				await d.PressKey(Key.Key2);
-				await d.Shot("03-conta-montada");
-				await d.PressKey(Key.Backspace);
-				await d.Shot("04-desfeito");
+				await d.Shot("02-calculadora");
+				await d.PressNumberKey();
+				await d.Wait(0.8);
+				await d.Shot("03-pontilhado");
+				await d.Scribble();
+				await d.Shot("04-rabisco-nao-passa");
+				await d.Press("Apagar");
+				await d.TraceGuide();
+				await d.Wait(0.8);
+				await d.Shot("05-depois-de-desenhar");
+				await d.Press("+");
+				await d.PressNumberKey();
+				await d.Wait(0.8);
+				await d.Press("Pular o desenho");
+				await d.Wait(0.5);
+				await d.Shot("06-conta-montada-sem-resultado");
 				await d.Press("Confirmar");
 				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
-				await d.Wait(0.2);
-				await d.Shot("05-raio");
-				await d.Wait(1.0);
-				await d.Shot("06-resultado");
+				await d.Wait(0.3);
+				await d.Shot("07-resultado");
 				break;
 			case "boneco-teclado":
 				await d.ClickHex(4, 0);
 				await d.Wait(3.5);
 				await d.PressKey(Key.F);
 				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
-				await d.PressKey(Key.Key1);
-				await d.PressKey(Key.Key2);
-				await d.PressKey(Key.Key3);
+				var digits = d.NumberKeyDigits();
+				await d.PressKey(digits[0]);
+				await d.PressKey(Key.Enter);
+				await d.Shot("01-numero-sozinho-nao-vale");
+				await d.PressKey(Key.Plus);
+				await d.PressKey(digits[1]);
+				await d.Shot("02-conta-pelo-teclado");
 				await d.PressKey(Key.Enter);
 				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
 				await d.Wait(0.4);
-				await d.Shot("01-depois-do-ataque");
+				await d.Shot("03-depois-do-ataque");
 				await d.PressKey(Key.F);
 				await d.PressKey(Key.Escape);
 				GD.Print($"Tempo depois de cancelar: {Engine.TimeScale}");
@@ -247,14 +320,15 @@ static class Scenarios
 			case "nome":
 				await d.PressKey(Key.F2);
 				await d.Shot("01-montagem-do-nome");
-				await d.Press("TO");
 				await d.Press("GA");
-				await d.Press("Conferir");
-				await d.Shot("02-ordem-errada");
-				await d.Press("Desfazer");
-				await d.Press("Desfazer");
-				await d.Press("GA");
+				await d.Wait(0.8);
+				await d.Shot("02-pontilhado-da-silaba");
+				await d.TraceGuide();
+				await d.Wait(0.8);
 				await d.Press("TO");
+				await d.Wait(0.8);
+				await d.TraceGuide();
+				await d.Wait(0.8);
 				await d.Press("Conferir");
 				await d.Shot("03-nome-certo");
 				break;

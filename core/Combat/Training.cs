@@ -13,12 +13,12 @@ public sealed class TrainingBattle
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
 
-	TrainingBattle(IReadOnlyList<Mission> missions, MathBag bag, Pcg32 rng)
+	TrainingBattle(CombatRules rules, IReadOnlyList<Mission> missions, MathBag bag, Pcg32 rng)
 	{
 		this.missions = missions;
 		this.rng = rng;
 		Bag = bag;
-		Staff = new Staff(bag);
+		Staff = new Staff(bag, rules);
 		Mission = missions[0];
 		Shield = new Shield(0);
 		Next();
@@ -39,7 +39,7 @@ public sealed class TrainingBattle
 		var usable = available.Where(m => m.Mechanic == "compor_numero").ToList();
 		return usable.Count == 0
 			? Result<TrainingBattle>.Fail("Não há Missão de compor número para o Boneco.")
-			: Result<TrainingBattle>.Ok(new TrainingBattle(usable, new MathBag(rules, rng), rng));
+			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng));
 	}
 
 	// Novo escudo, de outra Missão quando houver mais de uma.

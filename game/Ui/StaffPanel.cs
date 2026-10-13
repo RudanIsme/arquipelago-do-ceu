@@ -1,30 +1,45 @@
 using System;
 using System.Collections.Generic;
 using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Rules;
+using ArquipelagoDoCeu.Voice;
 using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A montagem do cajado, no próprio cenário: o painel fica na parte de baixo e o Boneco continua à vista.
-// Nada aqui depende de velocidade. A conta aparece antes de confirmar e só Confirmar conta como resposta.
-// Mouse e toque usam os botões; no teclado, 1 a 5 escolhem a peça, Backspace desfaz, Enter confirma e Esc cancela.
+// A montagem do cajado, no próprio cenário: uma calculadora na lateral, para o Boneco continuar à vista.
+// A criança monta a conta tecla a tecla e faz a soma de cabeça: o painel nunca mostra o resultado.
+// Com mouse ou toque, tocar num número abre o pontilhado para desenhá-lo; no teclado, digitar o número vale.
+// Nada depende de velocidade. Só Confirmar conta como resposta.
 public partial class StaffPanel : OverlayScreen
 {
-	const int PieceSize = 96;
-	const int PanelWidth = 4 * PieceSize + 3 * 8;
+	const int KeySize = 96;
+	const int PanelWidth = 4 * KeySize + 3 * 8;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
 	static readonly Color Gold = Color.FromHtml("#D9A64A");
 
 	readonly TrainingBattle battle;
-	readonly List<Button> pieceButtons = [];
+	readonly CombatRules rules;
+	readonly VoiceService voice;
+	readonly List<Button> numberKeys = [];
+	readonly List<Button> operatorKeys = [];
+	VBoxContainer keypad = null!;
+	TracePad pad = null!;
 	Label shieldLabel = null!;
 	Label expressionLabel = null!;
 	Label messageLabel = null!;
 	Button undoButton = null!;
 	Button confirmButton = null!;
+	bool tracing;
+	int tracingSlot;
 
-	public StaffPanel(TrainingBattle battle) => this.battle = battle;
+	public StaffPanel(TrainingBattle battle, CombatRules rules, VoiceService voice)
+	{
+		this.battle = battle;
+		this.rules = rules;
+		this.voice = voice;
+	}
 
 	// Preenchido quando a criança confirma; fica nulo se ela cancelou.
 	public AttackResult? Result { get; private set; }
@@ -35,7 +50,7 @@ public partial class StaffPanel : OverlayScreen
 		MouseFilter = MouseFilterEnum.Ignore;
 		Build();
 		Refresh();
-		pieceButtons[0].GrabFocus();
+		FocusFirstKey();
 	}
 
 	void Build()
@@ -63,44 +78,112 @@ public partial class StaffPanel : OverlayScreen
 		expressionLabel.CustomMinimumSize = new Vector2(PanelWidth, 0);
 		column.AddChild(expressionLabel);
 
-		var hand = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, CustomMinimumSize = new Vector2(PanelWidth, 0) };
-		hand.AddThemeConstantOverride("h_separation", 8);
-		hand.AddThemeConstantOverride("v_separation", 8);
+		keypad = new VBoxContainer();
+		keypad.AddThemeConstantOverride("separation", 10);
+		column.AddChild(keypad);
+		BuildKeypad();
+
+		pad = new TracePad(rules.Tracing) { Visible = false };
+		pad.Completed += OnTraced;
+		pad.Cancelled += EndTracing;
+		column.AddChild(pad);
+	}
+
+	void BuildKeypad()
+	{
+		var numbers = KeyFlow();
 		for (var slot = 0; slot < battle.Bag.Hand.Count; slot++)
 		{
 			var index = slot;
-			var button = UiKit.BigButton("", () => Place(index), PieceSize);
-			button.CustomMinimumSize = new Vector2(PieceSize, PieceSize);
-			hand.AddChild(button);
-			pieceButtons.Add(button);
+			var key = UiKit.BigButton("", () => ChooseNumber(index), KeySize);
+			key.CustomMinimumSize = new Vector2(KeySize, KeySize);
+			numbers.AddChild(key);
+			numberKeys.Add(key);
 		}
-		column.AddChild(hand);
+		keypad.AddChild(numbers);
+
+		var signs = KeyFlow();
+		foreach (var symbol in rules.Operators)
+		{
+			var sign = symbol;
+			var key = UiKit.BigButton(sign, () => PlaceOperator(sign), KeySize);
+			key.CustomMinimumSize = new Vector2(KeySize, KeySize);
+			key.AddThemeFontSizeOverride("font_size", 44);
+			signs.AddChild(key);
+			operatorKeys.Add(key);
+		}
+		undoButton = UiKit.BigButton("Apagar", Undo, PanelWidth - (KeySize + 8) * rules.Operators.Count);
+		signs.AddChild(undoButton);
+		keypad.AddChild(signs);
 
 		messageLabel = UiKit.Hint("");
 		messageLabel.CustomMinimumSize = new Vector2(PanelWidth, 0);
-		column.AddChild(messageLabel);
+		keypad.AddChild(messageLabel);
 
-		var actions = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
-		actions.AddThemeConstantOverride("h_separation", 8);
-		actions.AddThemeConstantOverride("v_separation", 8);
-		undoButton = UiKit.BigButton("Desfazer", Undo, 196);
-		actions.AddChild(undoButton);
+		var actions = KeyFlow();
 		actions.AddChild(UiKit.BigButton("Cancelar", Cancel, 196));
-		confirmButton = UiKit.BigButton("Confirmar", Confirm, PanelWidth);
+		confirmButton = UiKit.BigButton("Confirmar", Confirm, 196);
 		actions.AddChild(confirmButton);
-		column.AddChild(actions);
+		keypad.AddChild(actions);
 
-		var keys = UiKit.Hint($"Teclado: 1 a {battle.Bag.Hand.Count} peça, Backspace desfaz, Enter confirma, Esc cancela.");
+		var keys = UiKit.Hint("Teclado: digite os números e +, Backspace apaga, Enter confirma, Esc cancela.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);
-		column.AddChild(keys);
+		keypad.AddChild(keys);
 	}
 
-	void Place(int slot)
+	static HFlowContainer KeyFlow()
+	{
+		var flow = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, CustomMinimumSize = new Vector2(PanelWidth, 0) };
+		flow.AddThemeConstantOverride("h_separation", 8);
+		flow.AddThemeConstantOverride("v_separation", 8);
+		return flow;
+	}
+
+	// Com o mouse ou o dedo, o número só entra na conta depois de desenhado.
+	async void ChooseNumber(int slot)
+	{
+		if (tracing || !battle.Staff.CanPlaceNumber || battle.Bag.Hand[slot] is not { } number) return;
+		tracing = true;
+		tracingSlot = slot;
+		keypad.Visible = false;
+		shieldLabel.Visible = expressionLabel.Visible = false;
+		pad.Visible = true;
+		voice.Say($"Desenhe o número {number}.", interrupt: true);
+		await pad.Begin(number.ToString(), $"Desenhe o {number}");
+	}
+
+	void OnTraced()
+	{
+		var slot = tracingSlot;
+		EndTracing();
+		PlaceNumber(slot);
+	}
+
+	void EndTracing()
+	{
+		pad.Abort();
+		tracing = false;
+		pad.Visible = false;
+		keypad.Visible = true;
+		shieldLabel.Visible = expressionLabel.Visible = true;
+		Refresh();
+		FocusFirstKey();
+	}
+
+	void PlaceNumber(int slot)
 	{
 		if (!battle.Staff.Place(slot)) return;
 		messageLabel.Text = "";
 		Refresh();
-		FocusNextPiece(slot);
+		FocusFirstKey();
+	}
+
+	void PlaceOperator(string symbol)
+	{
+		if (!battle.Staff.PlaceOperator(symbol)) return;
+		messageLabel.Text = "";
+		Refresh();
+		FocusFirstKey();
 	}
 
 	void Undo()
@@ -108,7 +191,7 @@ public partial class StaffPanel : OverlayScreen
 		if (!battle.Staff.Undo()) return;
 		messageLabel.Text = "";
 		Refresh();
-		FocusFirstPiece();
+		FocusFirstKey();
 	}
 
 	void Cancel()
@@ -130,79 +213,89 @@ public partial class StaffPanel : OverlayScreen
 		Close();
 	}
 
+	// A conta aparece como a criança a montou, sem o resultado: somar é com ela.
 	void Refresh()
 	{
 		shieldLabel.Text = $"Escudo: {battle.Shield.Remaining}";
-		var pieces = battle.Staff.Pieces;
-		expressionLabel.Text = pieces.Count == 0
-			? "Escolha as peças para montar a conta."
-			: $"{string.Join(" + ", pieces)} = {battle.Staff.Total}";
+		var tokens = battle.Staff.Tokens;
+		expressionLabel.Text = tokens.Count == 0
+			? "Monte uma conta com as teclas."
+			: string.Join(" ", tokens) + (battle.Staff.CanPlaceNumber ? " ?" : "");
 
-		for (var slot = 0; slot < pieceButtons.Count; slot++)
+		for (var slot = 0; slot < numberKeys.Count; slot++)
 		{
 			var piece = battle.Bag.Hand[slot];
 			// O numeral e os pontos aparecem juntos: a quantidade nunca depende só do símbolo.
-			pieceButtons[slot].Text = piece is { } n ? $"{n}\n{Dots(n)}" : "";
-			pieceButtons[slot].Disabled = piece is null;
-			// O slot vazio continua no lugar, esmaecido, para as outras peças não pularem de posição.
-			pieceButtons[slot].Modulate = new Color(1f, 1f, 1f, piece is null ? 0.2f : 1f);
+			numberKeys[slot].Text = piece is { } n ? $"{n}\n{Dots(n)}" : "";
+			numberKeys[slot].Disabled = piece is null || !battle.Staff.CanPlaceNumber;
+			// O slot vazio continua no lugar, esmaecido, para as outras teclas não pularem de posição.
+			numberKeys[slot].Modulate = new Color(1f, 1f, 1f, piece is null ? 0.2f : 1f);
 		}
-		undoButton.Disabled = pieces.Count == 0;
+		foreach (var key in operatorKeys) key.Disabled = !battle.Staff.CanPlaceOperator;
+		undoButton.Disabled = tokens.Count == 0;
 	}
 
 	static string Dots(int n) => new string('•', Math.Min(n, 10));
 
-	void FocusNextPiece(int after)
+	void FocusFirstKey()
 	{
-		for (var offset = 1; offset <= pieceButtons.Count; offset++)
-		{
-			var button = pieceButtons[(after + offset) % pieceButtons.Count];
-			if (button.Disabled) continue;
-			button.GrabFocus();
-			return;
-		}
-		confirmButton.GrabFocus();
-	}
-
-	void FocusFirstPiece()
-	{
-		foreach (var button in pieceButtons)
-			if (!button.Disabled)
+		if (tracing) return;
+		foreach (var key in numberKeys)
+			if (!key.Disabled)
 			{
-				button.GrabFocus();
+				key.GrabFocus();
+				return;
+			}
+		foreach (var key in operatorKeys)
+			if (!key.Disabled)
+			{
+				key.GrabFocus();
 				return;
 			}
 		confirmButton.GrabFocus();
 	}
 
-	// Enter confirma mesmo com um botão de peça em foco (Espaço aciona o botão em foco).
+	// No teclado, digitar o número vale como escrevê-lo; Enter confirma mesmo com um botão em foco.
 	public override void _Input(InputEvent @event)
 	{
-		if (@event is not InputEventKey { Pressed: true, Echo: false } key) return;
-		switch (key.PhysicalKeycode)
+		if (tracing || @event is not InputEventKey { Pressed: true, Echo: false } key) return;
+		switch (key.Keycode)
 		{
 			case Key.Enter or Key.KpEnter:
 				GetViewport().SetInputAsHandled();
 				Confirm();
-				break;
+				return;
 			case Key.Backspace:
 				GetViewport().SetInputAsHandled();
 				Undo();
-				break;
-			case >= Key.Key1 and <= Key.Key9:
-				var slot = (int)(key.PhysicalKeycode - Key.Key1);
-				if (slot >= pieceButtons.Count) break;
+				return;
+			case Key.Plus or Key.KpAdd:
 				GetViewport().SetInputAsHandled();
-				Place(slot);
-				break;
+				PlaceOperator("+");
+				return;
 		}
+
+		var digit = (int)key.Unicode - '0';
+		if (digit is < 1 or > 9) return;
+		var slot = SlotWith(digit);
+		if (slot < 0) return;
+		GetViewport().SetInputAsHandled();
+		PlaceNumber(slot);
 	}
 
-	// Esc cancela: as peças voltam para a mão e nada conta como resposta.
+	int SlotWith(int value)
+	{
+		for (var slot = 0; slot < battle.Bag.Hand.Count; slot++)
+			if (battle.Bag.Hand[slot] == value) return slot;
+		return -1;
+	}
+
+	// Esc volta do desenho, ou cancela a montagem: as peças voltam para a mão e nada conta como resposta.
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (!@event.IsActionPressed("ui_cancel")) return;
 		GetViewport().SetInputAsHandled();
-		Cancel();
+		if (tracing) EndTracing();
+		else Cancel();
 	}
 }

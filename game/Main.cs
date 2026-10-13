@@ -334,7 +334,7 @@ public partial class Main : Node3D
 			return;
 		}
 		if (battle.Shield.IsDissolved) return; // a névoa ainda está sumindo; o novo escudo chega em instantes
-		var panel = new StaffPanel(battle);
+		var panel = new StaffPanel(battle, rules.Combat, voice);
 		ShowOverlay(panel);
 		if (overlay != panel) return;
 
@@ -396,7 +396,7 @@ public partial class Main : Node3D
 	void ShowNameDemo()
 	{
 		var pieces = SyllableBag.Deal(["ga", "to"], ["pa", "li", "ma", "ru", "ne"], 3, new Pcg32((ulong)Time.GetTicksUsec()));
-		if (pieces.IsOk) ShowOverlay(new NamePanel(["ga", "to"], pieces.Value!));
+		if (pieces.IsOk) ShowOverlay(new NamePanel(["ga", "to"], pieces.Value!, rules.Combat.Tracing, voice));
 	}
 
 	public override void _ExitTree() => Engine.TimeScale = 1.0;

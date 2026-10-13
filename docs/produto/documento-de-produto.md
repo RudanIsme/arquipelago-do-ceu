@@ -74,7 +74,7 @@ A bolsa funciona como o baralho de um roguelite de cartas: é o que a criança m
 
 1. A bolsa começa com números de 1 a 5 e o sinal +. A criança tem 5 peças na mão; as usadas num ataque são repostas pela bolsa.
 2. A criatura mostra um escudo com um número, por exemplo 12.
-3. A criança monta uma conta com as peças nos encaixes do cajado (5 + 4 + 3). O resultado tira do escudo.
+3. A criança monta uma conta na calculadora do cajado, tecla a tecla: números da mão e o sinal (5 + 4 + 3). Uma conta precisa de um sinal e de pelo menos dois números, e o jogo não mostra o resultado: quem soma é a criança. Cada número que ela escolhe aparece pontilhado e ela o desenha para colocá-lo na conta. O resultado tira do escudo.
 4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale; o jogo mostra a conta e ela tenta outra combinação, o que treina estimativa.
 5. Entre andares, a criança escolhe melhorias: adicionar, trocar ou remover peças da bolsa.
 
@@ -116,7 +116,7 @@ Errar na fala nunca tira energia. O jogo repete a palavra, mostra as sílabas e 
 
 O Escriba também escreve a letra ou a sílaba desenhando com o dedo, o que treina coordenação motora fina. No tablet é com o dedo; no PC funciona com mouse ou caneta, com tolerância maior ao traço; quem usa teclado digita. Cada mecânica tem uma versão para toque, mouse e teclado, e a criança nunca fica presa por não ter um tipo de entrada.
 
-**Quando entram:** voz e traçado ficam definidos agora e entram logo depois do MVP, junto com tablets Android. No MVP o Escriba usa sílabas por clique e teclado.
+**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O desenho pontilhado já vale no combate: número na bolsa do Matemático e sílaba na do Escriba, conferido em código contra o próprio pontilhado (sem reconhecer a letra). Quem não consegue desenhar nunca fica preso: há "Pular o desenho", e no teclado digitar o número ou a sílaba vale como escrever.
 
 #### Energia e derrota
 
