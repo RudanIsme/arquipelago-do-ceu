@@ -11,6 +11,7 @@ public static class Controls
 	public const string Left = "move_left";
 	public const string Right = "move_right";
 	public const string Interact = "interact";
+	public const string Target = "target";
 
 	public static void Register()
 	{
@@ -20,6 +21,7 @@ public static class Controls
 		Bind(Right, Key.D, Key.Right);
 		// Só a tecla E: Espaço e Enter já acionam o botão em foco.
 		Bind(Interact, Key.E);
+		Bind(Target, Key.F, Key.Tab);
 	}
 
 	// x para a direita, y para cima, tamanho no máximo 1.
@@ -39,8 +41,8 @@ public static class ControlHints
 {
 	public static string For(string controls) => controls switch
 	{
-		"teclado" => "Use as setas ou W A S D para andar e a tecla E para usar um objeto.",
-		"toque" => "Toque no chão para andar. Toque no botão que aparece para usar um objeto.",
-		_ => "Clique no chão para andar. Clique no botão que aparece para usar um objeto.",
+		"teclado" => "Use as setas ou W A S D para andar, E para usar um objeto e F para escolher a criatura mais perto.",
+		"toque" => "Toque no chão para andar. Toque no botão que aparece para usar um objeto. Toque numa criatura para lutar.",
+		_ => "Clique no chão para andar. Clique no botão que aparece para usar um objeto. Clique numa criatura para lutar.",
 	};
 }

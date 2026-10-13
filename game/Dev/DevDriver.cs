@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -25,7 +26,8 @@ public partial class DevDriver : Node
 	public override async void _Ready()
 	{
 		await Wait(0.6);
-		await Scenarios.Run(this, scenario);
+		try { await Scenarios.Run(this, scenario); }
+		catch (System.Exception e) { GD.PushError($"Piloto: {e}"); }
 		GetTree().Quit();
 	}
 
@@ -51,6 +53,75 @@ public partial class DevDriver : Node
 		}
 		await Wait(0.3);
 	}
+
+
+	// Clica na criatura, como o mouse faria.
+	public async Task ClickCreature()
+	{
+		var dummy = GetTree().Root.FindChildren("*", "", true, false).OfType<TrainingDummy>().First();
+		var screen = GetViewport().GetCamera3D().UnprojectPosition(dummy.Center);
+		Click(screen, true);
+		Click(screen, false);
+		await Wait(0.4);
+	}
+
+	// Aperta a primeira tecla de número habilitada da calculadora (o texto é "3" e os pontos, em duas linhas).
+	public async Task PressNumberKey()
+	{
+		var key = Buttons().FirstOrDefault(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'));
+		if (key is null) GD.PushError("Piloto: nenhuma tecla de número habilitada.");
+		else key.EmitSignal(BaseButton.SignalName.Pressed);
+		await Wait(0.3);
+	}
+
+	// Os números das teclas habilitadas, como teclas do teclado, na ordem da mão.
+	public Key[] NumberKeyDigits() =>
+		Buttons().Where(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'))
+			.Select(b => (Key)(int)b.Text[0]).ToArray();
+
+	IEnumerable<Button> Buttons() => GetTree().Root.FindChildren("*", "Button", true, false).Cast<Button>().Where(b => b.IsVisibleInTree());
+
+	TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
+
+	// Passa o dedo pelo pontilhado, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
+	public async Task TraceGuide()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var remaining = pad.GuideOnScreen().ToList();
+		var current = remaining.OrderBy(p => p.Y).ThenBy(p => p.X).First();
+		var down = false;
+		while (remaining.Count > 0)
+		{
+			var next = remaining.OrderBy(p => p.DistanceTo(current)).First();
+			remaining.Remove(next);
+			if (down && next.DistanceTo(current) > 40f) { Click(current, false); down = false; }
+			if (!down) { Click(next, true); down = true; }
+			else Input.ParseInputEvent(new InputEventMouseMotion { Position = next, GlobalPosition = next, ButtonMask = MouseButtonMask.Left });
+			current = next;
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		if (down) Click(current, false);
+		await Wait(0.2);
+	}
+
+	// Um rabisco que passa longe do pontilhado.
+	public async Task Scribble()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var dots = pad.GuideOnScreen();
+		var origin = new Vector2(dots.Min(p => p.X) - 60, dots.Min(p => p.Y) - 20);
+		Click(origin, true);
+		for (var i = 1; i <= 12; i++)
+		{
+			Input.ParseInputEvent(new InputEventMouseMotion { Position = origin + new Vector2(0, i * 18), GlobalPosition = origin + new Vector2(0, i * 18), ButtonMask = MouseButtonMask.Left });
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		Click(origin + new Vector2(0, 12 * 18), false);
+		await Wait(0.3);
+	}
+
+	static void Click(Vector2 position, bool pressed) =>
+		Input.ParseInputEvent(new InputEventMouseButton { Position = position, GlobalPosition = position, ButtonIndex = MouseButton.Left, Pressed = pressed });
 
 	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
 
@@ -82,7 +153,8 @@ public partial class DevDriver : Node
 
 	public async Task PressKey(Key key)
 	{
-		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = true });
+		var unicode = (int)key is >= 32 and <= 126 ? (uint)key : 0u;
+		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Unicode = unicode, Pressed = true });
 		await Wait(0.1);
 		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
 		await Wait(0.3);
@@ -203,6 +275,44 @@ static class Scenarios
 				Input.ActionRelease(Controls.Right);
 				await d.Wait(0.4);
 				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
+				break;
+			case "boneco":
+			case "boneco-dislexia":
+				if (name == "boneco-dislexia")
+				{
+					await d.Press("Configurações");
+					await d.Press("Acessibilidade");
+					await d.Press("Muito grande");
+					await d.Press("Fonte para dislexia: Desligado");
+					await d.Press("Fechar");
+				}
+				await d.ClickHex(4, 0);
+				await d.Wait(3.5);
+				await d.ClickCreature();
+				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
+				await d.Shot("01-alvo-escolhido");
+				await d.PressNumberKey();
+				await d.Wait(1.0);
+				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
+				await d.Shot("02-pontilhado");
+				await d.TraceGuide();
+				await d.Wait(0.8);
+				await d.Shot("03-depois-de-desenhar");
+				break;
+			case "nome":
+				await d.PressKey(Key.F2);
+				await d.Shot("01-montagem-do-nome");
+				await d.Press("GA");
+				await d.Wait(0.8);
+				await d.Shot("02-pontilhado-da-silaba");
+				await d.TraceGuide();
+				await d.Wait(0.8);
+				await d.Press("TO");
+				await d.Wait(0.8);
+				await d.TraceGuide();
+				await d.Wait(0.8);
+				await d.Press("Conferir");
+				await d.Shot("03-nome-certo");
 				break;
 			case "mouse":
 				await d.ClickHex(3, -4);

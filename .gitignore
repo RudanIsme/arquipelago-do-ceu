@@ -35,3 +35,6 @@ build/
 
 # Node
 node_modules/
+
+# Cópia de content/ feita pelo build (ver game/ArquipelagoDoCeu.csproj)
+game/content/

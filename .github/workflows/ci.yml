@@ -48,6 +48,10 @@ jobs:
           Copy-Item "$env:RUNNER_TEMP\templates\templates\*" $destino -Recurse
           $console = Get-ChildItem "$env:RUNNER_TEMP\godot" -Recurse -Filter "*_console.exe" | Select-Object -First 1
           "GODOT=$($console.FullName)" >> $env:GITHUB_ENV
+      - name: Copiar o conteúdo para o projeto do jogo
+        run: |
+          New-Item -ItemType Directory game/content -Force | Out-Null
+          Copy-Item content/* game/content -Recurse -Force
       - name: Exportar para Windows
         run: |
           New-Item -ItemType Directory build -Force | Out-Null

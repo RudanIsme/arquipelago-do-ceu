@@ -36,4 +36,14 @@ public sealed class Pcg32
 			if (r >= threshold) return (int)(r % (uint)bound);
 		}
 	}
+
+	// Fisher-Yates com o próprio sorteio: a ordem de uma seed não muda entre versões do .NET.
+	public void Shuffle<T>(IList<T> items)
+	{
+		for (var i = items.Count - 1; i > 0; i--)
+		{
+			var j = NextInt(i + 1);
+			(items[i], items[j]) = (items[j], items[i]);
+		}
+	}
 }

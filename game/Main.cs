@@ -1,5 +1,8 @@
 using System;
 using System.Linq;
+using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Generation;
+using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
@@ -14,7 +17,10 @@ namespace ArquipelagoDoCeu;
 public partial class Main : Node3D
 {
 	const string RulesPath = "res://data/rules.json";
+	const float DummyPickRadius = 1.3f;
 	const string SavePath = "user://save.json";
+	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
+	const string PilotSavePath = "user://piloto-save.json";
 	const string DyslexiaFontPath = "res://assets/fontes/OpenDyslexic-Regular.otf";
 	const int DyslexiaLetterSpacing = 1;
 
@@ -30,6 +36,7 @@ public partial class Main : Node3D
 	ProfileScreen? screen;
 	CharacterEditor? editor;
 	OverlayScreen? overlay;
+	StaffPanel? staff;
 	Button characterButton = null!;
 	Button interactButton = null!;
 	Control bottomBar = null!;
@@ -38,6 +45,9 @@ public partial class Main : Node3D
 	Player player = null!;
 	string? interactTarget;
 	float uiScale = 1f;
+	TrainingDummy dummy = null!;
+	TrainingBattle? battle;
+	CombatTime time = null!;
 
 	public override void _Ready()
 	{
@@ -50,7 +60,7 @@ public partial class Main : Node3D
 		title.Text = rules.GameName;
 		GD.Print($"Regras carregadas: {rules.GameName}");
 
-		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
+		var store = new SaveStore(ProjectSettings.GlobalizePath(ChooseSavePath()));
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
@@ -64,6 +74,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
 		AddChild(player);
+		SetUpTraining();
 
 		BuildHud();
 		settings.Changed += ApplySettings;
@@ -146,6 +157,15 @@ public partial class Main : Node3D
 		GD.PushError(text);
 	}
 
+	// Com o piloto de desenvolvimento, o jogo trabalha numa cópia do save: nada do que o piloto clica volta para o real.
+	static string ChooseSavePath()
+	{
+		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
+		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
+		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
+		return PilotSavePath;
+	}
+
 	static Result<GameRules> LoadRules()
 	{
 		using var file = FileAccess.Open(RulesPath, FileAccess.ModeFlags.Read);
@@ -191,9 +211,11 @@ public partial class Main : Node3D
 			font = new FontVariation { BaseFont = file, SpacingGlyph = DyslexiaLetterSpacing };
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
+		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
 		lobby.ReduceMotion = player.ReduceMotion;
+		dummy.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
 		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
 	}
@@ -207,6 +229,7 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
+		staff?.Abandon();
 		if (screen is not null || overlay is not null || editor is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
@@ -239,6 +262,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
+		staff?.Abandon();
 		if (editor is not null || screen is not null || overlay is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
@@ -256,6 +280,7 @@ public partial class Main : Node3D
 
 	void ShowOverlay(OverlayScreen next)
 	{
+		staff?.Abandon();
 		if (overlay is not null || screen is not null || editor is not null)
 		{
 			next.QueueFree();
@@ -295,6 +320,143 @@ public partial class Main : Node3D
 		ShowOverlay(new GuideScreen(guide.Name, guide.Lines, voice));
 	}
 
+
+	// O Boneco de treino: o escudo vem de uma Missão carregada do build. O treino não grava nada no save.
+	void SetUpTraining()
+	{
+		time = new CombatTime(rules.Combat);
+		dummy = new TrainingDummy();
+		lobby.AddChild(dummy);
+		var (ground, top) = lobby.FootprintOf("boneco");
+		dummy.Place(ground, top);
+
+		var started = TrainingBattle.Start(rules.Combat, MissionSource.Load().Missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		if (started.IsOk)
+		{
+			battle = started.Value;
+			dummy.Reset(battle!.Shield.Remaining);
+		}
+		else GD.PushWarning(started.Error!);
+	}
+
+	// A criatura escolhida (clique ou tecla F) abre a UI de combate na lateral, sem parar o resto do jogo.
+	// Só dá para escolhê-la perto o bastante, e se a criança se afastar o alvo cai. O tempo só desacelera
+	// enquanto ela monta a conta (ou para, no Modo calmo) e volta ao normal ao atacar, apagar tudo ou soltar o alvo.
+	bool InTargetRange()
+	{
+		var (ground, _) = lobby.FootprintOf("boneco");
+		return System.Numerics.Vector2.Distance(player.GroundPosition, new System.Numerics.Vector2(ground.X, ground.Z)) <= rules.Combat.TargetRange;
+	}
+
+	bool HitsDummy(Vector2 screenPoint)
+	{
+		var origin = lobby.Camera.ProjectRayOrigin(screenPoint);
+		var direction = lobby.Camera.ProjectRayNormal(screenPoint);
+		var closest = origin + direction * (dummy.Center - origin).Dot(direction);
+		return closest.DistanceTo(dummy.Center) <= DummyPickRadius;
+	}
+
+	void ToggleTarget()
+	{
+		if (staff is not null) staff.Abandon();
+		else SelectDummy();
+	}
+
+	void SelectDummy()
+	{
+		if (staff is not null || !player.Enabled) return;
+		if (battle is null)
+		{
+			Notify("O Boneco ainda não tem uma Missão de treino.");
+			return;
+		}
+		if (!InTargetRange())
+		{
+			Notify("Chegue mais perto do Boneco para escolhê-lo.");
+			return;
+		}
+
+		var panel = staff = new StaffPanel(battle, rules.Combat, voice, InTargetRange);
+		uiRoot.AddChild(panel);
+		dummy.SetSelected(true);
+		panel.Attacked += ShowAttack;
+		panel.ComposingChanged += composing =>
+		{
+			if (composing) time.Begin(settings.Current.CalmMode);
+			else time.End();
+			Engine.TimeScale = time.Scale;
+		};
+		// Fecha também se o painel sair da cena por outro caminho: o tempo nunca pode ficar preso.
+		void Release()
+		{
+			if (staff == panel) staff = null;
+			dummy.SetSelected(false);
+			time.End();
+			Engine.TimeScale = time.Scale;
+		}
+		panel.Closed += () =>
+		{
+			Release();
+			panel.QueueFree();
+		};
+		panel.TreeExited += Release;
+	}
+
+	// Avisos curtos sobre a cena somem sozinhos.
+	void Notify(string text)
+	{
+		notice.Text = text;
+		GetTree().CreateTimer(3.0, true, false, true).Timeout += () =>
+		{
+			if (notice.Text == text) notice.Text = "";
+		};
+	}
+
+	void ShowAttack(AttackResult result)
+	{
+		var from = player.GlobalPosition + Vector3.Up * 1f;
+		string text;
+		switch (result.Outcome)
+		{
+			case HitOutcome.Dissolved:
+				dummy.Ray(from, perfect: true);
+				dummy.Dissolved();
+				text = $"Golpe perfeito! {result.Expression.Total} dissolveu a névoa.";
+				dummy.Say(text, good: true);
+				GetTree().CreateTimer(3.0, true, false, true).Timeout += NextShield;
+				break;
+			case HitOutcome.Reduced:
+				dummy.Ray(from, perfect: false);
+				dummy.Reduced(result.Remaining);
+				text = $"Acertou! Tirou {result.Expression.Total} do escudo. Faltam {result.Remaining}.";
+				dummy.Say(text, good: true);
+				break;
+			default:
+				dummy.Overshoot();
+				text = $"Passou do valor: {result.Expression.Total} é mais que {result.Remaining}. Tente outra conta.";
+				dummy.Say(text, good: false);
+				break;
+		}
+		voice.Say(text, interrupt: true);
+	}
+
+	void NextShield()
+	{
+		if (battle is null) return;
+		battle.Next();
+		dummy.Reset(battle.Shield.Remaining);
+		staff?.Refresh();
+	}
+
+	// Até existir o treino de Português (Papel e Nível do treino), o F2 abre a montagem do Escriba só em build de depuração.
+	void ShowNameDemo()
+	{
+		var pieces = SyllableBag.Deal(["ga", "to"], ["pa", "li", "ma", "ru", "ne"], 3, new Pcg32((ulong)Time.GetTicksUsec()));
+		if (pieces.IsOk) ShowOverlay(new NamePanel(["ga", "to"], pieces.Value!, rules.Combat.Tracing, voice));
+	}
+
+	public override void _ExitTree() => Engine.TimeScale = 1.0;
+
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
 	void ApplyAppearance()
 	{
@@ -309,9 +471,20 @@ public partial class Main : Node3D
 		bottomBar.Visible = player.Enabled;
 	}
 
+	// Clicar (ou tocar) na criatura a escolhe; o clique não vira caminhada. Cliques sobre a interface ficam com ela.
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
+		if (player is null || !player.Enabled || GetViewport().GuiGetHoveredControl() is not null || !HitsDummy(click.Position)) return;
+		GetViewport().SetInputAsHandled();
+		ToggleTarget();
+	}
+
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
+		if (@event.IsActionPressed(Controls.Target) && player.Enabled) ToggleTarget();
+		if (OS.IsDebugBuild() && @event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.F2 } && player.Enabled) ShowNameDemo();
 	}
 
 	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
@@ -321,6 +494,11 @@ public partial class Main : Node3D
 		var target = player.Enabled
 			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach)?.Id
 			: null;
+		if (staff is not null && !InTargetRange())
+		{
+			Notify("O Boneco ficou longe.");
+			staff.Abandon();
+		}
 		if (target != interactTarget)
 		{
 			interactTarget = target;
@@ -329,6 +507,7 @@ public partial class Main : Node3D
 			if (target is not null)
 			{
 				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
+
 				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
 			}
 		}
