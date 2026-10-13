@@ -1,5 +1,8 @@
 using System;
 using System.Linq;
+using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Generation;
+using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
@@ -38,6 +41,9 @@ public partial class Main : Node3D
 	Player player = null!;
 	string? interactTarget;
 	float uiScale = 1f;
+	TrainingDummy dummy = null!;
+	TrainingBattle? battle;
+	CombatTime time = null!;
 
 	public override void _Ready()
 	{
@@ -64,6 +70,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
 		AddChild(player);
+		SetUpTraining();
 
 		BuildHud();
 		settings.Changed += ApplySettings;
@@ -191,9 +198,11 @@ public partial class Main : Node3D
 			font = new FontVariation { BaseFont = file, SpacingGlyph = DyslexiaLetterSpacing };
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
+		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
 		lobby.ReduceMotion = player.ReduceMotion;
+		dummy.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
 		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
 	}
@@ -280,6 +289,7 @@ public partial class Main : Node3D
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(new PortalScreen()); break;
 			case "guia": ShowGuide(); break;
+			case "boneco": Attack(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
 	}
@@ -294,6 +304,102 @@ public partial class Main : Node3D
 		}
 		ShowOverlay(new GuideScreen(guide.Name, guide.Lines, voice));
 	}
+
+
+	// O Boneco de treino: o escudo vem de uma Missão carregada do build. O treino não grava nada no save.
+	void SetUpTraining()
+	{
+		time = new CombatTime(rules.Combat);
+		dummy = new TrainingDummy();
+		lobby.AddChild(dummy);
+		var (ground, top) = lobby.FootprintOf("boneco");
+		dummy.Place(ground, top);
+
+		var started = TrainingBattle.Start(rules.Combat, MissionSource.Load().Missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		if (started.IsOk)
+		{
+			battle = started.Value;
+			dummy.Reset(battle!.Shield.Remaining);
+		}
+		else GD.PushWarning(started.Error!);
+	}
+
+	// Chegar perto e atacar abre a montagem do cajado no próprio cenário. Enquanto ela está aberta o tempo
+	// desacelera (ou para, no Modo calmo) e volta ao normal ao confirmar ou cancelar.
+	void Attack()
+	{
+		if (battle is null)
+		{
+			notice.Text = "O Boneco ainda não tem uma Missão de treino.";
+			return;
+		}
+		if (battle.Shield.IsDissolved) return; // a névoa ainda está sumindo; o novo escudo chega em instantes
+		var panel = new StaffPanel(battle);
+		ShowOverlay(panel);
+		if (overlay != panel) return;
+
+		time.Begin(settings.Current.CalmMode);
+		Engine.TimeScale = time.Scale;
+		// O tempo volta ao normal assim que o painel fecha, e também se ele sair da cena por outro caminho.
+		var ended = false;
+		void EndAssembly()
+		{
+			if (ended) return;
+			ended = true;
+			time.End();
+			Engine.TimeScale = time.Scale;
+		}
+		panel.Closed += () =>
+		{
+			EndAssembly();
+			if (panel.Result is { } result) ShowAttack(result);
+		};
+		panel.TreeExited += EndAssembly;
+	}
+
+	void ShowAttack(AttackResult result)
+	{
+		var from = player.GlobalPosition + Vector3.Up * 1f;
+		string text;
+		switch (result.Outcome)
+		{
+			case HitOutcome.Dissolved:
+				dummy.Ray(from, perfect: true);
+				dummy.Dissolved();
+				text = $"Golpe perfeito! {result.Expression.Total} dissolveu a névoa.";
+				dummy.Say(text, good: true);
+				GetTree().CreateTimer(3.0, true, false, true).Timeout += NextShield;
+				break;
+			case HitOutcome.Reduced:
+				dummy.Ray(from, perfect: false);
+				dummy.Reduced(result.Remaining);
+				text = $"Acertou! Tirou {result.Expression.Total} do escudo. Faltam {result.Remaining}.";
+				dummy.Say(text, good: true);
+				break;
+			default:
+				dummy.Overshoot();
+				text = $"Passou do valor: {result.Expression.Total} é mais que {result.Remaining}. Tente outra conta.";
+				dummy.Say(text, good: false);
+				break;
+		}
+		voice.Say(text, interrupt: true);
+	}
+
+	void NextShield()
+	{
+		if (battle is null) return;
+		battle.Next();
+		dummy.Reset(battle.Shield.Remaining);
+	}
+
+	// Até existir o treino de Português (Papel e Nível do treino), o F2 abre a montagem do Escriba só em build de depuração.
+	void ShowNameDemo()
+	{
+		var pieces = SyllableBag.Deal(["ga", "to"], ["pa", "li", "ma", "ru", "ne"], 3, new Pcg32((ulong)Time.GetTicksUsec()));
+		if (pieces.IsOk) ShowOverlay(new NamePanel(["ga", "to"], pieces.Value!));
+	}
+
+	public override void _ExitTree() => Engine.TimeScale = 1.0;
 
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
 	void ApplyAppearance()
@@ -312,6 +418,8 @@ public partial class Main : Node3D
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
+		if (@event.IsActionPressed(Controls.Attack) && interactTarget == "boneco") Attack();
+		if (OS.IsDebugBuild() && @event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.F2 } && player.Enabled) ShowNameDemo();
 	}
 
 	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
@@ -329,7 +437,8 @@ public partial class Main : Node3D
 			if (target is not null)
 			{
 				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
-				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
+				var key = target == "boneco" ? "F" : "E";
+				interactButton.Text = settings.Current.Controls == "teclado" ? $"[{key}]  {prompt}" : prompt;
 			}
 		}
 

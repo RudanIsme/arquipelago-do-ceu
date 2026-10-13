@@ -204,6 +204,60 @@ static class Scenarios
 				await d.Wait(0.4);
 				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
 				break;
+			case "boneco":
+				await d.ClickHex(4, 0);
+				await d.Wait(3.5);
+				await d.Shot("01-perto-do-boneco");
+				await d.Press("Atacar o Boneco");
+				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
+				await d.Shot("02-montagem-aberta");
+				await d.PressKey(Key.Key1);
+				await d.PressKey(Key.Key2);
+				await d.Shot("03-conta-montada");
+				await d.PressKey(Key.Backspace);
+				await d.Shot("04-desfeito");
+				await d.Press("Confirmar");
+				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
+				await d.Wait(0.2);
+				await d.Shot("05-raio");
+				await d.Wait(1.0);
+				await d.Shot("06-resultado");
+				break;
+			case "boneco-teclado":
+				await d.ClickHex(4, 0);
+				await d.Wait(3.5);
+				await d.PressKey(Key.F);
+				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
+				await d.PressKey(Key.Key1);
+				await d.PressKey(Key.Key2);
+				await d.PressKey(Key.Key3);
+				await d.PressKey(Key.Enter);
+				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
+				await d.Wait(0.4);
+				await d.Shot("01-depois-do-ataque");
+				await d.PressKey(Key.F);
+				await d.PressKey(Key.Escape);
+				GD.Print($"Tempo depois de cancelar: {Engine.TimeScale}");
+				break;
+			case "boneco-longe":
+				await d.PressKey(Key.F);
+				GD.Print("Longe do Boneco, F não abre nada.");
+				await d.Shot("01-longe");
+				break;
+			case "nome":
+				await d.PressKey(Key.F2);
+				await d.Shot("01-montagem-do-nome");
+				await d.Press("TO");
+				await d.Press("GA");
+				await d.Press("Conferir");
+				await d.Shot("02-ordem-errada");
+				await d.Press("Desfazer");
+				await d.Press("Desfazer");
+				await d.Press("GA");
+				await d.Press("TO");
+				await d.Press("Conferir");
+				await d.Shot("03-nome-certo");
+				break;
 			case "mouse":
 				await d.ClickHex(3, -4);
 				await d.Wait(0.9);

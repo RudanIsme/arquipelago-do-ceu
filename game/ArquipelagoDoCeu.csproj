@@ -9,4 +9,15 @@
   <ItemGroup>
     <ProjectReference Include="..\core\ArquipelagoDoCeu.Core.csproj" />
   </ItemGroup>
+
+  <!-- O Godot só enxerga game/. As Missões e o schema vivem em content/ (fonte única, validada pela CI)
+       e são copiados para game/content/ a cada build, para irem no jogo e na exportação. -->
+  <Target Name="CopiarConteudo" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <ConteudoDoJogo Include="..\content\**\*.json" />
+    </ItemGroup>
+    <Error Condition="'@(ConteudoDoJogo)' == ''" Text="Nenhum arquivo em content/: o jogo ficaria sem Missões." />
+    <RemoveDir Directories="$(MSBuildProjectDirectory)\content" />
+    <Copy SourceFiles="@(ConteudoDoJogo)" DestinationFiles="@(ConteudoDoJogo->'$(MSBuildProjectDirectory)\content\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 </Project>

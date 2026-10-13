@@ -30,6 +30,7 @@ static class TestJson
 		      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
 		      { "id": "normal", "name": "Normal", "rate": 1.0 } ],
 		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" } },
+		  "combat": { "handSize": 5, "bagNumbers": [1, 2, 3, 4, 5], "bagCopies": 2, "slowTimeScale": 0.25 },
 		  "lobby": {
 		    "interactionReach": 2.0,
 		    "places": [

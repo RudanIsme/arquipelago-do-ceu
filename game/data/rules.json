@@ -62,6 +62,12 @@
     ],
     "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" }
   },
+  "combat": {
+    "handSize": 5,
+    "bagNumbers": [1, 2, 3, 4, 5],
+    "bagCopies": 2,
+    "slowTimeScale": 0.25
+  },
   "lobby": {
     "interactionReach": 2.2,
     "places": [
@@ -74,6 +80,7 @@
     "objects": [
       { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
       { "id": "portal", "name": "Portal de viagem", "prompt": "Usar o portal", "model": "portal", "q": -1, "r": 4 },
+      { "id": "boneco", "name": "Boneco de treino", "prompt": "Atacar o Boneco", "model": "boneco", "q": 3, "r": 1 },
       {
         "id": "guia", "name": "Guia", "prompt": "Falar com o Guia", "model": "guia", "q": 1, "r": 1,
         "lines": [

@@ -11,6 +11,7 @@ public static class Controls
 	public const string Left = "move_left";
 	public const string Right = "move_right";
 	public const string Interact = "interact";
+	public const string Attack = "attack";
 
 	public static void Register()
 	{
@@ -20,6 +21,7 @@ public static class Controls
 		Bind(Right, Key.D, Key.Right);
 		// Só a tecla E: Espaço e Enter já acionam o botão em foco.
 		Bind(Interact, Key.E);
+		Bind(Attack, Key.F);
 	}
 
 	// x para a direita, y para cima, tamanho no máximo 1.

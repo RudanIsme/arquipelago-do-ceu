@@ -16,6 +16,7 @@ public partial class Lobby : Node3D
 	const float PortalHeight = 2.8f;
 	const float LecternHeight = 1.4f;
 	const float GuideHeight = 1.8f;
+	const float DummyHeight = 1.7f;
 	const float TowerHeight = 5f;
 
 	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3 }
@@ -42,6 +43,7 @@ public partial class Lobby : Node3D
 
 	readonly List<Label3D> signs = new();
 	readonly Dictionary<string, Node3D> markers = new();
+	readonly Dictionary<string, (Vector3 Ground, float Top)> footprints = new();
 	double clock;
 
 	public override void _Ready()
@@ -259,7 +261,7 @@ public partial class Lobby : Node3D
 		{
 			var ground = HexToWorld(item.Q, item.R);
 			list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
-			var height = item.Id switch { "portal" => PortalHeight, "guia" => GuideHeight, _ => LecternHeight };
+			var height = item.Id switch { "portal" => PortalHeight, "guia" => GuideHeight, "boneco" => DummyHeight, _ => LecternHeight };
 			var top = height;
 			if (LoadModel(item.Model) is { } model)
 			{
@@ -275,6 +277,7 @@ public partial class Lobby : Node3D
 			};
 			AddChild(marker);
 			markers[item.Id] = marker;
+			footprints[item.Id] = (ground, top);
 		}
 		Interactables = list;
 	}
@@ -376,6 +379,9 @@ public partial class Lobby : Node3D
 		}
 		return merged ?? new Aabb();
 	}
+
+	// Onde fica o pé e a altura do topo de um objeto do Lobby, para efeitos que partem dele ou chegam nele.
+	public (Vector3 Ground, float Top) FootprintOf(string objectId) => footprints[objectId];
 
 	// Mostra o indicador só no objeto ao alcance (ou em nenhum, com null).
 	public void Highlight(string? objectId)

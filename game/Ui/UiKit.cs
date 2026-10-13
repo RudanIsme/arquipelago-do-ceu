@@ -88,6 +88,9 @@ public static class UiKit
 		return bar;
 	}
 
+	// Texto 3D sobre a cena: contorno escuro para ler sobre o céu e o chão.
+	public static void Outline3D(Label3D label) => label.OutlineModulate = PanelFill;
+
 	// Título e avisos soltos sobre a cena ganham contorno escuro para ler em qualquer fundo.
 	public static void Outline(Label label)
 	{
