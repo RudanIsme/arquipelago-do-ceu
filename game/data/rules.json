@@ -69,7 +69,11 @@
     "slowTimeScale": 0.25,
     "targetRange": 5,
     "operators": ["+"],
-    "tracing": { "dotSpacing": 16, "tolerance": 30, "minCoverage": 0.8, "maxStray": 0.35 }
+    "tracing": { "dotSpacing": 16, "tolerance": 30, "minCoverage": 0.8, "maxStray": 0.35 },
+    "mistakesForHint": 2,
+    "prankSeconds": 4,
+    "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
+    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 }
   },
   "lobby": {
     "interactionReach": 2.2,

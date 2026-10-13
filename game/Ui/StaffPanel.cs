@@ -52,6 +52,10 @@ public partial class StaffPanel : OverlayScreen
 	// Verdadeiro enquanto a criança desenha ou tem peças no cajado: é quando o tempo desacelera.
 	public event Action<bool>? ComposingChanged;
 
+	public event Action? HintRequested;
+
+	public event Action? ReadRequested;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -60,6 +64,13 @@ public partial class StaffPanel : OverlayScreen
 		// Sem foco de teclado: as setas e WASD continuam movendo o Personagem com o painel aberto.
 		foreach (var button in FindChildren("*", "Button", true, false)) ((Button)button).FocusMode = FocusModeEnum.None;
 		Refresh();
+	}
+
+	// Uma mensagem escrita que também é dita pela voz: toda instrução tem as duas versões.
+	public void Tell(string text)
+	{
+		messageLabel.Text = text;
+		voice.Say(text, interrupt: true);
 	}
 
 	// Perde o alvo sem responder: as peças voltam para a mão.
@@ -141,6 +152,11 @@ public partial class StaffPanel : OverlayScreen
 		messageLabel.CustomMinimumSize = new Vector2(PanelWidth, 0);
 		keypad.AddChild(messageLabel);
 
+		var help = KeyFlow();
+		help.AddChild(UiKit.BigButton("Ouvir", () => ReadRequested?.Invoke(), 196));
+		help.AddChild(UiKit.BigButton("Dica", () => HintRequested?.Invoke(), 196));
+		keypad.AddChild(help);
+
 		var actions = KeyFlow();
 		actions.AddChild(UiKit.BigButton("Soltar alvo", Abandon, 196));
 		actions.AddChild(UiKit.BigButton("Atacar", Confirm, 196));
@@ -215,18 +231,18 @@ public partial class StaffPanel : OverlayScreen
 	{
 		if (battle.Shield.IsDissolved)
 		{
-			messageLabel.Text = "A névoa está sumindo. Espere o novo escudo.";
+			Tell("A névoa está sumindo. Espere o novo escudo.");
 			return;
 		}
 		if (!inRange())
 		{
-			messageLabel.Text = "Chegue mais perto do Boneco para atacar.";
+			Tell("Chegue mais perto do Boneco para atacar.");
 			return;
 		}
 		var attack = battle.Confirm();
 		if (!attack.IsOk)
 		{
-			messageLabel.Text = attack.Error!;
+			Tell(attack.Error!);
 			return;
 		}
 		messageLabel.Text = "";
@@ -247,11 +263,11 @@ public partial class StaffPanel : OverlayScreen
 		{
 			var piece = battle.Bag.Hand[slot];
 			// O numeral e os pontos aparecem juntos: a quantidade nunca depende só do símbolo.
-			numberKeys[slot].Text = piece is { } n ? $"{n}\n " : "";
+			numberKeys[slot].Text = piece is { } n ? $"{n}\n " : battle.Bag.IsHidden(slot) ? "?" : "";
 			dotViews[slot].Count = piece ?? 0;
 			numberKeys[slot].Disabled = piece is null || !battle.Staff.CanPlaceNumber;
 			// O slot vazio continua no lugar, esmaecido, para as outras teclas não pularem de posição.
-			numberKeys[slot].Modulate = new Color(1f, 1f, 1f, piece is null ? 0.2f : 1f);
+			numberKeys[slot].Modulate = new Color(1f, 1f, 1f, piece is null ? (battle.Bag.IsHidden(slot) ? 0.5f : 0.2f) : 1f);
 		}
 		foreach (var key in operatorKeys) key.Disabled = !battle.Staff.CanPlaceOperator;
 		undoButton.Disabled = tokens.Count == 0;

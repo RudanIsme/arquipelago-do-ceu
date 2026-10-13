@@ -75,7 +75,7 @@ A bolsa funciona como o baralho de um roguelite de cartas: é o que a criança m
 1. A bolsa começa com números de 1 a 5 e o sinal +. A criança tem 5 peças na mão; as usadas num ataque são repostas pela bolsa.
 2. A criatura mostra um escudo com um número, por exemplo 12.
 3. A criança monta uma conta na calculadora do cajado, tecla a tecla: números da mão e o sinal (5 + 4 + 3). Uma conta precisa de um sinal e de pelo menos dois números, e o jogo não mostra o resultado: quem soma é a criança. Cada número que ela escolhe aparece pontilhado e ela o desenha para colocá-lo na conta. O resultado tira do escudo.
-4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale; o jogo mostra a conta e ela tenta outra combinação, o que treina estimativa.
+4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale: o jogo mostra a conta e conta como erro (tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outros números), o que treina estimativa. As peças da mão voltam inteiras. É o único jeito de errar na calculadora.
 5. Entre andares, a criança escolhe melhorias: adicionar, trocar ou remover peças da bolsa.
 
 | Ano | Peças e operações |
@@ -99,6 +99,8 @@ As criaturas esqueceram o próprio nome, e dizer o nome certo as liberta. O jogo
 | Depois do MVP | Fala a sílaba ou o nome no microfone, com reconhecimento de voz no próprio PC |
 
 Para acessibilidade: fonte para dislexia, peças grandes e nenhum tempo obrigatório.
+
+No Escriba, cada sílaba certa é um golpe e o nome completo liberta a criatura (recupera 1 de Energia). Sílaba errada é erro: tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outro nome. Sílaba que ainda falta não é erro.
 
 #### Voz
 

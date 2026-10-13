@@ -1,0 +1,16 @@
+{
+  "id": "por-seg-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "segmentacao-silabica-oral",
+  "bncc": ["EF01LP06"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pi","pa"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 2, "image": "pipa" },
+  "prompt": "Esta criatura se chama pipa. Pi, pa. Junte as sílabas na ordem em que você ouviu.",
+  "hints": ["Ouça de novo: pi, pa.", "Bata palmas em cada parte: pi, pa.", "As duas partes começam com o mesmo som, o de p, mas a vogal muda."],
+  "explanation": "PI e PA são as duas partes de PIPA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "por-let-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nome-e-som-das-letras",
+  "bncc": ["EF01LP10","EF01LP04"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pa","no"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 2, "image": "pano" },
+  "prompt": "Esta criatura se chama pano. A letra N se chama nê e faz o som de n. Junte as sílabas do nome.",
+  "hints": ["Ouça: pppano. O começo tem o som de p.", "A letra N se chama nê e faz o som de n. Ela vem na segunda sílaba.", "Comece pela sílaba que começa com P."],
+  "explanation": "PANO começa com P e a segunda sílaba começa com N.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pi","pa"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 2, "image": "pipa" },
+  "prompt": "Esta criatura se chama pipa. Junte as sílabas para escrever o nome dela.",
+  "hints": ["Ouça de novo: pipa. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de pi.", "Depois vem a sílaba pa."],
+  "explanation": "PI + PA = PIPA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

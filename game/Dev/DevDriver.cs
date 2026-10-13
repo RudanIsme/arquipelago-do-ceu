@@ -123,6 +123,36 @@ public partial class DevDriver : Node
 	static void Click(Vector2 position, bool pressed) =>
 		Input.ParseInputEvent(new InputEventMouseButton { Position = position, GlobalPosition = position, ButtonIndex = MouseButton.Left, Pressed = pressed });
 
+
+	// Anda até perto do Boneco, como a criança faria.
+	public async Task GoNearDummy(int q = 4, int r = 0)
+	{
+		await ClickHex(q, r);
+		await Wait(3.5);
+	}
+
+	NamePanel? Names => GetTree().Root.FindChildren("*", "", true, false).OfType<NamePanel>().FirstOrDefault();
+
+	// Escolhe as sílabas do nome pelas teclas 1 a 9; com `wrong`, troca a última por uma que não é do nome.
+	public async Task TypeName(bool wrong = false)
+	{
+		if (Names is not { } panel) { GD.PushError("Piloto: não há montagem de nome na tela."); return; }
+		var keys = panel.ExpectedName.Select(s => panel.PieceNames.ToList().IndexOf(s)).ToList();
+		if (wrong) keys[^1] = panel.PieceNames.ToList().FindIndex(p => !panel.ExpectedName.Contains(p));
+		foreach (var index in keys) await PressKey((Key)((int)Key.Key1 + index));
+	}
+
+	// Monta uma conta com as quatro maiores peças da mão e ataca: passa do valor de qualquer escudo do 1º ano.
+	public async Task OvershootWithKeys()
+	{
+		var digits = NumberKeyDigits().OrderByDescending(k => (int)k).Take(4).ToList();
+		for (var i = 0; i < digits.Count; i++)
+		{
+			if (i > 0) await PressKey(Key.Plus);
+			await PressKey(digits[i]);
+		}
+		await PressKey(Key.Enter);
+	}
 	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
 
 	// Segura uma ação de movimento, como uma tecla pressionada.
@@ -286,33 +316,102 @@ static class Scenarios
 					await d.Press("Fonte para dislexia: Desligado");
 					await d.Press("Fechar");
 				}
-				await d.ClickHex(4, 0);
-				await d.Wait(3.5);
+				await d.GoNearDummy();
 				await d.ClickCreature();
+				await d.Shot("01-escolha-do-treino");
+				await d.Press("Começar");
 				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
-				await d.Shot("01-alvo-escolhido");
+				await d.Shot("02-alvo-escolhido");
 				await d.PressNumberKey();
 				await d.Wait(1.0);
 				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
-				await d.Shot("02-pontilhado");
+				await d.Shot("03-pontilhado");
 				await d.TraceGuide();
 				await d.Wait(0.8);
-				await d.Shot("03-depois-de-desenhar");
+				await d.Shot("04-depois-de-desenhar");
+				break;
+			case "erro":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.Shot("01-comeco");
+				await d.OvershootWithKeys();
+				await d.Shot("02-passou-do-valor-travessura");
+				await d.Wait(5.0);
+				await d.Shot("03-peca-voltou");
+				await d.OvershootWithKeys();
+				await d.Shot("04-segundo-erro-com-dica");
+				await d.Press("Dica");
+				await d.Shot("05-pediu-a-dica");
+				break;
+			case "energia":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				for (var i = 0; i < 5; i++)
+				{
+					await d.OvershootWithKeys();
+					await d.Shot($"erro-{i + 1}");
+				}
+				await d.Wait(0.5);
+				await d.Shot("saiu-do-treino");
+				break;
+			case "bolha":
+				await d.GoNearDummy(4, -2);
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.PressKey(Key.Escape);
+				await d.Wait(7.7);
+				await d.Shot("01-aviso");
+				await d.Wait(1.7);
+				await d.Shot("02-bolha-no-ar");
+				await d.Wait(6.5);
+				await d.Shot("03-depois-da-bolha");
+				break;
+			case "calmo":
+				await d.Press("Configurações");
+				await d.Press("Acessibilidade");
+				await d.Press("Modo calmo: Desligado");
+				await d.Press("Fechar");
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.PressKey(Key.Escape);
+				await d.Wait(9.5);
+				await d.Shot("01-sem-bolha-no-modo-calmo");
 				break;
 			case "nome":
-				await d.PressKey(Key.F2);
-				await d.Shot("01-montagem-do-nome");
-				await d.Press("GA");
-				await d.Wait(0.8);
-				await d.Shot("02-pontilhado-da-silaba");
-				await d.TraceGuide();
-				await d.Wait(0.8);
-				await d.Press("TO");
-				await d.Wait(0.8);
-				await d.TraceGuide();
-				await d.Wait(0.8);
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Shot("01-escolha-do-treino");
+				await d.Press("Começar");
+				await d.Shot("02-montagem-do-nome");
+				await d.TypeName();
+				await d.Shot("03-nome-montado");
 				await d.Press("Conferir");
-				await d.Shot("03-nome-certo");
+				await d.Shot("04-nome-certo");
+				await d.Wait(3.5);
+				await d.Shot("05-novo-nome");
+				break;
+			case "nome-erro":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Press("Começar");
+				await d.TypeName(wrong: true);
+				await d.Press("Conferir");
+				await d.Shot("01-silaba-errada-travessura");
+				await d.Wait(5.0);
+				await d.Shot("02-peca-voltou");
+				break;
+			case "treino-nivel":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Shot("01-so-o-nivel-1");
+				await d.Press("5 · Muito difícil");
+				await d.Press("Começar");
+				await d.Shot("02-sem-desafios-nessa-dificuldade");
 				break;
 			case "mouse":
 				await d.ClickHex(3, -4);

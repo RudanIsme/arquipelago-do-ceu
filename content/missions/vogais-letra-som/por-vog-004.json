@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["e","ma"], "pool": ["a","e","i","o","u","ta","pa","na"], "distractors": 3, "image": "ema" },
+  "prompt": "Esta criatura se chama ema. Ela começa com a vogal E. Junte as sílabas do nome dela.",
+  "hints": ["A primeira parte é só uma vogal: a letra E, que faz o som de e.", "Ouça: eeema. Qual vogal vem primeiro?", "Depois da vogal vem a sílaba ma."],
+  "explanation": "EMA começa com a vogal E.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

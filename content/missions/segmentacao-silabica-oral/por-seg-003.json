@@ -1,0 +1,16 @@
+{
+  "id": "por-seg-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "segmentacao-silabica-oral",
+  "bncc": ["EF01LP06"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ta","tu"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "tatu" },
+  "prompt": "Ouça o nome da criatura: tatu. Ta, tu. Junte as duas sílabas.",
+  "hints": ["Ouça de novo: ta, tu. São duas partes.", "Bata palmas em cada parte: ta, tu.", "As duas partes começam com o som de t."],
+  "explanation": "TA e TU são as duas partes de TATU.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

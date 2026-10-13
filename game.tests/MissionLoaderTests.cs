@@ -82,10 +82,10 @@ public class MissionLoaderTests
 	[Fact]
 	public void Mecanica_planejada_mas_ainda_inexistente_no_jogo_e_ignorada()
 	{
-		var result = Loader().Parse("x.json", Valid.Replace("compor_numero", "formar_palavras").Replace("\"target\": 7, \"pieces\": [1, 2, 3, 4, 5], \"maxPieces\": 2", "\"silabas\": [\"ba\"]"));
+		var result = Loader().Parse("x.json", Valid.Replace("compor_numero", "comparar_quantidades"));
 
 		Assert.False(result.IsOk);
-		Assert.Contains("formar_palavras", result.Error);
+		Assert.Contains("comparar_quantidades", result.Error);
 	}
 
 	[Fact]

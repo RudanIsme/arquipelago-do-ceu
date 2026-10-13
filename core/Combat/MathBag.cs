@@ -12,6 +12,7 @@ public sealed class MathBag
 	readonly List<int> pile = [];
 	readonly List<int> discard = [];
 	readonly int?[] hand;
+	readonly int?[] hidden;
 
 	public MathBag(CombatRules rules, Pcg32 rng)
 	{
@@ -22,10 +23,45 @@ public sealed class MathBag
 		rng.Shuffle(pile);
 
 		hand = new int?[rules.HandSize];
+		hidden = new int?[rules.HandSize];
 		for (var slot = 0; slot < hand.Length; slot++) hand[slot] = Draw();
 	}
 
 	public IReadOnlyList<int?> Hand => hand;
+
+	public int HiddenCount => hidden.Count(p => p is not null);
+
+	public bool IsHidden(int slot) => hidden[slot] is not null;
+
+	// Travessura do Boneco: embaralha as peças da mão ou esconde uma, que volta com Reveal.
+	// Peças que estão no cajado ficam onde estão: é a criança quem decide o que fazer com elas.
+	public Prank PlayPrank()
+	{
+		var present = Enumerable.Range(0, hand.Length).Where(slot => hand[slot] is not null).ToList();
+		if (present.Count > 1 && rng.NextInt(2) == 0)
+		{
+			var pieces = present.Select(slot => hand[slot]).ToList();
+			rng.Shuffle(pieces);
+			for (var i = 0; i < present.Count; i++) hand[present[i]] = pieces[i];
+			return Prank.Shuffled;
+		}
+		if (present.Count == 0) return Prank.Shuffled;
+
+		var chosen = present[rng.NextInt(present.Count)];
+		hidden[chosen] = hand[chosen];
+		hand[chosen] = null;
+		return Prank.Hidden;
+	}
+
+	public void Reveal()
+	{
+		for (var slot = 0; slot < hand.Length; slot++)
+		{
+			if (hidden[slot] is not { } piece) continue;
+			hand[slot] = piece;
+			hidden[slot] = null;
+		}
+	}
 
 	internal int? Take(int slot)
 	{
@@ -41,9 +77,8 @@ public sealed class MathBag
 	{
 		discard.AddRange(used);
 		for (var slot = 0; slot < hand.Length; slot++)
-			if (hand[slot] is null) hand[slot] = Draw();
+			if (hand[slot] is null && hidden[slot] is null) hand[slot] = Draw();
 	}
-
 
 	int? Draw()
 	{
@@ -128,3 +163,6 @@ public sealed class Staff
 		return result;
 	}
 }
+
+// A travessura do Boneco quando a criança erra; nunca é violenta.
+public enum Prank { Shuffled, Hidden }

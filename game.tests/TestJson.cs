@@ -30,7 +30,9 @@ static class TestJson
 		      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
 		      { "id": "normal", "name": "Normal", "rate": 1.0 } ],
 		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" } },
-		  "combat": { "handSize": 5, "bagNumbers": [1, 2, 3, 4, 5], "bagCopies": 2, "slowTimeScale": 0.25, "targetRange": 5, "operators": ["+"], "tracing": { "dotSpacing": 16, "tolerance": 26, "minCoverage": 0.8, "maxStray": 0.25 } },
+		  "combat": { "handSize": 5, "bagNumbers": [1, 2, 3, 4, 5], "bagCopies": 2, "slowTimeScale": 0.25, "targetRange": 5, "operators": ["+"], "tracing": { "dotSpacing": 16, "tolerance": 26, "minCoverage": 0.8, "maxStray": 0.25 },
+		    "mistakesForHint": 2, "prankSeconds": 4, "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
+		    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 } },
 		  "lobby": {
 		    "interactionReach": 2.0,
 		    "places": [

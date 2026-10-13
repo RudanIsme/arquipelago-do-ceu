@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-010",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 4,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ma","ta"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 4, "image": "mata" },
+  "prompt": "Esta criatura se chama mata. Junte as sílabas para escrever o nome dela. Há várias sílabas parecidas, ouça com atenção.",
+  "hints": ["Ouça de novo: mata. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de ma.", "Depois vem a sílaba ta."],
+  "explanation": "MA + TA = MATA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

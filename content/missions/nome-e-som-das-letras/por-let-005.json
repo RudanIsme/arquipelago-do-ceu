@@ -1,0 +1,16 @@
+{
+  "id": "por-let-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nome-e-som-das-letras",
+  "bncc": ["EF01LP10","EF01LP04"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["me","ta"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 3, "image": "meta" },
+  "prompt": "Esta criatura se chama meta. A letra M se chama mê e faz o som de m. Junte as sílabas do nome.",
+  "hints": ["Ouça: mmmeta. O começo tem o som de m.", "A letra T se chama tê e faz o som de t. Ela vem na segunda sílaba.", "Comece pela sílaba que começa com M."],
+  "explanation": "META começa com M e a segunda sílaba começa com T.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

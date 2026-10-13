@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-007",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pu","ma"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 3, "image": "puma" },
+  "prompt": "Esta criatura se chama puma. Junte as sílabas para escrever o nome dela. Cuidado com as sílabas parecidas.",
+  "hints": ["Ouça de novo: puma. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de pu.", "Depois vem a sílaba ma."],
+  "explanation": "PU + MA = PUMA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

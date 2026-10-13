@@ -1,0 +1,16 @@
+{
+  "id": "por-seg-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "segmentacao-silabica-oral",
+  "bncc": ["EF01LP06"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ma","pa"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "mapa" },
+  "prompt": "Esta criatura se chama mapa. Ma, pa. Junte as duas sílabas.",
+  "hints": ["Ouça de novo: ma, pa. São duas partes.", "Bata palmas em cada parte: ma, pa.", "A primeira parte começa com o som de m."],
+  "explanation": "MA e PA são as duas partes de MAPA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

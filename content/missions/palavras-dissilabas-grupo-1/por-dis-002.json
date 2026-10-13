@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ma","pa"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "mapa" },
+  "prompt": "Esta criatura se chama mapa. Junte as sílabas para escrever o nome dela.",
+  "hints": ["Ouça de novo: mapa. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de ma.", "Depois vem a sílaba pa."],
+  "explanation": "MA + PA = MAPA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

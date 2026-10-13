@@ -4,7 +4,8 @@ using ArquipelagoDoCeu.Rules;
 
 namespace ArquipelagoDoCeu.Combat;
 
-public sealed record AttackResult(ExpressionResult Expression, HitOutcome Outcome, int Remaining);
+// `Equation` é a conta como a criança a montou, com o resultado: aparece depois de confirmar, mesmo quando passa do valor.
+public sealed record AttackResult(ExpressionResult Expression, HitOutcome Outcome, int Remaining, string Equation);
 
 // A luta com o Boneco de treino. O escudo é o alvo de uma Missão de compor número; a mão e o cajado
 // são os mesmos das Dungeons. Nada aqui toca em save: o treino não conta para o progresso.
@@ -54,10 +55,12 @@ public sealed class TrainingBattle
 
 	public Result<AttackResult> Confirm()
 	{
+		// Confirmar passando do valor devolve as peças ao cajado, então a conta é guardada antes.
+		var assembled = string.Join(" ", Staff.Tokens);
 		var result = Staff.Confirm(Shield.Remaining);
 		if (!result.IsOk) return Result<AttackResult>.Fail(result.Error!);
 
 		var outcome = Shield.Hit(result.Value!);
-		return Result<AttackResult>.Ok(new AttackResult(result.Value!, outcome, Shield.Remaining));
+		return Result<AttackResult>.Ok(new AttackResult(result.Value!, outcome, Shield.Remaining, $"{assembled} = {result.Value!.Total}"));
 	}
 }

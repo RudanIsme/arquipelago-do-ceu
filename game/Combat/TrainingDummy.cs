@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -11,7 +12,7 @@ public partial class TrainingDummy : Node3D
 	static readonly Color Gold = Color.FromHtml("#F2B632");
 
 	readonly Label3D shieldLabel = new() { Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 96, PixelSize = 0.009f, OutlineSize = 24, Modulate = Colors.White, NoDepthTest = true };
-	readonly Label3D popup = new() { Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 72, PixelSize = 0.009f, OutlineSize = 20, NoDepthTest = true, Visible = false };
+	readonly Label3D popup = new() { Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 72, PixelSize = 0.009f, OutlineSize = 20, NoDepthTest = true, Visible = false, AutowrapMode = TextServer.AutowrapMode.WordSmart, Width = 640f, VerticalAlignment = VerticalAlignment.Bottom };
 	readonly MeshInstance3D mist = new() { Mesh = new SphereMesh { Radius = MistRadius, Height = MistRadius * 2f, RadialSegments = 24, Rings = 12 } };
 	readonly StandardMaterial3D mistMaterial = new()
 	{
@@ -30,6 +31,22 @@ public partial class TrainingDummy : Node3D
 		Visible = false,
 	};
 	int startingShield = 1;
+	string unit = "Escudo";
+	readonly Node3D creature = new() { Visible = false };
+	readonly Sprite3D creaturePicture = new() { Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, PixelSize = 0.004f, NoDepthTest = true, Visible = false };
+	readonly Label3D creatureMark = new() { Text = "?", Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 120, PixelSize = 0.011f, OutlineSize = 24, Modulate = Gold, NoDepthTest = true, RenderPriority = 5, OutlineRenderPriority = 4 };
+	readonly MeshInstance3D warning = new()
+	{
+		Mesh = new BoxMesh { Size = new Vector3(1f, 0.04f, 1f) },
+		MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.94f, 0.44f, 0.37f, 0.6f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, NoDepthTest = true },
+		Visible = false,
+	};
+	readonly MeshInstance3D bubbleBall = new()
+	{
+		Mesh = new SphereMesh { Radius = 0.5f, Height = 1f, RadialSegments = 16, Rings = 8 },
+		MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.72f, 0.65f, 0.9f, 0.75f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+		Visible = false,
+	};
 	Tween? tween;
 	int popupVersion;
 
@@ -58,12 +75,18 @@ public partial class TrainingDummy : Node3D
 		ring.Position = ground + new Vector3(0f, 0.08f, 0f);
 		AddChild(ring);
 		mist.MaterialOverride = mistMaterial;
-		shieldLabel.Position = new Vector3(ground.X, top + 1.5f, ground.Z);
-		popup.Position = new Vector3(ground.X, top + 2.4f, ground.Z);
+		shieldLabel.Position = new Vector3(ground.X, top + 2.3f, ground.Z);
+		popup.Position = new Vector3(ground.X, top + 3.3f, ground.Z);
 		AddChild(mist);
 		AddChild(shieldLabel);
 		AddChild(popup);
 		AddChild(sound);
+		creature.Position = new Vector3(ground.X, top + 0.5f, ground.Z);
+		creature.AddChild(creaturePicture);
+		creature.AddChild(creatureMark);
+		AddChild(creature);
+		AddChild(warning);
+		AddChild(bubbleBall);
 		UiKit.Outline3D(shieldLabel);
 		UiKit.Outline3D(popup);
 	}
@@ -75,10 +98,11 @@ public partial class TrainingDummy : Node3D
 	}
 
 	// Novo escudo: a névoa volta cheia.
-	public void Reset(int shield)
+	public void Reset(int shield, string newUnit = "Escudo")
 	{
 		tween?.Kill();
-		startingShield = shield;
+		startingShield = Math.Max(1, shield);
+		unit = newUnit;
 		mist.Visible = true;
 		mist.Scale = Vector3.One;
 		mistMaterial.AlbedoColor = mistMaterial.AlbedoColor with { A = 0.5f };
@@ -94,7 +118,7 @@ public partial class TrainingDummy : Node3D
 
 	public void Dissolved()
 	{
-		shieldLabel.Text = "Boneco de treino\nEscudo 0";
+		SetShieldText(0);
 		tween?.Kill();
 		if (ReduceMotion)
 		{
@@ -133,6 +157,77 @@ public partial class TrainingDummy : Node3D
 
 	public void Overshoot() => Play(Tones.Overshoot);
 
+	// Sem treino em andamento: o Boneco descansa, com a névoa leve, esperando a criança escolher.
+	public void Idle()
+	{
+		tween?.Kill();
+		HideWarning();
+		HideBubble();
+		ShowCreature(null);
+		mist.Visible = true;
+		mist.Scale = Vector3.One;
+		mistMaterial.AlbedoColor = mistMaterial.AlbedoColor with { A = 0.3f };
+		shieldLabel.Text = "Boneco de treino\nEscolha-o para treinar";
+	}
+
+	// A travessura: a névoa chacoalha e um som engraçado toca. Sem animação, só o som e o aviso escrito.
+	public void Prank()
+	{
+		Play(Tones.Prank);
+		if (ReduceMotion) return;
+		var shake = CreateTween();
+		for (var i = 0; i < 4; i++)
+		{
+			shake.TweenProperty(mist, "position", center + new Vector3(i % 2 == 0 ? 0.25f : -0.25f, 0f, 0f), 0.06);
+		}
+		shake.TweenProperty(mist, "position", center, 0.06);
+	}
+
+	// A criatura do Escriba: a imagem (se existir em assets/criaturas) ou um ponto de interrogação, já que o nome está esquecido.
+	public void ShowCreature(string? image)
+	{
+		creature.Visible = image is not null;
+		if (image is null) return;
+		var path = $"res://assets/criaturas/{image}.png";
+		var texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+		creaturePicture.Texture = texture;
+		creaturePicture.Visible = texture is not null;
+		creatureMark.Visible = texture is null;
+	}
+
+	// O aviso da bolha: uma faixa no chão, do Boneco até o fim do alcance, que mostra por onde ela vai passar; a criança
+	// só precisa sair da faixa. Forma, texto e som: nunca só cor. A faixa se estreita enquanto o aviso corre.
+	public void ShowWarning(Vector3 from, Vector3 direction, float length, float width, float progress)
+	{
+		if (!warning.Visible)
+		{
+			warning.Visible = true;
+			Play(Tones.Warning);
+			Say("Cuidado! Saia da faixa.", good: false);
+		}
+		warning.Position = from + direction * (length / 2f) + new Vector3(0f, 0.08f, 0f);
+		warning.Rotation = new Vector3(0f, Mathf.Atan2(direction.X, direction.Z), 0f);
+		var narrowing = ReduceMotion ? 1f : 1f - 0.3f * progress;
+		warning.Scale = new Vector3(width * narrowing, 1f, length);
+	}
+
+	public void HideWarning() => warning.Visible = false;
+
+	public void MoveBubble(Vector3 ground, float radius)
+	{
+		bubbleBall.Visible = true;
+		bubbleBall.Scale = Vector3.One * (radius * 2f);
+		bubbleBall.Position = ground + new Vector3(0f, radius + 0.15f, 0f);
+	}
+
+	public void HideBubble() => bubbleBall.Visible = false;
+
+	public void Hurt()
+	{
+		Play(Tones.Hurt);
+		Say("A névoa te alcançou! -1 de Energia.", good: false);
+	}
+
 	public void Say(string text, bool good)
 	{
 		popup.Text = text;
@@ -146,7 +241,7 @@ public partial class TrainingDummy : Node3D
 		};
 	}
 
-	void SetShieldText(int value) => shieldLabel.Text = $"Boneco de treino\nEscudo {value}";
+	void SetShieldText(int value) => shieldLabel.Text = $"Boneco de treino\n{unit}: {value}";
 
 	void Play(AudioStream stream)
 	{
@@ -161,6 +256,9 @@ static class Tones
 	public static readonly AudioStreamWav Hit = Make((660f, 0.12f), (880f, 0.16f));
 	public static readonly AudioStreamWav Perfect = Make((660f, 0.1f), (880f, 0.1f), (1175f, 0.2f));
 	public static readonly AudioStreamWav Overshoot = Make((330f, 0.14f), (247f, 0.2f));
+	public static readonly AudioStreamWav Warning = Make((523f, 0.1f), (0f, 0.05f), (523f, 0.1f), (0f, 0.05f), (698f, 0.18f));
+	public static readonly AudioStreamWav Prank = Make((880f, 0.07f), (660f, 0.07f), (990f, 0.07f), (440f, 0.12f));
+	public static readonly AudioStreamWav Hurt = Make((300f, 0.12f), (220f, 0.18f));
 
 	const int Rate = 22050;
 
