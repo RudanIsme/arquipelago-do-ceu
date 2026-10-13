@@ -168,6 +168,8 @@ public sealed class SaveStoreTests : IDisposable
 	[InlineData("""{ "version": "um" }""")]
 	[InlineData("""{ "version": 1 }""")]
 	[InlineData("""{ "version": 1, "profiles": [null] }""")]
+	[InlineData("""{ "version": 1, "profiles": [ { "id": null, "nickname": "Luna", "level": 1 } ] }""")]
+	[InlineData("""{ "version": 1, "profiles": [ { "id": "a", "nickname": null, "level": 1 } ] }""")]
 	public void Save_corrompido_e_copiado_e_o_jogo_comeca_limpo(string conteudo)
 	{
 		Escrever(conteudo);

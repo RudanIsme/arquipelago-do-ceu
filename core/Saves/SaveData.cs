@@ -1,6 +1,8 @@
 namespace ArquipelagoDoCeu.Saves;
 
-public sealed record ProfileSave(string Id, string Nickname, int Level);
+// Appearance guarda, por categoria, o id da opção escolhida; ausente significa a primeira opção.
+// É opcional, então saves antigos continuam válidos na mesma versão do formato.
+public sealed record ProfileSave(string Id, string Nickname, int Level, IReadOnlyDictionary<string, string>? Appearance = null);
 
 // Version é o formato do arquivo, não o progresso; muda só quando o formato muda.
 public sealed record SaveData(int Version, IReadOnlyList<ProfileSave> Profiles)

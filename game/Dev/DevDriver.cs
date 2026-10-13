@@ -1,0 +1,155 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Godot;
+
+namespace ArquipelagoDoCeu;
+
+// Ferramenta de desenvolvimento: percorre uma tela como uma criança faria (clica e digita) e grava
+// capturas, para conferir fluxos de interface sem teste manual. Só liga com argumentos de usuário:
+//   godot --path game -- --driver=criar --saida=<pasta>
+public partial class DevDriver : Node
+{
+	string scenario = "";
+	string outputDir = "";
+
+	public static void AttachIfRequested(Node parent)
+	{
+		var args = OS.GetCmdlineUserArgs();
+		var scenario = args.FirstOrDefault(a => a.StartsWith("--driver="))?["--driver=".Length..];
+		if (scenario is null || !OS.IsDebugBuild()) return;
+		var output = args.FirstOrDefault(a => a.StartsWith("--saida="))?["--saida=".Length..] ?? ".";
+		parent.AddChild(new DevDriver { scenario = scenario, outputDir = output });
+	}
+
+	public override async void _Ready()
+	{
+		await Wait(0.6);
+		await Scenarios.Run(this, scenario);
+		GetTree().Quit();
+	}
+
+	public async Task Wait(double seconds) => await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
+
+	public async Task Shot(string name)
+	{
+		await Wait(0.25);
+		GetViewport().GetTexture().GetImage().SavePng($"{outputDir}/{name}.png");
+	}
+
+	public Button? Button(string text) =>
+		GetTree().Root.FindChildren("*", "Button", true, false).Cast<Button>().FirstOrDefault(b => b.Text == text && b.IsVisibleInTree());
+
+	public async Task Press(string text)
+	{
+		var button = Button(text);
+		if (button is null) GD.PushError($"Piloto: botão '{text}' não encontrado.");
+		else
+		{
+			if (button.ToggleMode) button.ButtonPressed = true;
+			button.EmitSignal(BaseButton.SignalName.Pressed);
+		}
+		await Wait(0.3);
+	}
+
+	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
+
+	// Segura uma ação de movimento, como uma tecla pressionada.
+	public async Task Hold(string action, double seconds)
+	{
+		Input.ActionPress(action);
+		await Wait(seconds);
+		Input.ActionRelease(action);
+	}
+
+	// Clica no centro de um hexágono do Lobby, como o mouse faria.
+	public async Task ClickHex(int q, int r)
+	{
+		var camera = GetViewport().GetCamera3D();
+		var screen = camera.UnprojectPosition(Lobby.HexToWorld(q, r));
+		Input.ParseInputEvent(new InputEventMouseButton { Position = screen, GlobalPosition = screen, ButtonIndex = MouseButton.Left, Pressed = true });
+		await Wait(0.1);
+	}
+
+	public async Task Type(string text)
+	{
+		var input = GetTree().Root.FindChildren("*", "LineEdit", true, false).Cast<LineEdit>().FirstOrDefault(l => l.IsVisibleInTree());
+		if (input is null) GD.PushError("Piloto: campo de texto não encontrado.");
+		else input.Text = text;
+		await Wait(0.2);
+	}
+}
+
+static class Scenarios
+{
+	public static async Task Run(DevDriver d, string name)
+	{
+		switch (name)
+		{
+			case "criar":
+				await d.Shot("01-criar");
+				await d.Press("Criar");
+				await d.Shot("02-apelido-vazio");
+				await d.Type("Lu@na");
+				await d.Press("Criar");
+				await d.Shot("03-apelido-invalido");
+				await d.Type("Luna");
+				await d.Press("Criar");
+				await d.Shot("04-lobby");
+				break;
+			case "escolher":
+				await d.Shot("01-lista");
+				await d.Press("Editar");
+				await d.Shot("02-editar");
+				await d.Type("Luninha");
+				await d.Press("Salvar");
+				await d.Shot("03-lista-depois");
+				await d.Press("Theo");
+				await d.Shot("04-lobby");
+				break;
+			case "personagem":
+				await d.Shot("01-lobby");
+				await d.Press("Personagem");
+				await d.Wait(0.8);
+				await d.Shot("02-editor-padrao");
+				await d.Press("Café");
+				await d.Press("Azul");
+				await d.Wait(0.5);
+				await d.Shot("03-editor-cafe-azul");
+				await d.Press("Pronto");
+				await d.Shot("04-fechado");
+				break;
+			case "movimento":
+				await d.Shot("01-parado");
+				await d.Hold(Controls.Right, 0.8);
+				await d.Shot("02-andou-para-a-direita");
+				await d.Hold(Controls.Left, 2.6);
+				await d.Shot("03-contra-a-arvore");
+				await d.Hold(Controls.Up, 4.0);
+				await d.Shot("04-contra-a-borda");
+				break;
+			case "animacao":
+				GD.Print($"Parado: andando={d.Player!.IsWalkingAnimation}");
+				Input.ActionPress(Controls.Right);
+				await d.Wait(0.5);
+				GD.Print($"Andando: andando={d.Player.IsWalkingAnimation}");
+				Input.ActionRelease(Controls.Right);
+				await d.Wait(0.4);
+				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
+				break;
+			case "mouse":
+				await d.ClickHex(3, -4);
+				await d.Wait(0.9);
+				await d.Shot("01-a-caminho");
+				await d.Wait(2.5);
+				await d.Shot("02-chegou");
+				await d.ClickHex(-3, 1);
+				await d.Wait(4.5);
+				await d.Shot("03-clique-na-arvore");
+				break;
+			default:
+				GD.PushError($"Piloto: cenário '{name}' não existe.");
+				break;
+		}
+	}
+}
