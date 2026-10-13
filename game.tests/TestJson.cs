@@ -26,7 +26,10 @@ static class TestJson
 		      { "id": "mouse", "name": "Mouse" },
 		      { "id": "teclado", "name": "Teclado" },
 		      { "id": "toque", "name": "Toque" } ],
-		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse" } },
+		    "voiceSpeeds": [
+		      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
+		      { "id": "normal", "name": "Normal", "rate": 1.0 } ],
+		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" } },
 		  "lobby": {
 		    "interactionReach": 2.0,
 		    "places": [
@@ -34,6 +37,7 @@ static class TestJson
 		      { "id": "ciencias", "name": "Ilha das Ciências", "sign": "Em breve", "x": 10, "z": 6 } ],
 		    "objects": [
 		      { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
-		      { "id": "portal", "name": "Portal", "prompt": "Usar o portal", "model": "portal", "q": -3, "r": 3 } ] } }
+		      { "id": "portal", "name": "Portal", "prompt": "Usar o portal", "model": "portal", "q": -3, "r": 3 },
+		      { "id": "guia", "name": "Guia", "prompt": "Falar com o Guia", "model": "guia", "q": 1, "r": 1, "lines": ["Olá!", "Vamos explorar?"] } ] } }
 		""";
 }

@@ -55,7 +55,12 @@
       { "id": "teclado", "name": "Teclado" },
       { "id": "toque", "name": "Toque" }
     ],
-    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse" }
+    "voiceSpeeds": [
+      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
+      { "id": "normal", "name": "Normal", "rate": 1.0 },
+      { "id": "rapida", "name": "Rápida", "rate": 1.25 }
+    ],
+    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal" }
   },
   "lobby": {
     "interactionReach": 2.2,
@@ -68,7 +73,15 @@
     ],
     "objects": [
       { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
-      { "id": "portal", "name": "Portal de viagem", "prompt": "Usar o portal", "model": "portal", "q": -1, "r": 4 }
+      { "id": "portal", "name": "Portal de viagem", "prompt": "Usar o portal", "model": "portal", "q": -1, "r": 4 },
+      {
+        "id": "guia", "name": "Guia", "prompt": "Falar com o Guia", "model": "guia", "q": 1, "r": 1,
+        "lines": [
+          "Olá! Eu sou o Guia do Arquipélago do Céu.",
+          "Aqui no Lobby você pode se arrumar, olhar o Álbum e viajar pelo portal.",
+          "As torres estão em construção. Quando abrirem, é só chegar perto e entrar!"
+        ]
+      }
     ]
   }
 }
