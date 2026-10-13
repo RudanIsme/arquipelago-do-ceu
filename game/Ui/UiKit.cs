@@ -24,9 +24,11 @@ public static class UiKit
 		button.AddThemeColorOverride("font_color", Soft);
 		button.AddThemeColorOverride("font_hover_color", Soft);
 		button.AddThemeColorOverride("font_pressed_color", PanelFill);
+		button.AddThemeColorOverride("font_hover_pressed_color", PanelFill);
 		button.AddThemeStyleboxOverride("normal", ButtonStyle(Color.FromHtml("#2E2440"), Gold));
 		button.AddThemeStyleboxOverride("hover", ButtonStyle(Color.FromHtml("#43335C"), Gold));
 		button.AddThemeStyleboxOverride("pressed", ButtonStyle(Gold, Gold));
+		button.AddThemeStyleboxOverride("hover_pressed", ButtonStyle(Gold, Gold));
 		button.AddThemeStyleboxOverride("focus", ButtonStyle(Color.FromHtml("#43335C"), Soft));
 		button.Pressed += onPressed;
 		return button;
@@ -137,11 +139,32 @@ public static class UiKit
 			var wanted = box.GetCombinedMinimumSize();
 			scroll.CustomMinimumSize = new Vector2(wanted.X, room > 0f ? Mathf.Min(wanted.Y, room) : wanted.Y);
 		}
-		host.Resized += Fit;
+		// Reconstruir o cartão no mesmo host não pode empilhar ouvintes de cartões já descartados.
+		const string FitMeta = "card_fit";
+		if (host.HasMeta(FitMeta) && host.GetMeta(FitMeta).AsCallable() is var old && host.IsConnected(Control.SignalName.Resized, old))
+			host.Disconnect(Control.SignalName.Resized, old);
+		var fit = Callable.From(Fit);
+		host.SetMeta(FitMeta, fit);
+		host.Connect(Control.SignalName.Resized, fit);
 		box.MinimumSizeChanged += Fit;
 		footer.MinimumSizeChanged += Fit;
 		Callable.From(Fit).CallDeferred();
 		return box;
+	}
+
+	// Reconstruir uma tela destrói os botões; devolve o foco ao botão que estava no mesmo lugar, para o teclado não recomeçar do zero.
+	public static int FocusIndex(Control root)
+	{
+		var owner = root.GetViewport().GuiGetFocusOwner();
+		var buttons = root.FindChildren("*", "Button", true, false);
+		return owner is null ? -1 : buttons.IndexOf(owner);
+	}
+
+	public static void RestoreFocus(Control root, int index)
+	{
+		if (index < 0) return;
+		var buttons = root.FindChildren("*", "Button", true, false);
+		if (index < buttons.Count) ((Control)buttons[index]).CallDeferred(Control.MethodName.GrabFocus);
 	}
 
 	// Botão que liga e desliga; o estado aparece em palavras, não só na cor.

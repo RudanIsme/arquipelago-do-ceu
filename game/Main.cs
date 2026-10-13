@@ -85,8 +85,11 @@ public partial class Main : Node3D
 		}
 		title = uiRoot.GetNode<Label>("Message");
 		notice = uiRoot.GetNode<Label>("Notice");
-		title.HorizontalAlignment = HorizontalAlignment.Right;
-		title.OffsetRight = -16;
+		// Abaixo da fileira de botões, para nunca cobri-los com texto maior ou janela estreita.
+		title.HorizontalAlignment = HorizontalAlignment.Left;
+		title.OffsetLeft = 16;
+		title.OffsetTop = 80;
+		title.OffsetBottom = 120;
 		UiKit.Outline(title);
 		UiKit.Outline(notice);
 		GetViewport().SizeChanged += FitUiRoot;
@@ -181,7 +184,7 @@ public partial class Main : Node3D
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
 
-		player.ReduceMotion = s.ReduceMotion || OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes");
+		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
 		lobby.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
 		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
@@ -197,8 +200,16 @@ public partial class Main : Node3D
 	void ShowProfiles()
 	{
 		if (screen is not null || overlay is not null || editor is not null) return;
-		screen = new ProfileScreen(profiles);
+		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
+		screen.Cancelled += () =>
+		{
+			screen?.QueueFree();
+			screen = null;
+			// Um apelido mudado na tela de Perfis tem que aparecer no título e nas configurações.
+			if (current is not null && profiles.Find(current.Id) is { IsOk: true } fresh) Enter(fresh.Value!);
+			else UpdatePlayerControl();
+		};
 		uiRoot.AddChild(screen);
 		UpdatePlayerControl();
 	}

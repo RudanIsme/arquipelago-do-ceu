@@ -11,6 +11,7 @@ public partial class SettingsScreen : OverlayScreen
 	readonly string? nickname;
 	readonly Action openProfiles;
 	string section = "jogo";
+	string? error;
 
 	public SettingsScreen(SettingsService settings, string? nickname, Action openProfiles)
 	{
@@ -27,6 +28,7 @@ public partial class SettingsScreen : OverlayScreen
 
 	void Build()
 	{
+		var focus = UiKit.FocusIndex(this);
 		var box = UiKit.Card(this, "Configurações", out var footer);
 		box.AddChild(Tabs());
 		switch (section)
@@ -35,7 +37,9 @@ public partial class SettingsScreen : OverlayScreen
 			case "controles": ControlsSection(box); break;
 			default: Game(box); break;
 		}
+		if (error is not null) footer.AddChild(UiKit.Hint(error));
 		footer.AddChild(UiKit.BigButton("Fechar", Close));
+		UiKit.RestoreFocus(this, focus);
 	}
 
 	Control Tabs()
@@ -108,10 +112,11 @@ public partial class SettingsScreen : OverlayScreen
 	void AddToggle(VBoxContainer box, string label, bool on, Func<GameSettings, bool, GameSettings> change) =>
 		box.AddChild(UiKit.Toggle(label, on, value => Apply(s => change(s, value))));
 
-	// Se não deu para gravar, a tela avisa e mostra o valor que continua valendo.
+	// Se não deu para gravar, a tela avisa e continua mostrando o valor que vale.
 	void Apply(Func<GameSettings, GameSettings> edit)
 	{
 		var result = settings.Change(edit);
+		error = result.IsOk ? null : "Não foi possível guardar essa escolha. Ela volta ao que era.";
 		if (!result.IsOk) GD.PushWarning(result.Error!);
 		CallDeferred(nameof(Build));
 	}

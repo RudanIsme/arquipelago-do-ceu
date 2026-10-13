@@ -12,8 +12,23 @@ public partial class ProfileScreen : Control
 	readonly ProfileService profiles;
 
 	public event Action<ProfileSave>? Chosen;
+	public event Action? Cancelled;
 
-	public ProfileScreen(ProfileService profiles) => this.profiles = profiles;
+	// Com um Perfil já em jogo, dá para sair sem trocar (Esc ou "Voltar ao jogo"); na primeira vez não há para onde voltar.
+	readonly bool canCancel;
+
+	public ProfileScreen(ProfileService profiles, bool canCancel)
+	{
+		this.profiles = profiles;
+		this.canCancel = canCancel;
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (!canCancel || !@event.IsActionPressed("ui_cancel")) return;
+		GetViewport().SetInputAsHandled();
+		Cancelled?.Invoke();
+	}
 
 	public override void _Ready()
 	{
@@ -43,6 +58,7 @@ public partial class ProfileScreen : Control
 			box.AddChild(row);
 		}
 		if (profiles.CanCreate) box.AddChild(UiKit.BigButton("Novo perfil", () => ShowForm(null)));
+		if (canCancel) box.AddChild(UiKit.BigButton("Voltar ao jogo", () => Cancelled?.Invoke()));
 		FocusFirstButton(box);
 	}
 

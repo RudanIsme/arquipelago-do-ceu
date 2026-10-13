@@ -16,6 +16,7 @@ public partial class AlbumScreen : OverlayScreen
 
 	void Show(string current)
 	{
+		var focus = UiKit.FocusIndex(this);
 		tab = current;
 		var box = UiKit.Card(this, "Álbum");
 
@@ -37,6 +38,7 @@ public partial class AlbumScreen : OverlayScreen
 			? "Você ainda não encontrou nenhuma criatura. Explore as torres para descobrir!"
 			: "Você ainda não ganhou nenhum Cosmético. Aprender e explorar rendem novidades!"));
 		box.AddChild(UiKit.BigButton("Fechar", Close));
+		UiKit.RestoreFocus(this, focus);
 	}
 }
 
