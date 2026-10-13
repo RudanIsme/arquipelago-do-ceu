@@ -17,7 +17,7 @@ public partial class DevDriver : Node
 	{
 		var args = OS.GetCmdlineUserArgs();
 		var scenario = args.FirstOrDefault(a => a.StartsWith("--driver="))?["--driver=".Length..];
-		if (scenario is null) return;
+		if (scenario is null || !OS.IsDebugBuild()) return;
 		var output = args.FirstOrDefault(a => a.StartsWith("--saida="))?["--saida=".Length..] ?? ".";
 		parent.AddChild(new DevDriver { scenario = scenario, outputDir = output });
 	}

@@ -39,7 +39,7 @@ public sealed class MovementController
 	public bool GoTo(Vector2 target)
 	{
 		var targetCell = HexGrid.FromWorld(target);
-		var destination = grid.IsWalkable(targetCell) ? targetCell : grid.NearestWalkable(targetCell);
+		var destination = grid.IsWalkable(targetCell) ? targetCell : grid.NearestWalkable(targetCell, HexGrid.FromWorld(Position));
 		if (destination is null) return false;
 
 		var path = grid.FindPath(HexGrid.FromWorld(Position), destination.Value);
@@ -58,6 +58,12 @@ public sealed class MovementController
 		}
 		else if (exact) waypoints.Enqueue(target);
 		return true;
+	}
+
+	public void Stop()
+	{
+		waypoints.Clear();
+		IsMoving = false;
 	}
 
 	public void Tick(Vector2 steer, float dt)

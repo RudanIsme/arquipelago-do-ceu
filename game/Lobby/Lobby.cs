@@ -9,7 +9,7 @@ namespace ArquipelagoDoCeu;
 public partial class Lobby : Node3D
 {
 	const int IslandRadius = 5;
-	const float TileSize = 1f;         // do centro ao vértice
+	const float TileSize = 1f;         // do centro ao vértice; a grade de colisão (HexGrid) também assume 1
 	const float TileThickness = 0.5f;
 	const float TileGap = 0.98f;       // fresta fina entre os hexágonos
 
@@ -40,7 +40,7 @@ public partial class Lobby : Node3D
 
 	// Hexágono "flat-top": vértices à esquerda e à direita, como nos mockups.
 	public static Vector3 HexToWorld(int q, int r) =>
-		new(TileSize * 1.5f * q, 0f, TileSize * Mathf.Sqrt(3f) * (r + q / 2f));
+		new(HexGrid.ToWorld(new HexCell(q, r)).X, 0f, HexGrid.ToWorld(new HexCell(q, r)).Y);
 
 	void BuildMap()
 	{

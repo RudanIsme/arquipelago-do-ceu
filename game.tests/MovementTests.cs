@@ -295,4 +295,32 @@ public sealed class MovementTests
 		Assert.Equal(1f, MovementController.FromScreen(new Vector2(1f, 1f)).Length(), 3);
 		Assert.Equal(Vector2.Zero, MovementController.FromScreen(Vector2.Zero));
 	}
+
+	[Fact]
+	public void Entre_vizinhos_igualmente_perto_do_toque_vai_ao_mais_perto_de_quem_anda()
+	{
+		var grade = Ilha(new HexCell(0, 0));
+
+		var doLadoDeLa = grade.NearestWalkable(new HexCell(0, 0), from: new HexCell(2, 0))!.Value;
+		var doLadoDeCa = grade.NearestWalkable(new HexCell(0, 0), from: new HexCell(-2, 0))!.Value;
+
+		Assert.Equal(1, doLadoDeLa.Q);
+		Assert.Equal(-1, doLadoDeCa.Q);
+	}
+
+	[Fact]
+	public void Parar_cancela_o_caminho_em_andamento()
+	{
+		var controle = new MovementController(Ilha(), Vector2.Zero, 2f);
+		controle.GoTo(HexGrid.ToWorld(new HexCell(3, 0)));
+		controle.Tick(Vector2.Zero, 0.1f);
+
+		controle.Stop();
+		var parado = controle.Position;
+		controle.Tick(Vector2.Zero, 0.5f);
+
+		Assert.Equal(parado, controle.Position);
+		Assert.False(controle.IsMoving);
+		Assert.False(controle.HasDestination);
+	}
 }

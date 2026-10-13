@@ -28,7 +28,17 @@ public partial class Player : Node3D
 	}
 
 	// Desligado enquanto uma tela está aberta: digitar o apelido não pode mover o Personagem.
-	public bool Enabled { get; set; }
+	public bool Enabled
+	{
+		get => enabled;
+		set
+		{
+			enabled = value;
+			if (!value) mover.Stop();
+		}
+	}
+
+	bool enabled;
 
 	public bool IsWalkingAnimation => view.IsWalkingAnimation;
 

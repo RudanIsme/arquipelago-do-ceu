@@ -101,11 +101,12 @@ public sealed class HexGrid
 		return path;
 	}
 
-	// O hexágono livre mais perto de um destino bloqueado ou fora da ilha; empates por posição, para ser determinístico.
-	public HexCell? NearestWalkable(HexCell target)
+	// O hexágono livre mais perto de um destino bloqueado ou fora da ilha. No empate vence o mais perto de quem anda
+	// (o lado do obstáculo que ele já está vendo); o resto do empate é por posição, para ser determinístico.
+	public HexCell? NearestWalkable(HexCell target, HexCell? from = null)
 	{
 		HexCell? best = null;
-		foreach (var cell in cells.Where(IsWalkable).OrderBy(c => c.Q).ThenBy(c => c.R))
+		foreach (var cell in cells.Where(IsWalkable).OrderBy(c => from is null ? 0 : c.DistanceTo(from.Value)).ThenBy(c => c.Q).ThenBy(c => c.R))
 			if (best is null || cell.DistanceTo(target) < best.Value.DistanceTo(target)) best = cell;
 		return best;
 	}
