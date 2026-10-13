@@ -15,6 +15,7 @@ public partial class Lobby : Node3D
 	const float TileGap = 0.98f;       // fresta fina entre os hexágonos
 	const float PortalHeight = 2.8f;
 	const float LecternHeight = 1.4f;
+	const float GuideHeight = 1.8f;
 	const float TowerHeight = 5f;
 
 	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3 }
@@ -258,7 +259,7 @@ public partial class Lobby : Node3D
 		{
 			var ground = HexToWorld(item.Q, item.R);
 			list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
-			var height = item.Id == "portal" ? PortalHeight : LecternHeight;
+			var height = item.Id switch { "portal" => PortalHeight, "guia" => GuideHeight, _ => LecternHeight };
 			var top = height;
 			if (LoadModel(item.Model) is { } model)
 			{

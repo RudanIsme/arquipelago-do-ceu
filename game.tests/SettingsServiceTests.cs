@@ -27,7 +27,7 @@ public sealed class SettingsServiceTests : IDisposable
 	{
 		var atual = Abrir().Current;
 
-		Assert.Equal(new GameSettings("normal", 1.0f, true, false, false, false, "mouse"), atual);
+		Assert.Equal(new GameSettings("normal", 1.0f, true, false, false, false, "mouse", null, "normal", 1.0f), atual);
 	}
 
 	[Fact]
@@ -38,7 +38,7 @@ public sealed class SettingsServiceTests : IDisposable
 		Assert.True(servico.Change(s => s with { TextSize = "grande", ReduceMotion = true, DyslexiaFont = true, CalmMode = true, Voice = false, Controls = "toque" }).IsOk);
 
 		var reaberto = Abrir().Current;
-		Assert.Equal(new GameSettings("grande", 1.25f, false, true, true, true, "toque"), reaberto);
+		Assert.Equal(new GameSettings("grande", 1.25f, false, true, true, true, "toque", null, "normal", 1.0f), reaberto);
 	}
 
 	[Fact]
@@ -65,6 +65,26 @@ public sealed class SettingsServiceTests : IDisposable
 		Assert.False(ruim2.IsOk);
 		Assert.Equal("normal", Abrir().Current.TextSize);
 		Assert.Equal("mouse", servico.Current.Controls);
+	}
+
+	[Fact]
+	public void Voz_e_velocidade_escolhidas_persistem()
+	{
+		Abrir().Change(s => s with { VoiceId = "maria", VoiceSpeed = "devagar" });
+
+		var reaberto = Abrir().Current;
+
+		Assert.Equal("maria", reaberto.VoiceId);
+		Assert.Equal(("devagar", 0.8f), (reaberto.VoiceSpeed, reaberto.VoiceRate));
+	}
+
+	[Fact]
+	public void Velocidade_de_voz_que_nao_existe_e_recusada()
+	{
+		var servico = Abrir();
+
+		Assert.False(servico.Change(s => s with { VoiceSpeed = "turbo" }).IsOk);
+		Assert.Equal("normal", servico.Current.VoiceSpeed);
 	}
 
 	[Fact]

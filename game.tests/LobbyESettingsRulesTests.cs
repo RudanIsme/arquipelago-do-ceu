@@ -29,7 +29,7 @@ public sealed class LobbyESettingsRulesTests
 	public void Objetos_do_Lobby_e_o_alcance_vem_dos_dados()
 	{
 		Assert.Equal(2.0f, Regras.Lobby.InteractionReach);
-		Assert.Equal(["album", "portal"], Regras.Lobby.Objects.Select(o => o.Id));
+		Assert.Equal(["album", "portal", "guia"], Regras.Lobby.Objects.Select(o => o.Id));
 		Assert.Equal("Abrir o Álbum", Regras.Lobby.Objects[0].Prompt);
 		Assert.Equal((-2, -2), (Regras.Lobby.Objects[0].Q, Regras.Lobby.Objects[0].R));
 	}
@@ -57,7 +57,7 @@ public sealed class LobbyESettingsRulesTests
 		Assert.Equal(["normal", "grande"], Regras.Settings.TextSizes.Select(t => t.Id));
 		Assert.Equal(1.25f, Regras.Settings.TextSizes[1].Scale);
 		Assert.Equal(["mouse", "teclado", "toque"], Regras.Settings.Controls.Select(c => c.Id));
-		Assert.Equal(new SettingsDefaults("normal", true, false, false, false, "mouse"), Regras.Settings.Defaults);
+		Assert.Equal(new SettingsDefaults("normal", true, false, false, false, "mouse", "normal"), Regras.Settings.Defaults);
 	}
 
 	[Theory]
@@ -85,5 +85,28 @@ public sealed class LobbyESettingsRulesTests
 
 		Assert.False(resultado.IsOk);
 		Assert.Contains(secao, resultado.Error);
+	}
+
+	// --- #32 a #35: voz e falas do Guia
+
+	[Fact]
+	public void Le_as_velocidades_de_voz_e_as_falas_do_Guia()
+	{
+		Assert.Equal(["devagar", "normal"], Regras.Settings.VoiceSpeeds.Select(v => v.Id));
+		Assert.Equal(0.8f, Regras.Settings.VoiceSpeeds[0].Rate);
+		Assert.Equal(["Olá!", "Vamos explorar?"], Regras.Lobby.Objects.Single(o => o.Id == "guia").Lines);
+		Assert.Empty(Regras.Lobby.Objects[0].Lines);
+	}
+
+	[Theory]
+	[InlineData("\"rate\": 0.8", "\"rate\": 9", "settings.voiceSpeeds[0].rate")]
+	[InlineData("\"voiceSpeed\": \"normal\"", "\"voiceSpeed\": \"turbo\"", "settings.defaults.voiceSpeed")]
+	[InlineData("\"Vamos explorar?\"", "\" \"", "lobby.objects[2].lines")]
+	public void Voz_ou_fala_ruim_e_recusada_dizendo_qual_campo(string original, string novo, string campo)
+	{
+		var resultado = GameRules.Parse(TestJson.Rules.Replace(original, novo));
+
+		Assert.False(resultado.IsOk);
+		Assert.Contains(campo, resultado.Error);
 	}
 }

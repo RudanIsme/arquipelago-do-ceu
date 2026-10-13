@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using ArquipelagoDoCeu.Voice;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -51,5 +53,56 @@ public partial class PortalScreen : OverlayScreen
 		var box = UiKit.Card(this, "Portal de viagem");
 		box.AddChild(UiKit.Hint("Ainda não há nenhum ponto de viagem. Quando você chegar a um ponto de uma torre, ele aparece aqui."));
 		box.AddChild(UiKit.BigButton("Fechar", Close));
+	}
+}
+
+// Conversa com o Guia: cada fala aparece escrita (a legenda) e é dita pela voz, se estiver ligada.
+public partial class GuideScreen : OverlayScreen
+{
+	readonly string name;
+	readonly IReadOnlyList<string> lines;
+	readonly VoiceService voice;
+	int index;
+
+	public GuideScreen(string name, IReadOnlyList<string> lines, VoiceService voice)
+	{
+		this.name = name;
+		this.lines = lines;
+		this.voice = voice;
+	}
+
+	public override void _Ready()
+	{
+		base._Ready();
+		ShowLine();
+	}
+
+	// Fechar no meio da fala corta a voz, para ela não continuar sobre o Lobby.
+	public override void _ExitTree()
+	{
+		base._ExitTree();
+		voice.Stop();
+	}
+
+	void ShowLine()
+	{
+		var focus = UiKit.FocusIndex(this);
+		var box = UiKit.Card(this, name, out var footer);
+		var line = lines[index];
+		box.AddChild(UiKit.Caption(line));
+		voice.Say(line, interrupt: true);
+
+		var last = index == lines.Count - 1;
+		footer.AddChild(UiKit.BigButton("Ouvir de novo", () => voice.Say(line, interrupt: true)));
+		footer.AddChild(UiKit.BigButton(last ? "Fechar" : "Continuar", () =>
+		{
+			if (last) Close();
+			else
+			{
+				index++;
+				ShowLine();
+			}
+		}));
+		UiKit.RestoreFocus(this, focus);
 	}
 }
