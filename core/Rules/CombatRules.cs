@@ -5,11 +5,11 @@ namespace ArquipelagoDoCeu.Rules;
 public sealed record TracingRules(int DotSpacing, float Tolerance, float MinCoverage, float MaxStray);
 
 // Bolsa do Matemático, sinais da calculadora, tempo da montagem e traçado; todo valor vem de dados.
-public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, IReadOnlyList<string> Operators, TracingRules Tracing);
+public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing);
 
 sealed record TracingDto(int? DotSpacing, float? Tolerance, float? MinCoverage, float? MaxStray);
 
-sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, string[]? Operators, TracingDto? Tracing);
+sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing);
 
 static class CombatChecks
 {
@@ -17,6 +17,7 @@ static class CombatChecks
 	const int PieceLimit = 9; // o teclado digita uma tecla por peça; peças maiores esperam a digitação de vários dígitos
 	const int CopiesLimit = 9;
 	const float MinSlowScale = 0.05f;
+	const float MaxTargetRange = 30f;
 	static readonly string[] SupportedOperators = ["+"];
 
 	public static string? Check(CombatDto? combat)
@@ -34,6 +35,8 @@ static class CombatChecks
 			return $"Regras inválidas: 'combat.handSize' ({combat.HandSize}) não pode ser maior que o total de peças da bolsa ({combat.BagNumbers.Length * combat.BagCopies}).";
 		if (combat.SlowTimeScale is null) return Required("combat.slowTimeScale");
 		if (combat.SlowTimeScale < MinSlowScale || combat.SlowTimeScale > 1f) return OutOfRange("combat.slowTimeScale", $"{MinSlowScale} e 1", combat.SlowTimeScale);
+		if (combat.TargetRange is null) return Required("combat.targetRange");
+		if (combat.TargetRange < 1f || combat.TargetRange > MaxTargetRange) return OutOfRange("combat.targetRange", $"1 e {MaxTargetRange}", combat.TargetRange);
 		if (combat.Operators is null) return Required("combat.operators");
 		if (combat.Operators.Length == 0) return "Regras inválidas: 'combat.operators' precisa de ao menos um sinal.";
 		if (combat.Operators.Any(o => !SupportedOperators.Contains(o)))
@@ -56,7 +59,7 @@ static class CombatChecks
 	}
 
 	public static CombatRules Build(CombatDto combat) =>
-		new(combat.HandSize!.Value, [.. combat.BagNumbers!], combat.BagCopies!.Value, combat.SlowTimeScale!.Value, [.. combat.Operators!],
+		new(combat.HandSize!.Value, [.. combat.BagNumbers!], combat.BagCopies!.Value, combat.SlowTimeScale!.Value, combat.TargetRange!.Value, [.. combat.Operators!],
 			new TracingRules(combat.Tracing!.DotSpacing!.Value, combat.Tracing.Tolerance!.Value, combat.Tracing.MinCoverage!.Value, combat.Tracing.MaxStray!.Value));
 
 	static string Required(string field) => $"Regras inválidas: o campo '{field}' é obrigatório.";

@@ -59,14 +59,9 @@ public partial class NamePanel : OverlayScreen
 		style.SetCornerRadiusAll(16);
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-		panel.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterBottom, LayoutPresetMode.Minsize);
-		panel.AnchorLeft = 0.5f;
-		panel.AnchorRight = 0.5f;
-		panel.GrowHorizontal = GrowDirection.Both;
-		panel.GrowVertical = GrowDirection.Begin;
-		panel.OffsetBottom = -16;
 		panel.AddThemeStyleboxOverride("panel", style);
 		AddChild(panel);
+		UiKit.DockFit(this, panel, right: false);
 
 		var column = new VBoxContainer();
 		column.AddThemeConstantOverride("separation", 10);

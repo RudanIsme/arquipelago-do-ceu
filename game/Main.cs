@@ -17,7 +17,10 @@ namespace ArquipelagoDoCeu;
 public partial class Main : Node3D
 {
 	const string RulesPath = "res://data/rules.json";
+	const float DummyPickRadius = 1.3f;
 	const string SavePath = "user://save.json";
+	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
+	const string PilotSavePath = "user://piloto-save.json";
 	const string DyslexiaFontPath = "res://assets/fontes/OpenDyslexic-Regular.otf";
 	const int DyslexiaLetterSpacing = 1;
 
@@ -33,6 +36,7 @@ public partial class Main : Node3D
 	ProfileScreen? screen;
 	CharacterEditor? editor;
 	OverlayScreen? overlay;
+	StaffPanel? staff;
 	Button characterButton = null!;
 	Button interactButton = null!;
 	Control bottomBar = null!;
@@ -56,7 +60,7 @@ public partial class Main : Node3D
 		title.Text = rules.GameName;
 		GD.Print($"Regras carregadas: {rules.GameName}");
 
-		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
+		var store = new SaveStore(ProjectSettings.GlobalizePath(ChooseSavePath()));
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
@@ -153,6 +157,15 @@ public partial class Main : Node3D
 		GD.PushError(text);
 	}
 
+	// Com o piloto de desenvolvimento, o jogo trabalha numa cópia do save: nada do que o piloto clica volta para o real.
+	static string ChooseSavePath()
+	{
+		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
+		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
+		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
+		return PilotSavePath;
+	}
+
 	static Result<GameRules> LoadRules()
 	{
 		using var file = FileAccess.Open(RulesPath, FileAccess.ModeFlags.Read);
@@ -216,6 +229,7 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
+		staff?.Abandon();
 		if (screen is not null || overlay is not null || editor is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
@@ -248,6 +262,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
+		staff?.Abandon();
 		if (editor is not null || screen is not null || overlay is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
@@ -265,6 +280,7 @@ public partial class Main : Node3D
 
 	void ShowOverlay(OverlayScreen next)
 	{
+		staff?.Abandon();
 		if (overlay is not null || screen is not null || editor is not null)
 		{
 			next.QueueFree();
@@ -289,7 +305,6 @@ public partial class Main : Node3D
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(new PortalScreen()); break;
 			case "guia": ShowGuide(); break;
-			case "boneco": Attack(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
 	}
@@ -324,37 +339,77 @@ public partial class Main : Node3D
 		else GD.PushWarning(started.Error!);
 	}
 
-	// Chegar perto e atacar abre a montagem do cajado no próprio cenário. Enquanto ela está aberta o tempo
-	// desacelera (ou para, no Modo calmo) e volta ao normal ao confirmar ou cancelar.
-	void Attack()
+	// A criatura escolhida (clique ou tecla F) abre a UI de combate na lateral, sem parar o resto do jogo.
+	// Só dá para escolhê-la perto o bastante, e se a criança se afastar o alvo cai. O tempo só desacelera
+	// enquanto ela monta a conta (ou para, no Modo calmo) e volta ao normal ao atacar, apagar tudo ou soltar o alvo.
+	bool InTargetRange()
 	{
+		var (ground, _) = lobby.FootprintOf("boneco");
+		return System.Numerics.Vector2.Distance(player.GroundPosition, new System.Numerics.Vector2(ground.X, ground.Z)) <= rules.Combat.TargetRange;
+	}
+
+	bool HitsDummy(Vector2 screenPoint)
+	{
+		var origin = lobby.Camera.ProjectRayOrigin(screenPoint);
+		var direction = lobby.Camera.ProjectRayNormal(screenPoint);
+		var closest = origin + direction * (dummy.Center - origin).Dot(direction);
+		return closest.DistanceTo(dummy.Center) <= DummyPickRadius;
+	}
+
+	void ToggleTarget()
+	{
+		if (staff is not null) staff.Abandon();
+		else SelectDummy();
+	}
+
+	void SelectDummy()
+	{
+		if (staff is not null || !player.Enabled) return;
 		if (battle is null)
 		{
-			notice.Text = "O Boneco ainda não tem uma Missão de treino.";
+			Notify("O Boneco ainda não tem uma Missão de treino.");
 			return;
 		}
-		if (battle.Shield.IsDissolved) return; // a névoa ainda está sumindo; o novo escudo chega em instantes
-		var panel = new StaffPanel(battle, rules.Combat, voice);
-		ShowOverlay(panel);
-		if (overlay != panel) return;
-
-		time.Begin(settings.Current.CalmMode);
-		Engine.TimeScale = time.Scale;
-		// O tempo volta ao normal assim que o painel fecha, e também se ele sair da cena por outro caminho.
-		var ended = false;
-		void EndAssembly()
+		if (!InTargetRange())
 		{
-			if (ended) return;
-			ended = true;
+			Notify("Chegue mais perto do Boneco para escolhê-lo.");
+			return;
+		}
+
+		var panel = staff = new StaffPanel(battle, rules.Combat, voice, InTargetRange);
+		uiRoot.AddChild(panel);
+		dummy.SetSelected(true);
+		panel.Attacked += ShowAttack;
+		panel.ComposingChanged += composing =>
+		{
+			if (composing) time.Begin(settings.Current.CalmMode);
+			else time.End();
+			Engine.TimeScale = time.Scale;
+		};
+		// Fecha também se o painel sair da cena por outro caminho: o tempo nunca pode ficar preso.
+		void Release()
+		{
+			if (staff == panel) staff = null;
+			dummy.SetSelected(false);
 			time.End();
 			Engine.TimeScale = time.Scale;
 		}
 		panel.Closed += () =>
 		{
-			EndAssembly();
-			if (panel.Result is { } result) ShowAttack(result);
+			Release();
+			panel.QueueFree();
 		};
-		panel.TreeExited += EndAssembly;
+		panel.TreeExited += Release;
+	}
+
+	// Avisos curtos sobre a cena somem sozinhos.
+	void Notify(string text)
+	{
+		notice.Text = text;
+		GetTree().CreateTimer(3.0, true, false, true).Timeout += () =>
+		{
+			if (notice.Text == text) notice.Text = "";
+		};
 	}
 
 	void ShowAttack(AttackResult result)
@@ -390,6 +445,7 @@ public partial class Main : Node3D
 		if (battle is null) return;
 		battle.Next();
 		dummy.Reset(battle.Shield.Remaining);
+		staff?.Refresh();
 	}
 
 	// Até existir o treino de Português (Papel e Nível do treino), o F2 abre a montagem do Escriba só em build de depuração.
@@ -415,10 +471,19 @@ public partial class Main : Node3D
 		bottomBar.Visible = player.Enabled;
 	}
 
+	// Clicar (ou tocar) na criatura a escolhe; o clique não vira caminhada. Cliques sobre a interface ficam com ela.
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
+		if (player is null || !player.Enabled || GetViewport().GuiGetHoveredControl() is not null || !HitsDummy(click.Position)) return;
+		GetViewport().SetInputAsHandled();
+		ToggleTarget();
+	}
+
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
-		if (@event.IsActionPressed(Controls.Attack) && interactTarget == "boneco") Attack();
+		if (@event.IsActionPressed(Controls.Target) && player.Enabled) ToggleTarget();
 		if (OS.IsDebugBuild() && @event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.F2 } && player.Enabled) ShowNameDemo();
 	}
 
@@ -429,6 +494,11 @@ public partial class Main : Node3D
 		var target = player.Enabled
 			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach)?.Id
 			: null;
+		if (staff is not null && !InTargetRange())
+		{
+			Notify("O Boneco ficou longe.");
+			staff.Abandon();
+		}
 		if (target != interactTarget)
 		{
 			interactTarget = target;
@@ -437,8 +507,8 @@ public partial class Main : Node3D
 			if (target is not null)
 			{
 				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
-				var key = target == "boneco" ? "F" : "E";
-				interactButton.Text = settings.Current.Controls == "teclado" ? $"[{key}]  {prompt}" : prompt;
+
+				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
 			}
 		}
 

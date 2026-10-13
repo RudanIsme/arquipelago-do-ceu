@@ -56,7 +56,7 @@ Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. 
 
 ### Combate pelas mecânicas de aprendizado
 
-O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela chega perto e aperta o botão de ataque: o tempo desacelera enquanto ela monta a resposta com as peças da bolsa, e volta ao normal quando o ataque sai. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
+O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela escolhe a criatura (clique, toque ou tecla F) a uma distância máxima definida em dados, e a UI de combate aparece sem interromper o jogo: o Personagem continua andando. O tempo desacelera só enquanto ela monta a resposta com as peças da bolsa, e volta ao normal quando o ataque sai. Se ela se afasta demais, o alvo se perde. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
 
 - **Energia:** acertar recupera; errar, ou ser atingida por uma bolha de névoa, tira. Quando a energia acaba, a expedição termina (veja Energia e derrota).
 - **A ação não fica mais difícil com o ano escolar.** Só o conteúdo fica. Ataques de criatura são sempre lentos, avisados e fáceis de desviar.

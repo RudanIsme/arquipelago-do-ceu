@@ -26,7 +26,8 @@ public partial class DevDriver : Node
 	public override async void _Ready()
 	{
 		await Wait(0.6);
-		await Scenarios.Run(this, scenario);
+		try { await Scenarios.Run(this, scenario); }
+		catch (System.Exception e) { GD.PushError($"Piloto: {e}"); }
 		GetTree().Quit();
 	}
 
@@ -53,6 +54,16 @@ public partial class DevDriver : Node
 		await Wait(0.3);
 	}
 
+
+	// Clica na criatura, como o mouse faria.
+	public async Task ClickCreature()
+	{
+		var dummy = GetTree().Root.FindChildren("*", "", true, false).OfType<TrainingDummy>().First();
+		var screen = GetViewport().GetCamera3D().UnprojectPosition(dummy.Center);
+		Click(screen, true);
+		Click(screen, false);
+		await Wait(0.4);
+	}
 
 	// Aperta a primeira tecla de número habilitada da calculadora (o texto é "3" e os pontos, em duas linhas).
 	public async Task PressNumberKey()
@@ -266,56 +277,27 @@ static class Scenarios
 				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
 				break;
 			case "boneco":
+			case "boneco-dislexia":
+				if (name == "boneco-dislexia")
+				{
+					await d.Press("Configurações");
+					await d.Press("Acessibilidade");
+					await d.Press("Muito grande");
+					await d.Press("Fonte para dislexia: Desligado");
+					await d.Press("Fechar");
+				}
 				await d.ClickHex(4, 0);
 				await d.Wait(3.5);
-				await d.Shot("01-perto-do-boneco");
-				await d.Press("Atacar o Boneco");
-				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
-				await d.Shot("02-calculadora");
+				await d.ClickCreature();
+				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
+				await d.Shot("01-alvo-escolhido");
 				await d.PressNumberKey();
-				await d.Wait(0.8);
-				await d.Shot("03-pontilhado");
-				await d.Scribble();
-				await d.Shot("04-rabisco-nao-passa");
-				await d.Press("Apagar");
+				await d.Wait(1.0);
+				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
+				await d.Shot("02-pontilhado");
 				await d.TraceGuide();
 				await d.Wait(0.8);
-				await d.Shot("05-depois-de-desenhar");
-				await d.Press("+");
-				await d.PressNumberKey();
-				await d.Wait(0.8);
-				await d.Press("Pular o desenho");
-				await d.Wait(0.5);
-				await d.Shot("06-conta-montada-sem-resultado");
-				await d.Press("Confirmar");
-				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
-				await d.Wait(0.3);
-				await d.Shot("07-resultado");
-				break;
-			case "boneco-teclado":
-				await d.ClickHex(4, 0);
-				await d.Wait(3.5);
-				await d.PressKey(Key.F);
-				GD.Print($"Tempo na montagem: {Engine.TimeScale}");
-				var digits = d.NumberKeyDigits();
-				await d.PressKey(digits[0]);
-				await d.PressKey(Key.Enter);
-				await d.Shot("01-numero-sozinho-nao-vale");
-				await d.PressKey(Key.Plus);
-				await d.PressKey(digits[1]);
-				await d.Shot("02-conta-pelo-teclado");
-				await d.PressKey(Key.Enter);
-				GD.Print($"Tempo depois de confirmar: {Engine.TimeScale}");
-				await d.Wait(0.4);
-				await d.Shot("03-depois-do-ataque");
-				await d.PressKey(Key.F);
-				await d.PressKey(Key.Escape);
-				GD.Print($"Tempo depois de cancelar: {Engine.TimeScale}");
-				break;
-			case "boneco-longe":
-				await d.PressKey(Key.F);
-				GD.Print("Longe do Boneco, F não abre nada.");
-				await d.Shot("01-longe");
+				await d.Shot("03-depois-de-desenhar");
 				break;
 			case "nome":
 				await d.PressKey(Key.F2);

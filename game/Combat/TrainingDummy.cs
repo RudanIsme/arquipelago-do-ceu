@@ -21,17 +21,42 @@ public partial class TrainingDummy : Node3D
 	};
 	readonly AudioStreamPlayer sound = new();
 	Vector3 center;
+	Tween? pulse;
+	readonly MeshInstance3D ring = new()
+	{
+		Mesh = new TorusMesh { InnerRadius = 1.0f, OuterRadius = 1.25f, Rings = 32, RingSegments = 8 },
+		MaterialOverride = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#F2B632"), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded },
+		Scale = new Vector3(1f, 0.15f, 1f),
+		Visible = false,
+	};
 	int startingShield = 1;
 	Tween? tween;
 	int popupVersion;
 
 	public bool ReduceMotion { get; set; }
 
+	// O meio do corpo, para o clique escolher o Boneco e o raio chegar nele.
+	public Vector3 Center => center;
+
+	// O anel no chão mostra qual criatura está escolhida; é forma, não só cor.
+	public void SetSelected(bool selected)
+	{
+		pulse?.Kill();
+		ring.Visible = selected;
+		ring.Scale = new Vector3(1f, 0.15f, 1f);
+		if (!selected || ReduceMotion) return;
+		pulse = CreateTween().SetLoops();
+		pulse.TweenProperty(ring, "scale", new Vector3(1.12f, 0.15f, 1.12f), 0.6f);
+		pulse.TweenProperty(ring, "scale", new Vector3(1f, 0.15f, 1f), 0.6f);
+	}
+
 	// `ground` é o pé do Boneco e `top` a altura do topo no mundo.
 	public void Place(Vector3 ground, float top)
 	{
 		center = ground + new Vector3(0f, (top - ground.Y) * 0.5f, 0f);
 		mist.Position = center;
+		ring.Position = ground + new Vector3(0f, 0.08f, 0f);
+		AddChild(ring);
 		mist.MaterialOverride = mistMaterial;
 		shieldLabel.Position = new Vector3(ground.X, top + 1.5f, ground.Z);
 		popup.Position = new Vector3(ground.X, top + 2.4f, ground.Z);
@@ -69,7 +94,7 @@ public partial class TrainingDummy : Node3D
 
 	public void Dissolved()
 	{
-		shieldLabel.Text = "Escudo 0";
+		shieldLabel.Text = "Boneco de treino\nEscudo 0";
 		tween?.Kill();
 		if (ReduceMotion)
 		{
@@ -121,7 +146,7 @@ public partial class TrainingDummy : Node3D
 		};
 	}
 
-	void SetShieldText(int value) => shieldLabel.Text = $"Escudo {value}";
+	void SetShieldText(int value) => shieldLabel.Text = $"Boneco de treino\nEscudo {value}";
 
 	void Play(AudioStream stream)
 	{

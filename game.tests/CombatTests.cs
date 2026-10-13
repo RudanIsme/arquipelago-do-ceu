@@ -510,6 +510,8 @@ public class CombatTests
 	[InlineData("\"slowTimeScale\": 0.25", "\"slowTimeScale\": 0", "combat.slowTimeScale")]
 	[InlineData("\"bagNumbers\": [1, 2, 3, 4, 5]", "\"bagNumbers\": []", "combat.bagNumbers")]
 	[InlineData("\"bagNumbers\": [1, 2, 3, 4, 5]", "\"bagNumbers\": [1, 1]", "combat.bagNumbers")]
+	[InlineData("\"targetRange\": 5", "\"targetRange\": 0", "combat.targetRange")]
+	[InlineData("\"targetRange\": 5", "\"targetRange\": 99", "combat.targetRange")]
 	[InlineData("\"operators\": [\"+\"]", "\"operators\": []", "combat.operators")]
 	[InlineData("\"operators\": [\"+\"]", "\"operators\": [\"^\"]", "combat.operators")]
 	[InlineData("\"dotSpacing\": 16", "\"dotSpacing\": 0", "combat.tracing.dotSpacing")]
@@ -539,6 +541,7 @@ public class CombatTests
 	[Theory]
 	[InlineData("\"combat\":")]
 	[InlineData("\"tracing\":")]
+	[InlineData("\"targetRange\":")]
 	[InlineData("\"operators\":")]
 	public void Dado_de_combate_ausente_e_recusado(string key)
 	{

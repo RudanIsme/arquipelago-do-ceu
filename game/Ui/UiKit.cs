@@ -93,6 +93,31 @@ public static class UiKit
 	// Texto 3D sobre a cena: contorno escuro para ler sobre o céu e o chão.
 	public static void Outline3D(Label3D label) => label.OutlineModulate = PanelFill;
 
+	// Encaixa um painel na lateral direita (ou embaixo, no centro) e o encolhe quando o texto grande ou uma janela
+	// pequena não deixam caber: o painel nunca fica cortado, e tudo continua à vista.
+	public static void DockFit(Control host, Control panel, bool right)
+	{
+		const float margin = 16f;
+		void Fit()
+		{
+			if (!GodotObject.IsInstanceValid(panel) || !GodotObject.IsInstanceValid(host)) return;
+			var min = panel.GetCombinedMinimumSize();
+			if (min.X <= 0f || min.Y <= 0f) return;
+			var room = host.Size - new Vector2(margin * 2f, margin * 2f);
+			var maxWidth = right ? room.X * 0.55f : room.X;
+			var scale = Mathf.Clamp(Mathf.Min(maxWidth / min.X, room.Y / min.Y), 0.3f, 1f);
+			panel.Scale = Vector2.One * scale;
+			panel.Size = min;
+			var shown = min * scale;
+			panel.Position = right
+				? new Vector2(host.Size.X - margin - shown.X, (host.Size.Y - shown.Y) / 2f)
+				: new Vector2((host.Size.X - shown.X) / 2f, host.Size.Y - margin - shown.Y);
+		}
+		host.Resized += Fit;
+		panel.MinimumSizeChanged += Fit;
+		Callable.From(Fit).CallDeferred();
+	}
+
 	// Título e avisos soltos sobre a cena ganham contorno escuro para ler em qualquer fundo.
 	public static void Outline(Label label)
 	{

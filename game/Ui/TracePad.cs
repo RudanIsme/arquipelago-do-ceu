@@ -240,31 +240,27 @@ partial class TraceCanvas : Control
 }
 
 // Desenha o texto com a fonte do jogo (a fonte para dislexia, se ligada) fora da tela e devolve onde há tinta.
+// O desenho é recortado pela caixa da tinta e ampliado para preencher a área, então qualquer fonte, fina ou grossa,
+// gera um pontilhado grande, inteiro e centralizado.
 static class GlyphMask
 {
-	const float Fill = 0.85f;
-	const float ReferenceFontSize = 320f;
+	const float Fill = 0.88f;
+	const int Oversample = 2;
+	const float RenderFontSize = 360f;
 
 	public static async Task<bool[,]?> Render(Node host, string text, Font font, Vector2I size)
 	{
-		var size2 = new Vector2(size.X, size.Y);
-		// O desenho do número ocupa quase toda a altura; o texto largo (uma sílaba) encolhe até caber.
-		var measured = font.GetStringSize(text, HorizontalAlignment.Left, -1, (int)ReferenceFontSize);
-		var fontSize = Mathf.Min(size2.Y * 0.95f, ReferenceFontSize * size2.X * Fill / Mathf.Max(measured.X, 1f));
+		var big = size * Oversample;
+		var measured = font.GetStringSize(text, HorizontalAlignment.Left, -1, (int)RenderFontSize);
+		var fontSize = (int)Mathf.Min(RenderFontSize, RenderFontSize * big.X * 0.9f / Mathf.Max(measured.X, 1f));
 
-		var viewport = new SubViewport
-		{
-			Size = size,
-			TransparentBg = true,
-			Disable3D = true,
-			RenderTargetUpdateMode = SubViewport.UpdateMode.Once,
-		};
+		var viewport = new SubViewport { Size = big, TransparentBg = true, Disable3D = true, RenderTargetUpdateMode = SubViewport.UpdateMode.Once };
 		var label = new Label
 		{
 			Text = text,
 			HorizontalAlignment = HorizontalAlignment.Center,
 			VerticalAlignment = VerticalAlignment.Center,
-			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = Colors.White },
+			LabelSettings = new LabelSettings { Font = font, FontSize = fontSize, FontColor = Colors.White },
 		};
 		label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 		viewport.AddChild(label);
@@ -275,17 +271,15 @@ static class GlyphMask
 		await host.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
 		var image = GodotObject.IsInstanceValid(viewport) ? viewport.GetTexture()?.GetImage() : null;
 		if (GodotObject.IsInstanceValid(viewport)) viewport.QueueFree();
-		if (image is null || image.IsEmpty() || image.GetSize() != size) return null;
-
-		return Centered(image, size);
+		if (image is null || image.IsEmpty() || image.GetSize() != big) return null;
+		return FitToCanvas(image, size);
 	}
 
-	// A linha de texto não é centrada na tinta (o número fica mais embaixo ou à direita); o desenho é recentrado pela sua caixa real.
-	static bool[,] Centered(Image image, Vector2I size)
+	static bool[,]? FitToCanvas(Image image, Vector2I size)
 	{
-		int minX = size.X, maxX = -1, minY = size.Y, maxY = -1;
-		for (var y = 0; y < size.Y; y++)
-			for (var x = 0; x < size.X; x++)
+		int minX = image.GetWidth(), maxX = -1, minY = image.GetHeight(), maxY = -1;
+		for (var y = 0; y < image.GetHeight(); y++)
+			for (var x = 0; x < image.GetWidth(); x++)
 				if (image.GetPixel(x, y).A > 0.5f)
 				{
 					minX = Mathf.Min(minX, x);
@@ -293,15 +287,20 @@ static class GlyphMask
 					minY = Mathf.Min(minY, y);
 					maxY = Mathf.Max(maxY, y);
 				}
+		if (maxX < 0) return null;
 
+		var ink = image.GetRegion(new Rect2I(minX, minY, maxX - minX + 1, maxY - minY + 1));
+		var scale = Mathf.Min(size.X * Fill / ink.GetWidth(), size.Y * Fill / ink.GetHeight());
+		var width = Mathf.Max(1, (int)(ink.GetWidth() * scale));
+		var height = Mathf.Max(1, (int)(ink.GetHeight() * scale));
+		ink.Resize(width, height, Image.Interpolation.Bilinear);
+
+		var offsetX = (size.X - width) / 2;
+		var offsetY = (size.Y - height) / 2;
 		var mask = new bool[size.X, size.Y];
-		if (maxX < 0) return mask;
-		var shiftX = (size.X - (maxX - minX)) / 2 - minX;
-		var shiftY = (size.Y - (maxY - minY)) / 2 - minY;
-		for (var y = minY; y <= maxY; y++)
-			for (var x = minX; x <= maxX; x++)
-				if (image.GetPixel(x, y).A > 0.5f && x + shiftX >= 0 && x + shiftX < size.X && y + shiftY >= 0 && y + shiftY < size.Y)
-					mask[x + shiftX, y + shiftY] = true;
+		for (var y = 0; y < height; y++)
+			for (var x = 0; x < width; x++)
+				mask[offsetX + x, offsetY + y] = ink.GetPixel(x, y).A > 0.5f;
 		return mask;
 	}
 }

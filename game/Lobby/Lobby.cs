@@ -260,7 +260,8 @@ public partial class Lobby : Node3D
 		foreach (var item in Rules.Objects)
 		{
 			var ground = HexToWorld(item.Q, item.R);
-			list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
+			// O Boneco é uma criatura: escolhida com clique ou tecla F, e não usada pelo botão de interação.
+			if (item.Id != "boneco") list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
 			var height = item.Id switch { "portal" => PortalHeight, "guia" => GuideHeight, "boneco" => DummyHeight, _ => LecternHeight };
 			var top = height;
 			if (LoadModel(item.Model) is { } model)

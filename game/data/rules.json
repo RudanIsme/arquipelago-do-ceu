@@ -67,6 +67,7 @@
     "bagNumbers": [1, 2, 3, 4, 5],
     "bagCopies": 2,
     "slowTimeScale": 0.25,
+    "targetRange": 5,
     "operators": ["+"],
     "tracing": { "dotSpacing": 16, "tolerance": 30, "minCoverage": 0.8, "maxStray": 0.35 }
   },
