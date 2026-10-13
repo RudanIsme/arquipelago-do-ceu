@@ -10,18 +10,18 @@ public sealed record ChosenOption(AppearanceCategory Category, AppearanceOption 
 // antes de valer; se a gravação falhar, a lista em memória continua como estava.
 public sealed partial class ProfileService
 {
-	readonly SaveStore store;
+	readonly SaveSession session;
 	readonly GameRules rules;
 	readonly Func<string> newId;
-	SaveData data;
 
-	public ProfileService(SaveStore store, GameRules rules, SaveData data, Func<string> newId)
+	public ProfileService(SaveSession session, GameRules rules, Func<string> newId)
 	{
-		this.store = store;
+		this.session = session;
 		this.rules = rules;
-		this.data = data;
 		this.newId = newId;
 	}
+
+	SaveData data => session.Data;
 
 	public IReadOnlyList<ProfileSave> Profiles => data.Profiles;
 
@@ -45,7 +45,7 @@ public sealed partial class ProfileService
 			return Result<ProfileSave>.Fail($"Este aparelho já tem {rules.Profile.MaxProfiles} perfis.");
 
 		var profile = new ProfileSave(newId(), name.Value!, 1);
-		return Commit(data with { Profiles = [.. data.Profiles, profile] }, profile);
+		return Commit(d => d with { Profiles = [.. d.Profiles, profile] }, profile);
 	}
 
 	public Result<ProfileSave> Rename(string id, string nickname)
@@ -82,13 +82,12 @@ public sealed partial class ProfileService
 			.ToList();
 
 	Result<ProfileSave> Replace(ProfileSave updated) =>
-		Commit(data with { Profiles = data.Profiles.Select(p => p.Id == updated.Id ? updated : p).ToList() }, updated);
+		Commit(d => d with { Profiles = d.Profiles.Select(p => p.Id == updated.Id ? updated : p).ToList() }, updated);
 
-	Result<ProfileSave> Commit(SaveData next, ProfileSave result)
+	Result<ProfileSave> Commit(Func<SaveData, SaveData> change, ProfileSave result)
 	{
-		var written = store.Write(next);
+		var written = session.Commit(change);
 		if (!written.IsOk) return Result<ProfileSave>.Fail(written.Error!);
-		data = next;
 		return Result<ProfileSave>.Ok(result);
 	}
 

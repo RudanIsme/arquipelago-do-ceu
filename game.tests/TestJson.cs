@@ -17,6 +17,23 @@ static class TestJson
 		    { "id": "clothesColor", "name": "Cor da roupa", "options": [
 		      { "id": "bege", "name": "Bege", "color": "#C9BBA3" },
 		      { "id": "azul", "name": "Azul", "color": "#2E7DE8" } ] },
-		    { "id": "accessory", "name": "Acessório", "options": [] } ] } }
+		    { "id": "accessory", "name": "Acessório", "options": [] } ] },
+		  "settings": {
+		    "textSizes": [
+		      { "id": "normal", "name": "Normal", "scale": 1.0 },
+		      { "id": "grande", "name": "Grande", "scale": 1.25 } ],
+		    "controls": [
+		      { "id": "mouse", "name": "Mouse" },
+		      { "id": "teclado", "name": "Teclado" },
+		      { "id": "toque", "name": "Toque" } ],
+		    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse" } },
+		  "lobby": {
+		    "interactionReach": 2.0,
+		    "places": [
+		      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -10, "z": -6 },
+		      { "id": "ciencias", "name": "Ilha das Ciências", "sign": "Em breve", "x": 10, "z": 6 } ],
+		    "objects": [
+		      { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
+		      { "id": "portal", "name": "Portal", "prompt": "Usar o portal", "model": "portal", "q": -3, "r": 3 } ] } }
 		""";
 }
