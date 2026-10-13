@@ -32,3 +32,6 @@ obj/
 
 # Saída da exportação
 build/
+
+# Node
+node_modules/

@@ -2,7 +2,7 @@
 
 Escopo **mínimo** para validar o jogo: andar no Lobby, treinar contra o Boneco e ver uma criatura de cada torre. **Sem customização por enquanto:** nada de cabelos, partes do rosto, roupas por Papel nem criaturas extras. Os limites de triângulos estão no [guia de estilo visual](guia-de-estilo-visual.md), seção 8. Custos medidos em créditos do Meshy: modelo `latest` = 30, `meshy-6-lite` = 15, remesh e rig = 5.
 
-## Modelos gerados (todos em `docs/arte-e-ux/meshy/modelos/`, fora do Git)
+## Modelos gerados (em `game/assets/modelos/`, otimizados com `tools/otimizar-modelos`)
 
 | Grupo | Asset | Triângulos | Limite | Modelo |
 | --- | --- | --- | --- | --- |
@@ -17,7 +17,7 @@ Escopo **mínimo** para validar o jogo: andar no Lobby, treinar contra o Boneco 
 | Criaturas | Coruja mecânica (Números) | 2.580 | 2.500 | latest |
 | | Pato (Letras) | 2.615 | 2.500 | latest |
 
-Os arquivos têm 1 textura de 2048 px (o do Personagem, 3), mas só a cor base será usada, a 1024 px no import do Godot. Os que passam um pouco do limite (até 5%) foram aceitos para o teste.
+Os modelos saem do Meshy com texturas de 2048 px (o do Personagem, com 3), e o script de otimização as reduz a **uma de cor base a 1024 px**, sem alterar a malha. Os que passam um pouco do limite (até 5%) foram aceitos para o teste.
 
 ## Sem modelo do Meshy
 
