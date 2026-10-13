@@ -259,6 +259,7 @@ public sealed class ProfileServiceTests : IDisposable
 		var servico = Abrir();
 		Assert.True(servico.CanCreate);
 		Assert.Equal(regras.Profile.MaxNicknameLength, servico.MaxNicknameLength);
+		Assert.Same(regras.Appearance, servico.Catalog);
 
 		for (var i = 1; i <= regras.Profile.MaxProfiles; i++) servico.Create($"Crianca{i}");
 

@@ -44,7 +44,11 @@ public partial class DevDriver : Node
 	{
 		var button = Button(text);
 		if (button is null) GD.PushError($"Piloto: botão '{text}' não encontrado.");
-		else button.EmitSignal(BaseButton.SignalName.Pressed);
+		else
+		{
+			if (button.ToggleMode) button.ButtonPressed = true;
+			button.EmitSignal(BaseButton.SignalName.Pressed);
+		}
 		await Wait(0.3);
 	}
 
@@ -83,6 +87,18 @@ static class Scenarios
 				await d.Shot("03-lista-depois");
 				await d.Press("Theo");
 				await d.Shot("04-lobby");
+				break;
+			case "personagem":
+				await d.Shot("01-lobby");
+				await d.Press("Personagem");
+				await d.Wait(0.8);
+				await d.Shot("02-editor-padrao");
+				await d.Press("Café");
+				await d.Press("Azul");
+				await d.Wait(0.5);
+				await d.Shot("03-editor-cafe-azul");
+				await d.Press("Pronto");
+				await d.Shot("04-fechado");
 				break;
 			default:
 				GD.PushError($"Piloto: cenário '{name}' não existe.");

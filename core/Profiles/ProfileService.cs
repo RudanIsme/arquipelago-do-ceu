@@ -29,6 +29,8 @@ public sealed partial class ProfileService
 
 	public int MaxNicknameLength => rules.Profile.MaxNicknameLength;
 
+	public AppearanceCatalog Catalog => rules.Appearance;
+
 	public Result<ProfileSave> Find(string id)
 	{
 		var found = data.Profiles.FirstOrDefault(p => p.Id == id);

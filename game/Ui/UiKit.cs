@@ -37,6 +37,14 @@ public static class UiKit
 		return style;
 	}
 
+	// Quadradinho da cor de uma opção; o nome da opção sempre aparece junto, para a cor nunca ser a única informação.
+	public static ImageTexture Swatch(string html)
+	{
+		var image = Image.CreateEmpty(36, 36, false, Image.Format.Rgba8);
+		image.Fill(Color.FromHtml(html));
+		return ImageTexture.CreateFromImage(image);
+	}
+
 	public static Label Heading(string text)
 	{
 		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center };

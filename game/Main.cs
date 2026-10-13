@@ -18,6 +18,9 @@ public partial class Main : Node3D
 	GameRules rules = null!;
 	ProfileService profiles = null!;
 	ProfileScreen? screen;
+	CharacterEditor? editor;
+	Button characterButton = null!;
+	ProfileSave? current;
 
 	public override void _Ready()
 	{
@@ -37,7 +40,13 @@ public partial class Main : Node3D
 		profiles = new ProfileService(store, rules, save.Value!, () => Guid.NewGuid().ToString("N"));
 
 		AddChild(GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate());
-		ui.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
+		var hud = new HBoxContainer();
+		hud.AddThemeConstantOverride("separation", 8);
+		hud.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
+		characterButton = UiKit.BigButton("Personagem", ShowEditor, 220);
+		characterButton.Visible = false;
+		hud.AddChild(characterButton);
+		ui.AddChild(hud);
 		StartFlow();
 		DevDriver.AttachIfRequested(this);
 
@@ -103,7 +112,23 @@ public partial class Main : Node3D
 	{
 		screen?.QueueFree();
 		screen = null;
+		editor?.QueueFree();
+		editor = null;
+		current = profile;
+		characterButton.Visible = true;
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
 		GD.Print($"Perfil ativo: {profile.Nickname}");
+	}
+
+	void ShowEditor()
+	{
+		if (editor is not null || screen is not null || current is null) return;
+		editor = new CharacterEditor(profiles, current.Id);
+		editor.Done += () =>
+		{
+			editor?.QueueFree();
+			editor = null;
+		};
+		ui.AddChild(editor);
 	}
 }
