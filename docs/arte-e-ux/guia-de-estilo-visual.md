@@ -126,3 +126,15 @@ A otimização é requisito: o jogo roda em PC e em tablets Android de gama méd
 - O Image to 3D com `target_polycount` 12.000 gerou **12.461 triângulos** e uma textura de 2048 pixels (2,7 MB). Muito para um personagem chibi.
 - O *remesh* da Meshy (5 créditos) levou o mesmo modelo para **3.671 triângulos** com o visual praticamente idêntico, **mas** devolveu 3 texturas PNG (2048, 2048 e 4096 pixels, 8 MB no total). Só a cor base é usada; o resto se descarta.
 - Portanto: gerar com `should_remesh` e `target_polycount` já no limite da tabela, e **medir os triângulos do arquivo** antes de aceitar. Uma verificação automática de triângulos dos modelos na CI é recomendada quando houver modelos no repositório.
+
+## 9. Animação, física e efeitos
+
+Tudo aqui é **proposta** para o MVP. A regra geral é a mesma da seção 8: o que o motor faz de graça não se gera em modelo.
+
+**Personagem (humanoide).** O Meshy tem rig automático, mas só para humanoides, e devolve animações básicas de andar e correr. Para as demais, a opção é a biblioteca do Mixamo, reaproveitada no Godot pelo mapa de ossos humanoide. Clipes do MVP: parado, andar, interagir, atacar (lançar o orbe ou conjurar sílabas), acerto, golpe perfeito, erro (tropeço leve, sem queda) e voltar flutuando ao Lobby. O repositório [Motion2MixamoRig](https://github.com/MaxLiu22/Motion2MixamoRig), que copia o movimento de um vídeo para um rig do Mixamo, **não entra no MVP**: é experimental, baixa cerca de 5 GB de pesos, é lento em CPU, exige vídeo de uma pessoa, e o modelo corporal SMPL-X é de uso não comercial por padrão. Fica como opção se um dia precisarmos de um movimento próprio.
+
+**Criaturas e torres (não humanoides).** O Meshy não faz rig delas. Elas se animam **no Godot, sem esqueleto**: pairar e balançar, esticar e achatar, inclinar, pulsar o escudo, balançar por shader de vértice. Clipes: parada, mover devagar, avisar antes de atacar, lançar bolha, travessura, ser libertada (sorri e se dissolve). Os anéis e as peças das torres giram por script.
+
+**Física.** O MVP não usa `RigidBody3D` em nenhuma regra de jogo. O Personagem e as criaturas são corpos cinemáticos que andam na grade hexagonal, e as bolhas de névoa são áreas lentas com aviso. Física torna o tempo do jogo menos previsível e pesa em tablet. Só objetos decorativos opcionais podem usá-la, e o Modo calmo os desliga.
+
+**Efeitos.** Feitos com partículas e shaders do Godot, sem modelo do Meshy: raio de energia da conta ou do nome, névoa que se dissolve, brilho dourado do acerto, rajada do golpe perfeito, bolha com anel de aviso, tremida leve do erro (nunca vermelho forte), brilho do portal e pulso do cristal. Limite proposto: até 200 partículas na tela, e o Modo calmo reduz as partículas.
