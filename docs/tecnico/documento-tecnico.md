@@ -21,7 +21,7 @@ O Godot com C# não exporta para navegador. Como navegador não é alvo, isso n�
 | World | Gerador de andares inteiros por dungeon, validador, fast travel por andar, troca de itens entre dungeons |
 | Rooms | Cenas de sala feitas à mão, com pontos de encaixe para pontes e desafios |
 | Missions | Carrega missões em JSON e executa as mecânicas (compor, comparar, sequência, sílabas, frases) |
-| Characters | Personagem personalizável do Perfil, Papéis (Matemático e Escriba), habilidades destravadas por conceito e Cosméticos |
+| Characters | Personagem personalizável do Perfil (um corpo e um rig; rosto por atlas de texturas, pele e cabelo por material, cabelo e acessórios presos a ossos), Papéis (Matemático e Escriba), habilidades destravadas por conceito e Cosméticos |
 | Adaptive | Regra de dificuldade por conceito e caixas de repetição espaçada (Leitner), calculadas no próprio jogo, sem precisar do backend |
 | Accessibility | TTS, legendas, tamanho de texto, remoção de tempo, redução de animações |
 | Net | Login opcional, sincronização e fila de telemetria que espera conexão |

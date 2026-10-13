@@ -15,6 +15,8 @@ A criança precisa entender cada tela sem ler. Por isso, todo texto também vira
 
 O estilo é 3D estilizado em vista isométrica de cima, com luz quente, sombras suaves e desfoque nas bordas (efeito maquete). A referência de estilo é Ravenswatch.
 
+As cores, formas e regras de cada tipo de asset estão em [guia-de-estilo-visual.md](guia-de-estilo-visual.md). Toda arte nova parte dele.
+
 | Elemento | Regra |
 | --- | --- |
 | Câmera | Perspectiva com FOV de cerca de 30°, a uns 50° de inclinação. O jogador fica no terço central da tela. |
@@ -33,7 +35,7 @@ O Personagem é um só, personalizável (cores, características, acessórios e 
 
 - **Papel Matemático:** roupa com dourado e uma bolsa de números na cintura que brilha. A pose de ataque é lançar um orbe.
 - **Papel Escriba:** chapéu e capa roxos e um livro aberto. A pose de ataque é conjurar as sílabas no ar.
-- **Criaturas da névoa:** corpo redondo e macio, olhos grandes, bochechas rosadas e chifrinhos. Nunca têm dentes, armas nem ossos. Cada torre tem a sua cor (lilás, azul, rosa, amarelo).
+- **Criaturas da névoa:** reconhecíveis à primeira vista, com olhos grandes e simpáticos. Nunca têm dentes, armas, ossos nem texto, etiqueta ou letra no corpo. Na Torre dos Números são animais e aves mecânicos com um escudo liso na frente; na Torre das Letras são coisas do dia a dia, cada uma a própria palavra a escrever. Detalhes no guia de estilo.
 - **Acalmar:** quando a criança acerta, a névoa se dissolve, a criatura sorri e entra no Álbum de criaturas.
 - **Pedido:** fica num balão acima da criatura. É um número no Matemático e uma imagem (gato) no Escriba, sempre com voz.
 
@@ -86,7 +88,7 @@ Todas as ações funcionam com toque, mouse ou teclado, e nenhuma depende de cor
 
 No MVP, a arte usa kits CC0 para o cenário e modelos próprios só para os dois heróis e as criaturas.
 
-1. Cenário: kits KayKit Dungeon e Medieval Hexagon (CC0), com cores ajustadas por torre e registrados em CREDITS.md.
+1. Cenário: kits KayKit Dungeon e Medieval Hexagon (CC0) como provisório, com cores ajustadas por torre e registrados em CREDITS.md. O cenário próprio é gerado no Meshy, no padrão do guia de estilo (chão hexagonal da folha `18-chao-hexagonal-lobby-b`, com as cores vivas da paleta).
 2. Heróis: Meshy, depois limpeza e rig no Blender, exportados em glTF para o Godot.
 3. Criaturas: um modelo base redondo com variações de cor, chifre e orelha. Assim 40 criaturas saem de poucos modelos.
 4. Godot: luz quente, SSAO, glow só nos itens mágicos e desfoque de profundidade pela câmera.
@@ -98,6 +100,7 @@ O MVP inclui duas torres (Torre dos Números e Torre das Letras), o Lobby, 2 Pap
 
 - [ ] Aprovar os nomes Torre dos Números, Torre das Letras e Lobby
 - [ ] Definir o visual final dos Papéis Matemático e Escriba e do editor de Personagem
-- [ ] Escolher entre chão hexagonal ou quadrado nas salas abertas
+- [x] Chão hexagonal nas salas abertas (decidido; padrão no guia de estilo)
+- [ ] Aprovar a paleta e os elementos animados das torres do guia de estilo
 - [ ] Decidir se o desfoque nas bordas fica ligado por padrão em PCs fracos
 - [ ] Testar se os números dentro dos orbes são lidos a 1 metro da tela

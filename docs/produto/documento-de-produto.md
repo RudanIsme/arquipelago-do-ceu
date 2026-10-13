@@ -43,7 +43,7 @@ Matemática e Português não têm ambientação própria, mas História, Ciênc
 
 ### Personagem e Papéis
 
-O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de características, outras características e acessórios. O que o faz Matemático ou Escriba é o **Papel** da Dungeon: roupas, ferramenta e habilidades. As habilidades do Papel crescem conforme a criança aprende conceitos novos nessa Dungeon.
+O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de características, outras características e acessórios. O corpo é um só, sem gênero marcado; a aparência vem de partes combináveis (tom de pele, olhos, sobrancelhas, boca, cabelo e acessórios), listadas no guia de estilo visual. O que o faz Matemático ou Escriba é o **Papel** da Dungeon: roupas, ferramenta e habilidades. As habilidades do Papel crescem conforme a criança aprende conceitos novos nessa Dungeon.
 
 | Papel (nome provisório) | Área | Exemplo de progressão |
 | --- | --- | --- |
