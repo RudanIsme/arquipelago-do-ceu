@@ -15,6 +15,7 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - `docs/referencia/legislacao/`: Lei 15.247/2025 (Compromisso Criança Alfabetizada) e decretos anteriores, colados pelo usuário e não conferidos com o DOU. A lei não impõe método; a PNA (2019) está revogada.
 - `GLOSSARY.md`: vocabulário canônico do projeto (Lobby, Dungeon, Nível, Andar, Sala, Expedição, Papel...). Use esses termos e evite os listados em _Avoid_.
 - `docs/arte-e-ux/direcao-de-arte-e-ux.md`: estilo visual, HUD (cores, fonte, tamanhos), acessibilidade e pipeline de arte.
+- `docs/arte-e-ux/meshy/`: prompts do Meshy (Personagem modular, kits dos Papéis, criaturas, folhas de assets) e imagens de referência aprovadas.
 - `docs/apresentacao/apresentacao.md`: resumo do jogo.
 - `mockups/`: telas de referência da Torre dos Números, Torre das Letras e Lobby.
 
