@@ -110,6 +110,8 @@ Missões são arquivos JSON versionados no repositório, validados por um JSON S
 }
 ```
 
+O schema está em `content/mission.schema.json` e as Missões escritas à mão em `content/missions/<conceito>/`, um arquivo por Missão. `difficulty` vai de 1 a 5. Campos desconhecidos são recusados, para pegar erro de digitação. Os `params` de `compor_numero` são `target`, `pieces` (as peças da bolsa) e `maxPieces` (quantas peças, no máximo, a criança junta). O teste `MissionContentTests` valida todo o conteúdo em `dotnet test`, e por isso a CI fica vermelha com a mensagem `arquivo: /campo: motivo` quando uma Missão é inválida.
+
 Dois campos a mais no schema: `year` (ano escolar, 1 a 3 no MVP) e `stretch` (`true` nos desafios de antecipação, que usam conteúdo do ano seguinte e nunca são obrigatórios).
 
 ### Missões geradas fora do jogo

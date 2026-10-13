@@ -1,0 +1,20 @@
+{
+  "id": "mat-comp10-008",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "composicao-ate-10",
+  "bncc": ["EF01MA07"],
+  "year": 1,
+  "difficulty": 4,
+  "mechanic": "compor_numero",
+  "params": { "target": 10, "pieces": [2,3,5,6,1], "maxPieces": 3 },
+  "prompt": "Faça 10 usando até três peças para destrancar o portão.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 10.",
+    "Comece pela peça 2.",
+    "2 e mais quanto dá 10?"
+  ],
+  "explanation": "2 + 3 + 5 = 10. Juntamos as peças e chegamos a 10.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

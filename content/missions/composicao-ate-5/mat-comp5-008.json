@@ -1,0 +1,20 @@
+{
+  "id": "mat-comp5-008",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "composicao-ate-5",
+  "bncc": ["EF01MA07", "EF01MA02"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 5, "pieces": [2,3,4,4], "maxPieces": 2 },
+  "prompt": "Escolha as duas peças certas para fazer 5 e acordar o vento.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 5.",
+    "Comece pela peça 2.",
+    "2 e mais quanto dá 5?"
+  ],
+  "explanation": "2 + 3 = 5. Juntamos as peças e chegamos a 5.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

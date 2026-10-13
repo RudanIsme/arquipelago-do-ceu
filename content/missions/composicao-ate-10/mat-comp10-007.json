@@ -1,0 +1,20 @@
+{
+  "id": "mat-comp10-007",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "composicao-ate-10",
+  "bncc": ["EF01MA07"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "compor_numero",
+  "params": { "target": 8, "pieces": [1,2,5,6], "maxPieces": 3 },
+  "prompt": "Faça 8 usando até três peças para desfazer a nuvem de tempestade.",
+  "hints": [
+    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 8.",
+    "Comece pela peça 1.",
+    "1 e mais quanto dá 8?"
+  ],
+  "explanation": "1 + 2 + 5 = 8. Juntamos as peças e chegamos a 8.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

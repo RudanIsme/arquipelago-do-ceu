@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arquipelago-do-ceu/schemas/mission.schema.json",
+  "title": "Missão",
+  "description": "Conteúdo de um Desafio. O JSON só escolhe uma Mecânica que já existe no jogo e passa parâmetros; nunca carrega código.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "discipline", "concept", "bncc", "year", "difficulty", "mechanic", "params", "prompt", "hints", "explanation", "accessibility", "review"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "discipline": { "enum": ["matematica", "portugues"] },
+    "concept": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "bncc": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^EF0[1-3](MA|LP)[0-9]{2}$" }
+    },
+    "year": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "stretch": { "type": "boolean" },
+    "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "mechanic": { "enum": ["compor_numero", "comparar_quantidades", "completar_sequencia", "formar_palavras", "ordenar_frases"] },
+    "params": { "type": "object" },
+    "prompt": { "type": "string", "minLength": 1 },
+    "hints": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "explanation": { "type": "string", "minLength": 1 },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timerAllowed"],
+      "properties": { "timerAllowed": { "type": "boolean" } }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pending", "approved", "rejected"] },
+        "by": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mechanic": { "const": "compor_numero" } }, "required": ["mechanic"] },
+      "then": {
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "required": ["target", "pieces", "maxPieces"],
+            "properties": {
+              "target": { "type": "integer", "minimum": 1 },
+              "pieces": { "type": "array", "minItems": 2, "items": { "type": "integer", "minimum": 1 } },
+              "maxPieces": { "type": "integer", "minimum": 2 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
