@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-009",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 4,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["po","te"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 4, "image": "pote" },
+  "prompt": "Esta criatura se chama pote. Junte as sílabas para escrever o nome dela. Há várias sílabas parecidas, ouça com atenção.",
+  "hints": ["Ouça de novo: pote. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de po.", "Depois vem a sílaba te."],
+  "explanation": "PO + TE = POTE.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

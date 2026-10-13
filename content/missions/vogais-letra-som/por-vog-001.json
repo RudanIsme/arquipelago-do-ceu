@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["u","va"], "pool": ["a","e","i","o","u","va","vo","ve"], "distractors": 2, "image": "uva" },
+  "prompt": "Esta criatura se chama uva. Ela começa com a vogal U. Junte as sílabas do nome dela.",
+  "hints": ["A primeira parte é só uma vogal: a letra U, que faz o som de u.", "Ouça: uuuva. Qual vogal vem primeiro?", "Depois da vogal vem a sílaba va."],
+  "explanation": "UVA começa com a vogal U.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

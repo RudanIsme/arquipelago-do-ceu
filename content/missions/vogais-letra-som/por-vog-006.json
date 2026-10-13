@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-006",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["o","vo"], "pool": ["a","e","i","o","u","ma","pa","ta","va"], "distractors": 4, "image": "ovo" },
+  "prompt": "Qual vogal abre o nome do ovo? Junte as sílabas do nome e escolha com cuidado.",
+  "hints": ["As vogais são A, E, I, O, U. Ouça: ooovo.", "A primeira parte é uma vogal só.", "Depois vem a sílaba vo."],
+  "explanation": "OVO começa com a vogal O.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

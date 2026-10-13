@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["o","vo"], "pool": ["a","e","i","o","u","va","ve","vi"], "distractors": 2, "image": "ovo" },
+  "prompt": "Esta criatura se chama ovo. Ela começa com a vogal O. Junte as sílabas do nome dela.",
+  "hints": ["A primeira parte é só uma vogal: a letra O, que faz o som de o.", "Ouça: ooovo. Qual vogal vem primeiro?", "Depois da vogal vem a sílaba vo."],
+  "explanation": "OVO começa com a vogal O.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-008",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pe","na"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 3, "image": "pena" },
+  "prompt": "Esta criatura se chama pena. Junte as sílabas para escrever o nome dela. Cuidado com as sílabas parecidas.",
+  "hints": ["Ouça de novo: pena. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de pe.", "Depois vem a sílaba na."],
+  "explanation": "PE + NA = PENA.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

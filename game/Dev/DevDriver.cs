@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -25,7 +26,8 @@ public partial class DevDriver : Node
 	public override async void _Ready()
 	{
 		await Wait(0.6);
-		await Scenarios.Run(this, scenario);
+		try { await Scenarios.Run(this, scenario); }
+		catch (System.Exception e) { GD.PushError($"Piloto: {e}"); }
 		GetTree().Quit();
 	}
 
@@ -52,6 +54,105 @@ public partial class DevDriver : Node
 		await Wait(0.3);
 	}
 
+
+	// Clica na criatura, como o mouse faria.
+	public async Task ClickCreature()
+	{
+		var dummy = GetTree().Root.FindChildren("*", "", true, false).OfType<TrainingDummy>().First();
+		var screen = GetViewport().GetCamera3D().UnprojectPosition(dummy.Center);
+		Click(screen, true);
+		Click(screen, false);
+		await Wait(0.4);
+	}
+
+	// Aperta a primeira tecla de número habilitada da calculadora (o texto é "3" e os pontos, em duas linhas).
+	public async Task PressNumberKey()
+	{
+		var key = Buttons().FirstOrDefault(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'));
+		if (key is null) GD.PushError("Piloto: nenhuma tecla de número habilitada.");
+		else key.EmitSignal(BaseButton.SignalName.Pressed);
+		await Wait(0.3);
+	}
+
+	// Os números das teclas habilitadas, como teclas do teclado, na ordem da mão.
+	public Key[] NumberKeyDigits() =>
+		Buttons().Where(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'))
+			.Select(b => (Key)(int)b.Text[0]).ToArray();
+
+	IEnumerable<Button> Buttons() => GetTree().Root.FindChildren("*", "Button", true, false).Cast<Button>().Where(b => b.IsVisibleInTree());
+
+	TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
+
+	// Passa o dedo pelo pontilhado, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
+	public async Task TraceGuide()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var remaining = pad.GuideOnScreen().ToList();
+		var current = remaining.OrderBy(p => p.Y).ThenBy(p => p.X).First();
+		var down = false;
+		while (remaining.Count > 0)
+		{
+			var next = remaining.OrderBy(p => p.DistanceTo(current)).First();
+			remaining.Remove(next);
+			if (down && next.DistanceTo(current) > 40f) { Click(current, false); down = false; }
+			if (!down) { Click(next, true); down = true; }
+			else Input.ParseInputEvent(new InputEventMouseMotion { Position = next, GlobalPosition = next, ButtonMask = MouseButtonMask.Left });
+			current = next;
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		if (down) Click(current, false);
+		await Wait(0.2);
+	}
+
+	// Um rabisco que passa longe do pontilhado.
+	public async Task Scribble()
+	{
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		var dots = pad.GuideOnScreen();
+		var origin = new Vector2(dots.Min(p => p.X) - 60, dots.Min(p => p.Y) - 20);
+		Click(origin, true);
+		for (var i = 1; i <= 12; i++)
+		{
+			Input.ParseInputEvent(new InputEventMouseMotion { Position = origin + new Vector2(0, i * 18), GlobalPosition = origin + new Vector2(0, i * 18), ButtonMask = MouseButtonMask.Left });
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		}
+		Click(origin + new Vector2(0, 12 * 18), false);
+		await Wait(0.3);
+	}
+
+	static void Click(Vector2 position, bool pressed) =>
+		Input.ParseInputEvent(new InputEventMouseButton { Position = position, GlobalPosition = position, ButtonIndex = MouseButton.Left, Pressed = pressed });
+
+
+	// Anda até perto do Boneco, como a criança faria.
+	public async Task GoNearDummy(int q = 4, int r = 0)
+	{
+		await ClickHex(q, r);
+		await Wait(3.5);
+	}
+
+	NamePanel? Names => GetTree().Root.FindChildren("*", "", true, false).OfType<NamePanel>().FirstOrDefault();
+
+	// Escolhe as sílabas do nome pelas teclas 1 a 9; com `wrong`, troca a última por uma que não é do nome.
+	public async Task TypeName(bool wrong = false)
+	{
+		if (Names is not { } panel) { GD.PushError("Piloto: não há montagem de nome na tela."); return; }
+		var keys = panel.ExpectedName.Select(s => panel.PieceNames.ToList().IndexOf(s)).ToList();
+		if (wrong) keys[^1] = panel.PieceNames.ToList().FindIndex(p => !panel.ExpectedName.Contains(p));
+		foreach (var index in keys) await PressKey((Key)((int)Key.Key1 + index));
+	}
+
+	// Monta uma conta com as quatro maiores peças da mão e ataca: passa do valor de qualquer escudo do 1º ano.
+	public async Task OvershootWithKeys()
+	{
+		var digits = NumberKeyDigits().OrderByDescending(k => (int)k).Take(4).ToList();
+		for (var i = 0; i < digits.Count; i++)
+		{
+			if (i > 0) await PressKey(Key.Plus);
+			await PressKey(digits[i]);
+		}
+		await PressKey(Key.Enter);
+	}
 	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
 
 	// Segura uma ação de movimento, como uma tecla pressionada.
@@ -82,7 +183,8 @@ public partial class DevDriver : Node
 
 	public async Task PressKey(Key key)
 	{
-		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = true });
+		var unicode = (int)key is >= 32 and <= 126 ? (uint)key : 0u;
+		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Unicode = unicode, Pressed = true });
 		await Wait(0.1);
 		Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
 		await Wait(0.3);
@@ -203,6 +305,113 @@ static class Scenarios
 				Input.ActionRelease(Controls.Right);
 				await d.Wait(0.4);
 				GD.Print($"Parou: andando={d.Player.IsWalkingAnimation}");
+				break;
+			case "boneco":
+			case "boneco-dislexia":
+				if (name == "boneco-dislexia")
+				{
+					await d.Press("Configurações");
+					await d.Press("Acessibilidade");
+					await d.Press("Muito grande");
+					await d.Press("Fonte para dislexia: Desligado");
+					await d.Press("Fechar");
+				}
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Shot("01-escolha-do-treino");
+				await d.Press("Começar");
+				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
+				await d.Shot("02-alvo-escolhido");
+				await d.PressNumberKey();
+				await d.Wait(1.0);
+				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
+				await d.Shot("03-pontilhado");
+				await d.TraceGuide();
+				await d.Wait(0.8);
+				await d.Shot("04-depois-de-desenhar");
+				break;
+			case "erro":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.Shot("01-comeco");
+				await d.OvershootWithKeys();
+				await d.Shot("02-passou-do-valor-travessura");
+				await d.Wait(5.0);
+				await d.Shot("03-peca-voltou");
+				await d.OvershootWithKeys();
+				await d.Shot("04-segundo-erro-com-dica");
+				await d.Press("Dica");
+				await d.Shot("05-pediu-a-dica");
+				break;
+			case "energia":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				for (var i = 0; i < 5; i++)
+				{
+					await d.OvershootWithKeys();
+					await d.Shot($"erro-{i + 1}");
+				}
+				await d.Wait(0.5);
+				await d.Shot("saiu-do-treino");
+				break;
+			case "bolha":
+				await d.GoNearDummy(4, -2);
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.PressKey(Key.Escape);
+				await d.Wait(7.7);
+				await d.Shot("01-aviso");
+				await d.Wait(1.7);
+				await d.Shot("02-bolha-no-ar");
+				await d.Wait(6.5);
+				await d.Shot("03-depois-da-bolha");
+				break;
+			case "calmo":
+				await d.Press("Configurações");
+				await d.Press("Acessibilidade");
+				await d.Press("Modo calmo: Desligado");
+				await d.Press("Fechar");
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Começar");
+				await d.PressKey(Key.Escape);
+				await d.Wait(9.5);
+				await d.Shot("01-sem-bolha-no-modo-calmo");
+				break;
+			case "nome":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Shot("01-escolha-do-treino");
+				await d.Press("Começar");
+				await d.Shot("02-montagem-do-nome");
+				await d.TypeName();
+				await d.Shot("03-nome-montado");
+				await d.Press("Conferir");
+				await d.Shot("04-nome-certo");
+				await d.Wait(3.5);
+				await d.Shot("05-novo-nome");
+				break;
+			case "nome-erro":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Press("Escriba");
+				await d.Press("Começar");
+				await d.TypeName(wrong: true);
+				await d.Press("Conferir");
+				await d.Shot("01-silaba-errada-travessura");
+				await d.Wait(5.0);
+				await d.Shot("02-peca-voltou");
+				break;
+			case "treino-nivel":
+				await d.GoNearDummy();
+				await d.ClickCreature();
+				await d.Shot("01-so-o-nivel-1");
+				await d.Press("5 · Muito difícil");
+				await d.Press("Começar");
+				await d.Shot("02-sem-desafios-nessa-dificuldade");
 				break;
 			case "mouse":
 				await d.ClickHex(3, -4);

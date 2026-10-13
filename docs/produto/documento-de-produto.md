@@ -56,7 +56,7 @@ Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. 
 
 ### Combate pelas mecânicas de aprendizado
 
-O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela chega perto e aperta o botão de ataque: o tempo desacelera enquanto ela monta a resposta com as peças da bolsa, e volta ao normal quando o ataque sai. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
+O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela escolhe a criatura (clique, toque ou tecla F) a uma distância máxima definida em dados, e a UI de combate aparece sem interromper o jogo: o Personagem continua andando. O tempo desacelera só enquanto ela monta a resposta com as peças da bolsa, e volta ao normal quando o ataque sai. Se ela se afasta demais, o alvo se perde. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
 
 - **Energia:** acertar recupera; errar, ou ser atingida por uma bolha de névoa, tira. Quando a energia acaba, a expedição termina (veja Energia e derrota).
 - **A ação não fica mais difícil com o ano escolar.** Só o conteúdo fica. Ataques de criatura são sempre lentos, avisados e fáceis de desviar.
@@ -74,8 +74,8 @@ A bolsa funciona como o baralho de um roguelite de cartas: é o que a criança m
 
 1. A bolsa começa com números de 1 a 5 e o sinal +. A criança tem 5 peças na mão; as usadas num ataque são repostas pela bolsa.
 2. A criatura mostra um escudo com um número, por exemplo 12.
-3. A criança monta uma conta com as peças nos encaixes do cajado (5 + 4 + 3). O resultado tira do escudo.
-4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale; o jogo mostra a conta e ela tenta outra combinação, o que treina estimativa.
+3. A criança monta uma conta na calculadora do cajado, tecla a tecla: números da mão e o sinal (5 + 4 + 3). Uma conta precisa de um sinal e de pelo menos dois números, e o jogo não mostra o resultado: quem soma é a criança. Cada número que ela escolhe aparece pontilhado e ela o desenha para colocá-lo na conta. O resultado tira do escudo.
+4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale: o jogo mostra a conta e conta como erro (tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outros números), o que treina estimativa. As peças da mão voltam inteiras. É o único jeito de errar na calculadora.
 5. Entre andares, a criança escolhe melhorias: adicionar, trocar ou remover peças da bolsa.
 
 | Ano | Peças e operações |
@@ -100,6 +100,8 @@ As criaturas esqueceram o próprio nome, e dizer o nome certo as liberta. O jogo
 
 Para acessibilidade: fonte para dislexia, peças grandes e nenhum tempo obrigatório.
 
+No Escriba, cada sílaba certa é um golpe e o nome completo liberta a criatura (recupera 1 de Energia). Sílaba errada é erro: tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outro nome. Sílaba que ainda falta não é erro.
+
 #### Voz
 
 A criança pode falar a sílaba ou o nome da criatura no microfone. O reconhecimento roda no próprio aparelho, e a voz nunca sai dele. Criança pequena fala errado ou do seu jeito, então a tolerância muda com o nível:
@@ -116,7 +118,7 @@ Errar na fala nunca tira energia. O jogo repete a palavra, mostra as sílabas e 
 
 O Escriba também escreve a letra ou a sílaba desenhando com o dedo, o que treina coordenação motora fina. No tablet é com o dedo; no PC funciona com mouse ou caneta, com tolerância maior ao traço; quem usa teclado digita. Cada mecânica tem uma versão para toque, mouse e teclado, e a criança nunca fica presa por não ter um tipo de entrada.
 
-**Quando entram:** voz e traçado ficam definidos agora e entram logo depois do MVP, junto com tablets Android. No MVP o Escriba usa sílabas por clique e teclado.
+**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O desenho pontilhado já vale no combate: número na bolsa do Matemático e sílaba na do Escriba, conferido em código contra o próprio pontilhado (sem reconhecer a letra). Quem não consegue desenhar nunca fica preso: há "Pular o desenho", e no teclado digitar o número ou a sílaba vale como escrever.
 
 #### Energia e derrota
 

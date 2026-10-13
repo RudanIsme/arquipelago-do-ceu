@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["a","ve"], "pool": ["a","e","i","o","u","va","vo","vi"], "distractors": 2, "image": "ave" },
+  "prompt": "Esta criatura se chama ave. Ela começa com a vogal A. Junte as sílabas do nome dela.",
+  "hints": ["A primeira parte é só uma vogal: a letra A, que faz o som de a.", "Ouça: aaave. Qual vogal vem primeiro?", "Depois da vogal vem a sílaba ve."],
+  "explanation": "AVE começa com a vogal A.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

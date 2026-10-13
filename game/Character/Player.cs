@@ -39,10 +39,19 @@ public partial class Player : Node3D
 	}
 
 	bool enabled;
+	Vector2? faceTarget;
 
 	public bool IsWalkingAnimation => view.IsWalkingAnimation;
 
 	public Vector2 GroundPosition => mover.Position;
+
+	// Vira o Personagem para um ponto do chão e dispara o ataque; parado, ele fica olhando para lá.
+	public void Attack(Vector2 target)
+	{
+		var way = target - mover.Position;
+		if (way.LengthSquared() > 0.0001f) faceTarget = Vector2.Normalize(way);
+		view.PlayAttack();
+	}
 
 	public bool ReduceMotion
 	{
@@ -94,7 +103,9 @@ public partial class Player : Node3D
 	// O modelo olha para +Z; o ângulo sai da direção em que anda.
 	void Turn(float delta)
 	{
-		var target = Mathf.Atan2(mover.Facing.X, mover.Facing.Y);
+		if (mover.IsMoving) faceTarget = null;
+		var facing = faceTarget ?? mover.Facing;
+		var target = Mathf.Atan2(facing.X, facing.Y);
 		Rotation = new Vector3(0f, Mathf.LerpAngle(Rotation.Y, target, 1f - Mathf.Exp(-TurnSharpness * delta)), 0f);
 	}
 

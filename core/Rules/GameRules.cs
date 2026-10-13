@@ -17,6 +17,7 @@ public sealed record GameRules(
 	ProfileRules Profile,
 	AppearanceCatalog Appearance,
 	SettingsRules Settings,
+	CombatRules Combat,
 	LobbyRules Lobby)
 {
 	// Limites que impedem um arquivo editado à mão de deixar o jogo injogável (Energia 0, por exemplo).
@@ -50,6 +51,7 @@ public sealed record GameRules(
 			?? CheckProfile(dto.Profile)
 			?? AppearanceChecks.Check(dto.Appearance)
 			?? LobbyChecks.CheckSettings(dto.Settings)
+			?? CombatChecks.Check(dto.Combat)
 			?? LobbyChecks.CheckLobby(dto.Lobby);
 		if (error is not null) return Fail(error);
 
@@ -65,6 +67,7 @@ public sealed record GameRules(
 			new ProfileRules(dto.Profile!.MaxNicknameLength!.Value, dto.Profile.MaxProfiles!.Value),
 			AppearanceChecks.Build(dto.Appearance!),
 			LobbyChecks.BuildSettings(dto.Settings!),
+			CombatChecks.Build(dto.Combat!),
 			LobbyChecks.BuildLobby(dto.Lobby!)));
 	}
 
@@ -131,6 +134,7 @@ public sealed record GameRules(
 		ProfileDto? Profile,
 		AppearanceDto? Appearance,
 		SettingsDto? Settings,
+		CombatDto? Combat,
 		LobbyDto? Lobby);
 
 	sealed record ProfileDto(int? MaxNicknameLength, int? MaxProfiles);

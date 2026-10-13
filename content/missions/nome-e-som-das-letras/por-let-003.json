@@ -1,0 +1,16 @@
+{
+  "id": "por-let-003",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nome-e-som-das-letras",
+  "bncc": ["EF01LP10","EF01LP04"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ta","tu"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "tatu" },
+  "prompt": "Esta criatura se chama tatu. A letra T se chama tê e faz o som de t. Junte as sílabas do nome.",
+  "hints": ["Ouça: tttatu. O começo tem o som de t.", "As duas sílabas começam com T; o que muda é a vogal.", "Comece pela sílaba que faz ta."],
+  "explanation": "TATU começa com T nas duas sílabas.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

@@ -29,6 +29,7 @@ public partial class CharacterView : Node3D
 	AnimationPlayer? animations;
 	string? walkClip;
 	Vector3 restScale = Vector3.One;
+	Tween? attackTween;
 	bool moving;
 	double clock;
 
@@ -95,6 +96,21 @@ public partial class CharacterView : Node3D
 		var breath = moving || ReduceMotion ? 0f : Mathf.Sin((float)clock * BreathSpeed) * BreathAmount;
 		model.Scale = new Vector3(restScale.X, restScale.Y * (1f + breath), restScale.Z);
 	}
+
+	// Ataque provisório (até existir a animação do modelo): inclina o corpo para a frente e volta, como quem lança o cajado.
+	// Com a redução de animações o Personagem não se mexe; o raio e o aviso escrito já mostram o ataque.
+	public void PlayAttack()
+	{
+		if (ReduceMotion || model is null) return;
+		attackTween?.Kill();
+		Rotation = Vector3.Zero;
+		attackTween = CreateTween();
+		attackTween.TweenProperty(this, "rotation:x", 0.5f, 0.12).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		attackTween.TweenProperty(this, "rotation:x", -0.15f, 0.1);
+		attackTween.TweenProperty(this, "rotation:x", 0f, 0.18);
+	}
+
+	public bool IsAttacking => attackTween?.IsRunning() == true;
 
 	void BackToRest()
 	{

@@ -22,6 +22,14 @@ _Avoid_: Sala de treinamento (Sala é de Andar)
 Criatura de treino da Área de treino. Luta como uma criatura das Dungeons, com bolhas e travessuras, e propõe Desafios sorteados conforme a dificuldade escolhida.
 _Avoid_: Dummy
 
+**Travessura**:
+A reação do Boneco quando a criança erra: embaralha as peças da bolsa ou esconde uma por alguns segundos (valor em dados). Nunca é violenta.
+_Avoid_: Castigo, punição, ataque
+
+**Bolha de névoa**:
+O ataque lento do Boneco, sempre avisado antes por uma faixa no chão, texto e som. A criança desvia andando; ser atingida tira 1 de Energia. Com o Modo calmo ligado ela não aparece.
+_Avoid_: Tiro, projétil
+
 **Álbum**:
 A coleção do Perfil, com as criaturas libertadas (cartas de revisão) e os Cosméticos.
 _Avoid_: Biblioteca de descobertas

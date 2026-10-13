@@ -1,0 +1,16 @@
+{
+  "id": "por-let-002",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nome-e-som-das-letras",
+  "bncc": ["EF01LP10","EF01LP04"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pa","to"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "pato" },
+  "prompt": "Esta criatura se chama pato. A letra P se chama pê e faz o som de p. Junte as sílabas do nome.",
+  "hints": ["Ouça: pppato. O começo tem o som de p.", "A letra T se chama tê e faz o som de t. Ela vem na segunda sílaba.", "Comece pela sílaba que começa com P."],
+  "explanation": "PATO começa com P e a segunda sílaba começa com T.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

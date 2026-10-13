@@ -1,0 +1,16 @@
+{
+  "id": "por-vog-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "vogais-letra-som",
+  "bncc": ["EF01LP04","EF01LP07"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["u","va"], "pool": ["a","e","i","o","u","ta","pa","vo"], "distractors": 3, "image": "uva" },
+  "prompt": "Qual vogal abre o nome da uva? Junte as sílabas do nome e escolha com cuidado entre as vogais.",
+  "hints": ["As vogais são A, E, I, O, U. Ouça: uuuva.", "A primeira parte é uma vogal só.", "Depois vem a sílaba va."],
+  "explanation": "UVA começa com a vogal U.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

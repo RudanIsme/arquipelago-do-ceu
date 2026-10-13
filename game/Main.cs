@@ -1,5 +1,8 @@
 using System;
 using System.Linq;
+using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Generation;
+using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Profiles;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
@@ -15,6 +18,8 @@ public partial class Main : Node3D
 {
 	const string RulesPath = "res://data/rules.json";
 	const string SavePath = "user://save.json";
+	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
+	const string PilotSavePath = "user://piloto-save.json";
 	const string DyslexiaFontPath = "res://assets/fontes/OpenDyslexic-Regular.otf";
 	const int DyslexiaLetterSpacing = 1;
 
@@ -30,6 +35,7 @@ public partial class Main : Node3D
 	ProfileScreen? screen;
 	CharacterEditor? editor;
 	OverlayScreen? overlay;
+	TrainingArea training = null!;
 	Button characterButton = null!;
 	Button interactButton = null!;
 	Control bottomBar = null!;
@@ -38,6 +44,7 @@ public partial class Main : Node3D
 	Player player = null!;
 	string? interactTarget;
 	float uiScale = 1f;
+	TrainingDummy dummy = null!;
 
 	public override void _Ready()
 	{
@@ -50,7 +57,7 @@ public partial class Main : Node3D
 		title.Text = rules.GameName;
 		GD.Print($"Regras carregadas: {rules.GameName}");
 
-		var store = new SaveStore(ProjectSettings.GlobalizePath(SavePath));
+		var store = new SaveStore(ProjectSettings.GlobalizePath(ChooseSavePath()));
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
@@ -64,6 +71,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
 		AddChild(player);
+		SetUpTraining();
 
 		BuildHud();
 		settings.Changed += ApplySettings;
@@ -146,6 +154,15 @@ public partial class Main : Node3D
 		GD.PushError(text);
 	}
 
+	// Com o piloto de desenvolvimento, o jogo trabalha numa cópia do save: nada do que o piloto clica volta para o real.
+	static string ChooseSavePath()
+	{
+		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
+		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
+		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
+		return PilotSavePath;
+	}
+
 	static Result<GameRules> LoadRules()
 	{
 		using var file = FileAccess.Open(RulesPath, FileAccess.ModeFlags.Read);
@@ -191,9 +208,11 @@ public partial class Main : Node3D
 			font = new FontVariation { BaseFont = file, SpacingGlyph = DyslexiaLetterSpacing };
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
+		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
 		lobby.ReduceMotion = player.ReduceMotion;
+		dummy.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
 		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
 	}
@@ -207,6 +226,7 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
+		training.DropTarget();
 		if (screen is not null || overlay is not null || editor is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
@@ -228,6 +248,7 @@ public partial class Main : Node3D
 		screen = null;
 		editor?.QueueFree();
 		editor = null;
+		if (current?.Id != profile.Id) training.End();
 		current = profile;
 		characterButton.Visible = true;
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
@@ -239,6 +260,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
+		training.DropTarget();
 		if (editor is not null || screen is not null || overlay is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
@@ -256,6 +278,7 @@ public partial class Main : Node3D
 
 	void ShowOverlay(OverlayScreen next)
 	{
+		training.DropTarget();
 		if (overlay is not null || screen is not null || editor is not null)
 		{
 			next.QueueFree();
@@ -295,6 +318,30 @@ public partial class Main : Node3D
 		ShowOverlay(new GuideScreen(guide.Name, guide.Lines, voice));
 	}
 
+
+	// A Área de treino: o Boneco, a Energia própria e as telas de montagem vivem em TrainingArea, e nada vai para o save.
+	void SetUpTraining()
+	{
+		dummy = new TrainingDummy();
+		lobby.AddChild(dummy);
+		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
+			() => current?.Level ?? 1, () => player.Enabled, ShowOverlay, Notify);
+		AddChild(training);
+	}
+
+	// Avisos curtos sobre a cena somem sozinhos e também são ditos pela voz.
+	void Notify(string text)
+	{
+		notice.Text = text;
+		voice.Say(text, interrupt: true);
+		GetTree().CreateTimer(3.0, true, false, true).Timeout += () =>
+		{
+			if (notice.Text == text) notice.Text = "";
+		};
+	}
+
+	public override void _ExitTree() => Engine.TimeScale = 1.0;
+
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
 	void ApplyAppearance()
 	{
@@ -309,9 +356,19 @@ public partial class Main : Node3D
 		bottomBar.Visible = player.Enabled;
 	}
 
+	// Clicar (ou tocar) na criatura a escolhe; o clique não vira caminhada. Cliques sobre a interface ficam com ela.
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
+		if (player is null || !player.Enabled || GetViewport().GuiGetHoveredControl() is not null || !training.HitsDummy(click.Position)) return;
+		GetViewport().SetInputAsHandled();
+		training.ToggleTarget();
+	}
+
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
+		if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
 	}
 
 	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
@@ -321,6 +378,7 @@ public partial class Main : Node3D
 		var target = player.Enabled
 			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach)?.Id
 			: null;
+		training.CheckRange();
 		if (target != interactTarget)
 		{
 			interactTarget = target;
@@ -329,6 +387,7 @@ public partial class Main : Node3D
 			if (target is not null)
 			{
 				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
+
 				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
 			}
 		}

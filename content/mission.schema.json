@@ -57,6 +57,23 @@
           }
         }
       }
+    },
+    {
+      "if": { "properties": { "mechanic": { "const": "formar_palavras" } }, "required": ["mechanic"] },
+      "then": {
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "required": ["syllables", "pool", "distractors", "image"],
+            "properties": {
+              "syllables": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-zà-ú]+$" } },
+              "pool": { "type": "array", "items": { "type": "string", "pattern": "^[a-zà-ú]+$" } },
+              "distractors": { "type": "integer", "minimum": 0 },
+              "image": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+            }
+          }
+        }
+      }
     }
   ]
 }

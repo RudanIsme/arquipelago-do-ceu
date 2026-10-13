@@ -1,0 +1,16 @@
+{
+  "id": "por-let-001",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "nome-e-som-das-letras",
+  "bncc": ["EF01LP10","EF01LP04"],
+  "year": 1,
+  "difficulty": 1,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["ma","pa"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 1, "image": "mapa" },
+  "prompt": "Esta criatura se chama mapa. A letra M se chama mê e faz o som de m. Junte as sílabas do nome.",
+  "hints": ["Ouça: mmmapa. O começo tem o som de m.", "A letra P se chama pê e faz o som de p. Ela vem na segunda sílaba.", "Comece pela sílaba que começa com M."],
+  "explanation": "MAPA começa com M e a segunda sílaba começa com P.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

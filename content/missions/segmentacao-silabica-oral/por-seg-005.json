@@ -1,0 +1,16 @@
+{
+  "id": "por-seg-005",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "segmentacao-silabica-oral",
+  "bncc": ["EF01LP06"],
+  "year": 1,
+  "difficulty": 3,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["to","ma","te"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 2, "image": "tomate" },
+  "prompt": "Ouça o nome da criatura: tomate. To, ma, te. São três partes. Junte as sílabas.",
+  "hints": ["Ouça de novo: to, ma, te. São três partes.", "Bata palmas em cada parte: to, ma, te.", "Comece pela sílaba que faz o som de t."],
+  "explanation": "TO, MA e TE são as três partes de TOMATE.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}

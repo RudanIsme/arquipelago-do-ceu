@@ -1,0 +1,16 @@
+{
+  "id": "por-dis-004",
+  "version": 1,
+  "discipline": "portugues",
+  "concept": "palavras-dissilabas-grupo-1",
+  "bncc": ["EF01LP08","EF01LP02"],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "formar_palavras",
+  "params": { "syllables": ["pa","no"], "pool": ["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ta","te","ti","to","tu","na","ne","ni","no","nu"], "distractors": 2, "image": "pano" },
+  "prompt": "Esta criatura se chama pano. Junte as sílabas para escrever o nome dela.",
+  "hints": ["Ouça de novo: pano. Qual sílaba vem primeiro?", "A primeira sílaba faz o som de pa.", "Depois vem a sílaba no."],
+  "explanation": "PA + NO = PANO.",
+  "accessibility": { "timerAllowed": false },
+  "review": { "status": "pending" }
+}
