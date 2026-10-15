@@ -10,6 +10,7 @@ public static class Controls
 	public const string Down = "move_down";
 	public const string Left = "move_left";
 	public const string Right = "move_right";
+	public const string Run = "run";
 	public const string Interact = "interact";
 	public const string Target = "target";
 	public const string ZoomIn = "zoom_in";
@@ -31,6 +32,8 @@ public static class Controls
 		Bind(ZoomIn, Key.Pageup);
 		Bind(ZoomOut, Key.Pagedown);
 		Bind(ZoomReset, Key.Home);
+		Bind(Run, Key.Shift);
+
 	}
 
 	// x para a direita, y para cima, tamanho no máximo 1.
@@ -61,8 +64,9 @@ public static class ControlHints
 {
 	public static string For(string controls) => controls switch
 	{
-		"teclado" => "Use as setas ou W A S D para andar, E para usar um objeto, F para escolher a criatura mais perto e Page Up e Page Down para o zoom.",
+		"teclado" => "Use as setas ou W A S D para andar, Shift para correr, E para usar um objeto, F para escolher a criatura mais perto e Page Up e Page Down para o zoom.",
 		"toque" => "Toque no chão para andar. Toque no botão que aparece para usar um objeto. Toque numa criatura para lutar. Use dois dedos para o zoom.",
-		_ => "Clique no chão para andar. Clique no botão que aparece para usar um objeto. Clique numa criatura para lutar. A roda do mouse faz o zoom.",
+		_ => "Clique no chão para andar; segure Shift para correr. Clique no botão que aparece para usar um objeto. Clique numa criatura para lutar. A roda do mouse faz o zoom.",
+
 	};
 }

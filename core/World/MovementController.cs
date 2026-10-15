@@ -66,14 +66,20 @@ public sealed class MovementController
 		IsMoving = false;
 	}
 
-	public void Tick(Vector2 steer, float dt)
+	public void Tick(Vector2 steer, float dt, float speedScale = 1f)
 	{
+		dt *= MathF.Max(0f, speedScale);
+		if (dt <= 0f) { IsMoving = false; return; }
 		if (steer != Vector2.Zero)
 		{
 			waypoints.Clear();
 			var direction = steer.Length() > 1f ? Vector2.Normalize(steer) : steer;
 			Facing = Vector2.Normalize(direction);
-			var moved = grid.Move(Position, direction * speed * dt, radius);
+			var moved = Position;
+			// Passos curtos impedem atravessar um obstaculo quando a corrida ou um frame longo aumenta a distancia.
+			var displacement = direction * speed * dt;
+			var steps = Math.Max(1, (int)MathF.Ceiling(displacement.Length() / MathF.Max(.05f, radius * .5f)));
+			for (var i = 0; i < steps; i++) moved = grid.Move(moved, displacement / steps, radius);
 			IsMoving = moved != Position;
 			Position = moved;
 			return;

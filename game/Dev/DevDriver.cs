@@ -538,7 +538,7 @@ static class E2E
 		await d.Press("Criar");
 		await d.Type("Luna");
 		await d.Press("Criar");
-		d.Expect(d.Button("Personagem") is not null, "o Perfil foi criado e o Lobby abriu");
+		d.Expect(d.Player is { Enabled: true } && d.Button("Comparar") is not null, "o Perfil foi criado e o Lobby abriu");
 		d.Expect(File.Exists(save), "o Perfil foi gravado no save");
 		var before = File.ReadAllBytes(save);
 
@@ -572,7 +572,7 @@ static class E2E
 	{
 		var save = d.Arg("save");
 		await d.Wait(0.5);
-		d.Expect(d.Button("Personagem") is not null, "o Perfil foi aberto sozinho ao reabrir o jogo");
+		d.Expect(d.Player is { Enabled: true } && d.Button("Comparar") is not null, "o Perfil foi aberto sozinho ao reabrir o jogo");
 		d.Expect(d.HasVisible("Luna"), "o apelido do Perfil continua o mesmo");
 		d.Expect(File.Exists(save + ".snapshot") && File.ReadAllBytes(save).AsSpan().SequenceEqual(File.ReadAllBytes(save + ".snapshot")), "o progresso continua idêntico depois de fechar e reabrir");
 	}

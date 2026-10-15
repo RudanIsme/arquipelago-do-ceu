@@ -10,7 +10,13 @@
     "mistakesToLevelDown": 2,
     "hintsToLevelDown": 2
   },
-  "leitnerIntervalsDays": [1, 2, 4, 8, 16],
+  "leitnerIntervalsDays": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
   "profile": {
     "maxNicknameLength": 12,
     "maxProfiles": 6
@@ -21,77 +27,281 @@
         "id": "skinTone",
         "name": "Tom de pele",
         "options": [
-          { "id": "marfim", "name": "Marfim", "color": "#F7D9C4" },
-          { "id": "areia", "name": "Areia", "color": "#EBC4A0" },
-          { "id": "mel", "name": "Mel", "color": "#D9A573" },
-          { "id": "caramelo", "name": "Caramelo", "color": "#B97C4F" },
-          { "id": "cafe", "name": "Café", "color": "#8D5A3A" },
-          { "id": "chocolate", "name": "Chocolate", "color": "#5E3B26" }
+          {
+            "id": "marfim",
+            "name": "Marfim",
+            "color": "#F7D9C4"
+          },
+          {
+            "id": "areia",
+            "name": "Areia",
+            "color": "#EBC4A0"
+          },
+          {
+            "id": "mel",
+            "name": "Mel",
+            "color": "#D9A573"
+          },
+          {
+            "id": "caramelo",
+            "name": "Caramelo",
+            "color": "#B97C4F"
+          },
+          {
+            "id": "cafe",
+            "name": "Café",
+            "color": "#8D5A3A"
+          },
+          {
+            "id": "chocolate",
+            "name": "Chocolate",
+            "color": "#5E3B26"
+          }
         ]
       },
       {
         "id": "clothesColor",
         "name": "Cor da roupa",
         "options": [
-          { "id": "bege", "name": "Bege", "color": "#C9BBA3" },
-          { "id": "azul", "name": "Azul", "color": "#2E7DE8" },
-          { "id": "verde", "name": "Verde", "color": "#35B96A" },
-          { "id": "roxo", "name": "Roxo", "color": "#7A44D1" },
-          { "id": "amarelo", "name": "Amarelo", "color": "#F2B632" },
-          { "id": "coral", "name": "Coral", "color": "#F0705F" }
+          {
+            "id": "bege",
+            "name": "Bege",
+            "color": "#C9BBA3"
+          },
+          {
+            "id": "azul",
+            "name": "Azul",
+            "color": "#2E7DE8"
+          },
+          {
+            "id": "verde",
+            "name": "Verde",
+            "color": "#35B96A"
+          },
+          {
+            "id": "roxo",
+            "name": "Roxo",
+            "color": "#7A44D1"
+          },
+          {
+            "id": "amarelo",
+            "name": "Amarelo",
+            "color": "#F2B632"
+          },
+          {
+            "id": "coral",
+            "name": "Coral",
+            "color": "#F0705F"
+          }
         ]
       },
-      { "id": "accessory", "name": "Acessório", "options": [] }
+      {
+        "id": "accessory",
+        "name": "Acessório",
+        "options": []
+      }
     ]
   },
   "settings": {
     "textSizes": [
-      { "id": "normal", "name": "Normal", "scale": 1.0 },
-      { "id": "grande", "name": "Grande", "scale": 1.2 },
-      { "id": "muito-grande", "name": "Muito grande", "scale": 1.4 }
+      {
+        "id": "normal",
+        "name": "Normal",
+        "scale": 1.0
+      },
+      {
+        "id": "grande",
+        "name": "Grande",
+        "scale": 1.2
+      },
+      {
+        "id": "muito-grande",
+        "name": "Muito grande",
+        "scale": 1.4
+      }
     ],
     "controls": [
-      { "id": "mouse", "name": "Mouse" },
-      { "id": "teclado", "name": "Teclado" },
-      { "id": "toque", "name": "Toque" }
+      {
+        "id": "mouse",
+        "name": "Mouse"
+      },
+      {
+        "id": "teclado",
+        "name": "Teclado"
+      },
+      {
+        "id": "toque",
+        "name": "Toque"
+      }
     ],
     "voiceSpeeds": [
-      { "id": "devagar", "name": "Devagar", "rate": 0.8 },
-      { "id": "normal", "name": "Normal", "rate": 1.0 },
-      { "id": "rapida", "name": "Rápida", "rate": 1.25 }
+      {
+        "id": "devagar",
+        "name": "Devagar",
+        "rate": 0.8
+      },
+      {
+        "id": "normal",
+        "name": "Normal",
+        "rate": 1.0
+      },
+      {
+        "id": "rapida",
+        "name": "Rápida",
+        "rate": 1.25
+      }
     ],
-    "defaults": { "textSize": "normal", "voice": true, "reduceMotion": false, "dyslexiaFont": false, "calmMode": false, "controls": "mouse", "voiceSpeed": "normal", "reduceEffects": false }
+    "defaults": {
+      "textSize": "normal",
+      "voice": true,
+      "reduceMotion": false,
+      "dyslexiaFont": false,
+      "calmMode": false,
+      "controls": "mouse",
+      "voiceSpeed": "normal",
+      "reduceEffects": false
+    }
   },
   "combat": {
     "handSize": 5,
-    "bagNumbers": [1, 2, 3, 4, 5],
+    "bagNumbers": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
     "bagCopies": 2,
     "slowTimeScale": 0.25,
     "targetRange": 5,
-    "operators": ["+"],
-    "tracing": { "dotSpacing": 16, "tolerance": 30, "minCoverage": 0.8, "maxStray": 0.35 },
+    "operators": [
+      "+"
+    ],
+    "tracing": {
+      "dotSpacing": 16,
+      "tolerance": 30,
+      "minCoverage": 0.8,
+      "maxStray": 0.35
+    },
     "mistakesForHint": 2,
     "prankSeconds": 4,
-    "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
-    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 },
-    "years": [{ "year": 2, "bagNumbers": [1, 2, 3, 4, 5, 10, 20], "operators": ["+", "-"] }]
+    "energy": {
+      "hit": 1,
+      "perfect": 2,
+      "mistake": 1,
+      "bubble": 1
+    },
+    "bubble": {
+      "intervalSeconds": 8,
+      "warningSeconds": 1.6,
+      "speed": 1.5,
+      "radius": 0.8,
+      "range": 9
+    },
+    "years": [
+      {
+        "year": 2,
+        "bagNumbers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          10,
+          20
+        ],
+        "operators": [
+          "+",
+          "-"
+        ]
+      }
+    ]
   },
   "lobby": {
     "interactionReach": 2.2,
-    "camera": { "size": 28, "minSize": 12, "maxSize": 44, "zoomStep": 3, "followSharpness": 4, "deadZone": 1.5, "maxPan": 9 },
+    "camera": {
+      "size": 24,
+      "minSize": 8,
+      "maxSize": 32,
+      "zoomStep": 3,
+      "followSharpness": 4,
+      "deadZone": 1.5,
+      "maxPan": 9
+    },
     "places": [
-      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -13.4, "z": 4.9 },
-      { "id": "portugues", "name": "Torre das Letras", "sign": "Em construção", "model": "torre-letras", "x": 4.9, "z": -13.4 },
-      { "id": "ciencias", "name": "Ilha das Ciências", "sign": "Em breve", "x": -7.8, "z": 14.8 },
-      { "id": "historia", "name": "Ilha da História", "sign": "Em breve", "x": 11.3, "z": 11.3 },
-      { "id": "geografia", "name": "Ilha da Geografia", "sign": "Em breve", "x": 14.9, "z": -7.8 }
+      {
+        "id": "matematica",
+        "name": "Torre dos Números",
+        "sign": "Em construção",
+        "model": "torre-numeros-meshy-v01",
+        "x": -13.4,
+        "z": 4.9
+      },
+      {
+        "id": "portugues",
+        "name": "Torre das Letras",
+        "sign": "Em construção",
+        "model": "torre-letras-meshy-v01",
+        "x": 4.9,
+        "z": -13.4
+      },
+      {
+        "id": "ciencias",
+        "name": "Ilha das Ciências",
+        "sign": "Em breve",
+        "x": -7.8,
+        "z": 12.5,
+        "model": "landmarks/botanic-v01"
+      },
+      {
+        "id": "historia",
+        "name": "Ilha da História",
+        "sign": "Em breve",
+        "x": 9.0,
+        "z": 9.0,
+        "model": "landmarks/history-v01"
+      },
+      {
+        "id": "geografia",
+        "name": "Ilha da Geografia",
+        "sign": "Em breve",
+        "x": 12.5,
+        "z": -7.8,
+        "model": "landmarks/geography-v01"
+      }
     ],
     "objects": [
-      { "id": "album", "name": "Álbum", "prompt": "Abrir o Álbum", "model": "atril", "q": -2, "r": -2 },
-      { "id": "portal", "name": "Portal de viagem", "prompt": "Usar o portal", "model": "portal", "q": -1, "r": 4 },
-      { "id": "boneco", "name": "Boneco de treino", "prompt": "Atacar o Boneco", "model": "boneco", "q": 3, "r": 1 },
       {
-        "id": "guia", "name": "Guia", "prompt": "Falar com o Guia", "model": "guia", "q": 1, "r": 1,
+        "id": "album",
+        "name": "Álbum",
+        "prompt": "Abrir o Álbum",
+        "model": "atril",
+        "q": -2,
+        "r": -2
+      },
+      {
+        "id": "portal",
+        "name": "Portal de viagem",
+        "prompt": "Usar o portal",
+        "model": "portal",
+        "q": -1,
+        "r": 4
+      },
+      {
+        "id": "boneco",
+        "name": "Boneco de treino",
+        "prompt": "Atacar o Boneco",
+        "model": "boneco",
+        "q": 3,
+        "r": 1
+      },
+      {
+        "id": "guia",
+        "name": "Guia",
+        "prompt": "Falar com o Guia",
+        "model": "guia",
+        "q": 1,
+        "r": 1,
         "lines": [
           "Olá! Eu sou o Guia do Arquipélago do Céu.",
           "Aqui no Lobby você pode se arrumar, olhar o Álbum e viajar pelo portal.",

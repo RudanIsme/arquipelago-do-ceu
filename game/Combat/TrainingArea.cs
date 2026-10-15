@@ -40,6 +40,13 @@ public partial class TrainingArea : Node
 	bool reacting;
 	// Cada erro e cada fim de treino mudam a época; um temporizador de uma época antiga não faz mais nada.
 	int epoch;
+	int extraEnergy;
+	public void SetEquipmentEnergy(int bonus)
+	{
+		extraEnergy = Math.Clamp(bonus, 0, 2);
+		session?.Energy.SetMaximum(rules.MaxEnergy + extraEnergy);
+		UpdateEnergy();
+	}
 
 	public TrainingArea(GameRules rules, Lobby lobby, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
 		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify)
@@ -65,6 +72,8 @@ public partial class TrainingArea : Node
 	}
 
 	public bool HasTarget => panel is not null;
+	public void RefreshPresentation() { energyView?.RefreshTheme(); UpdateEnergyDock(); }
+	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = UiKit.Compact ? (panel is null ? 154 : 12) : 126; }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
 	public bool HitsDummy(Godot.Vector2 screenPoint)
@@ -128,7 +137,7 @@ public partial class TrainingArea : Node
 
 	string? TryStart(TrainingSetup setup)
 	{
-		var started = TrainingSession.Start(rules.Combat, rules.MaxEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var started = TrainingSession.Start(rules.Combat, rules.MaxEnergy + extraEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!started.IsOk) return started.Error;
 
 		session = started.Value;
@@ -199,6 +208,7 @@ public partial class TrainingArea : Node
 		}
 
 		panel = opened;
+		UpdateEnergyDock();
 		uiRoot.AddChild(opened);
 		dummy.SetSelected(true);
 		// Fecha também se a tela sair da cena por outro caminho: o tempo nunca pode ficar preso.
@@ -206,6 +216,7 @@ public partial class TrainingArea : Node
 		{
 			if (panel != opened) return;
 			panel = null;
+			UpdateEnergyDock();
 			dummy.SetSelected(false);
 			time.End();
 			Engine.TimeScale = time.Scale;

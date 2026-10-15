@@ -5,21 +5,28 @@ namespace ArquipelagoDoCeu;
 
 // Peças de interface compartilhadas pelas telas, seguindo o HUD da direção de arte:
 // painel escuro com borda dourada, texto grande e alvos de toque de pelo menos 72 px.
-public static class UiKit
+public static partial class UiKit
 {
-	public const int MinTouch = 72;
+	public static string Variant { get; private set; } = "minimal";
+ public static bool Compact => Variant != "base";
+ public static int MinTouch => Compact ? 44 : 72;
+ public static int BodyFont => Compact ? 20 : 28;
+ public static void SetVariant(string variant) => Variant = Array.IndexOf(JourneyStyle.Ids, variant) >= 0 ? variant : "base";
+ public static Color TextColor => Compact ? JourneyStyle.Ink(Variant) : Color.FromHtml("#F1ECFA");
+ public static StyleBoxFlat Surface() => Compact ? JourneyStyle.Box(Variant) : new StyleBoxFlat { BgColor=Color.FromHtml("#1B1424"),BorderColor=Color.FromHtml("#D9A64A") };
 
 	const int CardMargin = 28;
 	const int CardBreathing = 24;
 
-	static readonly Color PanelFill = Color.FromHtml("#1B1424");
-	static readonly Color Gold = Color.FromHtml("#D9A64A");
-	static readonly Color Soft = Color.FromHtml("#F1ECFA");
-	static readonly Color Muted = Color.FromHtml("#C9BFDC");
+	static Color PanelFill => Compact ? JourneyStyle.Fill(Variant) : Color.FromHtml("#1B1424");
+	static Color Gold => Compact ? JourneyStyle.Accent(Variant) : Color.FromHtml("#D9A64A");
+	static Color Soft => TextColor;
+	static Color Muted => Compact ? TextColor : Color.FromHtml("#C9BFDC");
 
 	public static Button BigButton(string text, Action onPressed, int minWidth = 240)
 	{
-		var button = new Button { Text = text, CustomMinimumSize = new Vector2(minWidth, MinTouch) };
+		if (Compact) {var compact=JourneyStyle.Button(Variant,text,onPressed);compact.CustomMinimumSize=new Vector2(Math.Min(minWidth,140),44);return compact;}
+  var button = new Button { Text = text, CustomMinimumSize = new Vector2(minWidth, MinTouch) };
 		button.AddThemeFontSizeOverride("font_size", 28);
 		button.AddThemeColorOverride("font_color", Soft);
 		button.AddThemeColorOverride("font_hover_color", Soft);
@@ -54,16 +61,16 @@ public static class UiKit
 
 	public static Label Heading(string text)
 	{
-		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center };
-		label.AddThemeFontSizeOverride("font_size", 34);
+		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = Compact ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off };
+		label.AddThemeFontSizeOverride("font_size", Compact ? 26 : 34);
 		label.AddThemeColorOverride("font_color", Soft);
 		return label;
 	}
 
 	public static Label Hint(string text)
 	{
-		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(360, 0) };
-		label.AddThemeFontSizeOverride("font_size", 22);
+		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(Compact ? 0 : 360, 0) };
+		label.AddThemeFontSizeOverride("font_size", Compact ? 18 : 22);
 		label.AddThemeColorOverride("font_color", Muted);
 		return label;
 	}
@@ -71,8 +78,8 @@ public static class UiKit
 	// Fala escrita (legenda): maior que a dica, para uma criança que ainda aprende a ler.
 	public static Label Caption(string text)
 	{
-		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(560, 0) };
-		label.AddThemeFontSizeOverride("font_size", 32);
+		var label = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(Compact ? 0 : 560, 0) };
+		label.AddThemeFontSizeOverride("font_size", Compact ? 22 : 32);
 		label.AddThemeColorOverride("font_color", Soft);
 		return label;
 	}
@@ -96,7 +103,12 @@ public static class UiKit
 	// Encaixa um painel na lateral direita (ou embaixo, no centro) e o encolhe quando o texto grande ou uma janela
 	// pequena não deixam caber: o painel nunca fica cortado, e tudo continua à vista.
 	public static void DockFit(Control host, Control panel, bool right)
-	{
+ {
+  if(Compact)
+  {
+   host.RemoveChild(panel);var scroll=new ScrollContainer{Name="TrainingScroll",HorizontalScrollMode=ScrollContainer.ScrollMode.Auto,FollowFocus=true};host.AddChild(scroll);scroll.AddChild(panel);panel.SizeFlagsHorizontal=Control.SizeFlags.ExpandFill;
+   scroll.AddChild(new DockLayoutDriver{Host=host,Panel=panel,Scroll=scroll,Right=right});return;
+  }
 		const float margin = 16f;
 		void Fit()
 		{
@@ -133,6 +145,7 @@ public static class UiKit
 	// O rodapé fica fora da rolagem, sempre à vista (por exemplo, o botão Fechar).
 	public static VBoxContainer Card(Control host, string title, out VBoxContainer footer)
 	{
+        if(Compact)return CompactCard(host,title,out footer);
 		foreach (var child in host.GetChildren())
 		{
 			host.RemoveChild(child);
@@ -190,6 +203,40 @@ public static class UiKit
 		Callable.From(Fit).CallDeferred();
 		return box;
 	}
+
+ static VBoxContainer CompactCard(Control host,string title,out VBoxContainer footer)
+ {
+  foreach(var child in host.GetChildren()){host.RemoveChild(child);child.QueueFree();}
+  var shade=new ColorRect{Color=new Color(0.04f,0.06f,0.09f,0.30f),MouseFilter=Control.MouseFilterEnum.Stop};shade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);host.AddChild(shade);
+  var panel=new PanelContainer{Name="ThemedCard"};var style=JourneyStyle.Box(Variant);style.SetContentMarginAll(16);panel.AddThemeStyleboxOverride("panel",style);host.AddChild(panel);
+  var column=new VBoxContainer();column.AddThemeConstantOverride("separation",10);panel.AddChild(column);
+  var scroll=new ScrollContainer{HorizontalScrollMode=ScrollContainer.ScrollMode.Disabled,SizeFlagsVertical=Control.SizeFlags.ExpandFill,FollowFocus=true,CustomMinimumSize=new Vector2(0,80)};column.AddChild(scroll);
+  var body=new VBoxContainer{SizeFlagsHorizontal=Control.SizeFlags.ExpandFill};body.AddThemeConstantOverride("separation",10);scroll.AddChild(body);body.AddChild(Heading(title));
+  footer=new VBoxContainer();footer.AddThemeConstantOverride("separation",8);column.AddChild(footer);
+  var driver=new CardLayoutDriver{Host=host,Panel=panel,Body=body,Footer=footer,StyleId=Variant};panel.AddChild(driver);
+  return body;
+ }
+ private partial class DockLayoutDriver : Node
+ {
+  public Control Host=null!,Panel=null!,Scroll=null!;public bool Right;
+  public override void _Process(double delta)
+  {
+   var min=Panel.GetCombinedMinimumSize();float width=Mathf.Min(Host.Size.X-32,Right?440:680);float height=Mathf.Min(Host.Size.Y-32,Mathf.Max(80,min.Y));
+   Panel.Scale=Vector2.One;Scroll.Size=new Vector2(width,height);Scroll.Position=new Vector2(Right?Host.Size.X-width-16:(Host.Size.X-width)/2,(Host.Size.Y-height)/2);
+  }
+ }
+
+ private partial class CardLayoutDriver : Node
+ {
+  public Control Host=null!,Panel=null!,Body=null!,Footer=null!;public string StyleId="minimal";
+  public override void _Process(double delta)
+  {
+   float width=Mathf.Min(Host.Size.X-32,StyleId=="book"?760:680);
+   float height=Mathf.Min(Host.Size.Y-32,Mathf.Max(200,Body.GetCombinedMinimumSize().Y+Footer.GetCombinedMinimumSize().Y+44));
+   Panel.Size=new Vector2(width,height);
+   Panel.Position=new Vector2(StyleId=="adventure"?Host.Size.X-width-16:(Host.Size.X-width)/2,(Host.Size.Y-height)/2);
+  }
+ }
 
 	// Reconstruir uma tela destrói os botões; devolve o foco ao botão que estava no mesmo lugar, para o teclado não recomeçar do zero.
 	public static int FocusIndex(Control root)

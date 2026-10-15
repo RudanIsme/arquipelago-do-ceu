@@ -15,8 +15,8 @@ namespace ArquipelagoDoCeu;
 // Nenhum tempo é cobrado, e a fonte para dislexia vem do tema da interface.
 public partial class NamePanel : OverlayScreen
 {
-	const int PieceSize = 110;
-	const int PanelWidth = 4 * PieceSize + 3 * 8;
+	static int PieceSize => UiKit.Compact ? 76 : 110;
+	static int PanelWidth => 4 * PieceSize + 3 * 8;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
 	static readonly Color Gold = Color.FromHtml("#D9A64A");
@@ -52,6 +52,9 @@ public partial class NamePanel : OverlayScreen
 	public IReadOnlyList<string> ExpectedName => battle.Name;
 
 	public IReadOnlyList<string> PieceNames => battle.Pieces;
+ public NameBattle PullBattle => battle;
+ public void ReturnFromPull(bool check) { Refresh(); if(check) Check(); }
+ public void OpenPullMode() { if(tracing || battle.Kind != NameKind.Syllables) return; GetTree().Root.GetChildren().OfType<PullTestGate>().FirstOrDefault()?.EnterWithPanel(this); }
 
 	public event Action? HintRequested;
 
@@ -83,7 +86,7 @@ public partial class NamePanel : OverlayScreen
 		style.SetCornerRadiusAll(16);
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-		panel.AddThemeStyleboxOverride("panel", style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 
@@ -126,6 +129,7 @@ public partial class NamePanel : OverlayScreen
 		actions.AddChild(UiKit.BigButton("Soltar alvo", Abandon, 196));
 		actions.AddChild(UiKit.BigButton("Conferir", Check, 196));
 		content.AddChild(actions);
+        if(battle.Kind == NameKind.Syllables) content.AddChild(UiKit.BigButton("Pescar com puxada", OpenPullMode, 260));
 
 		var keys = UiKit.Hint("Teclado: 1 a 9 escolhem a peça, Backspace desfaz, Enter confere, Esc solta o alvo.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);

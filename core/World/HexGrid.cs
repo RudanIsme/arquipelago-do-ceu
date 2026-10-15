@@ -27,9 +27,13 @@ public sealed class HexGrid
 {
 	readonly HashSet<HexCell> cells;
 	readonly HashSet<HexCell> blocked;
+	readonly Func<Vector2, bool>? pointAllowed;
+	readonly Func<HexCell, HexCell, bool>? edgeAllowed;
 
-	public HexGrid(IEnumerable<HexCell> cells, IEnumerable<HexCell> blocked)
+	public HexGrid(IEnumerable<HexCell> cells, IEnumerable<HexCell> blocked, Func<Vector2, bool>? pointAllowed = null, Func<HexCell, HexCell, bool>? edgeAllowed = null)
 	{
+		this.pointAllowed = pointAllowed;
+		this.edgeAllowed = edgeAllowed;
 		this.cells = [.. cells];
 		this.blocked = [.. blocked];
 	}
@@ -47,7 +51,7 @@ public sealed class HexGrid
 
 	public bool IsWalkable(HexCell cell) => cells.Contains(cell) && !blocked.Contains(cell);
 
-	public IEnumerable<HexCell> WalkableNeighbors(HexCell cell) => cell.Neighbors().Where(IsWalkable);
+	public IEnumerable<HexCell> WalkableNeighbors(HexCell cell) => cell.Neighbors().Where(n => IsWalkable(n) && (edgeAllowed?.Invoke(cell, n) ?? true));
 
 	public static Vector2 ToWorld(HexCell cell) => new(1.5f * cell.Q, MathF.Sqrt(3f) * (cell.R + cell.Q / 2f));
 
@@ -112,18 +116,20 @@ public sealed class HexGrid
 	}
 
 	// Livre para um corpo de certo raio: o centro e quatro pontos em volta estão em hexágonos livres.
+	bool IsFreePoint(Vector2 point) => IsWalkable(FromWorld(point)) && (pointAllowed?.Invoke(point) ?? true);
+
 	public bool IsFree(Vector2 point, float radius) =>
-		IsWalkable(FromWorld(point))
-		&& IsWalkable(FromWorld(point + new Vector2(radius, 0f)))
-		&& IsWalkable(FromWorld(point - new Vector2(radius, 0f)))
-		&& IsWalkable(FromWorld(point + new Vector2(0f, radius)))
-		&& IsWalkable(FromWorld(point - new Vector2(0f, radius)));
+		IsFreePoint(point)
+		&& IsFreePoint(point + new Vector2(radius, 0f))
+		&& IsFreePoint(point - new Vector2(radius, 0f))
+		&& IsFreePoint(point + new Vector2(0f, radius))
+		&& IsFreePoint(point - new Vector2(0f, radius));
 
 	// Anda sem atravessar obstáculos nem sair da ilha; ao encostar, desliza pelo eixo que continua livre.
 	public Vector2 Move(Vector2 from, Vector2 delta, float radius)
 	{
 		// Se já está colado num obstáculo (por exemplo, tocou perto dele), só o centro conta, para poder sair.
-		bool Fits(Vector2 point) => IsFree(from, radius) ? IsFree(point, radius) : IsWalkable(FromWorld(point));
+		bool Fits(Vector2 point) => IsFree(from, radius) ? IsFree(point, radius) : IsFreePoint(point);
 
 		var full = from + delta;
 		if (Fits(full)) return full;

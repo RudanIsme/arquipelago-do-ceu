@@ -36,6 +36,8 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - **Primeiro marco**: Lobby funcional (ver `docs/produto/documento-de-produto.md`). Nomes do jogo e dos Papéis são provisórios e ficam em dados.
 - **Treino no Lobby é o combate real contra o Boneco, com Energia própria** (zerar só tira a criança da Área de treino), e usa todas as Mecânicas existentes; **não conta progresso**, só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
 
+- **Experimento autorizado de equipamentos (14/10/2026)**: quatro interfaces locais, bônus derivados e limitados no treino (Energia base + até 2, velocidade até 1,12×, alcance de interação até +0,5). Equipar ou trocar interface nunca cura. Ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`; conteúdo educacional e dificuldade permanecem iguais.
+
 ## Estrutura planejada do código
 
 ```text

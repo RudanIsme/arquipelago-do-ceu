@@ -94,3 +94,7 @@ $save = "$env:TEMP\e2e-save.json"; Remove-Item $save, "$save.snapshot" -ErrorAct
 | Torre dos Números | Torre das Letras | Lobby |
 | --- | --- | --- |
 | ![Torre dos Números](mockups/torre-dos-numeros.png) | ![Torre das Letras](mockups/torre-das-letras.png) | ![Lobby](mockups/lobby.png) |
+
+## Entrega de pesca e personagens
+
+Veja [como testar o estado aprovado, F9, pesca BOA e desenho neon](docs/tecnico/teste-pesca-neon.md), incluindo preparação de checkout limpo e uso de save temporário.

@@ -9,11 +9,18 @@ public sealed class Energy
 		Current = Max;
 	}
 
-	public int Max { get; }
+	public int Max { get; private set; }
 
 	public int Current { get; private set; }
 
 	public bool IsEmpty => Current == 0;
+
+	// Equipar amplia a capacidade, mas nunca recupera Energia perdida.
+	public void SetMaximum(int max)
+	{
+		Max = Math.Max(1, max);
+		Current = Math.Min(Current, Max);
+	}
 
 	public void Lose(int amount) => Current = Math.Max(0, Current - amount);
 
