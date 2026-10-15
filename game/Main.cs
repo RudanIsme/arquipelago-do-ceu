@@ -61,6 +61,7 @@ public partial class Main : Node3D
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
+		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
 		voice = new VoiceService(new GodotSpeechEngine(), settings);
@@ -69,12 +70,15 @@ public partial class Main : Node3D
 		lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
 		lobby.Rules = rules.Lobby;
 		AddChild(lobby);
-		player = new Player(lobby.Grid, lobby.Camera) { Visible = false };
+		player = new Player(lobby.Grid, lobby.Camera, lobby.GroundHeight) { Visible = false };
 		AddChild(player);
 		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion));
 		SetUpTraining();
 
+		UiKit.SetVariant("base");
 		BuildHud();
+		UiKit.SetVariant(journey.Variant);
+		BuildJourneyHud();
 		settings.Changed += ApplySettings;
 		ApplySettings(settings.Current);
 		StartFlow();
@@ -84,6 +88,7 @@ public partial class Main : Node3D
 			GD.PushWarning(missing);
 		}
 		DevDriver.AttachIfRequested(this);
+        CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
 	}
@@ -115,13 +120,16 @@ public partial class Main : Node3D
 
 	void FitUiRoot()
 	{
-		uiRoot.Scale = Vector2.One * uiScale;
-		uiRoot.Size = GetViewport().GetVisibleRect().Size / uiScale;
+		var stretch = Mathf.Max(.1f, GetViewport().GetFinalTransform().Scale.X);
+		var effectiveScale = journey.Variant == "base" ? uiScale : uiScale / stretch;
+		uiRoot.Scale = Vector2.One * effectiveScale;
+		uiRoot.Size = GetViewport().GetVisibleRect().Size / effectiveScale;
 	}
 
 	void BuildHud()
 	{
 		var hud = new HBoxContainer();
+		legacyHud = hud;
 		hud.AddThemeConstantOverride("separation", 8);
 		hud.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
 		characterButton = UiKit.BigButton("Personagem", ShowEditor, 220);
@@ -231,7 +239,7 @@ public partial class Main : Node3D
 	void ShowProfiles()
 	{
 		training.DropTarget();
-		if (screen is not null || overlay is not null || editor is not null) return;
+		if (screen is not null || overlay is not null || editor is not null || workshop is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
 		screen.Cancelled += () =>
@@ -258,6 +266,7 @@ public partial class Main : Node3D
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
 		player.Visible = true;
 		ApplyAppearance();
+		LoadJourney();
 		UpdatePlayerControl();
 		GD.Print($"Perfil ativo: {profile.Nickname}");
 	}
@@ -265,7 +274,7 @@ public partial class Main : Node3D
 	void ShowEditor()
 	{
 		training.DropTarget();
-		if (editor is not null || screen is not null || overlay is not null || current is null) return;
+		if (editor is not null || screen is not null || overlay is not null || workshop is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
 		editor.Done += () =>
@@ -283,7 +292,7 @@ public partial class Main : Node3D
 	void ShowOverlay(OverlayScreen next)
 	{
 		training.DropTarget();
-		if (overlay is not null || screen is not null || editor is not null)
+		if (overlay is not null || screen is not null || editor is not null || workshop is not null)
 		{
 			next.QueueFree();
 			return;
@@ -364,8 +373,9 @@ public partial class Main : Node3D
 	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
 	void UpdatePlayerControl()
 	{
-		player.Enabled = current is not null && screen is null && editor is null && overlay is null;
+		player.Enabled = current is not null && screen is null && editor is null && overlay is null && workshop is null;
 		bottomBar.Visible = player.Enabled;
+		RefreshJourneyVisibility();
 	}
 
 	// Clicar (ou tocar) na criatura a escolhe; o clique não vira caminhada. Cliques sobre a interface ficam com ela.
@@ -387,8 +397,12 @@ public partial class Main : Node3D
 	public override void _Process(double delta)
 	{
 		if (player is null) return;
+		journeyHud?.SetNotice(notice.Text);
+		journeyHud?.SetPlayState(player.Enabled && journey.Variant != "base" && !training.HasTarget);
+		if (returnJourney is not null && journey.Variant == "base") returnJourney.Visible = player.Enabled && !training.HasTarget;
+		dummy.SetCaptionContext(journey.Variant != "base", player.Enabled && training.InTargetRange());
 		var target = player.Enabled
-			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach)?.Id
+			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach + equipmentBonuses.InteractionReachBonus)?.Id
 			: null;
 		training.CheckRange();
 		if (target != interactTarget)
@@ -396,6 +410,7 @@ public partial class Main : Node3D
 			interactTarget = target;
 			lobby.Highlight(target);
 			interactButton.Visible = target is not null;
+			journeyHud?.SetInteraction(target is null ? null : rules.Lobby.Objects.First(o => o.Id == target).Prompt + " [E]");
 			if (target is not null)
 			{
 				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;

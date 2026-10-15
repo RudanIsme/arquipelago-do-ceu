@@ -30,6 +30,20 @@ public partial class TrainingDummy : Node3D
 		Scale = new Vector3(1f, 0.15f, 1f),
 		Visible = false,
 	};
+	bool compactCaption, captionNear, resting = true;
+	int captionValue;
+	public void SetCaptionContext(bool compact, bool near)
+	{
+		if (compactCaption == compact && captionNear == near) return;
+		compactCaption = compact; captionNear = near; UpdateCaption();
+	}
+	void UpdateCaption()
+	{
+		shieldLabel.Visible = !compactCaption || !resting || captionNear;
+		shieldLabel.Text = resting
+			? (compactCaption ? "Treinar [F]" : "Boneco de treino\nEscolha-o para treinar")
+			: (compactCaption ? $"{unit}: {captionValue}" : $"Boneco de treino\n{unit}: {captionValue}");
+	}
 	int startingShield = 1;
 	string unit = "Escudo";
 	readonly Node3D creature = new() { Visible = false };
@@ -168,7 +182,7 @@ public partial class TrainingDummy : Node3D
 		mist.Visible = true;
 		mist.Scale = Vector3.One;
 		mistMaterial.AlbedoColor = mistMaterial.AlbedoColor with { A = 0.3f };
-		shieldLabel.Text = "Boneco de treino\nEscolha-o para treinar";
+		resting = true; UpdateCaption();
 	}
 
 	// A travessura: a névoa chacoalha e um som engraçado toca. Sem animação, só o som e o aviso escrito.
@@ -242,7 +256,7 @@ public partial class TrainingDummy : Node3D
 		};
 	}
 
-	void SetShieldText(int value) => shieldLabel.Text = $"Boneco de treino\n{unit}: {value}";
+	void SetShieldText(int value) { resting = false; captionValue = value; UpdateCaption(); }
 
 	void Play(AudioStream stream)
 	{

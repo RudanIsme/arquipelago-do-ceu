@@ -59,50 +59,48 @@ public partial class PortalScreen : OverlayScreen
 // Conversa com o Guia: cada fala aparece escrita (a legenda) e é dita pela voz, se estiver ligada.
 public partial class GuideScreen : OverlayScreen
 {
-	readonly string name;
-	readonly IReadOnlyList<string> lines;
-	readonly VoiceService voice;
-	int index;
-
-	public GuideScreen(string name, IReadOnlyList<string> lines, VoiceService voice)
-	{
-		this.name = name;
-		this.lines = lines;
-		this.voice = voice;
-	}
-
-	public override void _Ready()
-	{
-		base._Ready();
-		ShowLine();
-	}
-
-	// Fechar no meio da fala corta a voz, para ela não continuar sobre o Lobby.
-	public override void _ExitTree()
-	{
-		base._ExitTree();
-		voice.Stop();
-	}
-
-	void ShowLine()
-	{
-		var focus = UiKit.FocusIndex(this);
-		var box = UiKit.Card(this, name, out var footer);
-		var line = lines[index];
-		box.AddChild(UiKit.Caption(line));
-		voice.Say(line, interrupt: true);
-
-		var last = index == lines.Count - 1;
-		footer.AddChild(UiKit.BigButton("Ouvir de novo", () => voice.Say(line, interrupt: true)));
-		footer.AddChild(UiKit.BigButton(last ? "Fechar" : "Continuar", () =>
-		{
-			if (last) Close();
-			else
-			{
-				index++;
-				ShowLine();
-			}
-		}));
-		UiKit.RestoreFocus(this, focus);
-	}
+ readonly string name;
+ readonly IReadOnlyList<string> lines;
+ readonly VoiceService voice;
+ int index;
+ Label? caption;
+ Button? advance;
+ PanelContainer? panel;
+ double revealed;
+ public GuideScreen(string name,IReadOnlyList<string> lines,VoiceService voice)
+ { this.name=name;this.lines=lines;this.voice=voice; }
+ public override void _Ready()
+ {
+  base._Ready();MouseFilter=MouseFilterEnum.Stop;
+  var box=new VBoxContainer();box.AddThemeConstantOverride("separation",8);
+  box.AddChild(JourneyStyle.Text(UiKit.Compact ? UiKit.Variant : "minimal",name,24));
+  caption=JourneyStyle.Text(UiKit.Compact ? UiKit.Variant : "minimal","",20);caption.Name="GuideCaption";caption.CustomMinimumSize=new Vector2(0,78);box.AddChild(caption);
+  var footer=new HBoxContainer();footer.AddThemeConstantOverride("separation",8);
+  footer.AddChild(JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal","Ouvir de novo",()=>{if(lines.Count>0)voice.Say(lines[index],interrupt:true);},"ReplayGuide"));
+  advance=JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal","Revelar",Advance,"AdvanceGuide");advance.SizeFlagsHorizontal=SizeFlags.ExpandFill;footer.AddChild(advance);
+  footer.AddChild(JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal","Sair",Close,"CloseGuide"));box.AddChild(footer);
+  panel=JourneyStyle.Panel(UiKit.Compact ? UiKit.Variant : "minimal",box);panel.Name="GuideDialogue";AddChild(panel);Resized+=Arrange;Arrange();ShowLine();advance.GrabFocus();
+ }
+ void Arrange() { if(panel==null)return;float width=System.Math.Min(850,Size.X-24);JourneyStyle.Place(panel,(Size.X-width)/2,Size.Y-224,width,212); }
+ void ShowLine()
+ {
+  if(lines.Count==0){Close();return;}revealed=0;caption!.Text=lines[index];caption.VisibleCharacters=0;advance!.Text="Revelar · Enter";voice.Say(lines[index],interrupt:true);
+ }
+ public override void _Process(double delta)
+ {
+  Arrange(); if(caption==null||lines.Count==0||caption.VisibleCharacters<0)return;
+  revealed+=delta*48;caption.VisibleCharacters=(int)revealed;
+  if(caption.VisibleCharacters>=caption.GetTotalCharacterCount()) {caption.VisibleCharacters=-1;advance!.Text=index==lines.Count-1?"Concluir · Enter":"Continuar · Enter";}
+ }
+ void Advance()
+ {
+  if(caption==null||lines.Count==0)return;
+  if(caption.VisibleCharacters>=0){caption.VisibleCharacters=-1;advance!.Text=index==lines.Count-1?"Concluir · Enter":"Continuar · Enter";return;}
+  if(index==lines.Count-1)Close();else {index++;ShowLine();}
+ }
+ public override void _Input(InputEvent @event)
+ {
+  if(@event is InputEventKey key&&key.Pressed&&!key.Echo&&(key.Keycode==Key.Enter||key.Keycode==Key.KpEnter)) {Advance();GetViewport().SetInputAsHandled();}
+ }
+ public override void _ExitTree(){base._ExitTree();voice.Stop();}
 }

@@ -14,8 +14,8 @@ namespace ArquipelagoDoCeu;
 // calmo) enquanto a criança monta a resposta. Nada depende de velocidade. Só Confirmar conta como resposta.
 public partial class StaffPanel : OverlayScreen
 {
-	const int KeySize = 96;
-	const int PanelWidth = 4 * KeySize + 3 * 8;
+	static int KeySize => UiKit.Compact ? 64 : 96;
+	static int PanelWidth => UiKit.Compact ? 5 * KeySize + 4 * 8 : 4 * KeySize + 3 * 8;
 	const double TensWaitSeconds = 0.7;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
@@ -91,7 +91,7 @@ public partial class StaffPanel : OverlayScreen
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
 		// Na lateral direita, para o Boneco e a ilha continuarem à vista; encolhe se não couber.
-		panel.AddThemeStyleboxOverride("panel", style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 
@@ -125,7 +125,8 @@ public partial class StaffPanel : OverlayScreen
 		{
 			var index = slot;
 			var key = UiKit.BigButton("", () => ChooseNumber(index), KeySize);
-			var dots = new DotsView();
+			if(UiKit.Compact)key.AddThemeFontSizeOverride("font_size",24);
+            var dots = new DotsView();
 			dots.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
 			dots.OffsetTop = -38;
 			dots.OffsetBottom = -6;
@@ -143,7 +144,7 @@ public partial class StaffPanel : OverlayScreen
 			var sign = symbol;
 			var key = UiKit.BigButton(sign, () => PlaceOperator(sign), KeySize);
 			key.CustomMinimumSize = new Vector2(KeySize, KeySize);
-			key.AddThemeFontSizeOverride("font_size", 44);
+			key.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 30 : 44);
 			signs.AddChild(key);
 			operatorKeys.Add(key);
 		}
@@ -408,7 +409,7 @@ partial class DotsView : Control
 			var inRow = Mathf.Min(PerRow, count - row * PerRow);
 			var x = Size.X / 2f + (i % PerRow - (inRow - 1) / 2f) * (Radius * 2.6f);
 			var y = Size.Y / 2f + (row - (rows - 1) / 2f) * (Radius * 2.6f);
-			DrawCircle(new Vector2(x, y), Radius, Colors.White);
+			DrawCircle(new Vector2(x, y), Radius, UiKit.Compact ? UiKit.TextColor : Colors.White);
 		}
 	}
 
@@ -423,14 +424,14 @@ partial class DotsView : Control
 		var height = Mathf.Max(8f, Size.Y - 6f);
 		for (var i = 0; i < tens; i++)
 		{
-			DrawRect(new Rect2(x, (Size.Y - height) / 2f, BarWidth, height), Colors.White);
+			DrawRect(new Rect2(x, (Size.Y - height) / 2f, BarWidth, height), UiKit.Compact ? UiKit.TextColor : Colors.White);
 			x += BarWidth + Gap;
 		}
 		for (var i = 0; i < ones; i++)
 		{
 			var column = i % 2;
 			var row = i / 2;
-			DrawCircle(new Vector2(x + Radius + column * Radius * 2.6f, Size.Y / 2f + (row - (Mathf.CeilToInt(ones / 2f) - 1) / 2f) * Radius * 2.6f), Radius, Colors.White);
+			DrawCircle(new Vector2(x + Radius + column * Radius * 2.6f, Size.Y / 2f + (row - (Mathf.CeilToInt(ones / 2f) - 1) / 2f) * Radius * 2.6f), Radius, UiKit.Compact ? UiKit.TextColor : Colors.White);
 		}
 	}
 }

@@ -71,9 +71,9 @@ public partial class ProfileScreen : Control
 			PlaceholderText = "Seu apelido",
 			Text = editing?.Nickname ?? "",
 			MaxLength = profiles.MaxNicknameLength,
-			CustomMinimumSize = new Vector2(360, UiKit.MinTouch),
+			CustomMinimumSize = new Vector2(UiKit.Compact ? 240 : 360, UiKit.MinTouch),
 		};
-		input.AddThemeFontSizeOverride("font_size", 28);
+		input.AddThemeFontSizeOverride("font_size", UiKit.BodyFont);
 		var message = UiKit.Hint("Use letras, números e espaços.");
 
 		void Submit()

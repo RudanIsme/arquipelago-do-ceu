@@ -13,8 +13,8 @@ namespace ArquipelagoDoCeu;
 // a próxima letra com forma e texto, não só cor, e nunca custa Energia. Só Conferir conta como resposta.
 public partial class WordPanel : OverlayScreen
 {
-	const int KeySize = 76;
-	const int PanelWidth = 4 * 110 + 3 * 8;
+	static int KeySize => UiKit.Compact ? 48 : 76;
+	static int PanelWidth => UiKit.Compact ? 340 : 4 * 110 + 3 * 8;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
 	static readonly Color Gold = Color.FromHtml("#D9A64A");
@@ -79,7 +79,7 @@ public partial class WordPanel : OverlayScreen
 		style.SetCornerRadiusAll(16);
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-		panel.AddThemeStyleboxOverride("panel", style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 
@@ -143,7 +143,7 @@ public partial class WordPanel : OverlayScreen
 			var key = letter;
 			var button = UiKit.BigButton("", () => TypeLetter(key), KeySize);
 			button.CustomMinimumSize = new Vector2(KeySize, KeySize);
-			button.AddThemeFontSizeOverride("font_size", 34);
+			button.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 24 : 34);
 			button.FocusMode = FocusModeEnum.None;
 			keyRow.AddChild(button);
 			keyButtons.Add(button);

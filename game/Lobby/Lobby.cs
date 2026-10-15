@@ -48,21 +48,24 @@ public partial class Lobby : Node3D
 	readonly Dictionary<string, Node3D> markers = new();
 	readonly Dictionary<string, (Vector3 Ground, float Top)> footprints = new();
 	double clock;
+	bool reducedEffects;
 	Godot.Environment? environment;
 	CameraAttributesPractical? attributes;
 
 	public override void _Ready()
 	{
 		BuildMap();
-		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells());
+		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells(), IsLote02PointFree, CanCrossLote02);
 		AddEnvironment();
 		AddCamera();
 		AddDepthOfField();
 		AddTerrain();
 		AddRock();
+		AddLote02Details();
 		AddTrees();
 		AddObjects();
 		AddPlaces();
+		AddConceptWaterfall();
 	}
 
 	// Hexágono "flat-top": vértices à esquerda e à direita, como nos mockups.
@@ -75,15 +78,15 @@ public partial class Lobby : Node3D
 			for (var r = -IslandRadius; r <= IslandRadius; r++)
 			{
 				if (Mathf.Abs(q + r) > IslandRadius) continue;
-				var onPath = (r == 0 && Mathf.Abs(q) <= 3) || (q == 0 && Mathf.Abs(r) <= 3);
-				var onPond = (q == 3 && r == -2) || (q == 3 && r == -3) || (q == 2 && r == -2);
+				var onPath = (r == 0 && Mathf.Abs(q) <= 3) || (q == 0 && Mathf.Abs(r) <= 3) || (q == 2 && (r == -3 || r == -1));
+				var onPond = (q == 3 && r == -2) || (q == 3 && r == -3) || (q == 2 && r == -2) || (r == -2 && (q == 4 || q == 5));
 				var flowery = Hash01(q * 31 + r * 17) < 0.2f;
 				tiles[new Vector2I(q, r)] = onPond ? Kind.Water : onPath ? Kind.Path : flowery ? Kind.Flowers : Kind.Grass;
 			}
 	}
 
 	IEnumerable<HexCell> BlockedCells() =>
-		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
+		tiles.Where(t => t.Value == Kind.Water && new HexCell(t.Key.X, t.Key.Y) != BridgeCell).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
 			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R)));
 
 	// Luz quente e sombras suaves, como pede a direção de arte. O brilho (glow) só pega o que passa do limite de luz, ou seja, só os
@@ -133,6 +136,7 @@ public partial class Lobby : Node3D
 	// Opção de acessibilidade: desliga o desfoque, o brilho e o SSAO.
 	public void SetEffects(bool reduced)
 	{
+		reducedEffects = reduced;
 		if (environment is null || attributes is null) return;
 		environment.GlowEnabled = !reduced;
 		environment.SsaoEnabled = SsaoAvailable && !reduced;
@@ -142,9 +146,9 @@ public partial class Lobby : Node3D
 	// Ortográfica e isométrica de verdade: a câmera olha a origem a 35,264 graus de elevação.
 	void AddCamera()
 	{
-		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 28f, Current = true };
+		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 22f, Current = true };
 		AddChild(Camera);
-		Camera.LookAtFromPosition(new Vector3(12f, 12f, 12f), Vector3.Zero, Vector3.Up);
+		Camera.LookAtFromPosition(new Vector3(12f, 14f, 12f), new Vector3(0f, 2f, 0f), Vector3.Up);
 	}
 
 	// Uma malha só para todos os tiles. O shader desenha grama, flores, água e os caminhos,
@@ -156,6 +160,8 @@ public partial class Lobby : Node3D
 		foreach (var (cell, kind) in tiles)
 		{
 			var center = HexToWorld(cell.X, cell.Y);
+			if (kind != Kind.Water) { AddLote02Tile(center, PathMask(cell)); continue; }
+			center.Y = -.24f;
 			var info = new Color((int)kind / 3f, PathMask(cell) / 63f, Hash01(cell.X * 7 + cell.Y * 13), 1f);
 			var corners = new Vector3[6];
 			for (var i = 0; i < 6; i++)
@@ -199,13 +205,13 @@ public partial class Lobby : Node3D
 		if (tiles[cell] != Kind.Path) return 0;
 		var mask = 0;
 		for (var i = 0; i < Neighbors.Length; i++)
-			if (tiles.TryGetValue(cell + Neighbors[i], out var other) && other == Kind.Path) mask |= 1 << i;
+			if (tiles.TryGetValue(cell + Neighbors[i], out var other) && (other == Kind.Path || new HexCell(cell.X + Neighbors[i].X, cell.Y + Neighbors[i].Y) == BridgeCell)) mask |= 1 << i;
 		return mask;
 	}
 
 	// Base de rocha: um único bloco que afina para baixo, com contorno hexagonal e a superfície
 	// irregular, no lugar de uma coluna por tile.
-	void AddRock()
+	void AddRockLegacy()
 	{
 		const int Steps = 48;
 		const int Rings = 6;
@@ -301,10 +307,14 @@ public partial class Lobby : Node3D
 			if (item.Id != "boneco") list.Add(new Interactable(item.Id, new System.Numerics.Vector2(ground.X, ground.Z)));
 			var height = item.Id switch { "portal" => PortalHeight, "guia" => GuideHeight, "boneco" => DummyHeight, _ => LecternHeight };
 			var top = height;
-			if (LoadModel(item.Model) is { } model)
+			if (LoadModel(item.Id == "guia" ? "guia-reconstruido-v05" : item.Model) is { } model)
 			{
 				AddChild(model);
 				top = FitToHeight(model, height, ground);
+				if (item.Id == "portal")
+					model.AddChild(new LobbyAmbience(model, true, () => ReduceMotion, () => reducedEffects));
+				else if (item.Id == "guia")
+					model.AddChild(new GuideIdle(model, () => ReduceMotion));
 			}
 			var marker = new MeshInstance3D
 			{
@@ -326,12 +336,26 @@ public partial class Lobby : Node3D
 		foreach (var place in Rules.Places)
 		{
 			var center = new Vector3(place.X, 0f, place.Z);
-			AddIslet(center);
+			bool landmark = place.Id is "ciencias" or "historia" or "geografia";
+			AddIslet(center, landmark ? 3.0f : 2.3f);
 			var top = 5.2f;
 			if (LoadModel(place.Model) is { } model)
 			{
 				AddChild(model);
-				top = FitToHeight(model, TowerHeight, center + new Vector3(0f, 0.2f, 0f));
+				// A fachada deste GLB aponta para +Z; orienta a porta ao centro do Lobby.
+				if (place.Id == "matematica") model.Rotation = new Vector3(0, Mathf.Atan2(-center.X, -center.Z), 0);
+				if (landmark)
+				{
+					PrepareLandmark(model, place.Id);
+					var bounds = WorldBox(model);
+					float desired = place.Id == "historia" ? 3.2f : 3.5f;
+					// Mede antes de girar: a caixa alinhada ao mundo cresce na diagonal, mas a ilha não muda.
+					float height = Mathf.Min(desired, bounds.Size.Y * 4.9f / Mathf.Max(bounds.Size.X, bounds.Size.Z));
+					float facing = place.Id == "historia" ? Mathf.Atan2(center.X, center.Z) : Mathf.Atan2(-center.X, -center.Z);
+					model.Rotation = new Vector3(0, facing, 0);
+					top = FitToHeight(model, height, center + new Vector3(0f, .10f, 0f));
+				}
+				else top = FitToHeight(model, TowerHeight, center + new Vector3(0f, 0.2f, 0f));
 			}
 			else AddGreyboxTower(center + new Vector3(0f, 0.2f, 0f));
 
@@ -349,11 +373,12 @@ public partial class Lobby : Node3D
 			};
 			AddChild(sign);
 			signs.Add(sign);
+			sign.SetMeta("future_place", place.Id != "matematica" && place.Id != "portugues");
 			sign.AddToGroup(CameraController.LabelGroup);
 		}
 	}
 
-	void AddIslet(Vector3 center)
+	void AddIsletLegacy(Vector3 center)
 	{
 		var grass = new MeshInstance3D
 		{
@@ -428,6 +453,11 @@ public partial class Lobby : Node3D
 		foreach (var (id, marker) in markers) marker.Visible = id == objectId;
 	}
 
+	public void SetCompactSigns(bool compact)
+	{
+		foreach (var sign in signs) sign.Visible = !compact || !sign.GetMeta("future_place", false).AsBool();
+	}
+
 	public void SetFont(Font? font)
 	{
 		foreach (var sign in signs) sign.Font = font;
@@ -436,6 +466,7 @@ public partial class Lobby : Node3D
 	public override void _Process(double delta)
 	{
 		clock += delta;
+		TickLandmarks(delta);
 		var bob = ReduceMotion ? 0f : Mathf.Sin((float)clock * 4f) * 0.15f;
 		foreach (var marker in markers.Values)
 			if (marker.Visible) marker.Position = new Vector3(marker.Position.X, MarkerBaseY(marker) + bob, marker.Position.Z);

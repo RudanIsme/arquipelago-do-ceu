@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ArquipelagoDoCeu.Equipment;
 using System.Linq;
 using ArquipelagoDoCeu.Profiles;
 using Godot;
@@ -9,6 +10,9 @@ namespace ArquipelagoDoCeu;
 // e controla as animações. Serve igual à prévia do editor e ao Lobby.
 public partial class CharacterView : Node3D
 {
+	public bool UseSpectrumTest { get; set; }
+	SpectrumCharacter? spectrum;
+	EquipmentLoadout? pendingEquipment;
 	const string ModelPath = "res://assets/modelos/personagem-andando.glb";
 	const float Height = 1.5f;
 
@@ -36,10 +40,11 @@ public partial class CharacterView : Node3D
 	// Redução de animações: o Personagem fica na pose de repouso, sem respirar e sem balançar os braços e pernas ao andar.
 	public bool ReduceMotion { get; set; }
 
-	public bool IsWalkingAnimation => animations?.IsPlaying() == true;
+	public bool IsWalkingAnimation => spectrum?.IsWalking ?? (animations?.IsPlaying() == true);
 
 	public override void _Ready()
 	{
+		if (UseSpectrumTest) { spectrum = new SpectrumCharacter(); AddChild(spectrum); if (pendingEquipment is not null) spectrum.ApplyEquipment(pendingEquipment); return; }
 		var scene = GD.Load<PackedScene>(ModelPath);
 		if (scene is null)
 		{
@@ -76,8 +81,19 @@ public partial class CharacterView : Node3D
 		animations.GetAnimation(walkClip).LoopMode = Animation.LoopModeEnum.Linear;
 	}
 
+	public void ApplyEquipment(EquipmentLoadout loadout) { pendingEquipment = loadout; spectrum?.ApplyEquipment(loadout); }
+
+	public void ToggleCapeMode() => spectrum?.ToggleCapeMode();
+
+	public void SetLocomotion(float speed, bool running)
+	{
+		if (spectrum is not null) { spectrum.ReduceMotion = ReduceMotion; spectrum.SetLocomotion(speed, running); return; }
+		SetMoving(speed > .015f);
+	}
+
 	public void SetMoving(bool isMoving)
 	{
+		if (spectrum is not null) { spectrum.ReduceMotion = ReduceMotion; spectrum.SetLocomotion(isMoving ? 1.1f : 0f, false); return; }
 		if (moving != isMoving)
 		{
 			moving = isMoving;
@@ -101,7 +117,7 @@ public partial class CharacterView : Node3D
 	// Com a redução de animações o Personagem não se mexe; o raio e o aviso escrito já mostram o ataque.
 	public void PlayAttack()
 	{
-		if (ReduceMotion || model is null) return;
+		if (ReduceMotion || (model is null && spectrum is null)) return;
 		attackTween?.Kill();
 		Rotation = Vector3.Zero;
 		attackTween = CreateTween();
