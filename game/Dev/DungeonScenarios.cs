@@ -97,6 +97,43 @@ static class DungeonScenarios
 		await d.Shot("03-porta-aberta");
 	}
 
+	// A troca de Itens: o Marco barra sem o Item da outra torre; vencer a Sala do Item o dá, e então o Marco abre.
+	public static async Task Items(DevDriver d)
+	{
+		await EnsureProfile(d);
+
+		var letters = await Enter(d, letters: true);
+		if (letters is null) return;
+		await GoTo(d, letters, r => r.Kind == RoomKind.Marco);
+		d.Expect(letters.Expedition.Current.Kind == RoomKind.Marco, "chegou ao Marco da Torre das Letras");
+		d.Expect(!letters.Progress.HasItem(letters.ProfileId, "matematica", 1), "ainda não há Item de troca da Torre dos Números");
+		var beyond = letters.Expedition.Floor.Neighbors(letters.Expedition.CurrentRoom).First(n => !letters.Expedition.Visited.Contains(n));
+		await d.Shot("01-marco-sem-item");
+		d.Expect(!await Step(d, letters, beyond), "o Marco barra quem não tem o Item de troca");
+		await d.Shot("02-marco-barrado");
+		letters.Leave("");
+		await d.Wait(0.5);
+
+		var math = await Enter(d);
+		if (math is null) return;
+		await GoTo(d, math, r => r.HoldsItem);
+		d.Expect(math.Expedition.Current.HoldsItem, "chegou à Sala do Item da Torre dos Números");
+		await d.Shot("03-sala-do-item");
+		math.DevWinRoom();
+		await d.Wait(0.4);
+		d.Expect(math.Progress.HasItem(math.ProfileId, "matematica", 1), "vencer a Sala do Item deu o Item de troca");
+		await d.Shot("04-item-ganho");
+		math.Leave("");
+		await d.Wait(0.5);
+
+		var again = await Enter(d, letters: true);
+		if (again is null) return;
+		await GoTo(d, again, r => r.Kind == RoomKind.Marco);
+		var next = again.Expedition.Floor.Neighbors(again.Expedition.CurrentRoom).First(n => !again.Expedition.Visited.Contains(n));
+		d.Expect(await Step(d, again, next), "com o Item de troca o Marco abre");
+		await d.Shot("05-marco-aberto");
+	}
+
 	// O Fast travel: o portal avisa quando não há ponto; achar o ponto salva; pelo portal a criança retoma ali; pela porta, recomeça do Andar mais fundo.
 	public static async Task FastTravel(DevDriver d)
 	{
@@ -131,10 +168,22 @@ static class DungeonScenarios
 		await d.Wait(0.5);
 	}
 
+	// O Personagem anda devagar: clica no hexágono e espera chegar de verdade.
+	static async Task WalkTo(DevDriver d, int q, int r)
+	{
+		await d.ClickHex(q, r);
+		var target = Lobby.HexToWorld(q, r);
+		for (var i = 0; i < 100; i++)
+		{
+			await d.Wait(0.25);
+			if (d.Player is { } p && new Vector2(p.GroundPosition.X - target.X, p.GroundPosition.Y - target.Z).Length() < 0.3f) break;
+		}
+		await d.Wait(0.3);
+	}
+
 	static async Task OpenPortal(DevDriver d)
 	{
-		await d.GoNearDummy(-1, 3);
-		await d.Wait(3.0);
+		await WalkTo(d, -1, 3);
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.3);
 	}
@@ -203,10 +252,8 @@ static class DungeonScenarios
 	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false)
 	{
 		await EnsureProfile(d);
-		if (letters) await d.GoNearDummy(2, -4);
-		else await d.GoNearDummy(-3, 3);
-		// O Personagem anda devagar: espera chegar perto da porta da torre.
-		await d.Wait(3.0);
+		if (letters) await WalkTo(d, 2, -4);
+		else await WalkTo(d, -3, 3);
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
@@ -250,17 +297,20 @@ static class DungeonScenarios
 	}
 
 	// Anda de Sala em Sala, subindo de Andar se preciso, até uma Sala da função pedida.
-	static async Task GoTo(DevDriver d, DungeonRun run, RoomKind kind)
+	static Task GoTo(DevDriver d, DungeonRun run, RoomKind kind) => GoTo(d, run, r => r.Kind == kind);
+
+	static async Task GoTo(DevDriver d, DungeonRun run, Func<Room, bool> goal)
 	{
 		var expedition = run.Expedition;
-		for (var guard = 0; guard < 40 && expedition.Current.Kind != kind; guard++)
+		for (var guard = 0; guard < 40 && !goal(expedition.Current); guard++)
 		{
-			var path = PathTo(expedition.Floor, expedition.CurrentRoom, r => r.Kind == kind);
+			var path = PathTo(expedition.Floor, expedition.CurrentRoom, goal);
 			if (path.Count < 2)
 			{
-				if (!expedition.CanAscend) return;
-				await Ascend(d, run);
-				continue;
+				// A Sala não está neste Andar: vai até a escada e sobe.
+				if (expedition.CanAscend) { await Ascend(d, run); continue; }
+				path = PathTo(expedition.Floor, expedition.CurrentRoom, r => r.Id == expedition.Floor.Exit);
+				if (path.Count < 2) return;
 			}
 			if (!await Step(d, run, path[1])) return;
 		}

@@ -315,3 +315,87 @@ public class ResumeTests
 		}
 	}
 }
+
+// O ADR 0002 em forma de teste: um jogador que só sabe vencer Salas e andar nunca fica preso entre as duas torres.
+public class TradeItemTests
+{
+	// Anda e vence, nunca passando pelo Marco, até chegar a uma Sala que atende ao pedido. Devolve se chegou.
+	static bool Reach(Expedition e, Func<Room, bool> goal, Action<Room> onCleared)
+	{
+		for (var guard = 0; guard < 200; guard++)
+		{
+			if (goal(e.Current)) return true;
+			var path = Path(e.Floor, e.CurrentRoom, goal);
+			if (path.Count < 2)
+			{
+				// A Sala não está neste Andar: vai até a escada e sobe.
+				if (e.CanAscend) { e.Ascend(); continue; }
+				path = Path(e.Floor, e.CurrentRoom, r => r.Id == e.Floor.Exit);
+				if (path.Count < 2) return false;
+			}
+			if (e.NeedsClearing(e.Current) && !e.IsCleared(e.CurrentRoom) && e.Current.Kind != RoomKind.Marco)
+				onCleared(e.ClearCurrent().Value!);
+			if (e.MoveTo(path[1]) != Passage.Open) return false;
+		}
+		return false;
+	}
+
+	static List<int> Path(Floor floor, int from, Func<Room, bool> goal)
+	{
+		var previous = new Dictionary<int, int> { [from] = -1 };
+		var queue = new Queue<int>([from]);
+		int? found = null;
+		while (queue.Count > 0 && found is null)
+		{
+			var room = queue.Dequeue();
+			if (goal(floor.Rooms[room])) { found = room; break; }
+			foreach (var next in floor.Neighbors(room).Where(n => !previous.ContainsKey(n))) { previous[next] = room; queue.Enqueue(next); }
+		}
+		var path = new List<int>();
+		if (found is null) return path;
+		for (var room = found.Value; room != -1; room = previous[room]) path.Insert(0, room);
+		return path;
+	}
+
+	[Fact]
+	public void Em_milhares_de_seeds_as_duas_torres_nunca_travam_uma_a_outra()
+	{
+		var provider = new FloorProvider(ExpeditionFixtures.Rules, ExpeditionFixtures.Fallback);
+		for (ulong seed = 0; seed < 1000; seed++)
+		{
+			var level = (int)(seed % 3) + 1;
+			var mathItem = false;
+			var lettersItem = false;
+			var math = Expedition.Start(provider, LevelPlan.Create(ExpeditionFixtures.Rules, seed, "matematica", level, 1), seed, 1, new Energy(5), () => lettersItem);
+			var letters = Expedition.Start(provider, LevelPlan.Create(ExpeditionFixtures.Rules, seed, "portugues", level, 1), seed, 1, new Energy(5), () => mathItem);
+			var where = $"seed {seed}";
+
+			// Cada torre dá o próprio Item antes do próprio Marco, sem precisar do Item da outra.
+			Assert.True(Reach(math, r => r.HoldsItem, r => { }), where);
+			Assert.True(Reach(letters, r => r.HoldsItem, r => { }), where);
+
+			// O Item é entregue ao vencer a Sala; com os dois, as torres chegam ao fim.
+			math.ClearCurrent();
+			letters.ClearCurrent();
+			mathItem = lettersItem = true;
+			Assert.True(Reach(math, r => r.Kind == RoomKind.Epic, r => { }), where);
+			Assert.True(Reach(letters, r => r.Kind == RoomKind.Epic, r => { }), where);
+		}
+	}
+
+	[Fact]
+	public void Sem_o_Item_da_outra_torre_o_Marco_barra_e_com_ele_abre()
+	{
+		var provider = new FloorProvider(ExpeditionFixtures.Rules, ExpeditionFixtures.Fallback);
+		var plan = LevelPlan.Create(ExpeditionFixtures.Rules, 5, "matematica", 1, 1);
+		var otherItem = false;
+		var e = Expedition.Start(provider, plan, 5, 1, new Energy(5), () => otherItem);
+
+		Assert.True(Reach(e, r => r.Kind == RoomKind.Marco, r => { }));
+		var beyond = e.Floor.Neighbors(e.CurrentRoom).First(n => !e.Visited.Contains(n));
+		Assert.Equal(Passage.NeedsItem, e.MoveTo(beyond));
+
+		otherItem = true;
+		Assert.Equal(Passage.Open, e.MoveTo(beyond));
+	}
+}

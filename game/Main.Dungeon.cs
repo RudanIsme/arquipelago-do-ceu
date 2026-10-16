@@ -17,7 +17,7 @@ public partial class Main
 	DungeonRun? dungeon;
 	bool inDungeon;
 
-	static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
+	static string TowerName(string discipline) => DungeonRun.TowerName(discipline);
 
 	// O portal do Lobby: um destino por Fast travel encontrado.
 	PortalScreen BuildPortal()

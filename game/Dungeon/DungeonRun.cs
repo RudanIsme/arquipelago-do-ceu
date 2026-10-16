@@ -48,6 +48,7 @@ public partial class DungeonRun : Node
 	readonly Label message = new() { HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly VBoxContainer mapBox = new();
 	readonly Label mapLegend = new();
+	readonly Label itemsLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly EnergyView energyView = new("Voltar ao Lobby");
 	Button interactButton = null!;
 	FloorMap? map;
@@ -66,7 +67,7 @@ public partial class DungeonRun : Node
 		var seed = WorldSeed(ctx.ProfileId);
 		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
-		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), () => false,
+		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), HasTradeItem,
 			ctx.StartFloor, ctx.AtFastTravel);
 	}
 
@@ -79,6 +80,13 @@ public partial class DungeonRun : Node
 	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
 	const int GeneratorVersion = 1;
 
+
+	public static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
+
+	// A outra torre: é dela o Item de troca que abre o Marco desta.
+	string Other => ctx.Discipline == TrainingSetup.Mathematics ? TrainingSetup.Portuguese : TrainingSetup.Mathematics;
+
+	bool HasTradeItem() => ctx.Progress.HasItem(ctx.ProfileId, Other, ctx.Level);
 
 	public TrainingArea Combat => combat;
 
@@ -152,12 +160,16 @@ public partial class DungeonRun : Node
 		mapLegend.AddThemeColorOverride("font_color", UiKit.TextColor);
 		mapBox.AddChild(header);
 		mapBox.AddChild(mapLegend);
+		itemsLabel.AddThemeFontSizeOverride("font_size", 15);
+		itemsLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
+		mapBox.AddChild(itemsLabel);
 		panel.AddChild(mapBox);
 		hud.AddChild(panel);
 
 		message.SetAnchorsPreset(Control.LayoutPreset.BottomWide);
 		message.OffsetTop = -190;
 		message.OffsetBottom = -110;
+		message.OffsetRight = -310;
 		message.AddThemeFontSizeOverride("font_size", 22);
 		message.AddThemeColorOverride("font_color", Colors.White);
 		UiKit.Outline(message);
@@ -184,13 +196,24 @@ public partial class DungeonRun : Node
 		StartFight();
 		RefreshHud();
 		var kind = expedition.Current.Kind;
-		if (kind == RoomKind.FastTravel) FindFastTravel();
+		if (kind == RoomKind.Marco)
+			Say(HasTradeItem() ? "O Marco brilhou! O Item de troca abriu o caminho." : $"Este é o Marco. Ele só abre com o Item de troca da {TowerName(Other)}.");
+		else if (kind == RoomKind.FastTravel) FindFastTravel();
 		else if (kind is RoomKind.Rest or RoomKind.Exit)
 			Say($"Sala de {FloorMap.NameOf(kind).ToLowerInvariant()}. {(kind == RoomKind.Exit ? "A escada leva ao próximo Andar." : "Descanse um pouco, se quiser.")}");
 	}
 
 	void RefreshRoom() =>
-		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe);
+		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe, RoomNote());
+
+	// O que a criança precisa saber desta Sala sobre o Item de troca, em texto e com a estrela.
+	string? RoomNote()
+	{
+		var current = expedition.Current;
+		if (current.Kind == RoomKind.Marco)
+			return HasTradeItem() ? $"★ O Item da {TowerName(Other)} abriu o Marco" : $"★ Falta o Item de troca da {TowerName(Other)}";
+		return current.HoldsItem && !expedition.IsCleared(expedition.CurrentRoom) ? "★ Vença esta Sala para ganhar o Item de troca" : null;
+	}
 
 	(string Label, bool Locked) Describe(int room)
 	{
@@ -235,6 +258,13 @@ public partial class DungeonRun : Node
 
 	void OnWon()
 	{
+		var room = expedition.Current;
+		// O Item é guardado antes de a Sala valer como vencida: se o save falhar, a criança tenta de novo e não perde o prêmio.
+		if (room.HoldsItem && !GiveItem())
+		{
+			StartFight();
+			return;
+		}
 		expedition.ClearCurrent();
 		world.ShowTarget(false, false);
 		RefreshRoom();
@@ -245,6 +275,7 @@ public partial class DungeonRun : Node
 			GetTree().CreateTimer(EndSeconds, true, false, true).Timeout += () => Leave("");
 			return;
 		}
+		if (room.HoldsItem) return;
 		Say(expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.");
 	}
 
@@ -254,6 +285,19 @@ public partial class DungeonRun : Node
 		if (!OS.IsDebugBuild()) return;
 		combat.EndFight();
 		OnWon();
+	}
+
+	bool GiveItem()
+	{
+		var saved = ctx.Progress.GiveItem(ctx.ProfileId, ctx.Discipline, ctx.Level);
+		if (!saved.IsOk)
+		{
+			GD.PushWarning(saved.Error!);
+			Say("Não foi possível guardar o Item agora. Vamos tentar de novo.");
+			return false;
+		}
+		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(Other)} para abrir o Marco de lá.");
+		return true;
 	}
 
 	void OnLost() => Leave("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");
@@ -312,7 +356,7 @@ public partial class DungeonRun : Node
 				Say("Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.");
 				break;
 			case Passage.NeedsItem:
-				Say("O Marco só abre com o Item de troca da outra torre.");
+				Say($"O Marco só abre com o Item de troca da {TowerName(Other)}.");
 				break;
 		}
 	}
@@ -361,6 +405,8 @@ public partial class DungeonRun : Node
 	void RefreshHud()
 	{
 		header.Text = $"{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number} de {expedition.Plan.Floors.Count}";
+		itemsLabel.Text = "Itens de troca\n" + string.Join("\n", new[] { TrainingSetup.Mathematics, TrainingSetup.Portuguese }
+			.Select(d => $"{TowerName(d)}: {(ctx.Progress.HasItem(ctx.ProfileId, d, ctx.Level) ? "★ tenho" : "ainda não")}"));
 		if (map is null) return;
 		map.Here = expedition.CurrentRoom;
 		map.Cleared = new HashSet<int>(expedition.Cleared);

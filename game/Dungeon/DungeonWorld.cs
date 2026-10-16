@@ -100,7 +100,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	// Reconstrói a Sala: chão pela função, portas para as Salas ligadas e o letreiro do centro.
 	// `describe` diz, para cada Sala vizinha, o texto da porta e se ela está trancada.
-	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked)> describe)
+	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked)> describe, string? note = null)
 	{
 		foreach (var child in room.GetChildren()) child.QueueFree();
 		doors.Clear();
@@ -121,6 +121,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		}
 
 		AddSign($"{FloorMap.NameOf(kind)}", new Vector3(0f, kind is RoomKind.Combat or RoomKind.Epic or RoomKind.Puzzle ? 5.6f : 2.4f, 0f), 56);
+		if (note is not null) AddSign(note, new Vector3(0f, 3.4f, 0f), 34);
 		if (kind == RoomKind.Exit) AddStairs();
 		if (kind == RoomKind.Rest) AddFountain(cleared.Contains(roomId));
 	}
