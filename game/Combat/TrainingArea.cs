@@ -79,6 +79,9 @@ public partial class TrainingArea : Node
 	// Dentro de uma Dungeon só se luta com a criatura da Sala; não há escolha de treino.
 	public bool InDungeon { get; set; }
 
+	// Sem bolhas, como no Puzzle: a porta não ataca, só espera a resposta.
+	public bool Bubbles { get; set; } = true;
+
 	// Como o jogo chama a criatura nas frases e nos painéis.
 	public CreatureWords Creature { get; set; } = CreatureWords.Dummy;
 
@@ -522,7 +525,7 @@ public partial class TrainingArea : Node
 	public override void _Process(double delta)
 	{
 		if (session is null || reacting || !canAct()) return;
-		if (settings.Current.CalmMode)
+		if (settings.Current.CalmMode || !Bubbles)
 		{
 			// Modo calmo: o Boneco não lança bolhas e só reage a erros.
 			if (bubble.Phase != BubblePhase.Waiting)

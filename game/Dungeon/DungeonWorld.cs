@@ -61,6 +61,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		AddChild(new DirectionalLight3D { LightColor = Color.FromHtml("#FFE4BC"), LightEnergy = 1.1f, ShadowEnabled = true, RotationDegrees = new Vector3(-50f, -30f, 0f) });
 		AddChild(room);
 		AddChild(Creature);
+		AddChild(barrier);
 
 		var model = Lobby.LoadModel("boneco");
 		if (model is not null)
@@ -72,6 +73,14 @@ public partial class DungeonWorld : Node3D, ICombatStage
 	}
 
 	Node3D? creatureModel;
+	readonly MeshInstance3D barrier = new()
+	{
+		Mesh = new BoxMesh { Size = new Vector3(3.4f, 2.2f, 0.4f) },
+		MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.4f, 0.7f, 1f, 0.55f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha },
+		Position = new Vector3(0f, 1.1f, 0f),
+		Rotation = new Vector3(0f, Mathf.Pi / 4f, 0f),
+		Visible = false,
+	};
 
 	public void SetFont(Font? value)
 	{
@@ -81,10 +90,12 @@ public partial class DungeonWorld : Node3D, ICombatStage
 	}
 
 	// A Sala some com a criatura quando a luta termina; o modelo e os textos dela vão junto.
-	public void ShowCreature(bool visible)
+	// No Puzzle o alvo é uma barreira trancada, e não a criatura.
+	public void ShowTarget(bool fight, bool puzzle)
 	{
-		Creature.Visible = visible;
-		if (creatureModel is not null) creatureModel.Visible = visible;
+		Creature.Visible = fight;
+		if (creatureModel is not null) creatureModel.Visible = fight && !puzzle;
+		barrier.Visible = fight && puzzle;
 	}
 
 	// Reconstrói a Sala: chão pela função, portas para as Salas ligadas e o letreiro do centro.
@@ -111,6 +122,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 		AddSign($"{FloorMap.NameOf(kind)}", new Vector3(0f, kind is RoomKind.Combat or RoomKind.Epic or RoomKind.Puzzle ? 5.6f : 2.4f, 0f), 56);
 		if (kind == RoomKind.Exit) AddStairs();
+		if (kind == RoomKind.Rest) AddFountain(cleared.Contains(roomId));
 	}
 
 	// A porta da Sala `target`, para a criança chegar nela vinda de lá.
@@ -175,6 +187,16 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		room.AddChild(lintel);
 		AddSign(door.Label, door.Ground + new Vector3(0f, PillarHeight + 0.95f, 0f), 40);
 	}
+
+	// O Descanso é uma fonte no centro da Sala; ela escurece depois de usada.
+	void AddFountain(bool used)
+	{
+		var water = new StandardMaterial3D { AlbedoColor = used ? Color.FromHtml("#7E7A99") : Color.FromHtml("#BA9BEA"), Roughness = 0.4f };
+		room.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 1.1f, BottomRadius = 1.2f, Height = 0.5f }, MaterialOverride = water, Position = new Vector3(0f, 0.25f, 0f) });
+		room.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.45f, Height = 0.9f }, MaterialOverride = water, Position = new Vector3(0f, 0.9f, 0f) });
+	}
+
+	public static System.Numerics.Vector2 FountainSpot => System.Numerics.Vector2.Zero;
 
 	void AddStairs()
 	{

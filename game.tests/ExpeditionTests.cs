@@ -143,6 +143,78 @@ public class ExpeditionTests
 		Assert.False(e.Ascend());
 	}
 
+	[Fact]
+	public void O_Descanso_devolve_a_Energia_dos_dados_uma_unica_vez()
+	{
+		var energy = new Energy(5);
+		var e = ExpeditionFixtures.Start(energy);
+		energy.Lose(3);
+		e.MoveTo(3);
+
+		var first = e.UseRest(2);
+		var second = e.UseRest(2);
+
+		Assert.Equal(2, first.Value);
+		Assert.Equal(4, energy.Current);
+		Assert.False(second.IsOk);
+		Assert.Equal(4, energy.Current);
+	}
+
+	[Fact]
+	public void O_Descanso_nunca_passa_do_maximo()
+	{
+		var energy = new Energy(5);
+		var e = ExpeditionFixtures.Start(energy);
+		energy.Lose(1);
+		e.MoveTo(3);
+
+		Assert.Equal(1, e.UseRest(2).Value);
+		Assert.Equal(5, energy.Current);
+	}
+
+	[Fact]
+	public void Com_a_Energia_cheia_o_Descanso_nao_e_gasto()
+	{
+		var energy = new Energy(5);
+		var e = ExpeditionFixtures.Start(energy);
+		e.MoveTo(3);
+
+		Assert.False(e.UseRest(2).IsOk);
+		Assert.False(e.Rested(3));
+
+		energy.Lose(2);
+		Assert.Equal(2, e.UseRest(2).Value);
+	}
+
+	[Fact]
+	public void So_se_descansa_na_Sala_de_Descanso()
+	{
+		var energy = new Energy(5);
+		var e = ExpeditionFixtures.Start(energy);
+		energy.Lose(3);
+
+		Assert.False(e.UseRest(2).IsOk);
+		Assert.Equal(2, energy.Current);
+	}
+
+	[Fact]
+	public void Em_outro_Andar_o_Descanso_volta_a_valer()
+	{
+		var energy = new Energy(5);
+		var e = ExpeditionFixtures.Start(energy);
+		energy.Lose(4);
+		e.MoveTo(3);
+		Assert.True(e.UseRest(2).IsOk);
+		e.MoveTo(0);
+		ExpeditionFixtures.ClearAndGo(e, 1);
+		ExpeditionFixtures.ClearAndGo(e, 4);
+		ExpeditionFixtures.ClearAndGo(e, 5);
+		Assert.True(e.Ascend());
+
+		Assert.Equal(Passage.Open, e.MoveTo(3));
+		Assert.True(e.UseRest(2).IsOk);
+	}
+
 	static void GoToSecondFloorMarco(Expedition e)
 	{
 		ExpeditionFixtures.ClearAndGo(e, 1);

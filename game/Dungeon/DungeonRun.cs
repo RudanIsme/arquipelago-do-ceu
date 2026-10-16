@@ -199,8 +199,16 @@ public partial class DungeonRun : Node
 	{
 		var current = expedition.Current;
 		var needsFight = expedition.NeedsClearing(current) && current.Kind != RoomKind.Marco && !expedition.IsCleared(expedition.CurrentRoom);
-		world.ShowCreature(needsFight);
+		var puzzle = current.Kind == RoomKind.Puzzle;
+		world.ShowTarget(needsFight, puzzle);
 		if (!needsFight) return;
+
+		// A porta do Puzzle não ataca: sem bolhas, só o Desafio e a Energia que os erros custam.
+		combat.Bubbles = !puzzle;
+		combat.Creature = puzzle ? CreatureWords.Gate : CreatureWords.Wild;
+		world.Creature.Title = combat.Creature.Title;
+		world.Creature.RestingHint = puzzle ? "Escolha-a para abrir" : "Escolha-a para lutar";
+		world.Creature.RestingCompact = puzzle ? "Abrir [F]" : "Lutar [F]";
 
 		var setup = DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
@@ -208,15 +216,18 @@ public partial class DungeonRun : Node
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
-		Say(current.Kind == RoomKind.Epic
-			? "Desafio épico! Chegue perto da criatura e escolha-a (clique ou F) para atacar."
-			: "Uma criatura da névoa! Chegue perto dela e escolha-a (clique ou F) para atacar.");
+		Say(current.Kind switch
+		{
+			RoomKind.Epic => "Desafio épico! Chegue perto da criatura e escolha-a (clique ou F) para atacar.",
+			RoomKind.Puzzle => "Uma porta trancada! Chegue perto dela e escolha-a (clique ou F) para abrir.",
+			_ => "Uma criatura da névoa! Chegue perto dela e escolha-a (clique ou F) para atacar.",
+		});
 	}
 
 	void OnWon()
 	{
 		expedition.ClearCurrent();
-		world.ShowCreature(false);
+		world.ShowTarget(false, false);
 		RefreshRoom();
 		RefreshHud();
 		if (expedition.Finished)
@@ -225,7 +236,7 @@ public partial class DungeonRun : Node
 			GetTree().CreateTimer(EndSeconds, true, false, true).Timeout += () => Leave("");
 			return;
 		}
-		Say("Sala vencida! As portas estão livres.");
+		Say(expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.");
 	}
 
 	// Só para o piloto de desenvolvimento: vence a Sala sem resolver o Desafio, pela mesma saída da vitória de verdade.
@@ -257,11 +268,13 @@ public partial class DungeonRun : Node
 	{
 		var list = world.Doors.Select(d => new Interactable($"door:{d.Target}", new Vector2(d.Ground.X, d.Ground.Z))).ToList();
 		if (expedition.CanAscend) list.Add(new Interactable("stairs", DungeonWorld.StairsSpot));
+		if (expedition.Current.Kind == RoomKind.Rest) list.Add(new Interactable("rest", DungeonWorld.FountainSpot));
 		return list;
 	}
 
 	string PromptFor(string id)
 	{
+		if (id == "rest") return "Descansar [E]";
 		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
 		var room = int.Parse(id["door:".Length..]);
 		return $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]";
@@ -277,6 +290,7 @@ public partial class DungeonRun : Node
 	{
 		if (left || !enabled || target is null) return;
 		if (target == "stairs") { Ascend(); return; }
+		if (target == "rest") { Rest(); return; }
 
 		var room = int.Parse(target["door:".Length..]);
 		var from = expedition.CurrentRoom;
@@ -292,6 +306,14 @@ public partial class DungeonRun : Node
 				Say("O Marco só abre com o Item de troca da outra torre.");
 				break;
 		}
+	}
+
+	void Rest()
+	{
+		var rested = expedition.UseRest(ctx.Rules.Dungeon.RestEnergy);
+		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
+		if (rested.IsOk) RefreshRoom();
+		Say(rested.IsOk ? $"Você descansou e recuperou {rested.Value} de Energia." : rested.Error!);
 	}
 
 	void Ascend()

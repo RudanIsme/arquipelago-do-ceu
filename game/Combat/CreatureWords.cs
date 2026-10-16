@@ -6,6 +6,9 @@ public sealed record CreatureWords(string The, string Of, string Pronoun, string
 {
 	public static readonly CreatureWords Dummy = new("o Boneco", "do Boneco", "lo", "Boneco de treino");
 
+	// No Puzzle o alvo é uma porta ou ponte trancada, sem criatura.
+	public static readonly CreatureWords Gate = new("a porta", "da porta", "la", "Porta trancada");
+
 	public static readonly CreatureWords Wild = new("a criatura", "da criatura", "la", "Criatura da névoa");
 
 	// "o Boneco" no começo de uma frase.

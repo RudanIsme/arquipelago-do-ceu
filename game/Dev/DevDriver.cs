@@ -277,6 +277,9 @@ static class Scenarios
 			case "torre":
 				await DungeonScenarios.Walkthrough(d);
 				break;
+			case "torre-salas":
+				await DungeonScenarios.Rooms(d);
+				break;
 			case "torre-derrota":
 				await DungeonScenarios.Defeat(d);
 				break;

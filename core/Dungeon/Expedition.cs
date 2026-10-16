@@ -18,6 +18,7 @@ public sealed class Expedition
 	readonly Func<bool> hasItem;
 	readonly HashSet<int> cleared = [];
 	readonly HashSet<int> visited = [];
+	readonly HashSet<int> rested = [];
 
 	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem)
 	{
@@ -55,6 +56,22 @@ public sealed class Expedition
 	public bool Defeated => Energy.IsEmpty;
 
 	public bool IsCleared(int room) => cleared.Contains(room);
+
+	public bool Rested(int room) => rested.Contains(room);
+
+	// O Descanso devolve `amount` de Energia, uma vez só por Sala e nunca acima do máximo. Com a Energia cheia ele
+	// não é gasto: a criança pode voltar quando precisar.
+	public Result<int> UseRest(int amount)
+	{
+		if (Current.Kind != RoomKind.Rest) return Result<int>.Fail("Aqui não dá para descansar.");
+		if (rested.Contains(CurrentRoom)) return Result<int>.Fail("Você já descansou aqui.");
+		var gained = Math.Min(amount, Energy.Max - Energy.Current);
+		if (gained <= 0) return Result<int>.Fail("Sua Energia já está cheia.");
+
+		Energy.Recover(amount);
+		rested.Add(CurrentRoom);
+		return Result<int>.Ok(gained);
+	}
 
 	public bool NeedsClearing(Room room) => room.Kind is RoomKind.Combat or RoomKind.Puzzle or RoomKind.Marco or RoomKind.Epic;
 
@@ -102,6 +119,7 @@ public sealed class Expedition
 	{
 		cleared.Clear();
 		visited.Clear();
+		rested.Clear();
 		CurrentRoom = Floor.Entrance;
 		visited.Add(CurrentRoom);
 	}
