@@ -65,9 +65,9 @@ Para rodar todos os testes (não precisam do Godot aberto; a CI roda este mesmo 
 dotnet test game.tests
 ```
 
-Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil e as telas de Perfil e de Personagem.
+Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil, as telas de Perfil, Personagem e configurações, o treino contra o Boneco, a oficina de equipamentos e as quatro interfaces do experimento do PR #97 (Essencial, Livro, Aventura e Cristais; ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`). As Dungeons ainda não existem.
 
-Controles no Lobby: WASD ou setas (relativo à tela), roda do mouse, pinça ou Page Up e Page Down para o zoom (Home reinicia), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
+Controles no Lobby: WASD ou setas (relativo à tela), Shift corre, roda do mouse, pinça ou Page Up e Page Down para o zoom (Home reinicia), F8 compara a capa, F9 abre a prática de pesca (modo de teste), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
 
 ### Piloto de desenvolvimento
 
@@ -77,7 +77,7 @@ O `DevDriver` percorre o jogo como uma criança faria (clica, digita, segura tec
 & $env:GODOT --path game -- --driver=movimento --saida=C:\caminho\da\pasta
 ```
 
-Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config`, `animacao` (imprime no console se a animação de andar está ligada), `camera`, `efeitos`, `boneco`, `boneco-dislexia`, `erro`, `energia`, `bolha`, `calmo`, `treino-nivel`, `nome`, `nome-erro`, `nivel2-matematica`, `nivel2-escrita` e `nivel3-frase`. `--reduzir-animacoes` liga a redução de animações e `--nivel=N` libera os Níveis até N no treino. O piloto trabalha numa cópia do save do usuário, então não mexe nos seus Perfis.
+Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config`, `animacao` (imprime no console se a animação de andar está ligada), `camera`, `efeitos`, `boneco`, `boneco-dislexia`, `erro`, `energia`, `bolha`, `calmo`, `treino-nivel`, `nome`, `nome-erro`, `nivel2-matematica`, `nivel2-escrita` e `nivel3-frase`. `--pull-qa` roda o QA da pesca (ver `docs/tecnico/teste-pesca-neon.md`). `--reduzir-animacoes` liga a redução de animações e `--nivel=N` libera os Níveis até N no treino. O piloto trabalha numa cópia do save do usuário, então não mexe nos seus Perfis.
 
 ### Teste de ponta a ponta
 

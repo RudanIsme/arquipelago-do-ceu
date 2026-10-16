@@ -2,7 +2,7 @@
 
 ## O projeto
 
-**Arquipélago do Céu** é um roguelite educativo em 3D isométrico para crianças de 6 a 10 anos, com matemática e português (alfabetização). O código do jogo ainda não começou; a documentação está em `docs/`.
+**Arquipélago do Céu** é um roguelite educativo em 3D isométrico para crianças de 6 a 10 anos, com matemática e português (alfabetização). O Lobby funcional está implementado (Perfil, Personagem, treino contra o Boneco nos 3 Níveis, voz, configurações); as Dungeons ainda não. A documentação está em `docs/`.
 
 Idioma: português do Brasil nos documentos, textos do jogo e commits. Identificadores de código podem ficar em inglês.
 
@@ -35,8 +35,7 @@ Idioma: português do Brasil nos documentos, textos do jogo e commits. Identific
 - **Sem ranking, anúncios ou compras**, e sem punição por ficar sem jogar.
 - **Primeiro marco**: Lobby funcional (ver `docs/produto/documento-de-produto.md`). Nomes do jogo e dos Papéis são provisórios e ficam em dados.
 - **Treino no Lobby é o combate real contra o Boneco, com Energia própria** (zerar só tira a criança da Área de treino), e usa todas as Mecânicas existentes; **não conta progresso**, só o que acontece nas Dungeons conta. Cosméticos só por aprendizado e exploração.
-
-- **Experimento autorizado de equipamentos (14/10/2026)**: quatro interfaces locais, bônus derivados e limitados no treino (Energia base + até 2, velocidade até 1,12×, alcance de interação até +0,5). Equipar ou trocar interface nunca cura. Ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`; conteúdo educacional e dificuldade permanecem iguais.
+- **Experimento de equipamentos (PR #97, 14/10/2026), exceção a "Cosmético não dá vantagem" e ainda não decidida como regra**: quatro interfaces (Essencial, Livro, Aventura, Cristais) com equipamento que dá bônus limitados no treino (Energia base + até 2, velocidade até 1,12×, alcance de interação até +0,5). Equipar ou trocar interface nunca cura. Ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`; conteúdo educacional e dificuldade não mudam. Decidir se vira regra, vira só cosmético ou sai antes de qualquer Dungeon usar esses bônus.
 
 ## Estrutura planejada do código
 
@@ -63,7 +62,7 @@ docs/         documentação
 
 ## Ambiente local (Windows)
 
-Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para exportar e rodar o jogo sem abrir o editor). `dotnet test game.tests` roda os testes de regra, que não abrem o Godot (ainda não há teste que precise do motor). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.
+Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para exportar e rodar o jogo sem abrir o editor). `dotnet test game.tests` roda os testes de regra, que não abrem o Godot. Os roteiros `e2e-1`, `e2e-2` e `--pull-qa` precisam do motor (ver README e `docs/tecnico/teste-pesca-neon.md`). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.
 
 ## Agent skills
 

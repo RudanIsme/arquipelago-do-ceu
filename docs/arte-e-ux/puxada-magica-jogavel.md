@@ -13,7 +13,7 @@ A cena usa warrior-face-refined-v2.glb exclusivamente em Dev/PullTest. Inclui pa
 
 Validação em 15/10/2026: build sem erros/avisos; 382 testes existentes passaram; roteiro Godot --pull-qa passou com eventos de mouse, três ações, cliques rápidos sem fila, duplicação rejeitada, formação de palavra, Esc durante golpe, cancelamento antes da captura, captura no fluxo compartilhado, conferência de volta ao painel, restauração e reentrada, resoluções 1280x720 e 1920x1080. Evidências e backups na pasta task-4/qta-backup e task-4/qta-qa.
 
-Sem commits/push. O teste utiliza save separado. Não inclui novo traçado neon jogável nem recompensas; preserva o traçado já existente no painel.
+O teste utiliza save separado. Não inclui novo traçado neon jogável nem recompensas; preserva o traçado já existente no painel.
 
 ## HUD inspirado no concept — 15/10/2026
 

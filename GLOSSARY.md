@@ -38,6 +38,18 @@ _Avoid_: Biblioteca de descobertas
 Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio.
 _Avoid_: Skin
 
+**Equipamento** (experimento do PR #97, não decidido como regra):
+Armadura e capacete do Personagem, escolhidos na oficina. Além da aparência, dão bônus limitados (velocidade, Energia máxima, alcance de interação) e por isso contradizem a definição de Cosmético. Vive em `core/Equipment` e no `Journey` do Perfil.
+_Avoid_: Skin, item (Item de troca é de Dungeon)
+
+**Interface** (Caminho):
+Um dos quatro temas de HUD e oficina do experimento: Essencial, Livro, Aventura e Cristais; Base é a interface anterior. Cada um tem um conjunto de Equipamento sugerido, aplicado só por clique explícito. Mudar a Interface não troca o Equipamento. O código usa `Journey` e `variant`.
+_Avoid_: Skin, tema (Tema é o pacote de dados de uma Dungeon)
+
+**Pesca** (modo de teste, F9):
+Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
+_Avoid_: Minijogo (é outra coisa, prevista para depois do MVP)
+
 **Dungeon**:
 O espaço de uma disciplina inteira, em forma de torre. Tem três Níveis, um por ano escolar.
 _Avoid_: Arquipélago, torre (como termo de regra)
