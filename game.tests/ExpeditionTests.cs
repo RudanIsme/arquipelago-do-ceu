@@ -19,8 +19,8 @@ static class ExpeditionFixtures
 	// Dois Andares: o 1º comum e o 2º com Marco e épico.
 	public static readonly LevelPlan Plan = new("matematica", 1, [new(1, false, false, false), new(2, false, true, true)]);
 
-	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null, int startFloor = 1, bool atFastTravel = false) =>
-		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem, startFloor, atFastTravel);
+	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null, int startFloor = 1, bool atFastTravel = false, bool atEpic = false) =>
+		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem, startFloor, atFastTravel, atEpic);
 
 	// Vence a Sala e vai para a próxima.
 	public static void ClearAndGo(Expedition e, int room)
@@ -235,6 +235,20 @@ public class ExpeditionTests
 		Assert.Equal(Passage.Open, e.MoveTo(0));
 	}
 
+	[Fact]
+	public void O_Atalho_comeca_direto_no_Desafio_epico_do_ultimo_Andar()
+	{
+		var e = ExpeditionFixtures.Start(atEpic: true);
+
+		Assert.Equal(2, e.Floor.Number);
+		Assert.Equal(RoomKind.Epic, e.Current.Kind);
+		Assert.False(e.Finished);
+		Assert.True(e.IsCleared(5), "o Marco do caminho fica para trás");
+
+		Assert.True(e.ClearCurrent().IsOk);
+		Assert.True(e.Finished);
+	}
+
 	static void GoToSecondFloorMarco(Expedition e)
 	{
 		ExpeditionFixtures.ClearAndGo(e, 1);
@@ -284,6 +298,36 @@ public class DungeonCombatTests
 		var result = DungeonCombat.Setup([Math(1, 1)], TrainingSetup.Portuguese, 1, 1);
 
 		Assert.False(result.IsOk);
+	}
+
+	[Fact]
+	public void O_Atalho_sorteia_Desafios_de_dificuldades_diferentes_do_Nivel_inteiro()
+	{
+		var missions = new[] { Math(1, 1), Math(1, 2), Math(1, 3), Math(1, 4) };
+
+		var setups = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+
+		Assert.Equal(3, setups.Count);
+		Assert.Equal(3, setups.Select(s => s.Difficulty).Distinct().Count());
+		Assert.All(setups, s => Assert.Equal(1, s.Year));
+	}
+
+	[Fact]
+	public void O_Atalho_repete_dificuldades_quando_nao_ha_o_bastante_e_e_deterministico()
+	{
+		var missions = new[] { Math(1, 1), Math(1, 2) };
+
+		var a = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+		var b = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+
+		Assert.Equal(3, a.Count);
+		Assert.Equal(a, b);
+	}
+
+	[Fact]
+	public void O_Atalho_sem_Missoes_e_uma_falha()
+	{
+		Assert.False(DungeonCombat.ShortcutSetups([], TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(1)).IsOk);
 	}
 
 	[Fact]

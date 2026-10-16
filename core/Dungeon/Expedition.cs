@@ -20,7 +20,7 @@ public sealed class Expedition
 	readonly HashSet<int> visited = [];
 	readonly HashSet<int> rested = [];
 
-	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem, int startFloor, bool atFastTravel)
+	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem, int startFloor, bool atFastTravel, bool atEpic)
 	{
 		this.floors = floors;
 		this.plan = plan;
@@ -28,17 +28,19 @@ public sealed class Expedition
 		this.version = version;
 		this.hasItem = hasItem;
 		Energy = energy;
-		Floor = BuildFloor(Math.Clamp(startFloor, 1, plan.Floors.Count));
+		Floor = BuildFloor(atEpic ? plan.Floors.Count : Math.Clamp(startFloor, 1, plan.Floors.Count));
 		Begin();
-		if (atFastTravel) MoveToFastTravel();
+		if (atEpic) MoveToRoom(RoomKind.Epic);
+		else if (atFastTravel) MoveToRoom(RoomKind.FastTravel);
 	}
 
 	// `hasItem` diz se a criança tem o Item de troca do Nível da outra Dungeon, que abre o Marco.
-	// Recomeça na entrada do Andar `startFloor` ou, com `atFastTravel`, no Fast travel dele: quem chega ali já passou
-	// pelas Salas do caminho, então elas contam como vencidas.
+	// Recomeça na entrada do Andar `startFloor` ou, com `atFastTravel`, no Fast travel dele; com `atEpic`, direto no
+	// Desafio épico do último Andar (o Atalho de Nível). Quem chega assim já passou pelas Salas do caminho, então elas contam
+	// como vencidas.
 	public static Expedition Start(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool>? hasItem = null,
-		int startFloor = 1, bool atFastTravel = false) =>
-		new(floors, plan, world, version, energy, hasItem ?? (() => false), startFloor, atFastTravel);
+		int startFloor = 1, bool atFastTravel = false, bool atEpic = false) =>
+		new(floors, plan, world, version, energy, hasItem ?? (() => false), startFloor, atFastTravel, atEpic);
 
 	public Energy Energy { get; }
 
@@ -119,9 +121,9 @@ public sealed class Expedition
 
 	Floor BuildFloor(int number) => floors.Get(world, plan.Discipline, plan.Level, plan.Floors[number - 1], version);
 
-	void MoveToFastTravel()
+	void MoveToRoom(RoomKind kind)
 	{
-		var target = Floor.Rooms.First(r => r.Kind == RoomKind.FastTravel).Id;
+		var target = Floor.Rooms.First(r => r.Kind == kind).Id;
 		var previous = new Dictionary<int, int> { [Floor.Entrance] = -1 };
 		var queue = new Queue<int>([Floor.Entrance]);
 		while (queue.Count > 0 && !previous.ContainsKey(target))
@@ -136,7 +138,7 @@ public sealed class Expedition
 		for (var room = target; room != -1; room = previous[room])
 		{
 			visited.Add(room);
-			if (NeedsClearing(Floor.Rooms[room])) cleared.Add(room);
+			if (NeedsClearing(Floor.Rooms[room]) && room != target) cleared.Add(room);
 		}
 		CurrentRoom = target;
 	}

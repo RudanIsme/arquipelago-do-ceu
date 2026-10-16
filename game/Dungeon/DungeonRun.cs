@@ -30,7 +30,9 @@ public sealed record DungeonContext(
 	int ExtraEnergy,
 	Action<Player> ConfigurePlayer,
 	int StartFloor = 1,
-	bool AtFastTravel = false);
+	bool AtFastTravel = false,
+	Action<OverlayScreen>? ShowOverlay = null,
+	bool Shortcut = false);
 
 // Uma Expedição numa torre: liga as regras de core/ (Expedition) ao mundo 3D das Salas, à interface e ao combate.
 // Nada aqui decide regra: quem manda passar, vencer ou subir é a Expedition; este nó só mostra e conta o que a criança faz.
@@ -58,6 +60,10 @@ public partial class DungeonRun : Node
 	bool left;
 	bool enabled = true;
 	int messageEpoch;
+	OverlayScreen? levelDone;
+	// O Atalho de Nível: os Desafios sorteados, na ordem, e qual está em jogo.
+	IReadOnlyList<TrainingSetup> shortcut = [];
+	int shortcutIndex;
 
 	public event Action<string>? Left;
 
@@ -68,7 +74,7 @@ public partial class DungeonRun : Node
 		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
 		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), HasTradeItem,
-			ctx.StartFloor, ctx.AtFastTravel);
+			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut);
 	}
 
 	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
@@ -134,6 +140,7 @@ public partial class DungeonRun : Node
 		energyView.OffsetTop = 12;
 
 		player.Enabled = enabled;
+		if (ctx.Shortcut && !BeginShortcut()) return;
 		DiscoverFloor();
 		EnterRoom(expedition.CurrentRoom, -1);
 		Say($"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
@@ -203,6 +210,22 @@ public partial class DungeonRun : Node
 			Say($"Sala de {FloorMap.NameOf(kind).ToLowerInvariant()}. {(kind == RoomKind.Exit ? "A escada leva ao próximo Andar." : "Descanse um pouco, se quiser.")}");
 	}
 
+	// A tentativa do Atalho é gravada ao começar: sair no meio também a gasta, e cada Nível tem uma só.
+	bool BeginShortcut()
+	{
+		var marked = ctx.Progress.MarkShortcutTried(ctx.ProfileId, ctx.Discipline, ctx.Level);
+		if (!marked.IsOk) GD.PushWarning(marked.Error!);
+		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, new Pcg32((ulong)Time.GetTicksUsec()));
+		if (!setups.IsOk)
+		{
+			GD.PushWarning(setups.Error!);
+			Leave("Não foi possível abrir o Atalho agora.");
+			return false;
+		}
+		shortcut = setups.Value!;
+		return true;
+	}
+
 	void RefreshRoom() =>
 		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe, RoomNote());
 
@@ -236,18 +259,24 @@ public partial class DungeonRun : Node
 		if (!needsFight) return;
 
 		// A porta do Puzzle não ataca: sem bolhas, só o Desafio e a Energia que os erros custam.
-		combat.Bubbles = !puzzle;
+		combat.Bubbles = !puzzle && !ctx.Shortcut;
+		combat.StopOnMistake = ctx.Shortcut ? OnShortcutFailed : null;
 		combat.Creature = puzzle ? CreatureWords.Gate : CreatureWords.Wild;
 		world.Creature.Title = combat.Creature.Title;
 		world.Creature.RestingHint = puzzle ? "Escolha-a para abrir" : "Escolha-a para lutar";
 		world.Creature.RestingCompact = puzzle ? "Abrir [F]" : "Lutar [F]";
 
-		var setup = DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		var setup = ctx.Shortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex]) : DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
 		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
+		if (ctx.Shortcut)
+		{
+			Say($"Atalho de Nível! Desafio {shortcutIndex + 1} de {shortcut.Count}. Errar encerra a tentativa. Escolha a criatura (clique ou F).");
+			return;
+		}
 		Say(current.Kind switch
 		{
 			RoomKind.Epic => "Desafio épico! Chegue perto da criatura e escolha-a (clique ou F) para atacar.",
@@ -258,6 +287,14 @@ public partial class DungeonRun : Node
 
 	void OnWon()
 	{
+		// No Atalho cada Desafio vencido leva ao seguinte; só o último vence o épico.
+		if (ctx.Shortcut && shortcutIndex + 1 < shortcut.Count)
+		{
+			shortcutIndex++;
+			StartFight();
+			return;
+		}
+
 		var room = expedition.Current;
 		// O Item é guardado antes de a Sala valer como vencida: se o save falhar, a criança tenta de novo e não perde o prêmio.
 		if (room.HoldsItem && !GiveItem())
@@ -271,8 +308,7 @@ public partial class DungeonRun : Node
 		RefreshHud();
 		if (expedition.Finished)
 		{
-			Say("Você venceu o Desafio épico desta torre! Que aventura!");
-			GetTree().CreateTimer(EndSeconds, true, false, true).Timeout += () => Leave("");
+			ConcludeLevel();
 			return;
 		}
 		if (room.HoldsItem) return;
@@ -286,6 +322,24 @@ public partial class DungeonRun : Node
 		combat.EndFight();
 		OnWon();
 	}
+
+	// O Desafio épico vencido conclui o Nível nesta torre (também pelo Atalho, que ainda entrega o Item); a criança escolhe seguir.
+	void ConcludeLevel()
+	{
+		var marked = ctx.Progress.MarkEpicDone(ctx.ProfileId, ctx.Discipline, ctx.Level);
+		if (!marked.IsOk) GD.PushWarning(marked.Error!);
+		var item = ctx.Shortcut && !ctx.Progress.HasItem(ctx.ProfileId, ctx.Discipline, ctx.Level) && GiveItem();
+		RefreshHud();
+		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}.";
+		Say(text);
+		var screen = new LevelDoneScreen(TowerName(ctx.Discipline), ctx.Level, item, () => Leave(""));
+		levelDone = screen;
+		if (ctx.ShowOverlay is { } show) show(screen);
+		else GetTree().CreateTimer(EndSeconds, true, false, true).Timeout += () => Leave("");
+	}
+
+	void OnShortcutFailed() =>
+		Leave("O Atalho não deu certo desta vez, e cada Nível só deixa tentar uma vez. Entre pela porta para jogar o Nível normalmente.");
 
 	bool GiveItem()
 	{
@@ -344,6 +398,12 @@ public partial class DungeonRun : Node
 		if (left || !enabled || target is null) return;
 		if (target == "stairs") { Ascend(); return; }
 		if (target == "rest") { Rest(); return; }
+
+		if (ctx.Shortcut && !expedition.Finished)
+		{
+			Say("Termine o Atalho ou volte ao Lobby.");
+			return;
+		}
 
 		var room = int.Parse(target["door:".Length..]);
 		var from = expedition.CurrentRoom;
@@ -429,6 +489,8 @@ public partial class DungeonRun : Node
 	{
 		if (left) return;
 		left = true;
+		// Sair por outro botão com a escolha do Nível concluído aberta: a tela não pode ficar para trás.
+		if (levelDone is not null && IsInstanceValid(levelDone)) levelDone.Close();
 		combat.EndFight();
 		Engine.TimeScale = 1.0;
 		hud.QueueFree();

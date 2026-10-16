@@ -134,6 +134,72 @@ static class DungeonScenarios
 		await d.Shot("05-marco-aberto");
 	}
 
+	// O Desafio épico conclui o Nível e a criança escolhe continuar ou voltar.
+	public static async Task Epic(DevDriver d)
+	{
+		var run = await Enter(d);
+		if (run is null) return;
+		// O Marco desta torre pede o Item da outra: o piloto o entrega para chegar ao épico.
+		run.Progress.GiveItem(run.ProfileId, "portugues", 1);
+		await GoTo(d, run, RoomKind.Epic);
+		d.Expect(run.Expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
+		d.Expect(!run.Progress.EpicDone(run.ProfileId, "matematica", 1), "o Nível ainda não está concluído");
+		run.DevWinRoom();
+		await d.Wait(0.5);
+		d.Expect(run.Progress.EpicDone(run.ProfileId, "matematica", 1), "vencer o épico concluiu o Nível");
+		d.Expect(d.HasVisible("Nível concluído!"), "a criança vê a escolha de continuar ou voltar");
+		await d.Shot("01-nivel-concluido");
+		await d.Press("Continuar explorando");
+		d.Expect(Runs(d).Count == 1 && !d.HasVisible("Nível concluído!"), "continuar explorando deixa a criança na torre");
+		await d.Press("Voltar ao Lobby");
+		await d.Wait(0.5);
+		d.Expect(Runs(d).Count == 0, "voltar ao Lobby encerra a Expedição");
+	}
+
+	// O Atalho de Nível: uma só tentativa; acertar conclui o Nível e dá o Item, errar encerra a tentativa.
+	public static async Task Shortcut(DevDriver d, bool fail)
+	{
+		var run = await Enter(d, shortcut: true);
+		if (run is null) return;
+		var expedition = run.Expedition;
+		d.Expect(expedition.Current.Kind == RoomKind.Epic && expedition.Floor.Number == expedition.Plan.Floors.Count, "o Atalho começa direto no Desafio épico");
+		d.Expect(run.Progress.ShortcutTried(run.ProfileId, "matematica", 1), "a tentativa do Atalho foi gravada ao começar");
+		run.Player.PlaceAt(new Vector2(0f, 1.5f));
+		await d.Wait(0.3);
+		await d.Tap(Controls.Target);
+		d.Expect(run.Combat.HasTarget, "escolher a criatura abriu a montagem da resposta");
+		await d.Shot("01-atalho");
+
+		if (fail)
+		{
+			var energy = expedition.Energy.Current;
+			await d.OvershootWithKeys();
+			await d.Wait(1.0);
+			d.Expect(Runs(d).Count == 0, "errar encerrou o Atalho");
+			d.Expect(expedition.Energy.Current == energy, "errar no Atalho não tirou Energia da Expedição");
+			d.Expect(!run.Progress.EpicDone(run.ProfileId, "matematica", 1) && !run.Progress.HasItem(run.ProfileId, "matematica", 1), "o Nível não foi concluído");
+			await d.Shot("02-de-volta-ao-lobby");
+			var again = await Enter(d);
+			d.Expect(again is not null && d.Button("Tentar o Atalho") is null, "não há segunda tentativa: a porta entra direto");
+			again?.Leave("");
+			return;
+		}
+
+		for (var i = 0; i < 3; i++)
+		{
+			run.DevWinRoom();
+			await d.Wait(0.5);
+		}
+		d.Expect(run.Progress.EpicDone(run.ProfileId, "matematica", 1), "acertar o Atalho concluiu o Nível");
+		d.Expect(run.Progress.HasItem(run.ProfileId, "matematica", 1), "e entregou o Item de troca");
+		await d.Shot("03-atalho-vencido");
+		await d.Press("Voltar ao Lobby");
+		await d.Wait(0.5);
+		var next = await Enter(d);
+		d.Expect(next is not null && d.Button("Tentar o Atalho") is null, "depois do Atalho a porta entra direto");
+		next?.Leave("");
+	}
+
 	// O Fast travel: o portal avisa quando não há ponto; achar o ponto salva; pelo portal a criança retoma ali; pela porta, recomeça do Andar mais fundo.
 	public static async Task FastTravel(DevDriver d)
 	{
@@ -249,7 +315,7 @@ static class DungeonScenarios
 	}
 
 	// Cada torre tem a porta na beira da ilha; o piloto anda até um hexágono perto dela.
-	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false)
+	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false)
 	{
 		await EnsureProfile(d);
 		if (letters) await WalkTo(d, 2, -4);
@@ -257,6 +323,13 @@ static class DungeonScenarios
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
+		// Com o Atalho de Nível ainda não tentado, a porta da torre pergunta antes de entrar.
+		if (d.Button("Entrar na torre") is not null)
+		{
+			await d.Shot("00-oferta-do-atalho");
+			await d.Press(shortcut ? "Tentar o Atalho" : "Entrar na torre");
+			await d.Wait(0.5);
+		}
 		var run = Runs(d).FirstOrDefault();
 		d.Expect(run is not null, letters ? "a porta da Torre das Letras abriu a Dungeon" : "a porta da Torre dos Números abriu a Dungeon");
 		return run;

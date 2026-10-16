@@ -318,8 +318,8 @@ public partial class Main : Node3D
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
-			case "torre-matematica": EnterDungeon(TrainingSetup.Mathematics); break;
-			case "torre-portugues": EnterDungeon(TrainingSetup.Portuguese); break;
+			case "torre-matematica": EnterTower(TrainingSetup.Mathematics); break;
+			case "torre-portugues": EnterTower(TrainingSetup.Portuguese); break;
 			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}

@@ -82,6 +82,9 @@ public partial class TrainingArea : Node
 	// Sem bolhas, como no Puzzle: a porta não ataca, só espera a resposta.
 	public bool Bubbles { get; set; } = true;
 
+	// No Atalho de Nível o primeiro erro encerra a tentativa, sem tirar Energia.
+	public Action? StopOnMistake { get; set; }
+
 	// Como o jogo chama a criatura nas frases e nos painéis.
 	public CreatureWords Creature { get; set; } = CreatureWords.Dummy;
 
@@ -394,6 +397,12 @@ public partial class TrainingArea : Node
 
 	void Mistake(string headline, string lead)
 	{
+		if (StopOnMistake is { } stop)
+		{
+			EndFight();
+			stop();
+			return;
+		}
 		session!.RevealHidden();
 		epoch++;
 		var outcome = session.Mistake();

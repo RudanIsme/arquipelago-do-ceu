@@ -92,6 +92,22 @@ public sealed class ProgressTests : IDisposable
 	}
 
 	[Fact]
+	public void O_Atalho_de_Nivel_so_pode_ser_tentado_uma_vez_por_Nivel_e_Dungeon()
+	{
+		var store = new SaveStore(PathName);
+		var progress = new ProgressService(new SaveSession(store, Example));
+		Assert.False(progress.ShortcutTried("p", "matematica", 1));
+
+		Assert.True(progress.MarkShortcutTried("p", "matematica", 1).IsOk);
+
+		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
+		Assert.True(reopened.ShortcutTried("p", "matematica", 1));
+		Assert.False(reopened.ShortcutTried("p", "portugues", 1));
+		Assert.False(reopened.ShortcutTried("p", "matematica", 2));
+		Assert.False(reopened.ShortcutTried("q", "matematica", 1));
+	}
+
+	[Fact]
 	public void O_Andar_mais_fundo_descoberto_vale_1_quando_nao_ha_nenhum()
 	{
 		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));

@@ -39,7 +39,21 @@ public partial class Main
 	}
 
 	// Pela porta da torre a criança começa no Andar mais fundo que já descobriu; pelo portal, no Fast travel que escolheu.
-	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false)
+	// Pela porta da torre, com o Atalho de Nível ainda não tentado, a criança escolhe antes de entrar.
+	void EnterTower(string discipline)
+	{
+		if (current is null || inDungeon) return;
+		var level = UnlockedLevel();
+		if (progress.ShortcutTried(current.Id, discipline, level) || progress.EpicDone(current.Id, discipline, level))
+		{
+			EnterDungeon(discipline);
+			return;
+		}
+		ShowOverlay(new ShortcutOfferScreen(TowerName(discipline), level, rules.Dungeon.ShortcutChallenges,
+			() => EnterDungeon(discipline, shortcut: true), () => EnterDungeon(discipline)));
+	}
+
+	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false, bool shortcut = false)
 	{
 		if (current is null || inDungeon) return;
 		var floors = LoadFallbackFloors();
@@ -55,7 +69,7 @@ public partial class Main
 		var towerLevel = level ?? UnlockedLevel();
 		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel));
+			progress, floors.Value!, equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;

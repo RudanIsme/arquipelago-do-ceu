@@ -53,6 +53,8 @@ public class GameRulesTests
 	[InlineData("\"roomsMin\": 6", "\"roomsMin\": 10", "dungeon.roomsMin")]
 	[InlineData("\"roomsMax\": 9", "\"roomsMax\": 31", "dungeon.roomsMax")]
 	[InlineData("\"restEnergy\": 2", "\"restEnergy\": 0", "dungeon.restEnergy")]
+	[InlineData("\"shortcutChallenges\": 3", "\"shortcutChallenges\": 0", "dungeon.shortcutChallenges")]
+	[InlineData("\"shortcutChallenges\": 3", "\"shortcutChallenges\": 10", "dungeon.shortcutChallenges")]
 	public void Valor_fora_do_intervalo_e_recusado_dizendo_qual_campo(string original, string novo, string campo)
 	{
 		var resultado = GameRules.Parse(Valido.Replace(original, novo));
@@ -168,6 +170,6 @@ public class DungeonRulesTests
 	{
 		var dungeon = GameRules.Parse(TestJson.Rules).Value!.Dungeon;
 
-		Assert.Equal(new DungeonRules(3, 4, 6, 9, 2), dungeon);
+		Assert.Equal(new DungeonRules(3, 4, 6, 9, 2, 3), dungeon);
 	}
 }

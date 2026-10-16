@@ -7,7 +7,8 @@ public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,
 	IReadOnlyList<string>? Floors = null,
-	IReadOnlyList<string>? FastTravels = null);
+	IReadOnlyList<string>? FastTravels = null,
+	IReadOnlyList<string>? ShortcutsTried = null);
 
 // Um Fast travel que a criança já encontrou: a torre, o Nível e o Andar.
 public sealed record FastTravelPoint(string Discipline, int Level, int Floor);
@@ -28,6 +29,12 @@ public sealed class ProgressService(SaveSession session)
 
 	public Result<ProfileSave> GiveItem(string profileId, string discipline, int level) =>
 		Add(profileId, Level(discipline, level), p => p.Items, (p, list) => p with { Items = list });
+
+	// O Atalho de Nível vale uma só tentativa por Nível em cada Dungeon, acertando ou errando.
+	public bool ShortcutTried(string profileId, string discipline, int level) => Has(profileId, p => p.ShortcutsTried, Level(discipline, level));
+
+	public Result<ProfileSave> MarkShortcutTried(string profileId, string discipline, int level) =>
+		Add(profileId, Level(discipline, level), p => p.ShortcutsTried, (p, list) => p with { ShortcutsTried = list });
 
 	// O Fast travel de um Andar, achado pela criança; é por ele que se retoma pelo portal do Lobby.
 	public Result<ProfileSave> FindFastTravel(string profileId, string discipline, int level, int floor) =>

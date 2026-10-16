@@ -280,6 +280,15 @@ static class Scenarios
 			case "torre-letras":
 				await DungeonScenarios.Letters(d);
 				break;
+			case "torre-epico":
+				await DungeonScenarios.Epic(d);
+				break;
+			case "torre-atalho":
+				await DungeonScenarios.Shortcut(d, fail: false);
+				break;
+			case "torre-atalho-erro":
+				await DungeonScenarios.Shortcut(d, fail: true);
+				break;
 			case "torre-itens":
 				await DungeonScenarios.Items(d);
 				break;

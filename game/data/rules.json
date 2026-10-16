@@ -222,7 +222,8 @@
     "floorsMax": 4,
     "roomsMin": 6,
     "roomsMax": 9,
-    "restEnergy": 2
+    "restEnergy": 2,
+    "shortcutChallenges": 3
   },
   "lobby": {
     "interactionReach": 2.2,
