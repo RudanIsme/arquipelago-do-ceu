@@ -217,6 +217,13 @@
       }
     ]
   },
+  "dungeon": {
+    "floorsMin": 3,
+    "floorsMax": 4,
+    "roomsMin": 6,
+    "roomsMax": 9,
+    "restEnergy": 2
+  },
   "lobby": {
     "interactionReach": 2.2,
     "camera": {

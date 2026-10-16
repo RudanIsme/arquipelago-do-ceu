@@ -274,6 +274,9 @@ static class Scenarios
 				await d.Hold(Controls.Up, 4.0);
 				await d.Shot("04-contra-a-borda");
 				break;
+			case "andar":
+				await FloorShots.Run(d);
+				break;
 			case "lobby":
 				await d.Shot("01-visao-geral");
 				break;

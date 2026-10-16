@@ -46,6 +46,13 @@ public class GameRulesTests
 	[InlineData("[1, 2, 4, 8, 16]", "[0, 1]", "leitnerIntervalsDays")]
 	[InlineData("[1, 2, 4, 8, 16]", "[2, 1]", "leitnerIntervalsDays")]
 	[InlineData("[1, 2, 4, 8, 16]", "[1, 2, 2]", "leitnerIntervalsDays")]
+	[InlineData("\"floorsMin\": 3", "\"floorsMin\": 1", "dungeon.floorsMin")]
+	[InlineData("\"floorsMin\": 3", "\"floorsMin\": 5", "dungeon.floorsMin")]
+	[InlineData("\"floorsMax\": 4", "\"floorsMax\": 11", "dungeon.floorsMax")]
+	[InlineData("\"roomsMin\": 6", "\"roomsMin\": 5", "dungeon.roomsMin")]
+	[InlineData("\"roomsMin\": 6", "\"roomsMin\": 10", "dungeon.roomsMin")]
+	[InlineData("\"roomsMax\": 9", "\"roomsMax\": 31", "dungeon.roomsMax")]
+	[InlineData("\"restEnergy\": 2", "\"restEnergy\": 0", "dungeon.restEnergy")]
 	public void Valor_fora_do_intervalo_e_recusado_dizendo_qual_campo(string original, string novo, string campo)
 	{
 		var resultado = GameRules.Parse(Valido.Replace(original, novo));
@@ -58,6 +65,7 @@ public class GameRulesTests
 	[InlineData("maxEnergy")]
 	[InlineData("adaptive")]
 	[InlineData("leitnerIntervalsDays")]
+	[InlineData("dungeon")]
 	public void Valor_ausente_diz_qual_campo(string campo)
 	{
 		// Renomear o campo o deixa ausente sem quebrar o JSON.
@@ -150,5 +158,16 @@ public class GameRulesTests
 
 		Assert.False(resultado.IsOk);
 		Assert.Contains(campo, resultado.Error);
+	}
+}
+
+public class DungeonRulesTests
+{
+	[Fact]
+	public void Le_os_limites_do_Plano_do_Andar_e_do_Descanso()
+	{
+		var dungeon = GameRules.Parse(TestJson.Rules).Value!.Dungeon;
+
+		Assert.Equal(new DungeonRules(3, 4, 6, 9, 2), dungeon);
 	}
 }
