@@ -239,7 +239,7 @@
       {
         "id": "matematica",
         "name": "Torre dos Números",
-        "sign": "Em construção",
+        "sign": "Aberta: entre pela porta",
         "model": "torre-numeros-meshy-v01",
         "x": -13.4,
         "z": 4.9
@@ -247,7 +247,7 @@
       {
         "id": "portugues",
         "name": "Torre das Letras",
-        "sign": "Em construção",
+        "sign": "Aberta: entre pela porta",
         "model": "torre-letras-meshy-v01",
         "x": 4.9,
         "z": -13.4
@@ -300,6 +300,13 @@
         "prompt": "Entrar na Torre dos Números",
         "q": -4,
         "r": 4
+      },
+      {
+        "id": "torre-portugues",
+        "name": "Torre das Letras",
+        "prompt": "Entrar na Torre das Letras",
+        "q": 2,
+        "r": -5
       },
       {
         "id": "boneco",

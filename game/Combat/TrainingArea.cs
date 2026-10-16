@@ -240,7 +240,7 @@ public partial class TrainingArea : Node
 		}
 		else if (session.Name is { } nameBattle)
 		{
-			var name = new NamePanel(nameBattle, rules.Combat.Tracing, voice);
+			var name = new NamePanel(nameBattle, rules.Combat.Tracing, voice, allowPull: !InDungeon);
 			name.Checked += OnChecked;
 			name.ComposingChanged += OnComposing;
 			name.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };

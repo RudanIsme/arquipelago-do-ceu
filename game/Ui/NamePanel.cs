@@ -35,11 +35,14 @@ public partial class NamePanel : OverlayScreen
 	bool composing;
 	int tracingPiece;
 
-	public NamePanel(NameBattle battle, TracingRules tracingRules, VoiceService voice)
+	readonly bool allowPull;
+
+	public NamePanel(NameBattle battle, TracingRules tracingRules, VoiceService voice, bool allowPull = true)
 	{
 		this.battle = battle;
 		this.tracingRules = tracingRules;
 		this.voice = voice;
+		this.allowPull = allowPull;
 	}
 
 	// O nome foi conferido; quem trata golpes, erros e Energia é o treino.
@@ -129,7 +132,8 @@ public partial class NamePanel : OverlayScreen
 		actions.AddChild(UiKit.BigButton("Soltar alvo", Abandon, 196));
 		actions.AddChild(UiKit.BigButton("Conferir", Check, 196));
 		content.AddChild(actions);
-        if(battle.Kind == NameKind.Syllables) content.AddChild(UiKit.BigButton("Pescar com puxada", OpenPullMode, 260));
+        // A pesca de teste (F9) só existe no Lobby; dentro de uma Dungeon o botão nem aparece.
+        if(allowPull && battle.Kind == NameKind.Syllables) content.AddChild(UiKit.BigButton("Pescar com puxada", OpenPullMode, 260));
 
 		var keys = UiKit.Hint("Teclado: 1 a 9 escolhem a peça, Backspace desfaz, Enter confere, Esc solta o alvo.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);

@@ -97,6 +97,32 @@ static class DungeonScenarios
 		await d.Shot("03-porta-aberta");
 	}
 
+	// A torre das Letras usa o Escriba do Nível: sílabas no 1º, palavra inteira no 2º e frase no 3º.
+	public static async Task Letters(DevDriver d)
+	{
+		var run = await Enter(d, letters: true);
+		if (run is null) return;
+		var expedition = run.Expedition;
+		d.Expect(expedition.Plan.Discipline == "portugues", "a Expedição é de Português");
+
+		await GoTo(d, run, RoomKind.Combat);
+		d.Expect(expedition.Current.Kind == RoomKind.Combat, "há uma luta no caminho");
+		run.Player.PlaceAt(new Vector2(0f, 1.5f));
+		await d.Wait(0.3);
+		await d.Tap(Controls.Target);
+		d.Expect(run.Combat.HasTarget, "escolher a criatura abriu a montagem do Escriba");
+		var level = expedition.Plan.Level;
+		var panels = d.GetTree().Root.FindChildren("*", "", true, false);
+		d.Expect(level == 2 ? panels.OfType<WordPanel>().Any() : panels.OfType<NamePanel>().Any(), $"o Escriba do {level}º ano abriu o painel certo");
+		await d.Shot("01-escriba");
+		await d.PressKey(Key.Escape);
+		run.DevWinRoom();
+		await d.Wait(0.3);
+		d.Expect(expedition.IsCleared(expedition.CurrentRoom), "vencer a Sala a libera");
+		await GoTo(d, run, RoomKind.Exit);
+		await d.Shot("02-saida");
+	}
+
 	// Energia zerada numa luta volta ao Lobby sem mensagem que culpe a criança, e a Expedição acaba.
 	public static async Task Defeat(DevDriver d)
 	{
@@ -120,7 +146,8 @@ static class DungeonScenarios
 		await d.Shot("02-de-volta-ao-lobby");
 	}
 
-	static async Task<DungeonRun?> Enter(DevDriver d)
+	// Cada torre tem a porta na beira da ilha; o piloto anda até um hexágono perto dela.
+	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false)
 	{
 		if (d.Button("Criar") is not null)
 		{
@@ -129,14 +156,15 @@ static class DungeonScenarios
 			await d.Press("Criar");
 		}
 		d.Expect(d.Player is { Enabled: true }, "o Perfil está ativo no Lobby");
-		await d.GoNearDummy(-3, 3);
+		if (letters) await d.GoNearDummy(2, -4);
+		else await d.GoNearDummy(-3, 3);
 		// O Personagem anda devagar: espera chegar perto da porta da torre.
 		await d.Wait(3.0);
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
 		var run = Runs(d).FirstOrDefault();
-		d.Expect(run is not null, "a placa da Torre dos Números abriu a Dungeon");
+		d.Expect(run is not null, letters ? "a porta da Torre das Letras abriu a Dungeon" : "a porta da Torre dos Números abriu a Dungeon");
 		return run;
 	}
 
