@@ -38,7 +38,6 @@ Nas novas interfaces, rótulos 3D usam 55% do tamanho anterior para liberar a vi
 
 ## Preservação e verificação
 
-Backup anterior ao trabalho: `D:\arquipelago-do-ceu-assets\backups\antes-quatro-caminhos-20261014-011048`. São 659 arquivos, 351.141.481 bytes, incluindo o save real e um cache Vulkan da pasta de usuário, hashes SHA-256 conferidos e bundle Git verificado. O hash do save real permaneceu `b58edffe1443c528881c8149474963d53819437ca2ccf38abcbacf116f15dee3` após os testes. Nada foi enviado, commitado ou comprado. Spectrum é fonte somente leitura.
 
 Build .NET sem erros/avisos e 382 testes passaram, incluindo normalização, saves antigos, reload, dez ciclos de variantes, rollback de escrita e mudanças de Energia sem cura. QA visual usa processos fora da tela e saves descartáveis; evidências finais são registradas junto à entrega local.
 
@@ -46,9 +45,9 @@ A rodada final V5 passou 225 verificações nas três resoluções, após compen
 
 ## Capa aprovada do Spectrum
 
-A fonte `E:\Spectrum\art\motion-library\knight\cape-body-v2\final\knight-cape-body.blend` tem aprovação explícita registrada em `publication.json`, de 14/10/2026. SHA-256 verificado e preservado: `36383e1b77c92003cedcac6ffa5735dddbf24517f6db38a105ec65f144c74923`.
+A capa é um bake aprovado pelo autor do modelo em 14/10/2026; as fontes e os relatórios ficam fora do repositório.
 
-A transferência final está em `D:\arquipelago-do-ceu-assets\spectrum-cape-body-v2-transfer\ready-v03`. As tentativas anteriores permanecem guardadas e não são usadas. Três GLBs novos (parado, andando, correndo) preservam a espessura de 5 mm e 118 estados de morph usados pelos movimentos: 105.204 triângulos, 10 materiais, 24 ossos, cerca de 36,45 MB por arquivo. Reimportação geométrica: erro inferior a 9×10⁻⁸ m; destinos de animação resolvidos no modelo base. Os arquivos antigos permanecem intactos.
+Os três GLBs (parado, andando, correndo) preservam a espessura de 5 mm e 118 estados de morph usados pelos movimentos: 105.204 triângulos, 10 materiais, 24 ossos, cerca de 36,45 MB por arquivo. Reimportação geométrica: erro inferior a 9×10⁻⁸ m.
 
 A capa pré-calculada aprovada é o padrão. F8 compara com o solver experimental anterior, ocultando a outra malha; não há duas capas visíveis simultaneamente. Reduzir movimento usa a capa pré-calculada parada. A aprovação da fonte não equivale a aprovação artística dos novos acessórios ou de toda combinação possível entre movimentos; as capturas locais permitem essa revisão. O tamanho dos GLBs ainda merece otimização futura.
 
@@ -57,7 +56,7 @@ A dobra forte da capa na corrida foi comparada visualmente: quadros 11/21 do Ble
 
 ## Revisão visual v02: o que é novo e o que foi preservado
 
-| Elemento | Trabalho nesta noite | Movimento |
+| Elemento | Trabalho da revisão v02 | Movimento |
 |---|---|---|
 | Cristais decorativos | Dois no Essencial; quatro principais e quatro satélites em Cristais | Flutuação dos principais; satélites estáticos |
 | Livros decorativos | Quatro no caminho Livro | Eram estáticos no primeiro marco; agora oito páginas inteiras oscilam suavemente em dobradiças na lombada |
@@ -73,15 +72,8 @@ Os canteiros ficam nos hexágonos bloqueados (-4,0), (-2,3), (1,-4), (4,-3), com
 
 As imagens reais de 1280×720 e 1920×1080 cobrem HUD, configurações, acessibilidade, perfis, oficina, diálogo, preparação e treino ativo nos quatro temas. A revisão corrigiu sobreposição do seletor com o treino, fontes/botões encolhidos, faces invertidas e conversão de cor dos canteiros. Os painéis ativos mantêm botões de 44 pixels e texto de pelo menos 16 pixels nas resoluções verificadas. Traçado de letras ou texto ampliado podem exigir rolagem.
 
-Backup adicional antes desta revisão: `D:\arquipelago-do-ceu-assets\backups\antes-quatro-caminhos-20261014-013642`: 700 arquivos, 526.039.094 bytes, SHA-256 de cada cópia e bundle Git verificados. O primeiro marco e seus previews continuam em `quatro-caminhos-20261014-v01`.
 
-### Identificação exata da capa em uso
+### Capa em uso
 
-- Aprovação: `E:\Spectrum\art\motion-library\knight\cape-body-v2\publication.json`, declaração “aprovado” de 14/10/2026.
-- Fonte: `E:\Spectrum\art\motion-library\knight\cape-body-v2\final\knight-cape-body.blend`.
-- Transferência: `D:\arquipelago-do-ceu-assets\spectrum-cape-body-v2-transfer\ready-v03`.
-- Runtime: `D:\arquipelago-do-ceu\game\assets\modelos\spectrum-cape-body-v2\guerreiro-{parado,andando,correndo}.glb`.
-- QA: `reimport-validation.json`, `godot-validation.json` e `source-godot-comparison.json` em `ready-v03`; `equipment_integration_validation.json` na validação da entrega v01.
-- Fonte SHA-256: `36383e1b77c92003cedcac6ffa5735dddbf24517f6db38a105ec65f144c74923`.
+O bake aprovado do Spectrum (14/10/2026) está em `game/assets/modelos/spectrum-cape-body-v2/guerreiro-{parado,andando,correndo}.glb`. As fontes (.blend), os arquivos de transferência e os relatórios de validação ficam fora do repositório, com o autor do PR #97.
 
-Sem gastos, instalações, uploads externos, commit ou push. Saves reais não foram usados pelos pilotos; as capturas usam perfis descartáveis. Os acessórios continuam sendo aproximações procedurais, e as ilhas futuras continuam com construções provisórias.
