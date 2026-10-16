@@ -31,12 +31,13 @@ public partial class ShortcutOfferScreen : OverlayScreen
 		footer.AddChild(UiKit.BigButton("Entrar na torre", () => { Close(); enterNormally(); }, 420));
 	}
 
-	// Fechar sem escolher é entrar normalmente: o Atalho nunca é gasto sem a criança querer.
+	// Esc é entrar normalmente: o Atalho nunca é gasto sem a criança querer.
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (!@event.IsActionPressed("ui_cancel")) return;
 		GetViewport().SetInputAsHandled();
 		Close();
+		enterNormally();
 	}
 }
 

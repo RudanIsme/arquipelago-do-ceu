@@ -40,6 +40,8 @@ public partial class MasterChallenge : Node
 		this.extraEnergy = extraEnergy;
 		this.notify = notify;
 		this.levelRaised = levelRaised;
+		// Trocar de Perfil ou entrar numa torre no meio do desafio o encerra, sem punir a criança.
+		training.FightAborted += () => { if (Active) Finish("O Desafio mestre foi pausado. Ele continua esperando por você."); };
 	}
 
 	public bool Active => energyView is not null;

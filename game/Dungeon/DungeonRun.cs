@@ -90,6 +90,9 @@ public partial class DungeonRun : Node
 	public static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
 
 	// A outra torre: é dela o Item de troca que abre o Marco desta.
+	// O Atalho vale até o Desafio épico ser vencido; depois a criança explora a torre como quiser.
+	bool InShortcut => ctx.Shortcut && !expedition.Finished;
+
 	string Other => ctx.Discipline == TrainingSetup.Mathematics ? TrainingSetup.Portuguese : TrainingSetup.Mathematics;
 
 	bool HasTradeItem() => ctx.Progress.HasItem(ctx.ProfileId, Other, ctx.Level);
@@ -141,7 +144,9 @@ public partial class DungeonRun : Node
 
 		player.Enabled = enabled;
 		if (ctx.Shortcut && !BeginShortcut()) return;
-		DiscoverFloor();
+		// O Atalho não descobre Andares: quem erra joga o Nível normalmente, do Andar mais fundo que já conhecia.
+		if (ctx.Shortcut) BuildMap();
+		else DiscoverFloor();
 		EnterRoom(expedition.CurrentRoom, -1);
 		Say($"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
 	}
@@ -213,15 +218,16 @@ public partial class DungeonRun : Node
 	// A tentativa do Atalho é gravada ao começar: sair no meio também a gasta, e cada Nível tem uma só.
 	bool BeginShortcut()
 	{
-		var marked = ctx.Progress.MarkShortcutTried(ctx.ProfileId, ctx.Discipline, ctx.Level);
-		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!setups.IsOk)
 		{
+			// Sem Desafios para sortear, a criança nem chega a tentar: a tentativa não é gasta.
 			GD.PushWarning(setups.Error!);
 			Leave("Não foi possível abrir o Atalho agora.");
 			return false;
 		}
+		var marked = ctx.Progress.MarkShortcutTried(ctx.ProfileId, ctx.Discipline, ctx.Level);
+		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		shortcut = setups.Value!;
 		return true;
 	}
@@ -259,20 +265,20 @@ public partial class DungeonRun : Node
 		if (!needsFight) return;
 
 		// A porta do Puzzle não ataca: sem bolhas, só o Desafio e a Energia que os erros custam.
-		combat.Bubbles = !puzzle && !ctx.Shortcut;
-		combat.StopOnMistake = ctx.Shortcut ? OnShortcutFailed : null;
+		combat.Bubbles = !puzzle && !InShortcut;
+		combat.StopOnMistake = InShortcut ? OnShortcutFailed : null;
 		combat.Creature = puzzle ? CreatureWords.Gate : CreatureWords.Wild;
 		world.Creature.Title = combat.Creature.Title;
 		world.Creature.RestingHint = puzzle ? "Escolha-a para abrir" : "Escolha-a para lutar";
 		world.Creature.RestingCompact = puzzle ? "Abrir [F]" : "Lutar [F]";
 
-		var setup = ctx.Shortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex]) : DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		var setup = InShortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex]) : DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
 		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
-		if (ctx.Shortcut)
+		if (InShortcut)
 		{
 			Say($"Atalho de Nível! Desafio {shortcutIndex + 1} de {shortcut.Count}. Errar encerra a tentativa. Escolha a criatura (clique ou F).");
 			return;
@@ -288,7 +294,7 @@ public partial class DungeonRun : Node
 	void OnWon()
 	{
 		// No Atalho cada Desafio vencido leva ao seguinte; só o último vence o épico.
-		if (ctx.Shortcut && shortcutIndex + 1 < shortcut.Count)
+		if (InShortcut && shortcutIndex + 1 < shortcut.Count)
 		{
 			shortcutIndex++;
 			StartFight();
@@ -306,7 +312,7 @@ public partial class DungeonRun : Node
 		world.ShowTarget(false, false);
 		RefreshRoom();
 		RefreshHud();
-		if (expedition.Finished)
+		if (room.Kind == RoomKind.Epic)
 		{
 			ConcludeLevel();
 			return;
@@ -399,7 +405,7 @@ public partial class DungeonRun : Node
 		if (target == "stairs") { Ascend(); return; }
 		if (target == "rest") { Rest(); return; }
 
-		if (ctx.Shortcut && !expedition.Finished)
+		if (InShortcut)
 		{
 			Say("Termine o Atalho ou volte ao Lobby.");
 			return;

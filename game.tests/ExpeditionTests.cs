@@ -130,6 +130,20 @@ public class ExpeditionTests
 	}
 
 	[Fact]
+	public void Voltar_atras_do_Marco_sem_o_Item_nao_o_deixa_aberto()
+	{
+		var e = ExpeditionFixtures.Start(hasItem: () => false);
+		GoToSecondFloorMarco(e);
+		Assert.Equal(Passage.NeedsItem, e.MoveTo(6));
+
+		Assert.Equal(Passage.Open, e.MoveTo(4));
+		Assert.Equal(Passage.Open, e.MoveTo(5));
+
+		Assert.Equal(Passage.NeedsItem, e.MoveTo(6));
+		Assert.False(e.IsCleared(5));
+	}
+
+	[Fact]
 	public void Vencer_o_Desafio_epico_termina_a_Expedicao()
 	{
 		var e = ExpeditionFixtures.Start(hasItem: () => true);
@@ -371,6 +385,22 @@ public class DungeonCombatTests
 public class ResumeTests
 {
 	[Fact]
+	public void Recomecar_no_Fast_travel_nao_da_a_Sala_do_Item_por_vencida()
+	{
+		var provider = new FloorProvider(ExpeditionFixtures.Rules, ExpeditionFixtures.Fallback);
+		for (ulong seed = 0; seed < 600; seed++)
+		{
+			var plan = LevelPlan.Create(ExpeditionFixtures.Rules, seed, "matematica", 1, 1);
+			foreach (var floor in plan.Floors)
+			{
+				var e = Expedition.Start(provider, plan, seed, 1, new Energy(5), null, floor.Number, atFastTravel: true);
+
+				Assert.All(e.Visited.Where(r => e.Floor.Rooms[r].HoldsItem), r => Assert.False(e.IsCleared(r), $"seed {seed} andar {floor.Number}"));
+			}
+		}
+	}
+
+	[Fact]
 	public void Recomecar_no_Fast_travel_funciona_em_milhares_de_seeds_e_Andares()
 	{
 		for (ulong seed = 0; seed < 1500; seed++)
@@ -384,7 +414,7 @@ public class ResumeTests
 				Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
 				Assert.Equal(floor, e.Floor.Number);
 				Assert.Contains(e.Floor.Entrance, e.Visited);
-				Assert.All(e.Visited.Where(r => e.NeedsClearing(e.Floor.Rooms[r])), r => Assert.True(e.IsCleared(r)));
+				Assert.All(e.Visited.Where(r => e.NeedsClearing(e.Floor.Rooms[r]) && !e.Floor.Rooms[r].HoldsItem), r => Assert.True(e.IsCleared(r)));
 			}
 		}
 	}

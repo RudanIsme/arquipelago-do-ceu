@@ -314,6 +314,7 @@ static class DungeonScenarios
 			d.Expect(Runs(d).Count == 0, "errar encerrou o Atalho");
 			d.Expect(expedition.Energy.Current == energy, "errar no Atalho não tirou Energia da Expedição");
 			d.Expect(!run.Progress.EpicDone(run.ProfileId, "matematica", 1) && !run.Progress.HasItem(run.ProfileId, "matematica", 1), "o Nível não foi concluído");
+			d.Expect(run.Progress.HighestFloor(run.ProfileId, "matematica", 1) == 1, "o Atalho não descobriu Andares: a torre normal recomeça do Andar 1");
 			await d.Shot("02-de-volta-ao-lobby");
 			var again = await Enter(d);
 			d.Expect(again is not null && d.Button("Tentar o Atalho") is null, "não há segunda tentativa: a porta entra direto");

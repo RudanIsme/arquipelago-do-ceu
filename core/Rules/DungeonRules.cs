@@ -9,8 +9,9 @@ sealed record DungeonDto(int? FloorsMin, int? FloorsMax, int? RoomsMin, int? Roo
 static class DungeonChecks
 {
 	// O Item tem de ficar num Andar anterior ao do Marco, então um Nível precisa de ao menos 2 Andares;
-	// e um Andar precisa de 6 Salas para caber entrada, saída, Fast travel, Descanso, Marco ou Item e mais uma.
-	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 30, RestLimit = 9, ShortcutLimit = 9, MasterFloor = 2, MasterLimit = 12;
+	// um Andar precisa de 6 Salas para caber entrada, saída, Fast travel, Descanso, Marco ou Item e mais uma;
+	// e no máximo 18, porque cada porta ocupa um dos 18 hexágonos da borda da Sala, e uma Sala pode ligar a todas as outras.
+	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 18, RestLimit = 9, ShortcutLimit = 9, MasterFloor = 2, MasterLimit = 12;
 
 	public static string? Check(DungeonDto? dungeon)
 	{

@@ -140,9 +140,16 @@ public partial class TrainingArea : Node
 	{
 		DropTarget();
 		if (session is null) return;
-		if (fightWon is not null) EndFight();
+		if (fightWon is not null)
+		{
+			// Uma luta de fora (o Desafio mestre) precisa saber que acabou, para não ficar presa em andamento.
+			EndFight();
+			FightAborted?.Invoke();
+		}
 		else Finish("");
 	}
+
+	public event Action? FightAborted;
 
 	// Começa a luta de uma Sala com a Energia da Expedição. A criança escolhe a criatura (clique ou F) para atacar.
 	public void BeginFight(CombatSession fight, EnergyView energy, Action won, Action lost)

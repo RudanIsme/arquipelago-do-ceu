@@ -94,7 +94,8 @@ public sealed class Expedition
 		var passage = CanMoveTo(room);
 		if (passage != Passage.Open) return passage;
 
-		if (Current.Kind == RoomKind.Marco) cleared.Add(CurrentRoom);
+		// O Marco só vale como aberto se a criança tem o Item; voltar atrás sem ele não pode deixá-lo aberto.
+		if (Current.Kind == RoomKind.Marco && hasItem()) cleared.Add(CurrentRoom);
 		CurrentRoom = room;
 		visited.Add(room);
 		return Passage.Open;
@@ -138,7 +139,8 @@ public sealed class Expedition
 		for (var room = target; room != -1; room = previous[room])
 		{
 			visited.Add(room);
-			if (NeedsClearing(Floor.Rooms[room]) && room != target) cleared.Add(room);
+			// A Sala do Item fica por vencer: o prêmio só vem de vencê-la, e quem recomeça aqui ainda não o ganhou.
+			if (NeedsClearing(Floor.Rooms[room]) && room != target && !Floor.Rooms[room].HoldsItem) cleared.Add(room);
 		}
 		CurrentRoom = target;
 	}
