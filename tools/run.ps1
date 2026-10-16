@@ -21,6 +21,11 @@ if (-not $env:GODOT -or -not (Test-Path $env:GODOT)) {
 dotnet build "$raiz\game\ArquipelagoDoCeu.csproj" --nologo -v q
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+# Modelos e texturas novos (por exemplo, depois de um git pull) precisam ser importados antes de abrir o jogo;
+# sem isso o Godot não os carrega e aparecem erros de NullReference. É rápido quando nada mudou.
+& $env:GODOT --headless --path "$raiz\game" --editor --import
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 $extra = if ($JogoArgs) { @('--') + $JogoArgs } else { @() }
 & $env:GODOT --path "$raiz\game" @extra
 exit $LASTEXITCODE
