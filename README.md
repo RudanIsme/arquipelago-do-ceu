@@ -49,6 +49,10 @@ Para rodar o jogo: .NET SDK 8, Godot 4.7.2 (versão .NET) e Node LTS (validaçã
 O projeto Godot está em `game/`. No PowerShell, na raiz do repositório (a variável `GODOT` já aponta para o executável de console):
 
 ```powershell
+# compilar e abrir o jogo de uma vez (argumentos extras vão para o jogo; o .cmd dispensa mudar a política de scripts do PowerShell)
+.\tools\run.cmd
+
+# ou, passo a passo:
 # compilar o C#
 dotnet build game/ArquipelagoDoCeu.csproj
 

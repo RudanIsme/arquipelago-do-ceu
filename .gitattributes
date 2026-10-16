@@ -1,0 +1,3 @@
+# O Godot grava estes arquivos sempre com LF; sem isso, o autocrlf do Windows os mostra como modificados.
+*.import text eol=lf
+*.uid text eol=lf
