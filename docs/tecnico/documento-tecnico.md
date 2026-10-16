@@ -49,12 +49,12 @@ Regras para manter o código simples:
 
 ### Geração procedural
 
-- Cada andar é gerado inteiro, de uma vez, a partir de `(seed do mundo, dungeon, nível, número do andar, versão do gerador)`. A mesma entrada sempre gera o mesmo mapa.
+- Primeiro se gera o Plano do Nível, a partir de `(seed do mundo, dungeon, nível, versão do gerador)`: quantos Andares (3 a 4) e em qual ficam a Sala do Item, o Marco e o Desafio épico, sempre nessa ordem. Depois cada andar é gerado inteiro, de uma vez, a partir de `(seed do mundo, dungeon, nível, número do andar, versão do gerador)` e do seu trecho do Plano. A mesma entrada sempre gera o mesmo mapa (ADR 0003).
 - Usar um gerador de números aleatórios próprio (PCG32, cerca de 30 linhas) em vez de `System.Random`, para que a sequência não mude entre versões do .NET ou do Godot.
-- O validador confere, antes de mostrar o andar, que toda sala obrigatória é alcançável e toda porta tem chave. Se falhar, carrega um andar feito à mão.
+- O andar é um grafo de 6 a 9 Salas. As portas trancadas são Puzzles, sem chaves. O validador confere, antes de mostrar o andar, que toda Sala obrigatória é alcançável a partir da entrada, que o Fast travel e todo Puzzle são alcançáveis sem passar pelo Marco, e que a Sala do Item vem antes do Marco no Plano. Se falhar, carrega um andar feito à mão.
 - O gerador roda em testes automatizados com milhares de seeds.
 
-**Tema separado da estrutura.** O gerador só conhece funções de sala: combate, puzzle, descanso, fast travel, marco, desafio épico. Um pacote de tema em dados (cenas de sala, objetos, criaturas, música, paleta, vocabulário da narrativa) veste essas salas. Uma disciplina nova, como História, é um pacote de tema mais mecânicas novas, sem mexer no gerador. Um pacote pode ter sub-temas, como uma época histórica por andar.
+**Tema separado da estrutura.** O gerador só conhece funções de sala: combate, puzzle, descanso, fast travel, marco, desafio épico. A Sala do Item não é uma função: é uma sala de combate ou puzzle marcada com o prêmio. Um pacote de tema em dados (cenas de sala, objetos, criaturas, música, paleta, vocabulário da narrativa) veste essas salas. Uma disciplina nova, como História, é um pacote de tema mais mecânicas novas, sem mexer no gerador. Um pacote pode ter sub-temas, como uma época histórica por andar.
 
 **Valores de regra em dados.** Nome do jogo e dos Papéis, energia máxima (5 no MVP), limiares da dificuldade adaptativa e intervalos das caixas de Leitner ficam em arquivos de dados, não no código, para mudar sem recompilar regras.
 
@@ -62,7 +62,7 @@ Regras para manter o código simples:
 
 ### Salvamento
 
-Arquivo JSON local em `user://`, com número de versão do formato. Guarda a seed, a versão do gerador, andares descobertos, puzzles resolvidos, pontos de fast travel, itens de troca, habilidades, aparência do Personagem e Cosméticos ganhos, Atalhos de Nível já usados, progresso por conceito, caixa de memória e data da próxima revisão, e energia da expedição em andamento. Grava em arquivo temporário e renomeia, para não corromper se o PC desligar. Salva sozinho a cada sala e ao pausar, e também no ponto de fast travel de cada andar.
+Arquivo JSON local em `user://`, com número de versão do formato. Guarda a seed, a versão do gerador, o Nível liberado (o `Level` do Perfil), os Níveis com o Desafio épico concluído por Dungeon, andares descobertos, puzzles resolvidos, Fast travels encontrados, itens de troca (que não se perdem quando a Energia zera), habilidades, aparência do Personagem e Cosméticos ganhos, Atalhos de Nível já usados, progresso por conceito, caixa de memória e data da próxima revisão, e energia da expedição em andamento. Grava em arquivo temporário e renomeia, para não corromper se o PC desligar. Salva sozinho a cada sala e ao pausar, e também no ponto de fast travel de cada andar.
 
 ### Voz e câmera
 

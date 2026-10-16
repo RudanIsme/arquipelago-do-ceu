@@ -135,18 +135,21 @@ Um roguelite precisa de risco, mas o risco não pode virar punição por não sa
 
 Cada disciplina tem sua própria Dungeon, uma torre; no MVP são duas, Matemática e Português. Cada Dungeon tem Níveis, cada Nível é uma sequência de Andares gerados, feitos de Salas, e termina num Desafio épico. Para passar um Marco a criança precisa de um Item de troca da outra Dungeon, e para subir de Nível nas duas ela enfrenta um Desafio mestre que mistura as disciplinas.
 
-**Atalho de Nível.** Como não sabemos o quanto a criança já domina, na entrada da Dungeon ela pode tentar passar um Nível inteiro vencendo direto o Desafio épico, com Conceitos sorteados de todo o Nível. Cada Perfil tem **uma única tentativa por Nível em cada Dungeon**: acertando, o Nível conta como concluído; errando, joga o Nível normalmente e não tenta de novo. Erro no Atalho não tira energia.
+**Atalho de Nível.** Como não sabemos o quanto a criança já domina, na entrada da Dungeon ela pode tentar passar um Nível inteiro vencendo direto o Desafio épico, com Conceitos sorteados de todo o Nível. Cada Perfil tem **uma única tentativa por Nível em cada Dungeon**: acertando, o Nível conta como concluído; errando, joga o Nível normalmente e não tenta de novo. Erro no Atalho não tira energia. Acertar o Atalho também entrega o Item de troca daquele Nível, para o Marco da outra torre nunca ficar sem saída (ADR 0002).
 
-- **Andar é a unidade gerada.** A geração procedural monta um andar inteiro de uma vez (todas as salas e conexões), não sala por sala.
-- **Cada andar tem um ponto de fast travel**, que também salva o progresso. O jogo também salva sozinho a cada sala e ao pausar.
-- **O item exigido vem sempre do mesmo nível da outra dungeon**, nunca de um nível acima. Assim a criança nunca fica travada esperando algo impossível.
+- **Andar é a unidade gerada.** A geração procedural monta um andar inteiro de uma vez (todas as salas e conexões), não sala por sala. O Andar é um grafo livre de Salas; as portas trancadas são Puzzles que abrem quando a criança resolve o Desafio, sem chaves (ADR 0003).
+- **Plano do Nível.** Quantos Andares tem um Nível (3 a 4 no MVP) e em qual ficam a Sala do Item, o Marco e o Desafio épico é sorteado por seed. Um Andar tem de 6 a 9 Salas, e os limites ficam em dados.
+- **Descanso:** Sala opcional que devolve um pouco de Energia, uma vez só (2 no MVP, em dados).
+- **Cada andar tem um Fast travel**, numa Sala que a criança precisa encontrar, e que também salva o progresso. Sem tê-lo achado, ela retoma da entrada do Andar. O jogo também salva sozinho a cada sala e ao pausar.
+- **O item exigido vem sempre do mesmo nível da outra dungeon**, nunca de um nível acima. Ele fica numa Sala do Item, de um Andar anterior ao Marco da própria dungeon, e a criança o guarda entre Expedições (não se perde quando a Energia zera). Assim a criança nunca fica travada esperando algo impossível (ADR 0002).
+- **Nível liberado e Nível concluído.** O Perfil tem um só Nível liberado, nas duas torres, que sobe quando a criança vence o Desafio mestre. Cada Dungeon guarda, por Nível, se o Desafio épico foi concluído. O Desafio mestre acontece no Lobby, num portal próprio, e abre quando os dois épicos do Nível estão concluídos.
 - **Desafio épico e mestre só usam conceitos já praticados** naquele nível; são uma revisão divertida, não uma prova surpresa. A exceção é o Atalho de Nível, que sorteia Conceitos de todo o Nível e por isso é opcional e sem punição.
 - **Escopo do MVP:** 3 níveis em cada dungeon, um por ano escolar (1º, 2º e 3º), com desafio mestre entre eles e desafios opcionais de antecipação no fim de cada nível.
 
 ### Expedição e progressão
 
 - **Duração:** 20 minutos ou mais, com pausa a qualquer momento, já que uma criança de 6 anos raramente fica 20 minutos seguidos.
-- **Fim da Expedição:** termina quando a criança decide voltar ou quando a energia acaba. Ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Com energia zerada, volta ao Lobby, perde só recursos temporários e pode recomeçar do último ponto de fast travel.
+- **Fim da Expedição:** termina quando a criança decide voltar ou quando a energia acaba. Ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Com energia zerada, volta ao Lobby, perde só recursos temporários (o Item de troca fica) e pode recomeçar do último Fast travel encontrado, ou da entrada do Andar.
 - **Narrativa:** mínima no MVP, só o contexto das missões.
 - **Multiplayer e social:** nenhum. Sem ranking entre crianças; a motivação vem de recordes pessoais e metas.
 

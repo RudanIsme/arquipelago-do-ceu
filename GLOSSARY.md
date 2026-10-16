@@ -58,20 +58,44 @@ _Avoid_: Arquipélago, torre (como termo de regra)
 Uma etapa da Dungeon que corresponde a um ano escolar (1º ao 3º no MVP). É uma sequência de Andares e termina num Desafio épico.
 _Avoid_: Fase, ano (para se referir à etapa)
 
+**Plano do Nível**:
+A divisão de um Nível em Andares: quantos são e em qual deles ficam a Sala do Item, o Marco e o Desafio épico. Cada Andar é gerado a partir do Plano do seu Nível.
+_Avoid_: Roteiro, mapa do Nível
+
 **Andar**:
-A unidade que o jogo gera de uma vez. Tem um ponto de fast travel, que também salva o progresso.
+A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que são Puzzles. Tem um Fast travel, que também salva o progresso.
 _Avoid_: Fase, mapa
 
 **Sala**:
-Cada espaço de um Andar, com uma função: combate, puzzle, descanso, fast travel, Marco ou Desafio épico.
+Cada espaço de um Andar, com uma função: combate, Puzzle, Descanso, Fast travel, Marco ou Desafio épico.
 _Avoid_: Ilha (ilha é só o Lobby e o cenário), room
+
+**Descanso**:
+Sala opcional em que a criança recupera um pouco de Energia, uma vez só (a quantidade vem de dados). Não tem Desafio e não recupera tudo.
+_Avoid_: Cura, fogueira
+
+**Fast travel**:
+Sala de um Andar que a criança precisa encontrar; ao chegar nela o progresso é salvo e ela pode voltar ao Lobby e retomar dali. Sem tê-lo encontrado, a criança retoma da entrada do Andar.
+_Avoid_: Checkpoint, save
+
+**Sala do Item**:
+Sala de combate ou de Puzzle cujo prêmio é o Item de troca do Nível.
+_Avoid_: Baú
+
+**Puzzle**:
+Sala em que a Missão é a mesma do combate, mas o alvo é uma porta ou uma ponte, sem criatura e sem Bolha de névoa. A porta abre quando o Desafio é resolvido; não existe chave. Erro tira 1 de Energia e o Desafio recomeça com outros números.
+_Avoid_: Quebra-cabeça
 
 **Marco**:
 Sala de um Andar que só se passa com um Item de troca.
 _Avoid_: Portão, checkpoint (checkpoint é o fast travel)
 
+**Nível liberado**:
+O Nível até o qual o Perfil pode jogar e treinar, nas duas Dungeons. Só sobe quando a criança vence o Desafio mestre. É diferente de Nível concluído, que é de uma Dungeon e conta o Desafio épico vencido, por jogo ou por Atalho de Nível.
+_Avoid_: Nível atual, nível do Perfil
+
 **Item de troca**:
-Item de uma Dungeon, sempre do mesmo Nível, exigido para passar um Marco da outra Dungeon.
+Item de uma Dungeon, sempre do mesmo Nível, exigido para passar um Marco da outra Dungeon. Fica numa Sala de um Andar anterior ao Marco da própria Dungeon, então as duas torres nunca esperam uma pela outra. Fica com a criança entre Expedições: não se perde quando a Energia zera.
 _Avoid_: Chave
 
 ### Progressão
@@ -85,11 +109,11 @@ O desafio que fecha um Nível, dentro de uma só Dungeon; concluí-lo é finaliz
 _Avoid_: Chefe
 
 **Atalho de Nível**:
-Tentativa, feita na entrada da Dungeon, de passar um Nível inteiro vencendo direto o Desafio épico, com Conceitos sorteados de todo o Nível. Cada Perfil tem uma só tentativa por Nível em cada Dungeon: acertando, o Nível conta como concluído; errando, joga o Nível normalmente e não tenta de novo.
+Tentativa, feita na entrada da Dungeon, de passar um Nível inteiro vencendo direto o Desafio épico, com Conceitos sorteados de todo o Nível. Cada Perfil tem uma só tentativa por Nível em cada Dungeon: acertando, o Nível conta como concluído e entrega o Item de troca daquele Nível; errando, joga o Nível normalmente e não tenta de novo.
 _Avoid_: Pulo, teste de nível
 
 **Desafio mestre**:
-O desafio que mistura as duas disciplinas e permite subir de Nível nas duas Dungeons.
+O desafio que mistura as duas disciplinas e permite subir de Nível nas duas Dungeons. Acontece no Lobby, num portal próprio, e só abre quando os dois Desafios épicos do Nível estão concluídos, inclusive pelo Atalho de Nível.
 _Avoid_: Prova
 
 **Energia**:
