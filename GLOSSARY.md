@@ -35,7 +35,7 @@ A coleção do Perfil, com as criaturas libertadas (cartas de revisão) e os Cos
 _Avoid_: Biblioteca de descobertas
 
 **Cosmético**:
-Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio.
+Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
 _Avoid_: Skin
 
 **Equipamento** (experimento do PR #97, não decidido como regra):
@@ -63,19 +63,23 @@ A divisão de um Nível em Andares: quantos são e em qual deles ficam a Sala do
 _Avoid_: Roteiro, mapa do Nível
 
 **Andar**:
-A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que são Puzzles. Tem um Fast travel, que também salva o progresso.
+A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que são Puzzles. Tem um Fast travel, que também salva o progresso. A escada vale nos dois sentidos e cada Andar guarda as Salas visitadas e vencidas (ADR 0004). No mapa, a Sala vizinha ainda não visitada aparece sob névoa, sem dizer o que é, e a que ainda pede uma vitória tem um cadeado.
 _Avoid_: Fase, mapa
 
 **Sala**:
 Cada espaço de um Andar, com uma função: combate, Puzzle, Descanso, Fast travel, Marco ou Desafio épico. Combate, Puzzle, Marco e Desafio épico precisam ser vencidos para seguir a uma Sala nova; voltar a uma Sala já visitada é sempre permitido.
 _Avoid_: Ilha (ilha é só o Lobby e o cenário), room
 
+**Andar completo**:
+Um Andar com todas as Salas resolvidas: Combate, Puzzle, Marco e Desafio épico vencidos, e Descanso, Fast travel e Sala do Item (que é um combate) já visitados ou vencidos. Entrada e saída não contam. É mostrado como "4 de 7" no mapa, ganha um selo e é registrado uma única vez; a barra cheia nunca bloqueia nada, e o Nível se conclui só com o Desafio épico.
+_Avoid_: Andar 100%
+
 **Descanso**:
 Sala opcional em que a criança recupera um pouco de Energia, uma vez só (a quantidade vem de dados). Não tem Desafio e não recupera tudo.
 _Avoid_: Cura, fogueira
 
 **Fast travel**:
-Sala de um Andar que a criança precisa encontrar; ao chegar nela o progresso é salvo e ela pode voltar ao Lobby e retomar dali. Sem tê-lo encontrado, a criança retoma da entrada do Andar.
+Sala de um Andar que a criança precisa encontrar; ao chegar nela o progresso é salvo e ela pode voltar ao Lobby e retomar dali. Ao recomeçar depois de zerar a Energia, a criança volta ao último Fast travel que achou, em qualquer Andar; sem nenhum, à entrada do Andar mais alto que visitou.
 _Avoid_: Checkpoint, save
 
 **Sala do Item**:

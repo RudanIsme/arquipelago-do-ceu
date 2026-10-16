@@ -122,3 +122,12 @@ jobs:
             & build-e2e/ArquipelagoDoCeu.console.exe --headless -- --driver=$etapa --save=$save --seed-do-mundo=1
             if ($LASTEXITCODE -ne 0) { Write-Error "A etapa $etapa falhou."; exit 1 }
           }
+      - name: Teste de ponta a ponta dos Andares (escada nos dois sentidos, Andar completo e Cosmético, mapa explorado depois de zerar a Energia)
+        run: |
+          foreach ($etapa in "torre-andares", "torre-explorado") {
+            Write-Host "== $etapa"
+            $save = Join-Path $PWD "e2e-$etapa-save.json"
+            Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue
+            & build-e2e/ArquipelagoDoCeu.console.exe --headless -- --driver=$etapa --save=$save --seed-do-mundo=1
+            if ($LASTEXITCODE -ne 0) { Write-Error "A etapa $etapa falhou."; exit 1 }
+          }

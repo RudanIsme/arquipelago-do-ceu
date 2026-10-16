@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
@@ -11,9 +12,11 @@ namespace ArquipelagoDoCeu;
 public partial class Main
 {
 	const string FallbackFloorsPath = "res://data/andares-reserva.json";
+	const string CosmeticsPath = "res://data/cosmeticos.json";
 
 	ProgressService progress = null!;
 	FallbackFloors? fallbackFloors;
+	CosmeticCatalog? cosmetics;
 	DungeonRun? dungeon;
 	bool inDungeon;
 
@@ -86,9 +89,16 @@ public partial class Main
 		training.End();
 		var tower = TowerName(discipline);
 		var towerLevel = level ?? UnlockedLevel();
+		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
+		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
+		if (startFloor == 0 && !shortcut && progress.LastFastTravel(current.Id, discipline, towerLevel) is { } last)
+		{
+			startFloor = last.Floor;
+			atFastTravel = true;
+		}
 		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut));
+			progress, floors.Value!, LoadCosmetics(), equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -125,6 +135,23 @@ public partial class Main
 		dungeonPlayer.ApplyEquipment(ActiveEquipment);
 		dungeonPlayer.SpeedMultiplier = equipmentBonuses.SpeedMultiplier;
 		dungeonPlayer.ReduceMotion = player.ReduceMotion;
+	}
+
+	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
+	CosmeticCatalog LoadCosmetics()
+	{
+		if (cosmetics is not null) return cosmetics;
+		using var file = FileAccess.Open(CosmeticsPath, FileAccess.ModeFlags.Read);
+		var parsed = file is null ? Result<CosmeticCatalog>.Fail($"Não foi possível abrir {CosmeticsPath}: {FileAccess.GetOpenError()}") : CosmeticCatalog.Parse(file.GetAsText());
+		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
+		return cosmetics = parsed.IsOk ? parsed.Value! : CosmeticCatalog.Empty;
+	}
+
+	// Os Cosméticos que o Perfil já ganhou, com nome e descrição, para o Álbum.
+	IReadOnlyList<Cosmetic> OwnedCosmetics()
+	{
+		var catalog = LoadCosmetics();
+		return current is null ? [] : progress.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
 	}
 
 	Result<FallbackFloors> LoadFallbackFloors()

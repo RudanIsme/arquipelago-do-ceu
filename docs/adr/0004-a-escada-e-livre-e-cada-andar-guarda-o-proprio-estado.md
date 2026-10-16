@@ -1,0 +1,11 @@
+# A escada vale nos dois sentidos e cada Andar guarda o próprio estado
+
+A criança sobe pela saída do Andar e desce pela entrada, e volta a um Andar anterior sem refazer nada: cada Andar guarda, dentro da Expedição, as Salas visitadas, as vencidas e os Descansos usados. Só o Marco (sem o Item) e o Desafio épico travam o avanço; explorar todas as Salas é opcional, e o Nível se conclui com o Desafio épico, sem pedir 100%. O ADR 0003 continua valendo: o grafo, os Puzzles como portas e o Plano do Nível não mudam.
+
+O que a criança explorou (Salas visitadas e vencidas, e os Andares completos) entra no save e volta ao abrir a Expedição, também depois de a Energia zerar, porque ver o mapa sumir seria punição. Os Descansos usados não entram no save: cada Expedição nova os tem de volta, e dentro da mesma continua "uma vez só por Sala". Quem recomeça volta ao último Fast travel que achou, em qualquer Andar; sem nenhum, à entrada do Andar mais alto que visitou. Os Fast travels de outros Andares aparecem no mapa, mas não servem para viajar entre Andares neste MVP.
+
+O mapa mostra só o que foi explorado: a Sala visitada, a vizinha sob névoa (sem dizer o tipo) e o cadeado nas que ainda pedem uma vitória; a dois passos ou mais, nem aparece. O Andar tem uma barra "4 de 7" (combate, Puzzle, Marco e épico contam quando vencidos; Descanso e Fast travel, quando visitados; a Sala do Item é um combate e conta vencida) e, resolvidas todas, um selo de Andar completo, registrado uma única vez e que rende um Cosmético pequeno definido em dados.
+
+Escolhemos isso em vez de o Andar zerar ao subir (como no primeiro corte das Dungeons) para a criança poder voltar a um Puzzle ou a um Fast travel que deixou para trás, e em vez de exigir todas as Salas para concluir o Nível para a barra cheia nunca bloquear nada. O custo é um save maior (uma entrada por Andar visitado) e um estado a validar ao carregar: Salas que não existem mais (o gerador mudou de versão) são ignoradas, e um save antigo, sem estado por Andar, abre tratando o caminho até o Fast travel como vencido e o resto em névoa.
+
+Voltar a um estado que apaga o Andar ao subir, ou prender o Nível a 100% das Salas, muda a Expedição e o formato do save; por isso o registro.
