@@ -39,12 +39,12 @@ static class TrainingFixtures
 		return JsonSerializer.Deserialize<Mission>(json, Options)!;
 	}
 
-	public static Result<TrainingSession> Start(string discipline, IEnumerable<Mission> missions, int level = 1, int year = 1, int difficulty = 1, ulong seed = 1) =>
-		TrainingSession.Start(Rules, Game.MaxEnergy, level, new TrainingSetup(discipline, year, difficulty), missions, new Pcg32(seed));
+	public static Result<CombatSession> Start(string discipline, IEnumerable<Mission> missions, int level = 1, int year = 1, int difficulty = 1, ulong seed = 1) =>
+		CombatSession.Start(Rules, Game.MaxEnergy, level, new TrainingSetup(discipline, year, difficulty), missions, new Pcg32(seed));
 
-	public static TrainingSession Math(params Mission[] missions) => Start(TrainingSetup.Mathematics, missions).Value!;
+	public static CombatSession Math(params Mission[] missions) => Start(TrainingSetup.Mathematics, missions).Value!;
 
-	public static TrainingSession Name(params Mission[] missions) => Start(TrainingSetup.Portuguese, missions).Value!;
+	public static CombatSession Name(params Mission[] missions) => Start(TrainingSetup.Portuguese, missions).Value!;
 }
 
 public class EnergyTests

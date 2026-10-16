@@ -34,7 +34,7 @@ public partial class TrainingArea : Node
 	readonly CombatTime time;
 	readonly BubbleAttack bubble;
 	readonly IReadOnlyList<Mission> missions;
-	TrainingSession? session;
+	CombatSession? session;
 	OverlayScreen? panel;
 	EnergyView? energyView;
 	bool reacting;
@@ -137,7 +137,7 @@ public partial class TrainingArea : Node
 
 	string? TryStart(TrainingSetup setup)
 	{
-		var started = TrainingSession.Start(rules.Combat, rules.MaxEnergy + extraEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + extraEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!started.IsOk) return started.Error;
 
 		session = started.Value;
