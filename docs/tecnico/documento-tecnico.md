@@ -67,7 +67,7 @@ Arquivo JSON local em `user://`, com número de versão do formato. Guarda a see
 
 ### Voz e câmera
 
-- TTS pela API embutida do Godot (`DisplayServer.TtsSpeak`), escolhendo uma voz pt-BR do sistema. O jogo nunca interrompe uma fala em andamento: guarda a própria fila e só manda falar quando a anterior termina (ADR 0004).
+- TTS pela API embutida do Godot (`DisplayServer.TtsSpeak`), escolhendo uma voz pt-BR do sistema. O jogo nunca interrompe uma fala em andamento: guarda a própria fila e só manda falar quando a anterior termina (ADR 0005).
 - Câmera 3D ortográfica em ângulo isométrico; estilo alvo 3D isométrico detalhado, com assets CC0 estilizados como provisórios no MVP. Para manter o desempenho com arte detalhada: iluminação pré-calculada (lightmaps), LOD e um orçamento de polígonos por sala definido na prova técnica.
 
 ### Combate

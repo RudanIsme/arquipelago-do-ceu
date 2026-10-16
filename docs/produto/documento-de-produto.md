@@ -50,6 +50,8 @@ O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de car
 | Matemático | Matemática | Com as 4 operações compõe números para desarmar inimigos; ao aprender frações, também divide inimigos ou pontes em partes |
 | Escriba | Português | Com sílabas forma palavras que abrem portas; ao aprender frases, ordena mensagens que acalmam criaturas |
 
+**Opção em aberto: trocar de Papel dentro da Dungeon.** No MVP cada torre tem um só Papel. Se mais tarde houver torres híbridas (Andares com Matemática e Português juntos), o HUD de combate pode ganhar um botão **Trocar** no painel do Papel, para a criança alternar entre Matemático e Escriba (no teclado, a tecla Q). Trocar não cura nem muda a Energia, e cada Andar só aceita o Papel que combina com a Sala. Enquanto a torre tiver um só Papel, o botão fica escondido. Não está decidido; depende de existirem torres híbridas.
+
 **Cosméticos:** roupas, cores, acessórios e variações visuais da ferramenta (como o tipo de arma). Não mudam o Papel nem dão vantagem. *Exceção em aberto: o experimento de equipamentos (PR #97) dá bônus pequenos de velocidade, Energia e alcance; precisa ser decidido se vira regra ou volta a ser só visual (ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`).* Só se ganham por aprendizado e exploração nas Dungeons (libertar criatura, dominar conceito, concluir Nível), nunca por compra, sorteio ou sequência diária.
 
 Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. Na Área de treino do Lobby ela pratica o mesmo combate das Dungeons contra o Boneco de treino, com uma Energia própria; se a Energia zera, a criança só sai da Área de treino, sem perder nada. **O treino no Lobby não conta para o progresso**: habilidades, caixas de memória e dificuldade adaptativa só mudam com o que acontece nas Dungeons.
@@ -266,3 +268,4 @@ Alternativas que mantêm a motivação:
 - [x] Tema Arquipélago do Céu e nomes Matemático e Escriba aprovados como provisórios; nome do jogo e dos Papéis ficam em dados e podem mudar
 - [ ] Quais habilidades da BNCC entram primeiro em cada ano: depende do consenso de pedagogia, psicologia e fonoaudiologia (há uma ordem recomendada provisória, usada no MVP)
 - [ ] Quando entram voz e traçado de letras (padrão: logo após o MVP, junto com tablets)
+- [ ] Trocar de Papel dentro da Dungeon, se surgirem torres híbridas (ver "Personagem e Papéis")
