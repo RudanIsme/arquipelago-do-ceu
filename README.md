@@ -69,7 +69,7 @@ Para rodar todos os testes (não precisam do Godot aberto; a CI roda este mesmo 
 dotnet test game.tests
 ```
 
-Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil, as telas de Perfil, Personagem e configurações, o treino contra o Boneco, a oficina de equipamentos e as quatro interfaces do experimento do PR #97 (Essencial, Livro, Aventura e Cristais; ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`). As Dungeons ainda não existem.
+Para editar no Godot, abra a pasta `game/` pelo gerenciador de projetos. A cena inicial, `Main`, monta o Lobby, o Personagem do Perfil, as telas de Perfil, Personagem e configurações, o treino contra o Boneco, a oficina de equipamentos e as quatro interfaces do experimento do PR #97 (Essencial, Livro, Aventura e Cristais; ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`). As duas torres são Dungeons jogáveis em greybox: a criança entra pela porta da torre na beira da ilha (a Torre dos Números e a Torre das Letras), anda de Sala em Sala pelas portas (E ou o botão), luta, abre Puzzles, descansa, acha o Fast travel, ganha o Item de troca, passa o Marco, vence o Desafio épico e, com as duas torres concluídas, enfrenta o Desafio mestre no portal roxo do Lobby. Para abrir o jogo com um comando: `.\tools\run.cmd`.
 
 Controles no Lobby: WASD ou setas (relativo à tela), Shift corre, roda do mouse, pinça ou Page Up e Page Down para o zoom (Home reinicia), F8 compara a capa, F9 abre a prática de pesca (modo de teste), clique do mouse ou toque no chão para ir até lá (o caminho contorna árvores e lagoa). Perto do Álbum ou do portal aparece um botão (ou a tecla E) para usar o objeto. Em Configurações dá para mudar tamanho do texto, voz, redução de animações, fonte para dislexia, Modo calmo e as dicas de controle; tudo é gravado no save.
 
@@ -81,9 +81,19 @@ O `DevDriver` percorre o jogo como uma criança faria (clica, digita, segura tec
 & $env:GODOT --path game -- --driver=movimento --saida=C:\caminho\da\pasta
 ```
 
-Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config`, `animacao` (imprime no console se a animação de andar está ligada), `camera`, `efeitos`, `boneco`, `boneco-dislexia`, `erro`, `energia`, `bolha`, `calmo`, `treino-nivel`, `nome`, `nome-erro`, `nivel2-matematica`, `nivel2-escrita` e `nivel3-frase`. `--pull-qa` roda o QA da pesca (ver `docs/tecnico/teste-pesca-neon.md`). `--reduzir-animacoes` liga a redução de animações e `--nivel=N` libera os Níveis até N no treino. O piloto trabalha numa cópia do save do usuário, então não mexe nos seus Perfis.
+Cenários: `criar`, `escolher`, `personagem`, `movimento`, `mouse`, `lobby`, `album`, `portal`, `tecla`, `config`, `animacao` (imprime no console se a animação de andar está ligada), `camera`, `efeitos`, `boneco`, `boneco-dislexia`, `erro`, `energia`, `bolha`, `calmo`, `treino-nivel`, `nome`, `nome-erro`, `nivel2-matematica`, `nivel2-escrita`, `nivel3-frase`, `andar` (desenha o Plano de um Nível), `torre`, `torre-salas`, `torre-letras`, `torre-itens`, `torre-epico`, `torre-atalho`, `torre-atalho-erro`, `torre-fast-travel`, `torre-derrota` e `mestre` (as torres e o Desafio mestre). Em build de depuração, `--seed-do-mundo=N` fixa a seed dos Andares e `--sem-voz` desliga a voz. `--pull-qa` roda o QA da pesca (ver `docs/tecnico/teste-pesca-neon.md`). `--reduzir-animacoes` liga a redução de animações e `--nivel=N` libera os Níveis até N no treino. O piloto trabalha numa cópia do save do usuário, então não mexe nos seus Perfis.
 
-### Teste de ponta a ponta
+### Teste de ponta a ponta do Nível 1
+
+O roteiro `e2e-3` joga o Nível 1 inteiro, sem janela: o Atalho de Nível numa torre, a outra torre jogada (Descanso, Puzzle, Fast travel, Sala do Item, Marco, Desafio épico) e o Desafio mestre, que libera o Nível 2. O `e2e-4`, num segundo processo, reabre o save e confere o progresso. A CI roda os dois depois do e2e do treino.
+
+```powershell
+$save = "$env:TEMPe2e-nivel.json"; Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue
+& $env:GODOT --headless --path game -- --driver=e2e-3 --save=$save --seed-do-mundo=1
+& $env:GODOT --headless --path game -- --driver=e2e-4 --save=$save --seed-do-mundo=1
+```
+
+### Teste de ponta a ponta do treino
 
 O roteiro `e2e-1` cria o Perfil, anda, treina nos dois Papéis e confere que o save não mudou; o `e2e-2`, num segundo processo, reabre o jogo e confere que o Perfil e o progresso são os mesmos. Uma verificação que falha faz o jogo sair com código 1. A CI roda os dois no executável de depuração exportado (job `e2e-windows`). Para rodar aqui, sem janela:
 

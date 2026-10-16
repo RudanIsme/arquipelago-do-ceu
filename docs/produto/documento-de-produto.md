@@ -190,7 +190,7 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 
 | Recurso | No MVP | Depois |
 | --- | --- | --- |
-| Lobby | Ilha cercada por cinco torres (Matemática e Português em construção; Ciências, História e Geografia "em breve"), Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles | Decoração, mais torres |
+| Lobby | Ilha cercada por cinco torres (Matemática e Português abertas, em greybox; Ciências, História e Geografia "em breve"), Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles | Decoração, mais torres |
 | Dungeon | Matemática e Português, 3 níveis cada (1º ao 3º ano), andares gerados inteiros, desafios mestres | Novos biomas e tipos de sala |
 | Fast travel | Um ponto por andar, que também salva | Mapa do mundo completo |
 | Personagens | Matemático e Escriba, 2 a 3 habilidades cada | Mais personagens, Ciências |
@@ -203,9 +203,22 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 | Painéis | Nenhum | Responsáveis e professores |
 | Plataforma | PC (Windows) | Linux, tablets Android (toque, traçado e voz) |
 
+### Segundo marco: Dungeons jogáveis (greybox)
+
+Depois do Lobby, as duas torres ficaram jogáveis, sem arte nem tema definitivos (ver ADRs 0002 e 0003 e o glossário):
+
+- A criança entra pela porta da torre, na beira da ilha. O Plano do Nível sorteia de 3 a 4 Andares, e cada Andar é um grafo de 6 a 9 Salas gerado por seed; se o validador reprovar, entra um Andar feito à mão.
+- Salas: entrada, combate, Puzzle (porta trancada, sem criatura e sem bolhas), Descanso (devolve 2 de Energia, uma vez), Fast travel, Marco, Desafio épico e a saída (escada). Combate, Puzzle, Marco e épico precisam ser vencidos para seguir a uma Sala nova.
+- A Energia da Expedição segue de uma luta para a outra; zerar volta ao Lobby sem perder o Item de troca nem os Andares descobertos. O jogo usa as Missões do ano do Nível, com dificuldade que sobe com o Andar. Matemática do 3º ano ainda não tem Missões próprias e usa as do 2º.
+- O Fast travel é achado pela criança, salva o progresso e aparece no portal do Lobby; quem não achou nenhum recomeça no Andar mais fundo que já descobriu.
+- O Item de troca fica numa Sala de um Andar anterior ao Marco, e o Marco só abre com o Item da outra torre, do mesmo Nível.
+- O Desafio épico conclui o Nível naquela torre, e a criança escolhe continuar ou voltar. O Atalho de Nível, oferecido na porta da torre, leva direto ao épico com 3 Desafios sorteados do Nível; errar encerra a tentativa sem tirar Energia, e só há uma tentativa por Nível e torre. Acertar conclui o Nível e entrega o Item.
+- O Desafio mestre acontece no Lobby, num portal roxo que só abre com os dois épicos do Nível concluídos. São 4 Desafios alternando Matemática e Português contra o Guardião do Nível, e vencê-los sobe o Nível liberado nas duas torres.
+- Fora do marco, e ainda sem código: repetição espaçada, dificuldade adaptativa, Portal da Memória, Álbum com criaturas, Cosméticos por aprendizado e o cliente de rede.
+
 ### Primeiro marco: Lobby funcional
 
-O primeiro marco entregável é o Lobby funcional, sem Dungeons jogáveis. Prova a base técnica (Godot C#, cena 3D isométrica, entrada, salvamento, CI e build Windows), o contrato de conteúdo e o combate real, jogado contra o Boneco de treino.
+O primeiro marco entregável foi o Lobby funcional, ainda sem Dungeons jogáveis. Prova a base técnica (Godot C#, cena 3D isométrica, entrada, salvamento, CI e build Windows), o contrato de conteúdo e o combate real, jogado contra o Boneco de treino.
 
 - Criar e editar o Perfil e o Personagem (apelido, cores, características, acessórios). Todo Perfil começa no Nível 1.
 - Cena 3D caminhável, em greybox seguindo `mockups/lobby.png`; os assets CC0 entram depois, em ticket próprio.

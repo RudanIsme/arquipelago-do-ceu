@@ -46,7 +46,7 @@ public partial class DevDriver : Node
 			GD.PushError($"Piloto: {e}");
 			Failures++;
 		}
-		GetTree().Quit(Failures > 0 ? 1 : 0);
+		await GetParent<Main>().QuitAsync(Failures > 0 ? 1 : 0);
 	}
 
 	public async Task Wait(double seconds) => await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
@@ -54,6 +54,8 @@ public partial class DevDriver : Node
 	public async Task Shot(string name)
 	{
 		await Wait(0.25);
+		// Sem janela (--headless) não há imagem para gravar.
+		if (DisplayServer.GetName() == "headless") return;
 		GetViewport().GetTexture().GetImage().SavePng($"{outputDir}/{name}.png");
 	}
 
@@ -534,6 +536,12 @@ static class Scenarios
 				await d.Press("Efeitos visuais reduzidos: Desligado");
 				await d.Press("Fechar");
 				await d.Shot("02-efeitos-reduzidos");
+				break;
+			case "e2e-3":
+				await DungeonScenarios.E2eLevelFirst(d);
+				break;
+			case "e2e-4":
+				await DungeonScenarios.E2eLevelReopen(d);
 				break;
 			case "e2e-1":
 				await E2E.First(d);

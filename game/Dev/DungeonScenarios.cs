@@ -1,3 +1,4 @@
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -132,6 +133,94 @@ static class DungeonScenarios
 		var next = again.Expedition.Floor.Neighbors(again.Expedition.CurrentRoom).First(n => !again.Expedition.Visited.Contains(n));
 		d.Expect(await Step(d, again, next), "com o Item de troca o Marco abre");
 		await d.Shot("05-marco-aberto");
+	}
+
+	// Teste de ponta a ponta do Nível 1, para a CI (use --seed-do-mundo=1 e --save=<arquivo>, sem janela): o Atalho de Nível numa
+	// torre, a outra jogada inteira (Descanso, Puzzle, Fast travel, Item e Marco, épico) e o Desafio mestre. Depois o `e2e-4`,
+	// num segundo processo, reabre o jogo e confere que tudo continua no save.
+	public static async Task E2eLevelFirst(DevDriver d)
+	{
+		var save = d.Arg("save");
+		d.Expect(save != "", "o roteiro recebeu --save=<arquivo>");
+		await EnsureProfile(d);
+		var main = d.GetParent<Main>();
+		var profile = main.DevProfileId;
+		var progress = main.DevProgress;
+
+		// 1. Torre das Letras pelo Atalho de Nível: os Desafios sorteados, o épico, o Nível concluído e o Item.
+		var letters = await Enter(d, letters: true, shortcut: true);
+		if (letters is null) return;
+		d.Expect(letters.Expedition.Current.Kind == RoomKind.Epic, "o Atalho começa direto no Desafio épico");
+		for (var i = 0; i < 3; i++) { letters.DevWinRoom(); await d.Wait(0.4); }
+		d.Expect(progress.EpicDone(profile, "portugues", 1) && progress.HasItem(profile, "portugues", 1), "o Atalho concluiu a Torre das Letras e deu o Item");
+		await d.Press("Voltar ao Lobby");
+		await d.Wait(0.5);
+		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
+
+		// 2. Torre dos Números jogada inteira.
+		var math = await Enter(d);
+		if (math is null) return;
+		var expedition = math.Expedition;
+		await GoTo(d, math, RoomKind.Rest);
+		d.Expect(expedition.Current.Kind == RoomKind.Rest, "chegou ao Descanso");
+		expedition.Energy.Lose(3);
+		var before = expedition.Energy.Current;
+		math.Player.PlaceAt(DungeonWorld.FountainSpot + new Vector2(0.5f, 0.5f));
+		await d.Wait(0.3);
+		await d.Tap(Controls.Interact);
+		d.Expect(expedition.Energy.Current == before + 2, "o Descanso devolveu Energia");
+
+		await GoTo(d, math, RoomKind.Puzzle);
+		d.Expect(expedition.Current.Kind == RoomKind.Puzzle, "chegou a um Puzzle");
+		math.DevWinRoom();
+		await d.Wait(0.3);
+		d.Expect(expedition.IsCleared(expedition.CurrentRoom), "o Puzzle abriu");
+
+		await GoTo(d, math, RoomKind.FastTravel);
+		d.Expect(progress.FastTravels(profile).Any(p => p.Discipline == "matematica"), "o Fast travel foi salvo");
+
+		await GoTo(d, math, r => r.HoldsItem);
+		if (!progress.HasItem(profile, "matematica", 1)) { math.DevWinRoom(); await d.Wait(0.3); }
+		d.Expect(progress.HasItem(profile, "matematica", 1), "a Sala do Item deu o Item de troca");
+
+		await GoTo(d, math, r => r.Kind == RoomKind.Marco);
+		var beyond = expedition.Floor.Neighbors(expedition.CurrentRoom).First(n => !expedition.Visited.Contains(n));
+		d.Expect(await Step(d, math, beyond), "o Item da outra torre abriu o Marco");
+
+		await GoTo(d, math, RoomKind.Epic);
+		d.Expect(expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
+		math.DevWinRoom();
+		await d.Wait(0.5);
+		d.Expect(progress.EpicDone(profile, "matematica", 1), "o épico concluiu a Torre dos Números");
+		await d.Press("Voltar ao Lobby");
+		await d.Wait(0.5);
+		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
+
+		// 3. Os dois épicos concluídos abrem o Desafio mestre; vencê-lo libera o Nível 2.
+		d.Expect(progress.MasterOpen(profile, 1), "o Desafio mestre está aberto");
+		await WalkTo(d, 4, -4);
+		await d.Tap(Controls.Interact);
+		await d.Press("Começar o Desafio mestre");
+		d.Expect(main.DevMaster.Active, "o Desafio mestre começou");
+		for (var i = 0; i < 4; i++) { main.DevMaster.DevWinRound(); await d.Wait(0.3); }
+		d.Expect(main.DevLevel == 2, "vencer o Desafio mestre liberou o Nível 2");
+
+		if (save != "") File.WriteAllBytes(save + ".snapshot", File.ReadAllBytes(save));
+	}
+
+	public static async Task E2eLevelReopen(DevDriver d)
+	{
+		await d.Wait(0.5);
+		var main = d.GetParent<Main>();
+		var profile = main.DevProfileId;
+		var progress = main.DevProgress;
+		d.Expect(d.Player is { Enabled: true }, "o Perfil abriu sozinho ao reabrir o jogo");
+		d.Expect(main.DevLevel == 2, "o Nível liberado continua 2");
+		d.Expect(progress.EpicDone(profile, "matematica", 1) && progress.EpicDone(profile, "portugues", 1), "os dois épicos continuam concluídos");
+		d.Expect(progress.HasItem(profile, "matematica", 1) && progress.HasItem(profile, "portugues", 1), "os dois Itens de troca continuam com a criança");
+		d.Expect(progress.ShortcutTried(profile, "portugues", 1), "o Atalho de Nível continua gasto");
+		d.Expect(progress.FastTravels(profile).Count > 0, "o Fast travel continua guardado");
+		d.Expect(!progress.MasterOpen(profile, 2), "no Nível 2 o Desafio mestre volta a pedir os épicos");
 	}
 
 	// O Desafio mestre: o portal avisa o que falta, abre com os dois épicos, perder não pune e vencer sobe o Nível.
@@ -284,6 +373,14 @@ static class DungeonScenarios
 	// O Personagem anda devagar: clica no hexágono e espera chegar de verdade.
 	static async Task WalkTo(DevDriver d, int q, int r)
 	{
+		// Sem janela não há mouse: o piloto coloca o Personagem no hexágono, e o resto (interagir) usa as ações de sempre.
+		if (DisplayServer.GetName() == "headless")
+		{
+			var spot = Lobby.HexToWorld(q, r);
+			d.Player?.PlaceAt(new Vector2(spot.X, spot.Z));
+			await d.Wait(0.4);
+			return;
+		}
 		await d.ClickHex(q, r);
 		var target = Lobby.HexToWorld(q, r);
 		for (var i = 0; i < 100; i++)

@@ -65,7 +65,10 @@ public partial class Main : Node3D
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
-		voice = new VoiceService(new GodotSpeechEngine(), settings);
+		// Fechar a janela passa por QuitAsync, para a voz terminar antes de o jogo sair.
+		GetTree().AutoAcceptQuit = false;
+		speech = new GodotSpeechEngine();
+		voice = new VoiceService(speech, settings);
 
 		Controls.Register();
 		lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
@@ -371,6 +374,27 @@ public partial class Main : Node3D
 	}
 
 	public override void _ExitTree() => Engine.TimeScale = 1.0;
+
+	GodotSpeechEngine speech = null!;
+
+	// Sai do jogo depois de a fala em andamento terminar (no máximo alguns segundos); o piloto de desenvolvimento usa o mesmo caminho.
+	public async System.Threading.Tasks.Task QuitAsync(int code = 0)
+	{
+		if (quitting) return;
+		quitting = true;
+		speech?.Stop();
+		var start = Time.GetTicksMsec();
+		while (speech is { Silent: false } && Time.GetTicksMsec() - start < 6000)
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		GetTree().Quit(code);
+	}
+
+	bool quitting;
+
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest) _ = QuitAsync();
+	}
 
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
 	void ApplyAppearance()
