@@ -1,6 +1,6 @@
 # Compila o C# e abre o jogo. Argumentos extras vão para o jogo, depois do `--`:
-#   .\tools\run.ps1
-#   .\tools\run.ps1 --driver=movimento --saida=$env:TEMP\capturas
+#   .\tools\run.cmd
+#   .\tools\run.cmd --driver=movimento --saida=$env:TEMP\capturas
 param([Parameter(ValueFromRemainingArguments)] [string[]] $JogoArgs)
 
 $ErrorActionPreference = 'Stop'
