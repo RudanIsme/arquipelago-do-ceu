@@ -90,7 +90,7 @@ public partial class EnergyView : PanelContainer
 	readonly Label label = new();
  Button leave = null!;
 
-	public EnergyView()
+	public EnergyView(string leaveText = "Sair do treino")
 	{
 		MouseFilter = MouseFilterEnum.Stop;
 		var style = new StyleBoxFlat { BgColor = new Color(Color.FromHtml("#1B1424"), 0.9f), BorderColor = Color.FromHtml("#D9A64A") };
@@ -105,7 +105,7 @@ public partial class EnergyView : PanelContainer
 		label.AddThemeColorOverride("font_color", UiKit.TextColor);
 		row.AddChild(label);
 		row.AddChild(dots);
-		leave = UiKit.BigButton("Sair do treino", () => LeaveRequested?.Invoke(), 230);
+		leave = UiKit.BigButton(leaveText, () => LeaveRequested?.Invoke(), 230);
 		leave.FocusMode = FocusModeEnum.None;
 		row.AddChild(leave);
 		AddChild(row);

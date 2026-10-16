@@ -113,3 +113,12 @@ jobs:
             & build-e2e/ArquipelagoDoCeu.console.exe --headless -- --driver=$etapa --save=$save
             if ($LASTEXITCODE -ne 0) { Write-Error "A etapa $etapa falhou."; exit 1 }
           }
+      - name: Teste de ponta a ponta do Nível 1 (Atalho, as duas torres, Item e Marco, Desafio épico, Desafio mestre; fechar e reabrir)
+        run: |
+          $save = Join-Path $PWD "e2e-nivel-save.json"
+          Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue
+          foreach ($etapa in "e2e-3", "e2e-4") {
+            Write-Host "== $etapa"
+            & build-e2e/ArquipelagoDoCeu.console.exe --headless -- --driver=$etapa --save=$save --seed-do-mundo=1
+            if ($LASTEXITCODE -ne 0) { Write-Error "A etapa $etapa falhou."; exit 1 }
+          }

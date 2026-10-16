@@ -2,7 +2,7 @@
 
 ## O projeto
 
-**Arquipélago do Céu** é um roguelite educativo em 3D isométrico para crianças de 6 a 10 anos, com matemática e português (alfabetização). O Lobby funcional está implementado (Perfil, Personagem, treino contra o Boneco nos 3 Níveis, voz, configurações); as Dungeons ainda não. A documentação está em `docs/`.
+**Arquipélago do Céu** é um roguelite educativo em 3D isométrico para crianças de 6 a 10 anos, com matemática e português (alfabetização). O Lobby funcional está implementado (Perfil, Personagem, treino contra o Boneco nos 3 Níveis, voz, configurações); as duas torres (Dungeons) estão jogáveis em greybox, com Plano do Nível, Andares gerados por seed, Puzzle, Descanso, Fast travel, Item de troca e Marco, Desafio épico, Atalho de Nível e Desafio mestre. Faltam arte e tema das torres, repetição espaçada, dificuldade adaptativa e o cliente de rede. A documentação está em `docs/`.
 
 Idioma: português do Brasil nos documentos, textos do jogo e commits. Identificadores de código podem ficar em inglês.
 

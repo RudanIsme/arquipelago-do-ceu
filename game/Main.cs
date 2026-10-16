@@ -61,10 +61,14 @@ public partial class Main : Node3D
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
+		progress = new ProgressService(session);
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
-		voice = new VoiceService(new GodotSpeechEngine(), settings);
+		// Fechar a janela passa por QuitAsync, para a voz terminar antes de o jogo sair.
+		GetTree().AutoAcceptQuit = false;
+		speech = new GodotSpeechEngine();
+		voice = new VoiceService(speech, settings);
 
 		Controls.Register();
 		lobby = GD.Load<PackedScene>("res://Lobby/Lobby.tscn").Instantiate<Lobby>();
@@ -223,6 +227,7 @@ public partial class Main : Node3D
 		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
+		if (dungeon is not null) dungeon.Player.ReduceMotion = player.ReduceMotion;
 		lobby.ReduceMotion = player.ReduceMotion;
 		dummy.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
@@ -238,7 +243,7 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
-		training.DropTarget();
+		DropTarget();
 		if (screen is not null || overlay is not null || editor is not null || workshop is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
@@ -260,6 +265,7 @@ public partial class Main : Node3D
 		screen = null;
 		editor?.QueueFree();
 		editor = null;
+		dungeon?.Leave("");
 		if (current?.Id != profile.Id) training.End();
 		current = profile;
 		characterButton.Visible = true;
@@ -273,7 +279,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
-		training.DropTarget();
+		DropTarget();
 		if (editor is not null || screen is not null || overlay is not null || workshop is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
@@ -291,7 +297,7 @@ public partial class Main : Node3D
 
 	void ShowOverlay(OverlayScreen next)
 	{
-		training.DropTarget();
+		DropTarget();
 		if (overlay is not null || screen is not null || editor is not null || workshop is not null)
 		{
 			next.QueueFree();
@@ -314,7 +320,10 @@ public partial class Main : Node3D
 		switch (target)
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
-			case "portal": ShowOverlay(new PortalScreen()); break;
+			case "portal": ShowOverlay(BuildPortal()); break;
+			case "mestre": ShowMaster(); break;
+			case "torre-matematica": EnterTower(TrainingSetup.Mathematics); break;
+			case "torre-portugues": EnterTower(TrainingSetup.Portuguese); break;
 			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
@@ -340,15 +349,18 @@ public partial class Main : Node3D
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
 			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
 		AddChild(training);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
+		AddChild(master);
 	}
 
 
 	// O Nível a que o Perfil tem acesso. Em build de depuração, `--nivel=N` o força, só para o piloto de desenvolvimento testar os Níveis 2 e 3.
+	// O Nível sobe quando o Desafio mestre é vencido, então vale o do save, e não a cópia que a Main guardou ao entrar.
 	int UnlockedLevel()
 	{
 		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--nivel="))?["--nivel=".Length..] is { } text && int.TryParse(text, out var forced))
 			return forced;
-		return current?.Level ?? 1;
+		return current is null ? 1 : profiles.Find(current.Id) is { IsOk: true } fresh ? fresh.Value!.Level : current.Level;
 	}
 	// Avisos curtos sobre a cena somem sozinhos e também são ditos pela voz.
 	void Notify(string text)
@@ -363,6 +375,38 @@ public partial class Main : Node3D
 
 	public override void _ExitTree() => Engine.TimeScale = 1.0;
 
+	GodotSpeechEngine speech = null!;
+
+	// Sai do jogo depois de a fala em andamento terminar (no máximo alguns segundos); o piloto de desenvolvimento usa o mesmo caminho.
+	public async System.Threading.Tasks.Task QuitAsync(int code = 0)
+	{
+		if (quitting) return;
+		quitting = true;
+		speech?.Stop();
+		var start = Time.GetTicksMsec();
+		while (speech is { Silent: false } && Time.GetTicksMsec() - start < 6000)
+			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		WatchExit(code);
+		GetTree().Quit(code);
+	}
+
+	// O encerramento do TTS do sistema às vezes não termina, e a janela já fechada deixaria um processo preso e invisível.
+	// Se o jogo não sair em poucos segundos, o vigia o encerra, com o mesmo código de saída. Nada fica pendente nessa hora:
+	// o save é gravado de uma vez, a cada mudança.
+	static void WatchExit(int code) =>
+		new System.Threading.Thread(() =>
+		{
+			System.Threading.Thread.Sleep(8000);
+			System.Environment.Exit(code);
+		}) { IsBackground = true, Name = "Vigia da saída" }.Start();
+
+	bool quitting;
+
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest) _ = QuitAsync();
+	}
+
 	// O Personagem do Lobby usa sempre a aparência gravada do Perfil ativo.
 	void ApplyAppearance()
 	{
@@ -373,7 +417,9 @@ public partial class Main : Node3D
 	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
 	void UpdatePlayerControl()
 	{
-		player.Enabled = current is not null && screen is null && editor is null && overlay is null && workshop is null;
+		var free = current is not null && screen is null && editor is null && overlay is null && workshop is null;
+		player.Enabled = free && !inDungeon;
+		dungeon?.SetEnabled(free);
 		bottomBar.Visible = player.Enabled;
 		RefreshJourneyVisibility();
 	}
@@ -382,21 +428,24 @@ public partial class Main : Node3D
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
-		if (player is null || !player.Enabled || GetViewport().GuiGetHoveredControl() is not null || !training.HitsDummy(click.Position)) return;
+		var actor = inDungeon ? dungeon?.Player : player;
+		var combat = dungeon?.Combat ?? training;
+		if (actor is null || !actor.Enabled || GetViewport().GuiGetHoveredControl() is not null || !combat.HitsDummy(click.Position)) return;
 		GetViewport().SetInputAsHandled();
-		training.ToggleTarget();
+		combat.ToggleTarget();
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
-		if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
+		if (@event.IsActionPressed(Controls.Target) && inDungeon && dungeon is { Player.Enabled: true }) dungeon.Combat.ToggleTarget();
+		else if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
 	}
 
 	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
 	public override void _Process(double delta)
 	{
-		if (player is null) return;
+		if (player is null || inDungeon) return;
 		journeyHud?.SetNotice(notice.Text);
 		journeyHud?.SetPlayState(player.Enabled && journey.Variant != "base" && !training.HasTarget);
 		if (returnJourney is not null && journey.Variant == "base") returnJourney.Visible = player.Enabled && !training.HasTarget;

@@ -52,6 +52,13 @@ public partial class Player : Node3D
 
 	public Vector2 GroundPosition => mover.Position;
 
+	// Põe o Personagem num ponto do chão de uma vez, por exemplo ao entrar numa Sala.
+	public void PlaceAt(Vector2 point)
+	{
+		mover.Place(point);
+		Place();
+	}
+
 	// Vira o Personagem para um ponto do chão e dispara o ataque; parado, ele fica olhando para lá.
 	public void Attack(Vector2 target)
 	{

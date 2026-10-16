@@ -324,3 +324,21 @@ public sealed class MovementTests
 		Assert.False(controle.HasDestination);
 	}
 }
+
+public sealed class PlacementTests
+{
+	[Fact]
+	public void Colocar_o_Personagem_muda_a_posicao_e_cancela_o_caminho_em_andamento()
+	{
+		var mover = new MovementController(HexGrid.Island(3, []), HexGrid.ToWorld(new HexCell(0, 0)), 1f);
+		mover.GoTo(HexGrid.ToWorld(new HexCell(2, 0)));
+		Assert.True(mover.HasDestination);
+
+		var spot = HexGrid.ToWorld(new HexCell(-2, 1));
+		mover.Place(spot);
+
+		Assert.Equal(spot, mover.Position);
+		Assert.False(mover.HasDestination);
+		Assert.False(mover.IsMoving);
+	}
+}

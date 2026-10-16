@@ -217,6 +217,15 @@
       }
     ]
   },
+  "dungeon": {
+    "floorsMin": 3,
+    "floorsMax": 4,
+    "roomsMin": 6,
+    "roomsMax": 9,
+    "restEnergy": 2,
+    "shortcutChallenges": 3,
+    "masterChallenges": 4
+  },
   "lobby": {
     "interactionReach": 2.2,
     "camera": {
@@ -232,7 +241,7 @@
       {
         "id": "matematica",
         "name": "Torre dos Números",
-        "sign": "Em construção",
+        "sign": "Aberta: entre pela porta",
         "model": "torre-numeros-meshy-v01",
         "x": -13.4,
         "z": 4.9
@@ -240,7 +249,7 @@
       {
         "id": "portugues",
         "name": "Torre das Letras",
-        "sign": "Em construção",
+        "sign": "Aberta: entre pela porta",
         "model": "torre-letras-meshy-v01",
         "x": 4.9,
         "z": -13.4
@@ -286,6 +295,27 @@
         "model": "portal",
         "q": -1,
         "r": 4
+      },
+      {
+        "id": "torre-matematica",
+        "name": "Torre dos Números",
+        "prompt": "Entrar na Torre dos Números",
+        "q": -4,
+        "r": 4
+      },
+      {
+        "id": "torre-portugues",
+        "name": "Torre das Letras",
+        "prompt": "Entrar na Torre das Letras",
+        "q": 2,
+        "r": -5
+      },
+      {
+        "id": "mestre",
+        "name": "Portal do Desafio mestre",
+        "prompt": "Ver o Desafio mestre",
+        "q": 5,
+        "r": -4
       },
       {
         "id": "boneco",

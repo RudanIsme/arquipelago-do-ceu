@@ -34,6 +34,7 @@ static class TestJson
 		    "mistakesForHint": 2, "prankSeconds": 4, "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
 		    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 },
 		    "years": [{ "year": 2, "bagNumbers": [1, 2, 3, 4, 5, 10, 20], "operators": ["+", "-"] }] },
+		  "dungeon": { "floorsMin": 3, "floorsMax": 4, "roomsMin": 6, "roomsMax": 9, "restEnergy": 2, "shortcutChallenges": 3, "masterChallenges": 4 },
 		  "lobby": {
 		    "interactionReach": 2.0,
 		    "camera": { "size": 28, "minSize": 12, "maxSize": 44, "zoomStep": 3, "followSharpness": 4, "deadZone": 1.5, "maxPan": 9 },

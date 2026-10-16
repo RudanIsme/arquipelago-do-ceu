@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ArquipelagoDoCeu.Voice;
 using Godot;
@@ -44,15 +45,26 @@ public partial class AlbumScreen : OverlayScreen
 	}
 }
 
-// Portal de viagem rápida: lista os pontos já descobertos; por enquanto não há nenhum.
+// Portal de viagem rápida: um destino para cada Fast travel que a criança já encontrou. Sem nenhum, só avisa.
 public partial class PortalScreen : OverlayScreen
 {
+	readonly IReadOnlyList<(string Label, Action Go)> destinations;
+
+	public PortalScreen(IReadOnlyList<(string Label, Action Go)>? destinations = null) => this.destinations = destinations ?? [];
+
 	public override void _Ready()
 	{
 		base._Ready();
-		var box = UiKit.Card(this, "Portal de viagem");
-		box.AddChild(UiKit.Hint("Ainda não há nenhum ponto de viagem. Quando você chegar a um ponto de uma torre, ele aparece aqui."));
-		box.AddChild(UiKit.BigButton("Fechar", Close));
+		var box = UiKit.Card(this, "Portal de viagem", out var footer);
+		if (destinations.Count == 0)
+			box.AddChild(UiKit.Hint("Ainda não há nenhum ponto de viagem. Quando você chegar a um ponto de uma torre, ele aparece aqui."));
+		else
+		{
+			box.AddChild(UiKit.Hint("Escolha um ponto para voltar:"));
+			foreach (var (label, go) in destinations)
+				box.AddChild(UiKit.BigButton(label, () => { Close(); go(); }, 520));
+		}
+		footer.AddChild(UiKit.BigButton("Fechar", Close));
 	}
 }
 

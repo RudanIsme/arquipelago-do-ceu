@@ -67,7 +67,7 @@ A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que 
 _Avoid_: Fase, mapa
 
 **Sala**:
-Cada espaço de um Andar, com uma função: combate, Puzzle, Descanso, Fast travel, Marco ou Desafio épico.
+Cada espaço de um Andar, com uma função: combate, Puzzle, Descanso, Fast travel, Marco ou Desafio épico. Combate, Puzzle, Marco e Desafio épico precisam ser vencidos para seguir a uma Sala nova; voltar a uma Sala já visitada é sempre permitido.
 _Avoid_: Ilha (ilha é só o Lobby e o cenário), room
 
 **Descanso**:
@@ -85,6 +85,10 @@ _Avoid_: Baú
 **Puzzle**:
 Sala em que a Missão é a mesma do combate, mas o alvo é uma porta ou uma ponte, sem criatura e sem Bolha de névoa. A porta abre quando o Desafio é resolvido; não existe chave. Erro tira 1 de Energia e o Desafio recomeça com outros números.
 _Avoid_: Quebra-cabeça
+
+**Guardião do Nível**:
+O Boneco no Desafio mestre: a criatura que a criança enfrenta, com Desafios de Matemática e de Português do Nível.
+_Avoid_: Chefe
 
 **Marco**:
 Sala de um Andar que só se passa com um Item de troca.

@@ -11,7 +11,7 @@ static class MissionFiles
 			.OrderBy(f => f, StringComparer.Ordinal)
 			.Select(f => (Path.GetRelativePath(RepositoryRoot(), f).Replace('\\', '/'), File.ReadAllText(f)));
 
-	static string RepositoryRoot()
+	public static string RepositoryRoot()
 	{
 		var dir = new DirectoryInfo(AppContext.BaseDirectory);
 		while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, ".git")) && !File.Exists(Path.Combine(dir.FullName, ".git")))

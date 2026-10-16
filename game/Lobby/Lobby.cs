@@ -7,7 +7,7 @@ using Godot;
 namespace ArquipelagoDoCeu;
 
 // Cena do Lobby: ilha hexagonal flutuante, câmera isométrica e luz quente.
-public partial class Lobby : Node3D
+public partial class Lobby : Node3D, ICombatStage
 {
 	const int IslandRadius = 5;
 	const float TileSize = 1f;         // do centro ao vértice; a grade de colisão (HexGrid) também assume 1
@@ -316,6 +316,8 @@ public partial class Lobby : Node3D
 				else if (item.Id == "guia")
 					model.AddChild(new GuideIdle(model, () => ReduceMotion));
 			}
+			else if (item.Id.StartsWith("torre-")) top = AddGate(ground, item.Name, "#D9A64A");
+			else if (item.Id == "mestre") top = AddGate(ground, item.Name, "#7A44D1");
 			var marker = new MeshInstance3D
 			{
 				Mesh = new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0f, Height = 0.55f, RadialSegments = 4, Rings = 0 },
@@ -328,6 +330,23 @@ public partial class Lobby : Node3D
 			footprints[item.Id] = (ground, top);
 		}
 		Interactables = list;
+	}
+
+	// A entrada de uma torre na beira da ilha: duas colunas, uma verga e o nome. Greybox, até a arte definitiva.
+	float AddGate(Vector3 ground, string name, string color)
+	{
+		const float height = 2.4f;
+		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml(color), Roughness = 0.8f };
+		var way = new Vector3(-ground.X, 0f, -ground.Z).Normalized();
+		var side = new Vector3(-way.Z, 0f, way.X) * 0.8f;
+		foreach (var offset in new[] { side, -side })
+			AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.35f, height, 0.35f) }, MaterialOverride = material, Position = ground + offset + new Vector3(0f, height / 2f, 0f) });
+		AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(2.1f, 0.35f, 0.4f) }, MaterialOverride = material, Position = ground + new Vector3(0f, height + 0.1f, 0f), Rotation = new Vector3(0f, Mathf.Atan2(side.X, side.Z) - Mathf.Pi / 2f, 0f) });
+		var sign = new Label3D { Text = name, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 44, PixelSize = 0.012f, OutlineSize = 14, OutlineModulate = Color.FromHtml("#1B1424"), Modulate = Color.FromHtml("#FFF6E0"), NoDepthTest = true, Position = ground + new Vector3(0f, height + 0.9f, 0f) };
+		AddChild(sign);
+		signs.Add(sign);
+		sign.AddToGroup(CameraController.LabelGroup);
+		return height;
 	}
 
 	// Ilhas e torres ao redor, cada uma com a placa; torre sem modelo vira uma torre simples em greybox.
@@ -414,7 +433,7 @@ public partial class Lobby : Node3D
 		AddChild(roof);
 	}
 
-	static Node3D? LoadModel(string? name)
+	internal static Node3D? LoadModel(string? name)
 	{
 		if (name is null) return null;
 		var path = $"res://assets/modelos/{name}.glb";
@@ -424,7 +443,7 @@ public partial class Lobby : Node3D
 	}
 
 	// Escala o modelo para a altura do jogo e assenta a base no chão; devolve a altura do topo no mundo.
-	static float FitToHeight(Node3D model, float height, Vector3 ground)
+	internal static float FitToHeight(Node3D model, float height, Vector3 ground)
 	{
 		var box = WorldBox(model);
 		if (box.Size.Y > 0.0001f) model.Scale = Vector3.One * (height / box.Size.Y);
@@ -446,6 +465,9 @@ public partial class Lobby : Node3D
 
 	// Onde fica o pé e a altura do topo de um objeto do Lobby, para efeitos que partem dele ou chegam nele.
 	public (Vector3 Ground, float Top) FootprintOf(string objectId) => footprints[objectId];
+
+	// No Lobby a criatura é o Boneco de treino.
+	public (Vector3 Ground, float Top) CreatureSpot => footprints["boneco"];
 
 	// Mostra o indicador só no objeto ao alcance (ou em nenhum, com null).
 	public void Highlight(string? objectId)

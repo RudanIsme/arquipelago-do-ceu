@@ -21,7 +21,7 @@ public sealed record MistakeOutcome(bool Empty, bool HintOffered, Prank? Prank);
 
 // Uma sessão de treino contra o Boneco: Energia própria, erros seguidos e dicas. Nada aqui toca em save,
 // porque o treino não conta para o progresso (e `ArquiteturaTests` garante que o combate não conhece o save).
-public sealed class TrainingSession
+public sealed class CombatSession
 {
 	readonly CombatRules rules;
 
@@ -29,10 +29,10 @@ public sealed class TrainingSession
 	public CombatRules Rules => rules;
 	int hintIndex;
 
-	TrainingSession(CombatRules rules, int maxEnergy, TrainingSetup setup, TrainingBattle? math, NameBattle? name, WordBattle? word)
+	CombatSession(CombatRules rules, Energy energy, TrainingSetup setup, TrainingBattle? math, NameBattle? name, WordBattle? word)
 	{
 		this.rules = rules;
-		Energy = new Energy(maxEnergy);
+		Energy = energy;
 		Setup = setup;
 		Math = math;
 		Name = name;
@@ -58,39 +58,43 @@ public sealed class TrainingSession
 
 	public bool IsOver => Energy.IsEmpty;
 
-	public static Result<TrainingSession> Start(CombatRules baseRules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng)
+	// O treino começa cheio; a Expedição passa a mesma Energia de uma luta para a outra.
+	public static Result<CombatSession> Start(CombatRules baseRules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng) =>
+		Start(baseRules, new Energy(maxEnergy), unlockedLevel, setup, available, rng);
+
+	public static Result<CombatSession> Start(CombatRules baseRules, Energy energy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng)
 	{
 		var rules = baseRules.ForYear(setup.Year);
 		if (setup.Year < 1 || setup.Year > unlockedLevel)
-			return Result<TrainingSession>.Fail("Esse Nível ainda não está liberado para treinar.");
+			return Result<CombatSession>.Fail("Esse Nível ainda não está liberado para treinar.");
 
 		var pool = available
 			.Where(m => m.Discipline == setup.Discipline && m.Year == setup.Year && m.Difficulty == setup.Difficulty)
 			.ToList();
 		if (pool.Count == 0)
-			return Result<TrainingSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
+			return Result<CombatSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
 
 		// Escrever a palavra só serve o treino se não houver Missão de nome, sílabas ou frase no mesmo ano e dificuldade.
 		if (setup.Discipline == TrainingSetup.Portuguese && pool.Any(m => m.Mechanic == "escrever_palavra") && !pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic)))
 		{
 			var word = WordBattle.Start(pool, rng);
 			return word.IsOk
-				? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, null, null, word.Value))
-				: Result<TrainingSession>.Fail(word.Error!);
+				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, null, word.Value))
+				: Result<CombatSession>.Fail(word.Error!);
 		}
 
 		if (setup.Discipline == TrainingSetup.Portuguese)
 		{
 			var name = NameBattle.Start(pool, rng);
 			return name.IsOk
-				? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, null, name.Value, null))
-				: Result<TrainingSession>.Fail(name.Error!);
+				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, name.Value, null))
+				: Result<CombatSession>.Fail(name.Error!);
 		}
 
 		var math = TrainingBattle.Start(rules, pool, rng);
 		return math.IsOk
-			? Result<TrainingSession>.Ok(new TrainingSession(rules, maxEnergy, setup, math.Value, null, null))
-			: Result<TrainingSession>.Fail(math.Error!);
+			? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, math.Value, null, null))
+			: Result<CombatSession>.Fail(math.Error!);
 	}
 
 	// Acerto recupera Energia; golpe perfeito recupera mais.

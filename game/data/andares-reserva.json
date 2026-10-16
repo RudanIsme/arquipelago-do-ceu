@@ -1,0 +1,44 @@
+{
+  "floors": [
+    {
+      "item": false, "marco": false, "epic": false,
+      "rooms": [
+        { "kind": "entrance" }, { "kind": "combat" }, { "kind": "fastTravel" },
+        { "kind": "rest" }, { "kind": "puzzle" }, { "kind": "exit" }
+      ],
+      "links": [[0, 1], [1, 2], [0, 3], [1, 4], [4, 5]]
+    },
+    {
+      "item": true, "marco": false, "epic": false,
+      "rooms": [
+        { "kind": "entrance" }, { "kind": "combat" }, { "kind": "fastTravel" },
+        { "kind": "rest" }, { "kind": "puzzle", "item": true }, { "kind": "exit" }
+      ],
+      "links": [[0, 1], [1, 2], [0, 3], [1, 4], [4, 5]]
+    },
+    {
+      "item": false, "marco": true, "epic": false,
+      "rooms": [
+        { "kind": "entrance" }, { "kind": "combat" }, { "kind": "fastTravel" },
+        { "kind": "rest" }, { "kind": "puzzle" }, { "kind": "marco" }, { "kind": "exit" }
+      ],
+      "links": [[0, 1], [1, 2], [0, 3], [1, 4], [4, 5], [5, 6]]
+    },
+    {
+      "item": false, "marco": false, "epic": true,
+      "rooms": [
+        { "kind": "entrance" }, { "kind": "combat" }, { "kind": "fastTravel" },
+        { "kind": "rest" }, { "kind": "puzzle" }, { "kind": "epic" }
+      ],
+      "links": [[0, 1], [1, 2], [0, 3], [1, 4], [4, 5]]
+    },
+    {
+      "item": false, "marco": true, "epic": true,
+      "rooms": [
+        { "kind": "entrance" }, { "kind": "combat" }, { "kind": "fastTravel" },
+        { "kind": "rest" }, { "kind": "puzzle" }, { "kind": "marco" }, { "kind": "epic" }
+      ],
+      "links": [[0, 1], [1, 2], [0, 3], [1, 4], [4, 5], [5, 6]]
+    }
+  ]
+}
