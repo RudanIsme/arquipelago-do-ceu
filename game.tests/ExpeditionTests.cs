@@ -19,8 +19,8 @@ static class ExpeditionFixtures
 	// Dois Andares: o 1º comum e o 2º com Marco e épico.
 	public static readonly LevelPlan Plan = new("matematica", 1, [new(1, false, false, false), new(2, false, true, true)]);
 
-	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null) =>
-		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem);
+	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null, int startFloor = 1, bool atFastTravel = false) =>
+		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem, startFloor, atFastTravel);
 
 	// Vence a Sala e vai para a próxima.
 	public static void ClearAndGo(Expedition e, int room)
@@ -215,6 +215,26 @@ public class ExpeditionTests
 		Assert.True(e.UseRest(2).IsOk);
 	}
 
+	[Fact]
+	public void Pode_recomecar_na_entrada_de_um_Andar_mais_fundo()
+	{
+		var e = ExpeditionFixtures.Start(startFloor: 2);
+
+		Assert.Equal(2, e.Floor.Number);
+		Assert.Equal(RoomKind.Entrance, e.Current.Kind);
+	}
+
+	[Fact]
+	public void Pode_recomecar_no_Fast_travel_com_o_caminho_ate_ele_ja_vencido()
+	{
+		var e = ExpeditionFixtures.Start(atFastTravel: true);
+
+		Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
+		Assert.True(e.IsCleared(1), "o combate no caminho já foi vencido");
+		Assert.Equal(Passage.Open, e.MoveTo(1));
+		Assert.Equal(Passage.Open, e.MoveTo(0));
+	}
+
 	static void GoToSecondFloorMarco(Expedition e)
 	{
 		ExpeditionFixtures.ClearAndGo(e, 1);
@@ -271,5 +291,27 @@ public class DungeonCombatTests
 	{
 		Assert.Equal(Seed.ForProfile("abc"), Seed.ForProfile("abc"));
 		Assert.NotEqual(Seed.ForProfile("abc"), Seed.ForProfile("abd"));
+	}
+}
+
+public class ResumeTests
+{
+	[Fact]
+	public void Recomecar_no_Fast_travel_funciona_em_milhares_de_seeds_e_Andares()
+	{
+		for (ulong seed = 0; seed < 1500; seed++)
+		{
+			var plan = LevelPlan.Create(ExpeditionFixtures.Rules, seed, "matematica", 1, 1);
+			var provider = new FloorProvider(ExpeditionFixtures.Rules, ExpeditionFixtures.Fallback);
+			for (var floor = 1; floor <= plan.Floors.Count; floor++)
+			{
+				var e = Expedition.Start(provider, plan, seed, 1, new Energy(5), null, floor, atFastTravel: true);
+
+				Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
+				Assert.Equal(floor, e.Floor.Number);
+				Assert.Contains(e.Floor.Entrance, e.Visited);
+				Assert.All(e.Visited.Where(r => e.NeedsClearing(e.Floor.Rooms[r])), r => Assert.True(e.IsCleared(r)));
+			}
+		}
 	}
 }

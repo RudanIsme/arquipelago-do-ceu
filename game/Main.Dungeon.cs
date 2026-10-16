@@ -17,6 +17,16 @@ public partial class Main
 	DungeonRun? dungeon;
 	bool inDungeon;
 
+	static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
+
+	// O portal do Lobby: um destino por Fast travel encontrado.
+	PortalScreen BuildPortal()
+	{
+		var points = current is null ? [] : progress.FastTravels(current.Id);
+		return new PortalScreen(points.Select(p => ($"{TowerName(p.Discipline)} · Nível {p.Level} · Andar {p.Floor}",
+			(System.Action)(() => EnterDungeon(p.Discipline, p.Level, p.Floor, atFastTravel: true)))).ToList());
+	}
+
 	void SetPullBlocked(bool blocked)
 	{
 		foreach (var gate in GetTree().Root.GetChildren().OfType<PullTestGate>()) gate.Blocked = blocked;
@@ -28,7 +38,8 @@ public partial class Main
 		dungeon?.Combat.DropTarget();
 	}
 
-	void EnterDungeon(string discipline)
+	// Pela porta da torre a criança começa no Andar mais fundo que já descobriu; pelo portal, no Fast travel que escolheu.
+	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false)
 	{
 		if (current is null || inDungeon) return;
 		var floors = LoadFallbackFloors();
@@ -40,9 +51,11 @@ public partial class Main
 		}
 
 		training.End();
-		var tower = discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
-		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, UnlockedLevel(), voice, settings, uiRoot,
-			progress, floors.Value!, equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer));
+		var tower = TowerName(discipline);
+		var towerLevel = level ?? UnlockedLevel();
+		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
+		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
+			progress, floors.Value!, equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;

@@ -317,7 +317,7 @@ public partial class Main : Node3D
 		switch (target)
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
-			case "portal": ShowOverlay(new PortalScreen()); break;
+			case "portal": ShowOverlay(BuildPortal()); break;
 			case "torre-matematica": EnterDungeon(TrainingSetup.Mathematics); break;
 			case "torre-portugues": EnterDungeon(TrainingSetup.Portuguese); break;
 			case "guia": ShowGuide(); break;

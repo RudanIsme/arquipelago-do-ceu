@@ -97,6 +97,59 @@ static class DungeonScenarios
 		await d.Shot("03-porta-aberta");
 	}
 
+	// O Fast travel: o portal avisa quando não há ponto; achar o ponto salva; pelo portal a criança retoma ali; pela porta, recomeça do Andar mais fundo.
+	public static async Task FastTravel(DevDriver d)
+	{
+		await EnsureProfile(d);
+		await OpenPortal(d);
+		d.Expect(d.HasVisible("Ainda não há nenhum ponto de viagem"), "sem Fast travel encontrado o portal avisa");
+		await d.PressKey(Key.Escape);
+
+		var run = await Enter(d);
+		if (run is null) return;
+		var expedition = run.Expedition;
+		await GoTo(d, run, RoomKind.FastTravel);
+		d.Expect(expedition.Current.Kind == RoomKind.FastTravel, "chegou ao Fast travel");
+		var point = new ArquipelagoDoCeu.Saves.FastTravelPoint("matematica", 1, expedition.Floor.Number);
+		d.Expect(run.Progress.FastTravels(run.ProfileId).Contains(point), "chegar ao Fast travel salvou o ponto");
+		await d.Shot("01-fast-travel");
+		var floor = expedition.Floor.Number;
+		run.Leave("");
+		await d.Wait(0.5);
+		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
+
+		await OpenPortal(d);
+		await d.Shot("02-portal-com-ponto");
+		await d.Press($"Torre dos Números · Nível 1 · Andar {floor}");
+		await d.Wait(0.5);
+		var resumed = Runs(d).FirstOrDefault();
+		d.Expect(resumed is not null && resumed.Expedition.Current.Kind == RoomKind.FastTravel && resumed.Expedition.Floor.Number == floor, "o portal retomou no Fast travel do Andar");
+		if (resumed is null) return;
+		d.Expect(resumed.Expedition.Visited.Contains(resumed.Expedition.Floor.Entrance), "o caminho até o ponto conta como percorrido");
+		await d.Shot("03-retomou");
+		resumed.Leave("");
+		await d.Wait(0.5);
+	}
+
+	static async Task OpenPortal(DevDriver d)
+	{
+		await d.GoNearDummy(-1, 3);
+		await d.Wait(3.0);
+		await d.Tap(Controls.Interact);
+		await d.Wait(0.3);
+	}
+
+	static async Task EnsureProfile(DevDriver d)
+	{
+		if (d.Button("Criar") is not null)
+		{
+			await d.Press("Criar");
+			await d.Type("Luna");
+			await d.Press("Criar");
+		}
+		d.Expect(d.Player is { Enabled: true }, "o Perfil está ativo no Lobby");
+	}
+
 	// A torre das Letras usa o Escriba do Nível: sílabas no 1º, palavra inteira no 2º e frase no 3º.
 	public static async Task Letters(DevDriver d)
 	{
@@ -149,13 +202,7 @@ static class DungeonScenarios
 	// Cada torre tem a porta na beira da ilha; o piloto anda até um hexágono perto dela.
 	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false)
 	{
-		if (d.Button("Criar") is not null)
-		{
-			await d.Press("Criar");
-			await d.Type("Luna");
-			await d.Press("Criar");
-		}
-		d.Expect(d.Player is { Enabled: true }, "o Perfil está ativo no Lobby");
+		await EnsureProfile(d);
 		if (letters) await d.GoNearDummy(2, -4);
 		else await d.GoNearDummy(-3, 3);
 		// O Personagem anda devagar: espera chegar perto da porta da torre.

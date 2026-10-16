@@ -280,6 +280,9 @@ static class Scenarios
 			case "torre-letras":
 				await DungeonScenarios.Letters(d);
 				break;
+			case "torre-fast-travel":
+				await DungeonScenarios.FastTravel(d);
+				break;
 			case "torre-salas":
 				await DungeonScenarios.Rooms(d);
 				break;

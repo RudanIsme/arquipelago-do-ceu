@@ -28,7 +28,9 @@ public sealed record DungeonContext(
 	ProgressService Progress,
 	FallbackFloors Fallback,
 	int ExtraEnergy,
-	Action<Player> ConfigurePlayer);
+	Action<Player> ConfigurePlayer,
+	int StartFloor = 1,
+	bool AtFastTravel = false);
 
 // Uma Expedição numa torre: liga as regras de core/ (Expedition) ao mundo 3D das Salas, à interface e ao combate.
 // Nada aqui decide regra: quem manda passar, vencer ou subir é a Expedition; este nó só mostra e conta o que a criança faz.
@@ -64,7 +66,8 @@ public partial class DungeonRun : Node
 		var seed = WorldSeed(ctx.ProfileId);
 		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
-		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), () => false);
+		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), () => false,
+			ctx.StartFloor, ctx.AtFastTravel);
 	}
 
 	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
@@ -76,11 +79,16 @@ public partial class DungeonRun : Node
 	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
 	const int GeneratorVersion = 1;
 
+
 	public TrainingArea Combat => combat;
 
 	public Player Player => player;
 
 	public Expedition Expedition => expedition;
+
+	public ProgressService Progress => ctx.Progress;
+
+	public string ProfileId => ctx.ProfileId;
 
 	public DungeonWorld World => world;
 
@@ -176,7 +184,8 @@ public partial class DungeonRun : Node
 		StartFight();
 		RefreshHud();
 		var kind = expedition.Current.Kind;
-		if (kind is RoomKind.Rest or RoomKind.FastTravel or RoomKind.Exit)
+		if (kind == RoomKind.FastTravel) FindFastTravel();
+		else if (kind is RoomKind.Rest or RoomKind.Exit)
 			Say($"Sala de {FloorMap.NameOf(kind).ToLowerInvariant()}. {(kind == RoomKind.Exit ? "A escada leva ao próximo Andar." : "Descanse um pouco, se quiser.")}");
 	}
 
@@ -306,6 +315,14 @@ public partial class DungeonRun : Node
 				Say("O Marco só abre com o Item de troca da outra torre.");
 				break;
 		}
+	}
+
+	// Chegar ao Fast travel salva o ponto: é por ele que a criança retoma pelo portal do Lobby.
+	void FindFastTravel()
+	{
+		var saved = ctx.Progress.FindFastTravel(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		if (!saved.IsOk) GD.PushWarning(saved.Error!);
+		Say("Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.");
 	}
 
 	void Rest()

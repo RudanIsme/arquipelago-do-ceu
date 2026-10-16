@@ -20,7 +20,7 @@ public sealed class Expedition
 	readonly HashSet<int> visited = [];
 	readonly HashSet<int> rested = [];
 
-	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem)
+	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem, int startFloor, bool atFastTravel)
 	{
 		this.floors = floors;
 		this.plan = plan;
@@ -28,13 +28,17 @@ public sealed class Expedition
 		this.version = version;
 		this.hasItem = hasItem;
 		Energy = energy;
-		Floor = BuildFloor(1);
+		Floor = BuildFloor(Math.Clamp(startFloor, 1, plan.Floors.Count));
 		Begin();
+		if (atFastTravel) MoveToFastTravel();
 	}
 
 	// `hasItem` diz se a criança tem o Item de troca do Nível da outra Dungeon, que abre o Marco.
-	public static Expedition Start(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool>? hasItem = null) =>
-		new(floors, plan, world, version, energy, hasItem ?? (() => false));
+	// Recomeça na entrada do Andar `startFloor` ou, com `atFastTravel`, no Fast travel dele: quem chega ali já passou
+	// pelas Salas do caminho, então elas contam como vencidas.
+	public static Expedition Start(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool>? hasItem = null,
+		int startFloor = 1, bool atFastTravel = false) =>
+		new(floors, plan, world, version, energy, hasItem ?? (() => false), startFloor, atFastTravel);
 
 	public Energy Energy { get; }
 
@@ -114,6 +118,28 @@ public sealed class Expedition
 	}
 
 	Floor BuildFloor(int number) => floors.Get(world, plan.Discipline, plan.Level, plan.Floors[number - 1], version);
+
+	void MoveToFastTravel()
+	{
+		var target = Floor.Rooms.First(r => r.Kind == RoomKind.FastTravel).Id;
+		var previous = new Dictionary<int, int> { [Floor.Entrance] = -1 };
+		var queue = new Queue<int>([Floor.Entrance]);
+		while (queue.Count > 0 && !previous.ContainsKey(target))
+		{
+			var room = queue.Dequeue();
+			foreach (var next in Floor.Neighbors(room).Where(n => !previous.ContainsKey(n)))
+			{
+				previous[next] = room;
+				queue.Enqueue(next);
+			}
+		}
+		for (var room = target; room != -1; room = previous[room])
+		{
+			visited.Add(room);
+			if (NeedsClearing(Floor.Rooms[room])) cleared.Add(room);
+		}
+		CurrentRoom = target;
+	}
 
 	void Begin()
 	{

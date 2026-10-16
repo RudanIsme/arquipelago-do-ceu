@@ -76,6 +76,36 @@ public sealed class ProgressTests : IDisposable
 	}
 
 	[Fact]
+	public void Os_Fast_travels_encontrados_ficam_no_save_sem_repetir_e_em_ordem()
+	{
+		var store = new SaveStore(PathName);
+		var progress = new ProgressService(new SaveSession(store, Example));
+
+		progress.FindFastTravel("p", "portugues", 1, 2);
+		progress.FindFastTravel("p", "matematica", 2, 1);
+		progress.FindFastTravel("p", "matematica", 1, 3);
+		progress.FindFastTravel("p", "matematica", 1, 3);
+
+		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
+		Assert.Equal([new FastTravelPoint("matematica", 1, 3), new FastTravelPoint("matematica", 2, 1), new FastTravelPoint("portugues", 1, 2)], reopened.FastTravels("p"));
+		Assert.Empty(reopened.FastTravels("q"));
+	}
+
+	[Fact]
+	public void O_Andar_mais_fundo_descoberto_vale_1_quando_nao_ha_nenhum()
+	{
+		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
+		Assert.Equal(1, progress.HighestFloor("p", "matematica", 1));
+
+		progress.DiscoverFloor("p", "matematica", 1, 1);
+		progress.DiscoverFloor("p", "matematica", 1, 3);
+		progress.DiscoverFloor("p", "matematica", 2, 4);
+
+		Assert.Equal(3, progress.HighestFloor("p", "matematica", 1));
+		Assert.Equal(1, progress.HighestFloor("p", "portugues", 1));
+	}
+
+	[Fact]
 	public void Perfil_que_nao_existe_e_uma_falha_e_nao_uma_excecao()
 	{
 		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
