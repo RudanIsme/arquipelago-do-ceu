@@ -1,16 +1,16 @@
 namespace ArquipelagoDoCeu.Rules;
 
 // Quantos Andares tem um Nível, quantas Salas tem um Andar, quanta Energia o Descanso devolve e quantos Desafios tem o
-// Atalho de Nível. Tudo vem de dados.
-public sealed record DungeonRules(int FloorsMin, int FloorsMax, int RoomsMin, int RoomsMax, int RestEnergy, int ShortcutChallenges);
+// Atalho de Nível e o Desafio mestre. Tudo vem de dados.
+public sealed record DungeonRules(int FloorsMin, int FloorsMax, int RoomsMin, int RoomsMax, int RestEnergy, int ShortcutChallenges, int MasterChallenges);
 
-sealed record DungeonDto(int? FloorsMin, int? FloorsMax, int? RoomsMin, int? RoomsMax, int? RestEnergy, int? ShortcutChallenges);
+sealed record DungeonDto(int? FloorsMin, int? FloorsMax, int? RoomsMin, int? RoomsMax, int? RestEnergy, int? ShortcutChallenges, int? MasterChallenges);
 
 static class DungeonChecks
 {
 	// O Item tem de ficar num Andar anterior ao do Marco, então um Nível precisa de ao menos 2 Andares;
 	// e um Andar precisa de 6 Salas para caber entrada, saída, Fast travel, Descanso, Marco ou Item e mais uma.
-	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 30, RestLimit = 9, ShortcutLimit = 9;
+	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 30, RestLimit = 9, ShortcutLimit = 9, MasterFloor = 2, MasterLimit = 12;
 
 	public static string? Check(DungeonDto? dungeon)
 	{
@@ -22,11 +22,12 @@ static class DungeonChecks
 			?? Range("dungeon.roomsMax", dungeon.RoomsMax, RoomsFloor, RoomsLimit)
 			?? Order("dungeon.roomsMin", dungeon.RoomsMin!.Value, "dungeon.roomsMax", dungeon.RoomsMax!.Value)
 			?? Range("dungeon.restEnergy", dungeon.RestEnergy, 1, RestLimit)
-			?? Range("dungeon.shortcutChallenges", dungeon.ShortcutChallenges, 1, ShortcutLimit);
+			?? Range("dungeon.shortcutChallenges", dungeon.ShortcutChallenges, 1, ShortcutLimit)
+			?? Range("dungeon.masterChallenges", dungeon.MasterChallenges, MasterFloor, MasterLimit);
 	}
 
 	public static DungeonRules Build(DungeonDto dungeon) =>
-		new(dungeon.FloorsMin!.Value, dungeon.FloorsMax!.Value, dungeon.RoomsMin!.Value, dungeon.RoomsMax!.Value, dungeon.RestEnergy!.Value, dungeon.ShortcutChallenges!.Value);
+		new(dungeon.FloorsMin!.Value, dungeon.FloorsMax!.Value, dungeon.RoomsMin!.Value, dungeon.RoomsMax!.Value, dungeon.RestEnergy!.Value, dungeon.ShortcutChallenges!.Value, dungeon.MasterChallenges!.Value);
 
 	static string? Range(string field, int? value, int min, int max)
 	{

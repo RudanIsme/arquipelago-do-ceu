@@ -40,6 +40,37 @@ public partial class ShortcutOfferScreen : OverlayScreen
 	}
 }
 
+// O portal do Desafio mestre: diz o que falta para abrir e, aberto, deixa começar. Nunca bloqueia nada: é só um convite.
+public partial class MasterScreen : OverlayScreen
+{
+	readonly int level;
+	readonly bool mathDone;
+	readonly bool lettersDone;
+	readonly Action start;
+
+	public MasterScreen(int level, bool mathDone, bool lettersDone, Action start)
+	{
+		this.level = level;
+		this.mathDone = mathDone;
+		this.lettersDone = lettersDone;
+		this.start = start;
+	}
+
+	public override void _Ready()
+	{
+		base._Ready();
+		var open = mathDone && lettersDone;
+		var box = UiKit.Card(this, "Desafio mestre", out var footer);
+		box.AddChild(UiKit.Hint(open
+			? $"As duas torres do Nível {level} estão concluídas! O Guardião do Nível mistura Matemática e Português. Vencendo, o Nível {level + 1} abre nas duas torres."
+			: $"O portal só abre quando você vencer o Desafio épico do Nível {level} nas duas torres (jogando a torre ou pelo Atalho de Nível)."));
+		box.AddChild(UiKit.Hint($"Torre dos Números: {(mathDone ? "★ concluída" : "ainda não")}"));
+		box.AddChild(UiKit.Hint($"Torre das Letras: {(lettersDone ? "★ concluída" : "ainda não")}"));
+		if (open) footer.AddChild(UiKit.BigButton("Começar o Desafio mestre", () => { Close(); start(); }, 420));
+		footer.AddChild(UiKit.BigButton("Fechar", Close, 420));
+	}
+}
+
 // O que a criança escolhe ao concluir o Desafio épico: continuar na torre ou voltar ao Lobby.
 public partial class LevelDoneScreen : OverlayScreen
 {

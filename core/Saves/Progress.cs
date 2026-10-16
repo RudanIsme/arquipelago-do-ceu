@@ -30,6 +30,20 @@ public sealed class ProgressService(SaveSession session)
 	public Result<ProfileSave> GiveItem(string profileId, string discipline, int level) =>
 		Add(profileId, Level(discipline, level), p => p.Items, (p, list) => p with { Items = list });
 
+	// O Desafio mestre abre quando os dois Desafios épicos do Nível estão concluídos, pelo jogo ou pelo Atalho de Nível.
+	public bool MasterOpen(string profileId, int level) =>
+		EpicDone(profileId, "matematica", level) && EpicDone(profileId, "portugues", level);
+
+	// Vencer o Desafio mestre sobe o Nível liberado em 1, até `maxLevel`; no último Nível ele fica onde está.
+	public Result<ProfileSave> RaiseLevel(string profileId, int maxLevel)
+	{
+		var current = Find(profileId);
+		if (current is null) return Result<ProfileSave>.Fail("Perfil não encontrado.");
+		var updated = current with { Level = Math.Min(current.Level + 1, Math.Max(current.Level, maxLevel)) };
+		var saved = session.Commit(data => data with { Profiles = data.Profiles.Select(p => p.Id == profileId ? updated : p).ToList() });
+		return saved.IsOk ? Result<ProfileSave>.Ok(updated) : Result<ProfileSave>.Fail(saved.Error!);
+	}
+
 	// O Atalho de Nível vale uma só tentativa por Nível em cada Dungeon, acertando ou errando.
 	public bool ShortcutTried(string profileId, string discipline, int level) => Has(profileId, p => p.ShortcutsTried, Level(discipline, level));
 

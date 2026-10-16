@@ -316,7 +316,8 @@ public partial class Lobby : Node3D, ICombatStage
 				else if (item.Id == "guia")
 					model.AddChild(new GuideIdle(model, () => ReduceMotion));
 			}
-			else if (item.Id.StartsWith("torre-")) top = AddGate(ground, item.Name);
+			else if (item.Id.StartsWith("torre-")) top = AddGate(ground, item.Name, "#D9A64A");
+			else if (item.Id == "mestre") top = AddGate(ground, item.Name, "#7A44D1");
 			var marker = new MeshInstance3D
 			{
 				Mesh = new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0f, Height = 0.55f, RadialSegments = 4, Rings = 0 },
@@ -332,10 +333,10 @@ public partial class Lobby : Node3D, ICombatStage
 	}
 
 	// A entrada de uma torre na beira da ilha: duas colunas, uma verga e o nome. Greybox, até a arte definitiva.
-	float AddGate(Vector3 ground, string name)
+	float AddGate(Vector3 ground, string name, string color)
 	{
 		const float height = 2.4f;
-		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#D9A64A"), Roughness = 0.8f };
+		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml(color), Roughness = 0.8f };
 		var way = new Vector3(-ground.X, 0f, -ground.Z).Normalized();
 		var side = new Vector3(-way.Z, 0f, way.X) * 0.8f;
 		foreach (var offset in new[] { side, -side })

@@ -108,6 +108,37 @@ public sealed class ProgressTests : IDisposable
 	}
 
 	[Fact]
+	public void O_Desafio_mestre_so_abre_com_os_dois_epicos_do_Nivel_concluidos()
+	{
+		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
+		Assert.False(progress.MasterOpen("p", 1));
+
+		progress.MarkEpicDone("p", "matematica", 1);
+		Assert.False(progress.MasterOpen("p", 1));
+		progress.MarkEpicDone("p", "portugues", 2);
+		Assert.False(progress.MasterOpen("p", 1), "o épico de outro Nível não vale");
+
+		progress.MarkEpicDone("p", "portugues", 1);
+		Assert.True(progress.MasterOpen("p", 1));
+		Assert.False(progress.MasterOpen("q", 1));
+	}
+
+	[Fact]
+	public void Vencer_o_Desafio_mestre_sobe_o_Nivel_liberado_ate_o_maximo()
+	{
+		var store = new SaveStore(PathName);
+		var progress = new ProgressService(new SaveSession(store, Example));
+
+		Assert.Equal(2, progress.RaiseLevel("p", 3).Value!.Level);
+		Assert.Equal(3, progress.RaiseLevel("p", 3).Value!.Level);
+		Assert.Equal(3, progress.RaiseLevel("p", 3).Value!.Level);
+
+		var saved = store.Load().Value!.Data;
+		Assert.Equal(3, saved.Profiles.Single(p => p.Id == "p").Level);
+		Assert.Equal(1, saved.Profiles.Single(p => p.Id == "q").Level);
+	}
+
+	[Fact]
 	public void O_Andar_mais_fundo_descoberto_vale_1_quando_nao_ha_nenhum()
 	{
 		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));

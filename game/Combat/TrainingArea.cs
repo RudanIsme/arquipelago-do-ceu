@@ -175,6 +175,7 @@ public partial class TrainingArea : Node
 		dummy.HideBubble();
 		time.End();
 		Engine.TimeScale = time.Scale;
+		if (!InDungeon) dummy.Idle();
 	}
 
 	void Select()

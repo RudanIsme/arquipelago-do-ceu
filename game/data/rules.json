@@ -223,7 +223,8 @@
     "roomsMin": 6,
     "roomsMax": 9,
     "restEnergy": 2,
-    "shortcutChallenges": 3
+    "shortcutChallenges": 3,
+    "masterChallenges": 4
   },
   "lobby": {
     "interactionReach": 2.2,
@@ -308,6 +309,13 @@
         "prompt": "Entrar na Torre das Letras",
         "q": 2,
         "r": -5
+      },
+      {
+        "id": "mestre",
+        "name": "Portal do Desafio mestre",
+        "prompt": "Ver o Desafio mestre",
+        "q": 5,
+        "r": -4
       },
       {
         "id": "boneco",

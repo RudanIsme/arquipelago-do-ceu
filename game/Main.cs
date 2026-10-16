@@ -318,6 +318,7 @@ public partial class Main : Node3D
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
+			case "mestre": ShowMaster(); break;
 			case "torre-matematica": EnterTower(TrainingSetup.Mathematics); break;
 			case "torre-portugues": EnterTower(TrainingSetup.Portuguese); break;
 			case "guia": ShowGuide(); break;
@@ -345,15 +346,18 @@ public partial class Main : Node3D
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
 			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
 		AddChild(training);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
+		AddChild(master);
 	}
 
 
 	// O Nível a que o Perfil tem acesso. Em build de depuração, `--nivel=N` o força, só para o piloto de desenvolvimento testar os Níveis 2 e 3.
+	// O Nível sobe quando o Desafio mestre é vencido, então vale o do save, e não a cópia que a Main guardou ao entrar.
 	int UnlockedLevel()
 	{
 		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--nivel="))?["--nivel=".Length..] is { } text && int.TryParse(text, out var forced))
 			return forced;
-		return current?.Level ?? 1;
+		return current is null ? 1 : profiles.Find(current.Id) is { IsOk: true } fresh ? fresh.Value!.Level : current.Level;
 	}
 	// Avisos curtos sobre a cena somem sozinhos e também são ditos pela voz.
 	void Notify(string text)

@@ -9,6 +9,9 @@ public sealed record CreatureWords(string The, string Of, string Pronoun, string
 	// No Puzzle o alvo é uma porta ou ponte trancada, sem criatura.
 	public static readonly CreatureWords Gate = new("a porta", "da porta", "la", "Porta trancada");
 
+	// No Desafio mestre o Boneco vira o Guardião do Nível.
+	public static readonly CreatureWords Guardian = new("o Guardião", "do Guardião", "lo", "Guardião do Nível");
+
 	public static readonly CreatureWords Wild = new("a criatura", "da criatura", "la", "Criatura da névoa");
 
 	// "o Boneco" no começo de uma frase.

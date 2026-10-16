@@ -32,6 +32,25 @@ public partial class Main
 		foreach (var gate in GetTree().Root.GetChildren().OfType<PullTestGate>()) gate.Blocked = blocked;
 	}
 
+	MasterChallenge master = null!;
+
+	void ShowMaster()
+	{
+		if (current is null) return;
+		var level = UnlockedLevel();
+		ShowOverlay(new MasterScreen(level, progress.EpicDone(current.Id, TrainingSetup.Mathematics, level), progress.EpicDone(current.Id, TrainingSetup.Portuguese, level),
+			() =>
+			{
+				if (master.Start(current.Id, level) is { } problem) Notify(problem);
+			}));
+	}
+
+	// Ganchos só do piloto de desenvolvimento.
+	public ProgressService DevProgress => progress;
+	public string DevProfileId => current?.Id ?? "";
+	public int DevLevel => UnlockedLevel();
+	public MasterChallenge DevMaster => master;
+
 	void DropTarget()
 	{
 		training.DropTarget();

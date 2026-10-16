@@ -134,6 +134,53 @@ static class DungeonScenarios
 		await d.Shot("05-marco-aberto");
 	}
 
+	// O Desafio mestre: o portal avisa o que falta, abre com os dois épicos, perder não pune e vencer sobe o Nível.
+	public static async Task Master(DevDriver d)
+	{
+		await EnsureProfile(d);
+		var main = d.GetParent<Main>();
+		var profile = main.DevProfileId;
+
+		await WalkTo(d, 4, -4);
+		await d.Tap(Controls.Interact);
+		d.Expect(d.HasVisible("O portal só abre quando"), "o portal fechado diz o que falta");
+		await d.Shot("01-portal-fechado");
+		await d.PressKey(Key.Escape);
+
+		main.DevProgress.MarkEpicDone(profile, "matematica", 1);
+		main.DevProgress.MarkEpicDone(profile, "portugues", 1);
+		await d.Tap(Controls.Interact);
+		d.Expect(d.Button("Começar o Desafio mestre") is not null, "com os dois épicos o portal deixa começar");
+		await d.Shot("02-portal-aberto");
+		await d.Press("Começar o Desafio mestre");
+		d.Expect(main.DevMaster.Active, "o Desafio mestre começou");
+
+		main.DevMaster.DevLose();
+		await d.Wait(0.3);
+		d.Expect(!main.DevMaster.Active && main.DevLevel == 1, "perder encerra o desafio sem punir: o Nível continua o mesmo");
+		d.Expect(main.DevProgress.EpicDone(profile, "matematica", 1) && main.DevProgress.EpicDone(profile, "portugues", 1), "os épicos continuam concluídos");
+
+		await d.Tap(Controls.Interact);
+		await d.Press("Começar o Desafio mestre");
+		d.Expect(main.DevMaster.Active && main.DevMaster.Rounds == 4, "dá para tentar de novo");
+		await d.GoNearDummy();
+		await d.ClickCreature();
+		await d.Shot("03-luta-do-mestre");
+		await d.PressKey(Key.Escape);
+		for (var i = 0; i < 4; i++)
+		{
+			main.DevMaster.DevWinRound();
+			await d.Wait(0.3);
+		}
+		d.Expect(!main.DevMaster.Active, "vencer os quatro Desafios termina o Desafio mestre");
+		d.Expect(main.DevLevel == 2, "vencer subiu o Nível liberado");
+		await d.Shot("04-nivel-2");
+
+		await WalkTo(d, 4, -4);
+		await d.Tap(Controls.Interact);
+		d.Expect(d.HasVisible("O portal só abre quando") && d.HasVisible("Nível 2"), "no Nível 2 o portal volta a pedir os dois épicos");
+	}
+
 	// O Desafio épico conclui o Nível e a criança escolhe continuar ou voltar.
 	public static async Task Epic(DevDriver d)
 	{

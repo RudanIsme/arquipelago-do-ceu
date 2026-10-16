@@ -7,6 +7,23 @@ namespace ArquipelagoDoCeu.Dungeon;
 // Escolhe o que se luta numa Sala: a dificuldade sobe com o Andar, e o que não existe em dados cai no mais perto.
 public static class DungeonCombat
 {
+	// O Desafio mestre: `count` Desafios alternando Matemática e Português, cada um com dificuldade sorteada do Nível.
+	// As duas disciplinas aparecem em partes iguais, e quem começa também é sorteado.
+	public static Result<IReadOnlyList<TrainingSetup>> MasterSetups(IEnumerable<Mission> missions, int level, int count, Pcg32 rng)
+	{
+		var list = missions.ToList();
+		var math = ShortcutSetups(list, TrainingSetup.Mathematics, level, (count + 1) / 2, rng);
+		var letters = ShortcutSetups(list, TrainingSetup.Portuguese, level, (count + 1) / 2, rng);
+		if (!math.IsOk) return Result<IReadOnlyList<TrainingSetup>>.Fail(math.Error!);
+		if (!letters.IsOk) return Result<IReadOnlyList<TrainingSetup>>.Fail(letters.Error!);
+
+		var first = rng.NextInt(2) == 0 ? math.Value! : letters.Value!;
+		var second = ReferenceEquals(first, math.Value) ? letters.Value! : math.Value!;
+		var mixed = new List<TrainingSetup>();
+		for (var i = 0; i < count; i++) mixed.Add(i % 2 == 0 ? first[i / 2] : second[i / 2]);
+		return Result<IReadOnlyList<TrainingSetup>>.Ok(mixed);
+	}
+
 	// O Atalho de Nível: `count` Desafios com dificuldades sorteadas de todo o Nível. As dificuldades não se repetem enquanto
 	// houver outras; quando acabam, o sorteio recomeça.
 	public static Result<IReadOnlyList<TrainingSetup>> ShortcutSetups(IEnumerable<Mission> missions, string discipline, int level, int count, Pcg32 rng)

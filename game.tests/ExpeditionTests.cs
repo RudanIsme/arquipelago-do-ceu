@@ -331,6 +331,36 @@ public class DungeonCombatTests
 	}
 
 	[Fact]
+	public void O_Desafio_mestre_mistura_as_duas_disciplinas_em_partes_iguais_e_so_com_o_Nivel()
+	{
+		var missions = new[] { Math(1, 1), Math(1, 2), TrainingFixtures.NameMission("n1", ["pa", "to"], 1, 1), TrainingFixtures.NameMission("n2", ["pa", "to"], 1, 2), Math(2, 1) };
+
+		var setups = DungeonCombat.MasterSetups(missions, 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
+
+		Assert.Equal(4, setups.Count);
+		Assert.Equal(2, setups.Count(s => s.Discipline == TrainingSetup.Mathematics));
+		Assert.Equal(2, setups.Count(s => s.Discipline == TrainingSetup.Portuguese));
+		Assert.All(setups, s => Assert.Equal(1, s.Year));
+	}
+
+	[Fact]
+	public void O_Desafio_mestre_alterna_as_disciplinas()
+	{
+		var missions = new[] { Math(1, 1), TrainingFixtures.NameMission("n1", ["pa", "to"], 1, 1) };
+
+		var setups = DungeonCombat.MasterSetups(missions, 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
+
+		Assert.NotEqual(setups[0].Discipline, setups[1].Discipline);
+		Assert.Equal(setups[0].Discipline, setups[2].Discipline);
+	}
+
+	[Fact]
+	public void O_Desafio_mestre_sem_Missoes_de_uma_disciplina_e_uma_falha()
+	{
+		Assert.False(DungeonCombat.MasterSetups([Math(1, 1)], 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).IsOk);
+	}
+
+	[Fact]
 	public void A_seed_do_mundo_vem_do_Perfil_e_e_estavel()
 	{
 		Assert.Equal(Seed.ForProfile("abc"), Seed.ForProfile("abc"));
