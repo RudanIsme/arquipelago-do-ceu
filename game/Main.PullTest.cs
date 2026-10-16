@@ -25,7 +25,10 @@ public partial class PullTestGate:Node {
  IEnumerable<Node> Walk(Node n){yield return n;foreach(var c in n.GetChildren())foreach(var x in Walk(c))yield return x;}
  public static NameBattle PracticeBattle(){var m=MissionSource.Load().Missions.Where(m=>m.Mechanic=="formar_palavras").OrderByDescending(m=>m.Params["syllables"].GetArrayLength()).First();return NameBattle.Start(new[]{m},new Pcg32(41)).Value!;}
  public void EnterWithPanel(NamePanel panel){if(arena!=null)return;sourcePanel=panel;Enter();}
- public void Enter(){if(arena!=null)return;var battle=sourcePanel?.PullBattle??PracticeBattle();camera=GetViewport().GetCamera3D();paused=GetTree().Paused;speed=Engine.TimeScale;mouse=Input.MouseMode;visible=Host.Visible;
+ // A pesca de teste não vale dentro de uma Dungeon: ela pausa e esconde o jogo todo.
+ public bool Blocked{get=>blocked;set{blocked=value;if(IsInstanceValid(launch))launch.Visible=!value&&arena==null;}}
+ bool blocked;
+ public void Enter(){if(arena!=null||blocked)return;var battle=sourcePanel?.PullBattle??PracticeBattle();camera=GetViewport().GetCamera3D();paused=GetTree().Paused;speed=Engine.TimeScale;mouse=Input.MouseMode;visible=Host.Visible;
   modes=Walk(Host).ToDictionary(n=>n,n=>n.ProcessMode);layers=Walk(Host).OfType<CanvasLayer>().ToDictionary(n=>n,n=>n.Visible);
   foreach(var n in modes.Keys)n.ProcessMode=ProcessModeEnum.Disabled;foreach(var n in layers.Keys)n.Visible=false;Host.Visible=false;GetTree().Paused=true;Engine.TimeScale=1;Input.MouseMode=Input.MouseModeEnum.Visible;launch.Hide();
   var pref=Preferences();arena=new PullTestArena{ProcessMode=ProcessModeEnum.Always,ReduceEffects=pref.effects,ReduceMotion=pref.motion,ExitRequested=Exit,Battle=battle,Linked=sourcePanel!=null,Letters=sourcePanel==null,CheckRequested=()=>ExitAndCheck()};GetTree().Root.AddChild(arena);GD.Print("PULL_TEST_ENTER");

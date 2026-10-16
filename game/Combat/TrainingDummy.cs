@@ -30,6 +30,10 @@ public partial class TrainingDummy : Node3D
 		Scale = new Vector3(1f, 0.15f, 1f),
 		Visible = false,
 	};
+	// Como a criatura se apresenta: no Lobby é o Boneco de treino, e na Dungeon é a criatura da Sala.
+	public string Title { get; set; } = "Boneco de treino";
+	public string RestingHint { get; set; } = "Escolha-o para treinar";
+	public string RestingCompact { get; set; } = "Treinar [F]";
 	bool compactCaption, captionNear, resting = true;
 	int captionValue;
 	public void SetCaptionContext(bool compact, bool near)
@@ -41,8 +45,8 @@ public partial class TrainingDummy : Node3D
 	{
 		shieldLabel.Visible = !compactCaption || !resting || captionNear;
 		shieldLabel.Text = resting
-			? (compactCaption ? "Treinar [F]" : "Boneco de treino\nEscolha-o para treinar")
-			: (compactCaption ? $"{unit}: {captionValue}" : $"Boneco de treino\n{unit}: {captionValue}");
+			? (compactCaption ? RestingCompact : $"{Title}\n{RestingHint}")
+			: (compactCaption ? $"{unit}: {captionValue}" : $"{Title}\n{unit}: {captionValue}");
 	}
 	int startingShield = 1;
 	string unit = "Escudo";

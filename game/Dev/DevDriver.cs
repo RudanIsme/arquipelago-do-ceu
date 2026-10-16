@@ -274,6 +274,12 @@ static class Scenarios
 				await d.Hold(Controls.Up, 4.0);
 				await d.Shot("04-contra-a-borda");
 				break;
+			case "torre":
+				await DungeonScenarios.Walkthrough(d);
+				break;
+			case "torre-derrota":
+				await DungeonScenarios.Defeat(d);
+				break;
 			case "andar":
 				await FloorShots.Run(d);
 				break;

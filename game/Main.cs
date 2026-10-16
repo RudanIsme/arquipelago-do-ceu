@@ -61,6 +61,7 @@ public partial class Main : Node3D
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
+		progress = new ProgressService(session);
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
@@ -223,6 +224,7 @@ public partial class Main : Node3D
 		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));
+		if (dungeon is not null) dungeon.Player.ReduceMotion = player.ReduceMotion;
 		lobby.ReduceMotion = player.ReduceMotion;
 		dummy.ReduceMotion = player.ReduceMotion;
 		controlHint.Text = ControlHints.For(s.Controls);
@@ -238,7 +240,7 @@ public partial class Main : Node3D
 
 	void ShowProfiles()
 	{
-		training.DropTarget();
+		DropTarget();
 		if (screen is not null || overlay is not null || editor is not null || workshop is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
@@ -260,6 +262,7 @@ public partial class Main : Node3D
 		screen = null;
 		editor?.QueueFree();
 		editor = null;
+		dungeon?.Leave("");
 		if (current?.Id != profile.Id) training.End();
 		current = profile;
 		characterButton.Visible = true;
@@ -273,7 +276,7 @@ public partial class Main : Node3D
 
 	void ShowEditor()
 	{
-		training.DropTarget();
+		DropTarget();
 		if (editor is not null || screen is not null || overlay is not null || workshop is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
@@ -291,7 +294,7 @@ public partial class Main : Node3D
 
 	void ShowOverlay(OverlayScreen next)
 	{
-		training.DropTarget();
+		DropTarget();
 		if (overlay is not null || screen is not null || editor is not null || workshop is not null)
 		{
 			next.QueueFree();
@@ -315,6 +318,7 @@ public partial class Main : Node3D
 		{
 			case "album": ShowOverlay(new AlbumScreen()); break;
 			case "portal": ShowOverlay(new PortalScreen()); break;
+			case "torre-matematica": EnterDungeon(TrainingSetup.Mathematics); break;
 			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
@@ -373,7 +377,9 @@ public partial class Main : Node3D
 	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
 	void UpdatePlayerControl()
 	{
-		player.Enabled = current is not null && screen is null && editor is null && overlay is null && workshop is null;
+		var free = current is not null && screen is null && editor is null && overlay is null && workshop is null;
+		player.Enabled = free && !inDungeon;
+		dungeon?.SetEnabled(free);
 		bottomBar.Visible = player.Enabled;
 		RefreshJourneyVisibility();
 	}
@@ -382,21 +388,24 @@ public partial class Main : Node3D
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
-		if (player is null || !player.Enabled || GetViewport().GuiGetHoveredControl() is not null || !training.HitsDummy(click.Position)) return;
+		var actor = inDungeon ? dungeon?.Player : player;
+		var combat = dungeon?.Combat ?? training;
+		if (actor is null || !actor.Enabled || GetViewport().GuiGetHoveredControl() is not null || !combat.HitsDummy(click.Position)) return;
 		GetViewport().SetInputAsHandled();
-		training.ToggleTarget();
+		combat.ToggleTarget();
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
-		if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
+		if (@event.IsActionPressed(Controls.Target) && inDungeon && dungeon is { Player.Enabled: true }) dungeon.Combat.ToggleTarget();
+		else if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
 	}
 
 	// Chegar perto de um objeto mostra o botão com o nome da ação e a seta sobre o objeto; a tecla E aciona o mesmo.
 	public override void _Process(double delta)
 	{
-		if (player is null) return;
+		if (player is null || inDungeon) return;
 		journeyHud?.SetNotice(notice.Text);
 		journeyHud?.SetPlayState(player.Enabled && journey.Variant != "base" && !training.HasTarget);
 		if (returnJourney is not null && journey.Variant == "base") returnJourney.Visible = player.Enabled && !training.HasTarget;

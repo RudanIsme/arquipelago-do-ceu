@@ -60,6 +60,13 @@ public sealed class MovementController
 		return true;
 	}
 
+	// Põe o Personagem num ponto do chão de uma vez, por exemplo ao entrar numa Sala.
+	public void Place(Vector2 point)
+	{
+		Stop();
+		Position = point;
+	}
+
 	public void Stop()
 	{
 		waypoints.Clear();

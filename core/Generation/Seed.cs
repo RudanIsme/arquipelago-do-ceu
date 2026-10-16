@@ -20,6 +20,9 @@ public static class Seed
 		return hash;
 	}
 
+	// A seed do mundo de um Perfil vem do seu identificador: o mesmo Perfil sempre encontra os mesmos Andares.
+	public static ulong ForProfile(string profileId) => Mix(0, profileId, 0, 0, 1);
+
 	static void Add(ref ulong hash, byte[] bytes)
 	{
 		foreach (var b in bytes)

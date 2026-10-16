@@ -27,8 +27,20 @@ public partial class FloorMap : Control
 	readonly Dictionary<int, Vector2> positions = new();
 
 	// Salas já vencidas ou visitadas, e a Sala onde a criança está; usados pelo jogo, e vazios no mapa de depuração.
-	public ISet<int> Cleared { get; set; } = new HashSet<int>();
-	public int? Here { get; set; }
+	ISet<int> cleared = new HashSet<int>();
+	int? here;
+
+	public ISet<int> Cleared
+	{
+		get => cleared;
+		set { cleared = value; QueueRedraw(); }
+	}
+
+	public int? Here
+	{
+		get => here;
+		set { here = value; QueueRedraw(); }
+	}
 
 	public FloorMap(Floor floor, Vector2 size)
 	{
@@ -37,6 +49,10 @@ public partial class FloorMap : Control
 		Size = size;
 		Layout(size);
 	}
+
+	public static Color ColorOf(RoomKind kind) => Look[kind].Color;
+
+	public static string NameOf(RoomKind kind) => Look[kind].Name;
 
 	public static string Legend => string.Join("   ", Look.Values.Select(v => $"{v.Letter} {v.Name}"));
 

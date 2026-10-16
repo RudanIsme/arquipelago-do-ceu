@@ -41,8 +41,11 @@ public partial class StaffPanel : OverlayScreen
 	int tracingSlot;
 
 	// `inRange` diz se o Personagem está perto o bastante para a conta valer como ataque.
-	public StaffPanel(TrainingBattle battle, CombatRules rules, VoiceService voice, Func<bool> inRange)
+	readonly CreatureWords creature;
+
+	public StaffPanel(TrainingBattle battle, CombatRules rules, VoiceService voice, Func<bool> inRange, CreatureWords? creature = null)
 	{
+		this.creature = creature ?? CreatureWords.Dummy;
 		this.battle = battle;
 		this.rules = rules;
 		this.voice = voice;
@@ -240,7 +243,7 @@ public partial class StaffPanel : OverlayScreen
 		}
 		if (!inRange())
 		{
-			Tell("Chegue mais perto do Boneco para atacar.");
+			Tell($"Chegue mais perto {creature.Of} para atacar.");
 			return;
 		}
 		var attack = battle.Confirm();
@@ -257,7 +260,7 @@ public partial class StaffPanel : OverlayScreen
 	// A conta aparece como a criança a montou, sem o resultado: somar é com ela.
 	public void Refresh()
 	{
-		shieldLabel.Text = $"Boneco de treino\nEscudo: {battle.Shield.Remaining}";
+		shieldLabel.Text = $"{creature.Title}\nEscudo: {battle.Shield.Remaining}";
 		var tokens = battle.Staff.Tokens;
 		expressionLabel.Text = tokens.Count == 0
 			? "Monte uma conta com as teclas."

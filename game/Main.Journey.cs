@@ -70,7 +70,7 @@ public partial class Main
   var saved=journeys.Set(current.Id,next);
   if(!saved.IsOk){Notify(saved.Error!);return;}
   journey=next;current=saved.Value!;
-  training.DropTarget();
+  DropTarget();
   // Interface choices never replace equipment or touch current Energy.
   ConfigureJourney();
  }
@@ -87,7 +87,7 @@ public partial class Main
  void ShowEquipment()
  {
   if(current is null || workshop is not null || overlay is not null || screen is not null || editor is not null)return;
-  training.DropTarget();
+  DropTarget();
   if(overlay is not null)return;
   workshop=new EquipmentWorkshop(journey.Variant,EquipmentCatalog.Normalize(journey.Equipment), !experimentalEquipment);
   if(experimentalEquipment) workshop.PreviewChanged += value => player.ApplyEquipment(value);
@@ -124,6 +124,16 @@ public partial class Main
  {
   bool playing=player is not null && player.Enabled;
   bool legacy=journey.Variant=="base";
+  if(journeyHud is not null)journeyHud.Visible=!inDungeon;
+  if(inDungeon)
+  {
+   if(legacyHud is not null)legacyHud.Visible=false;
+   if(bottomBar is not null)bottomBar.Visible=false;
+   if(returnJourney is not null)returnJourney.Visible=false;
+   title.Visible=false;
+   notice.Visible=false;
+   return;
+  }
   if(legacyHud is not null)legacyHud.Visible=legacy && workshop is null;
   if(bottomBar is not null)bottomBar.Visible=playing && legacy;
   title.Visible=legacy || current is null;

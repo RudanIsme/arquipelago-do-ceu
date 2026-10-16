@@ -295,6 +295,13 @@
         "r": 4
       },
       {
+        "id": "torre-matematica",
+        "name": "Torre dos Números",
+        "prompt": "Entrar na Torre dos Números",
+        "q": -4,
+        "r": 4
+      },
+      {
         "id": "boneco",
         "name": "Boneco de treino",
         "prompt": "Atacar o Boneco",

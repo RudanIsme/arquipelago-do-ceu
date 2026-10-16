@@ -12,7 +12,7 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// A Área de treino: liga o Boneco, o Personagem, as telas de montagem e a voz à sessão de treino de core/.
+// A Área de treino e as lutas das Salas da Dungeon: liga a criatura, o Personagem, as telas de montagem e a voz à sessão de combate de core/.
 // O treino tem Energia própria, o Boneco lança bolhas avisadas e faz travessuras nos erros; zerar a Energia só tira
 // a criança da Área de treino. Nada aqui grava no save: o treino não conta para o progresso.
 public partial class TrainingArea : Node
@@ -21,7 +21,7 @@ public partial class TrainingArea : Node
 	const float ReactionSeconds = 3.0f;
 
 	readonly GameRules rules;
-	readonly Lobby lobby;
+	readonly ICombatStage stage;
 	readonly Player player;
 	readonly TrainingDummy dummy;
 	readonly VoiceService voice;
@@ -38,6 +38,11 @@ public partial class TrainingArea : Node
 	OverlayScreen? panel;
 	EnergyView? energyView;
 	bool reacting;
+	// Na Expedição a luta é de uma Sala: vencer o Desafio chama fightWon e zerar a Energia chama fightLost.
+	// A Energia mostrada é a da Expedição, que a Dungeon desenha, e não a da Área de treino.
+	Action? fightWon;
+	Action? fightLost;
+	bool ownsEnergyView = true;
 	// Cada erro e cada fim de treino mudam a época; um temporizador de uma época antiga não faz mais nada.
 	int epoch;
 	int extraEnergy;
@@ -48,11 +53,11 @@ public partial class TrainingArea : Node
 		UpdateEnergy();
 	}
 
-	public TrainingArea(GameRules rules, Lobby lobby, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
+	public TrainingArea(GameRules rules, ICombatStage stage, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
 		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify)
 	{
 		this.rules = rules;
-		this.lobby = lobby;
+		this.stage = stage;
 		this.player = player;
 		this.dummy = dummy;
 		this.voice = voice;
@@ -66,27 +71,36 @@ public partial class TrainingArea : Node
 		bubble = new BubbleAttack(rules.Combat.Bubble);
 		missions = MissionSource.Load().Missions;
 
-		var (ground, top) = lobby.FootprintOf("boneco");
+		var (ground, top) = stage.CreatureSpot;
 		dummy.Place(ground, top);
 		dummy.Idle();
 	}
 
+	// Dentro de uma Dungeon só se luta com a criatura da Sala; não há escolha de treino.
+	public bool InDungeon { get; set; }
+
+	// Como o jogo chama a criatura nas frases e nos painéis.
+	public CreatureWords Creature { get; set; } = CreatureWords.Dummy;
+
+	// Onde a barra de Energia fica; sem valor, o Lobby a posiciona abaixo da interface dele.
+	public int? EnergyTop { get; set; }
+
 	public bool HasTarget => panel is not null;
 	public void RefreshPresentation() { energyView?.RefreshTheme(); UpdateEnergyDock(); }
-	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = UiKit.Compact ? (panel is null ? 154 : 12) : 126; }
+	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (UiKit.Compact ? (panel is null ? 154 : 12) : 126); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
 	public bool HitsDummy(Godot.Vector2 screenPoint)
 	{
-		var origin = lobby.Camera.ProjectRayOrigin(screenPoint);
-		var direction = lobby.Camera.ProjectRayNormal(screenPoint);
+		var origin = stage.Camera.ProjectRayOrigin(screenPoint);
+		var direction = stage.Camera.ProjectRayNormal(screenPoint);
 		var closest = origin + direction * (dummy.Center - origin).Dot(direction);
 		return closest.DistanceTo(dummy.Center) <= DummyPickRadius;
 	}
 
 	public bool InTargetRange()
 	{
-		var (ground, _) = lobby.FootprintOf("boneco");
+		var (ground, _) = stage.CreatureSpot;
 		return Vector2.Distance(player.GroundPosition, new Vector2(ground.X, ground.Z)) <= rules.Combat.TargetRange;
 	}
 
@@ -111,7 +125,7 @@ public partial class TrainingArea : Node
 	public void CheckRange()
 	{
 		if (panel is null || InTargetRange()) return;
-		notify("O Boneco ficou longe.");
+		notify($"{Creature.Start} ficou longe.");
 		DropTarget();
 	}
 
@@ -120,7 +134,41 @@ public partial class TrainingArea : Node
 	{
 		DropTarget();
 		if (session is null) return;
-		Finish("");
+		if (fightWon is not null) EndFight();
+		else Finish("");
+	}
+
+	// Começa a luta de uma Sala com a Energia da Expedição. A criança escolhe a criatura (clique ou F) para atacar.
+	public void BeginFight(CombatSession fight, EnergyView energy, Action won, Action lost)
+	{
+		epoch++;
+		session = fight;
+		energyView = energy;
+		ownsEnergyView = false;
+		fightWon = won;
+		fightLost = lost;
+		reacting = false;
+		bubble.Reset();
+		UpdateEnergy();
+		ShowChallenge();
+	}
+
+	// Termina a luta sem mexer na Energia nem na tela dela; vale tanto para vitória quanto para sair da Sala.
+	public void EndFight()
+	{
+		epoch++;
+		DropTarget();
+		session = null;
+		reacting = false;
+		fightWon = null;
+		fightLost = null;
+		energyView = null;
+		ownsEnergyView = true;
+		bubble.Reset();
+		dummy.HideWarning();
+		dummy.HideBubble();
+		time.End();
+		Engine.TimeScale = time.Scale;
 	}
 
 	void Select()
@@ -128,9 +176,10 @@ public partial class TrainingArea : Node
 		if (!canAct()) return;
 		if (!InTargetRange())
 		{
-			notify("Chegue mais perto do Boneco para escolhê-lo.");
+			notify($"Chegue mais perto {Creature.Of} para escolhê-{Creature.Pronoun}.");
 			return;
 		}
+		if (session is null && InDungeon) return;
 		if (session is null) showOverlay(new TrainingSetupScreen(rules.Roles, TrainingSetup.Levels(unlockedLevel()), TryStart));
 		else OpenPanel();
 	}
@@ -178,7 +227,7 @@ public partial class TrainingArea : Node
 		Action<string> tell = _ => { };
 		if (session.Math is { } math)
 		{
-			var staff = new StaffPanel(math, session.Rules, voice, InTargetRange);
+			var staff = new StaffPanel(math, session.Rules, voice, InTargetRange, Creature);
 			staff.Attacked += OnAttacked;
 			staff.ComposingChanged += OnComposing;
 			staff.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
@@ -263,7 +312,7 @@ public partial class TrainingArea : Node
 				session.Hit(perfect: true);
 				UpdateEnergy();
 				Say("Golpe perfeito!", $"Golpe perfeito! {result.Equation} dissolveu a névoa. Você recuperou Energia.");
-				NextChallengeSoon();
+				Won();
 				break;
 			case HitOutcome.Reduced:
 				dummy.Ray(from, perfect: false);
@@ -307,7 +356,7 @@ public partial class TrainingArea : Node
 				_ => $"Muito bem! O nome é {name.Word.ToUpperInvariant()}. A criatura foi libertada.",
 			};
 			Say(name.Kind == NameKind.Syllables ? "Nome certo!" : "Frase certa!", $"{struck}{done}");
-			NextChallengeSoon();
+			Won();
 		}
 		else if (verdict.Mistaken)
 		{
@@ -331,7 +380,7 @@ public partial class TrainingArea : Node
 			session.Hit(perfect: false);
 			UpdateEnergy();
 			Say("Nome certo!", $"Muito bem! Você escreveu {word.Word.ToUpperInvariant()}. A criatura foi libertada.");
-			NextChallengeSoon();
+			Won();
 			return;
 		}
 		dummy.Overshoot();
@@ -354,8 +403,8 @@ public partial class TrainingArea : Node
 
 		dummy.Prank();
 		var prank = outcome.Prank == Prank.Hidden
-			? $"O Boneco fez uma travessura e escondeu uma peça por {rules.Combat.PrankSeconds:0} segundos."
-			: "O Boneco fez uma travessura e embaralhou as peças.";
+			? $"{Creature.Start} fez uma travessura e escondeu uma peça por {rules.Combat.PrankSeconds:0} segundos."
+			: $"{Creature.Start} fez uma travessura e embaralhou as peças.";
 		ShowChallenge();
 		RefreshPanel();
 
@@ -371,6 +420,28 @@ public partial class TrainingArea : Node
 			if (epoch != mine || session is null) return;
 			session.RevealHidden();
 			RefreshPanel();
+		};
+	}
+
+	// Num treino vem logo o próximo Desafio; numa Sala, vencer o Desafio vence a Sala.
+	void Won()
+	{
+		if (fightWon is null)
+		{
+			NextChallengeSoon();
+			return;
+		}
+		reacting = true;
+		bubble.Reset();
+		dummy.HideWarning();
+		dummy.HideBubble();
+		var mine = ++epoch;
+		GetTree().CreateTimer(ReactionSeconds, true, false, true).Timeout += () =>
+		{
+			if (epoch != mine || session is null) return;
+			var won = fightWon;
+			EndFight();
+			won();
 		};
 	}
 
@@ -412,7 +483,7 @@ public partial class TrainingArea : Node
 
 	void AttackAnimation()
 	{
-		var (ground, _) = lobby.FootprintOf("boneco");
+		var (ground, _) = stage.CreatureSpot;
 		player.Attack(new Vector2(ground.X, ground.Z));
 	}
 
@@ -424,12 +495,19 @@ public partial class TrainingArea : Node
 	// Energia zerada, "Sair do treino" ou troca de Perfil: a criança só sai da Área de treino, sem perder nada.
 	void Finish(string message)
 	{
+		if (fightLost is not null)
+		{
+			var lost = fightLost;
+			EndFight();
+			lost();
+			return;
+		}
 		epoch++;
 		DropTarget();
 		session = null;
 		reacting = false;
 		bubble.Reset();
-		energyView?.QueueFree();
+		if (ownsEnergyView) energyView?.QueueFree();
 		energyView = null;
 		dummy.Idle();
 		time.End();
@@ -456,7 +534,7 @@ public partial class TrainingArea : Node
 			return;
 		}
 
-		var (ground, _) = lobby.FootprintOf("boneco");
+		var (ground, _) = stage.CreatureSpot;
 		var origin = new Vector2(ground.X, ground.Z);
 		var radius = rules.Combat.Bubble.Radius;
 		switch (bubble.Update((float)delta, origin, player.GroundPosition))
