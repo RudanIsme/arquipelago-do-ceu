@@ -14,8 +14,6 @@ public class GameRulesTests
 
 		Assert.True(resultado.IsOk, resultado.Error);
 		Assert.Equal("Arquipélago do Céu", resultado.Value!.GameName);
-		Assert.Equal("Matemático", resultado.Value.Roles.Mathematics);
-		Assert.Equal("Escriba", resultado.Value.Roles.Portuguese);
 	}
 
 	[Fact]
@@ -96,8 +94,6 @@ public class GameRulesTests
 	[Theory]
 	[InlineData("\"gameName\": \"Arquipélago do Céu\"", "\"gameName\": \"  \"", "gameName")]
 	[InlineData("\"gameName\": \"Arquipélago do Céu\",", "", "gameName")]
-	[InlineData("\"mathematics\": \"Matemático\",", "", "roles.mathematics")]
-	[InlineData("\"portuguese\": \"Escriba\"", "\"portuguese\": \"\"", "roles.portuguese")]
 	public void Nome_ausente_ou_vazio_diz_qual_campo(string original, string novo, string campo)
 	{
 		var resultado = GameRules.Parse(Valido.Replace(original, novo));

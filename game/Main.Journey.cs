@@ -10,7 +10,7 @@ public partial class Main
 	EquipmentBonuses equipmentBonuses = new();
 	GearService gear = null!;
 	// O Papel de agora (a torre ou o treino mais recentes) decide qual equipamento vale no Lobby; cada Papel tem o seu.
-	string role = ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics;
+	string role = "";
 
 	// O que o Personagem veste: os itens do Papel de agora e as cores escolhidas na oficina.
 	EquipmentLoadout ActiveEquipment
@@ -28,7 +28,7 @@ public partial class Main
 
 	EquipmentBonuses BonusesOf(string papel) => current is null ? new() : gear.Bonuses(current.Id, papel);
 
-	string RoleName(string papel) => papel == ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics ? rules.Roles.Mathematics : rules.Roles.Portuguese;
+	string RoleName(string papel) => towers.Find(papel)?.Role ?? papel;
 
 	// O card do canto mostra a Maestria do Papel de agora.
 	void RefreshCard() => journeyHud?.SetCard(current?.Nickname ?? "Viajante", RoleName(role), current is null ? 0 : progress.Mastery.Of(current.Id, role));

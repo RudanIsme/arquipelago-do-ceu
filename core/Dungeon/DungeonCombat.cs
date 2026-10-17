@@ -7,20 +7,23 @@ namespace ArquipelagoDoCeu.Dungeon;
 // Escolhe o que se luta numa Sala: a dificuldade sobe com o Andar, e o que não existe em dados cai no mais perto.
 public static class DungeonCombat
 {
-	// O Desafio mestre: `count` Desafios alternando Matemática e Português, cada um com dificuldade sorteada do Nível.
-	// As duas disciplinas aparecem em partes iguais, e quem começa também é sorteado.
-	public static Result<IReadOnlyList<TrainingSetup>> MasterSetups(IEnumerable<Mission> missions, int level, int count, Pcg32 rng)
+	// O Desafio mestre: `count` Desafios alternando as disciplinas das torres, cada um com dificuldade sorteada do Nível.
+	// Todas as disciplinas aparecem em partes iguais, e quem começa também é sorteado.
+	public static Result<IReadOnlyList<TrainingSetup>> MasterSetups(IEnumerable<Mission> missions, IReadOnlyList<string> disciplines, int level, int count, Pcg32 rng)
 	{
 		var list = missions.ToList();
-		var math = ShortcutSetups(list, TrainingSetup.Mathematics, level, (count + 1) / 2, rng);
-		var letters = ShortcutSetups(list, TrainingSetup.Portuguese, level, (count + 1) / 2, rng);
-		if (!math.IsOk) return Result<IReadOnlyList<TrainingSetup>>.Fail(math.Error!);
-		if (!letters.IsOk) return Result<IReadOnlyList<TrainingSetup>>.Fail(letters.Error!);
+		var perDiscipline = (count + disciplines.Count - 1) / disciplines.Count;
+		var lanes = new List<IReadOnlyList<TrainingSetup>>();
+		foreach (var discipline in disciplines)
+		{
+			var lane = ShortcutSetups(list, discipline, level, perDiscipline, rng);
+			if (!lane.IsOk) return Result<IReadOnlyList<TrainingSetup>>.Fail(lane.Error!);
+			lanes.Add(lane.Value!);
+		}
 
-		var first = rng.NextInt(2) == 0 ? math.Value! : letters.Value!;
-		var second = ReferenceEquals(first, math.Value) ? letters.Value! : math.Value!;
+		rng.Shuffle(lanes);
 		var mixed = new List<TrainingSetup>();
-		for (var i = 0; i < count; i++) mixed.Add(i % 2 == 0 ? first[i / 2] : second[i / 2]);
+		for (var i = 0; i < count; i++) mixed.Add(lanes[i % lanes.Count][i / lanes.Count]);
 		return Result<IReadOnlyList<TrainingSetup>>.Ok(mixed);
 	}
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Rules;
@@ -34,6 +35,7 @@ public partial class TrainingArea : Node
 	readonly BubbleAttack bubble;
 	readonly IReadOnlyList<Mission> missions;
 	readonly IRandomSource random;
+	readonly TowerCatalog towers;
 	CombatSession? session;
 	OverlayScreen? panel;
 	EnergyView? energyView;
@@ -54,8 +56,9 @@ public partial class TrainingArea : Node
 	}
 
 	public TrainingArea(GameRules rules, ICombatStage stage, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
-		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify, IRandomSource random)
+		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify, IRandomSource random, TowerCatalog towers)
 	{
+		this.towers = towers;
 		this.random = random;
 		this.rules = rules;
 		this.stage = stage;
@@ -201,7 +204,7 @@ public partial class TrainingArea : Node
 			return;
 		}
 		if (session is null && InDungeon) return;
-		if (session is null) showOverlay(new TrainingSetupScreen(rules.Roles, TrainingSetup.Levels(unlockedLevel()), TryStart));
+		if (session is null) showOverlay(new TrainingSetupScreen(towers.All.Select(t => (t.Id, t.Role)).ToList(), TrainingSetup.Levels(unlockedLevel(), towers.MaxLevel), TryStart));
 		else OpenPanel();
 	}
 

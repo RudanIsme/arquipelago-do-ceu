@@ -12,17 +12,18 @@ public partial class TrainingSetupScreen : OverlayScreen
 {
 	static readonly string[] DifficultyNames = ["Bem fácil", "Fácil", "Médio", "Difícil", "Muito difícil"];
 
-	readonly RoleNames roles;
+	readonly IReadOnlyList<(string Id, string Role)> roles;
 	readonly IReadOnlyList<int> levels;
 	readonly Func<TrainingSetup, string?> tryStart;
-	string discipline = TrainingSetup.Mathematics;
+	string discipline;
 	int level = 1;
 	int difficulty = 1;
 	Label message = null!;
 
-	public TrainingSetupScreen(RoleNames roles, IReadOnlyList<int> levels, Func<TrainingSetup, string?> tryStart)
+	public TrainingSetupScreen(IReadOnlyList<(string Id, string Role)> roles, IReadOnlyList<int> levels, Func<TrainingSetup, string?> tryStart)
 	{
 		this.roles = roles;
+		discipline = roles[0].Id;
 		this.levels = levels;
 		this.tryStart = tryStart;
 	}
@@ -34,7 +35,7 @@ public partial class TrainingSetupScreen : OverlayScreen
 		box.AddChild(UiKit.Hint("Treinar não conta para o progresso. É só para praticar, sem pressa."));
 
 		box.AddChild(UiKit.Hint("Papel"));
-		box.AddChild(Choices([(TrainingSetup.Mathematics, roles.Mathematics), (TrainingSetup.Portuguese, roles.Portuguese)], discipline, id => discipline = id, 260));
+		box.AddChild(Choices(roles, discipline, id => discipline = id, 260));
 
 		box.AddChild(UiKit.Hint("Nível"));
 		var levelChoices = new List<(int, string)>();

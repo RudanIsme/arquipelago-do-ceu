@@ -65,7 +65,7 @@ O que varia por tipo é uma definição registrada por id: em dados quando só d
 | Tipo de Sala | Código: `RoomKind`, gerador, validador, progresso, `FloorMap` e `DungeonWorld` | Uma definição e o desenho dela (#165, #166) |
 | Gatilho de recompensa | Uma linha em `RewardTriggers` (`RepeatableTrigger` ou `OnceTrigger`, ou uma classe que implemente `IRewardTrigger`) e as recompensas dele em `recompensas.json`; quem dispara o gatilho (a Dungeon) chama `RewardService.Grant` | Igual |
 | Mecânica | Código: `MissionLoader.KnownMechanics`, a luta em `core/Combat` e o painel em `game/Ui` | Igual, registrada por id |
-| Torre, Papel ou Nível | Código: constantes de disciplina e `TrainingSetup.LastLevel` | Uma definição em dados (#168) |
+| Torre, Papel ou Nível | Uma entrada em `game/data/torres.json` (id, nome, Papel, assunto, Mecânicas aceitas, quantos Níveis e com qual torre troca o Item); o último Nível do jogo é o da torre que mais tem. As Missões da torre nova entram em `content/missions/` com a disciplina dela. O objeto da torre no Lobby (`torre-<id>` em `rules.json`) também é um dado | Igual |
 
 ### Geração procedural
 

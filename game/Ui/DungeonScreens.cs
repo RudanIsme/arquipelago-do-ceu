@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -147,28 +149,25 @@ public partial class ShortcutOfferScreen : OverlayScreen
 public partial class MasterScreen : OverlayScreen
 {
 	readonly int level;
-	readonly bool mathDone;
-	readonly bool lettersDone;
+	readonly IReadOnlyList<(string Name, bool Done)> towers;
 	readonly Action start;
 
-	public MasterScreen(int level, bool mathDone, bool lettersDone, Action start)
+	public MasterScreen(int level, IReadOnlyList<(string Name, bool Done)> towers, Action start)
 	{
 		this.level = level;
-		this.mathDone = mathDone;
-		this.lettersDone = lettersDone;
+		this.towers = towers;
 		this.start = start;
 	}
 
 	public override void _Ready()
 	{
 		base._Ready();
-		var open = mathDone && lettersDone;
+		var open = towers.All(t => t.Done);
 		var box = UiKit.Card(this, "Desafio mestre", out var footer);
 		box.AddChild(UiKit.Hint(open
-			? $"As duas torres do Nível {level} estão concluídas! O Guardião do Nível mistura Matemática e Português. Vencendo, o Nível {level + 1} abre nas duas torres."
-			: $"O portal só abre quando você vencer o Desafio épico do Nível {level} nas duas torres (jogando a torre ou pelo Atalho de Nível)."));
-		box.AddChild(UiKit.Hint($"Torre dos Números: {(mathDone ? "★ concluída" : "ainda não")}"));
-		box.AddChild(UiKit.Hint($"Torre das Letras: {(lettersDone ? "★ concluída" : "ainda não")}"));
+			? $"Todas as torres do Nível {level} estão concluídas! O Guardião do Nível mistura as matérias de todas elas. Vencendo, o Nível {level + 1} abre nas torres."
+			: $"O portal só abre quando você vencer o Desafio épico do Nível {level} em todas as torres (jogando a torre ou pelo Atalho de Nível)."));
+		foreach (var (name, done) in towers) box.AddChild(UiKit.Hint($"{name}: {(done ? "★ concluída" : "ainda não")}"));
 		if (open) footer.AddChild(UiKit.BigButton("Começar o Desafio mestre", () => { Close(); start(); }, 420));
 		footer.AddChild(UiKit.BigButton("Fechar", Close, 420));
 	}

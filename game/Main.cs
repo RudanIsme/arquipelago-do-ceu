@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using ArquipelagoDoCeu.Data;
+using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
@@ -58,6 +59,10 @@ public partial class Main : Node3D
 		var loadedRules = LoadRules();
 		if (!loadedRules.IsOk) { Stop(loadedRules.Error!); return; }
 		rules = loadedRules.Value!;
+		var loadedTowers = catalogs.Required("torres.json", json => TowerCatalog.Parse(json, MissionLoader.KnownMechanics));
+		if (!loadedTowers.IsOk) { Stop(loadedTowers.Error!); return; }
+		towers = loadedTowers.Value!;
+		role = towers.All[0].Id;
 		title.Text = rules.GameName;
 		GD.Print($"Regras carregadas: {rules.GameName}");
 
@@ -321,8 +326,7 @@ public partial class Main : Node3D
 			case "album": ShowOverlay(new AlbumScreen(OwnedCosmetics())); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
 			case "mestre": ShowMaster(); break;
-			case "torre-matematica": EnterTower(TrainingSetup.Mathematics); break;
-			case "torre-portugues": EnterTower(TrainingSetup.Portuguese); break;
+			case var tower when tower.StartsWith("torre-", StringComparison.Ordinal): EnterTower(tower["torre-".Length..]); break;
 			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}
@@ -346,11 +350,11 @@ public partial class Main : Node3D
 		dummy = new TrainingDummy();
 		lobby.AddChild(dummy);
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
-			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify, random);
+			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify, random, towers);
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
 		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
-		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random, rewardService, LoadRewards);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random, rewardService, LoadRewards, towers);
 		AddChild(master);
 	}
 

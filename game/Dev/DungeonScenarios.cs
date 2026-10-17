@@ -196,7 +196,7 @@ static class DungeonScenarios
 		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
 
 		// 3. Os dois épicos concluídos abrem o Desafio mestre; vencê-lo libera o Nível 2.
-		d.Expect(progress.Levels.MasterOpen(profile, 1), "o Desafio mestre está aberto");
+		d.Expect(progress.Levels.MasterOpen(profile, 1, ["matematica", "portugues"]), "o Desafio mestre está aberto");
 		await WalkTo(d, 4, -4);
 		await d.Tap(Controls.Interact);
 		await d.Press("Começar o Desafio mestre");
@@ -219,7 +219,7 @@ static class DungeonScenarios
 		d.Expect(progress.Levels.HasItem(profile, new LevelKey("matematica", 1)) && progress.Levels.HasItem(profile, new LevelKey("portugues", 1)), "os dois Itens de troca continuam com a criança");
 		d.Expect(progress.Levels.ShortcutTried(profile, new LevelKey("portugues", 1)), "o Atalho de Nível continua gasto");
 		d.Expect(progress.Levels.FastTravels(profile).Count > 0, "o Fast travel continua guardado");
-		d.Expect(!progress.Levels.MasterOpen(profile, 2), "no Nível 2 o Desafio mestre volta a pedir os épicos");
+		d.Expect(!progress.Levels.MasterOpen(profile, 2, ["matematica", "portugues"]), "no Nível 2 o Desafio mestre volta a pedir os épicos");
 	}
 
 	// O Desafio mestre: o portal avisa o que falta, abre com os dois épicos, perder não pune e vencer sobe o Nível.

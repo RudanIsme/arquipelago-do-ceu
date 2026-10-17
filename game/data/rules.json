@@ -1,9 +1,5 @@
 {
   "gameName": "Arquipélago do Céu",
-  "roles": {
-    "mathematics": "Matemático",
-    "portuguese": "Escriba"
-  },
   "maxEnergy": 5,
   "adaptive": {
     "streakToLevelUp": 3,

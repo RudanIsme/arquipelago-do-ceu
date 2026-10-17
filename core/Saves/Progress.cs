@@ -76,9 +76,9 @@ public sealed class LevelProgress(ProgressStore store)
 	public Result<ProfileSave> GiveItem(string profileId, LevelKey level) =>
 		store.Add(profileId, level.ToString(), p => p.Items, (p, list) => p with { Items = list });
 
-	// O Desafio mestre abre quando os dois Desafios épicos do Nível estão concluídos, pelo jogo ou pelo Atalho de Nível.
-	public bool MasterOpen(string profileId, int level) =>
-		EpicDone(profileId, new LevelKey("matematica", level)) && EpicDone(profileId, new LevelKey("portugues", level));
+	// O Desafio mestre abre quando o Desafio épico do Nível está concluído em todas as torres, pelo jogo ou pelo Atalho de Nível.
+	public bool MasterOpen(string profileId, int level, IEnumerable<string> disciplines) =>
+		disciplines.All(d => EpicDone(profileId, new LevelKey(d, level)));
 
 	// Vencer o Desafio mestre sobe o Nível liberado em 1, até `maxLevel`; no último Nível ele fica onde está.
 	public Result<ProfileSave> RaiseLevel(string profileId, int maxLevel) =>

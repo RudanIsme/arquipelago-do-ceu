@@ -32,6 +32,7 @@ public sealed record DungeonContext(
 	RewardService Granter,
 	string Nickname,
 	string RoleName,
+	TowerCatalog Towers,
 	int ExtraEnergy,
 	float ExtraReach,
 	Action<Player> ConfigurePlayer,
@@ -117,14 +118,14 @@ public partial class DungeonRun : Node
 	const int GeneratorVersion = 1;
 
 
-	public static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
+	string TowerName(string discipline) => ctx.Towers.Find(discipline)?.Name ?? discipline;
 
 	// A outra torre: é dela o Item de troca que abre o Marco desta.
 	// O Atalho vale até o Desafio épico ser vencido; depois a criança explora a torre como quiser.
 	bool InShortcut => ctx.Shortcut && !expedition.Finished;
 
-	string Other => ctx.Discipline == TrainingSetup.Mathematics ? TrainingSetup.Portuguese : TrainingSetup.Mathematics;
-
+	Tower Tower => ctx.Towers.Find(ctx.Discipline)!;
+	string Other => ctx.Towers.Exchange(Tower)?.Id ?? ctx.Discipline;
 	bool HasTradeItem() => ctx.Progress.Levels.HasItem(ctx.ProfileId, new LevelKey(Other, ctx.Level));
 
 	public TrainingArea Combat => combat;
@@ -164,7 +165,7 @@ public partial class DungeonRun : Node
 
 		world.ReduceMotion = player.ReduceMotion;
 		combat = new TrainingArea(ctx.Rules, world, player, world.Creature, ctx.Voice, ctx.Settings, ctx.UiRoot,
-			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random);
+			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random, ctx.Towers);
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
 		combat.EnergyTop = EnergyTop;
@@ -470,7 +471,7 @@ public partial class DungeonRun : Node
 			Say("Não foi possível guardar o Item agora. Vamos tentar de novo.");
 			return false;
 		}
-		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(Other)} para abrir o Marco de lá.");
+		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(ctx.Towers.Beneficiary(Tower)?.Id ?? Other)} para abrir o Marco de lá.");
 		return true;
 	}
 
@@ -655,7 +656,7 @@ public partial class DungeonRun : Node
 		var setup = fightSetup is { } fight && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
-		var subject = ctx.Discipline == TrainingSetup.Mathematics ? "Matemática" : "Português";
+		var subject = Tower.Subject;
 		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";
 	}
 

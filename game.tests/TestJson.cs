@@ -5,7 +5,6 @@ static class TestJson
 {
 	public const string Rules = """
 		{ "gameName": "Arquipélago do Céu",
-		  "roles": { "mathematics": "Matemático", "portuguese": "Escriba" },
 		  "maxEnergy": 5,
 		  "adaptive": { "streakToLevelUp": 3, "mistakesToLevelDown": 2, "hintsToLevelDown": 2 },
 		  "leitnerIntervalsDays": [1, 2, 4, 8, 16],

@@ -18,6 +18,7 @@ public partial class MasterChallenge : Node
 {
 	readonly GameRules rules;
 	readonly IRandomSource random;
+	readonly TowerCatalog towers;
 	readonly RewardService granter;
 	readonly Func<RewardCatalog> rewards;
 	readonly TrainingArea training;
@@ -35,8 +36,9 @@ public partial class MasterChallenge : Node
 	int round;
 
 	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressServices progress, Func<int> extraEnergy,
-		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random, RewardService granter, Func<RewardCatalog> rewards)
+		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random, RewardService granter, Func<RewardCatalog> rewards, TowerCatalog towers)
 	{
+		this.towers = towers;
 		this.granter = granter;
 		this.rewards = rewards;
 		this.random = random;
@@ -61,7 +63,7 @@ public partial class MasterChallenge : Node
 	public string? Start(string profile, int masterLevel)
 	{
 		if (Active) return "O Desafio mestre já está em andamento.";
-		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, random.NewStream());
+		var setups = DungeonCombat.MasterSetups(missions, towers.All.Select(t => t.Id).ToList(), masterLevel, rules.Dungeon.MasterChallenges, random.NewStream());
 		if (!setups.IsOk) return setups.Error;
 
 		training.End();
@@ -101,7 +103,7 @@ public partial class MasterChallenge : Node
 			return;
 		}
 
-		var raised = progress.Levels.RaiseLevel(profileId, TrainingSetup.LastLevel);
+		var raised = progress.Levels.RaiseLevel(profileId, towers.MaxLevel);
 		var message = !raised.IsOk
 			? "Você venceu o Desafio mestre, mas não foi possível guardar o novo Nível agora. Tente de novo."
 			: raised.Value!.Level > level

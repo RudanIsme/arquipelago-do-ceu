@@ -38,7 +38,7 @@ public class DungeonContentTests
 	[Fact]
 	public void O_Conceito_do_Andar_e_o_que_mais_aparece_na_dificuldade_dele()
 	{
-		var setup = DungeonCombat.Setup(Missions, TrainingSetup.Mathematics, 1, 1).Value!;
+		var setup = DungeonCombat.Setup(Missions, "matematica", 1, 1).Value!;
 
 		var concept = DungeonCombat.ConceptOf(Missions, setup);
 
@@ -49,7 +49,7 @@ public class DungeonContentTests
 	[Fact]
 	public void Todo_Andar_de_toda_torre_e_Nivel_tem_Conceito()
 	{
-		foreach (var discipline in new[] { TrainingSetup.Mathematics, TrainingSetup.Portuguese })
+		foreach (var discipline in new[] { "matematica", "portugues" })
 			for (var level = 1; level <= 3; level++)
 				for (var floor = 1; floor <= 6; floor++)
 				{
@@ -62,10 +62,10 @@ public class DungeonContentTests
 	public void A_dificuldade_da_Livre_procura_por_perto_uma_com_problema_novo()
 	{
 		var history = new MissionHistory();
-		var first = DungeonCombat.FreeSetup(Missions, history, TrainingSetup.Mathematics, 1, 5).Value!;
+		var first = DungeonCombat.FreeSetup(Missions, history, "matematica", 1, 5).Value!;
 		foreach (var m in Missions.Where(m => m.Discipline == first.Discipline && m.Year == first.Year && m.Difficulty == first.Difficulty)) history.Add(m.Id);
 
-		var next = DungeonCombat.FreeSetup(Missions, history, TrainingSetup.Mathematics, 1, 5).Value!;
+		var next = DungeonCombat.FreeSetup(Missions, history, "matematica", 1, 5).Value!;
 
 		Assert.NotEqual(first.Difficulty, next.Difficulty);
 		Assert.Equal(first.Year, next.Year);

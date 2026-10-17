@@ -22,12 +22,12 @@ public class RandomSourceTests
 	// Joga todas as Salas do Andar 1 ao 3 de uma Expedição e devolve as Missões sorteadas, na ordem.
 	static List<string> MissionsOfExpedition(IRandomSource random)
 	{
-		var plan = LevelPlan.Create(ExpeditionFixtures.Rules, 7, TrainingSetup.Mathematics, 1, 1);
+		var plan = LevelPlan.Create(ExpeditionFixtures.Rules, 7, "matematica", 1, 1);
 		var energy = new Energy(5);
 		var ids = new List<string>();
 		foreach (var floor in plan.Floors)
 		{
-			var setup = DungeonCombat.Setup(Missions, TrainingSetup.Mathematics, 1, floor.Number).Value!;
+			var setup = DungeonCombat.Setup(Missions, "matematica", 1, floor.Number).Value!;
 			var fight = CombatSession.Start(TrainingFixtures.Rules, energy, 1, setup, Missions, random.NewStream()).Value!;
 			ids.Add(fight.Mission.Id);
 			fight.NextChallenge();
@@ -51,10 +51,10 @@ public class RandomSourceTests
 	[Fact]
 	public void Os_Desafios_do_Atalho_e_do_mestre_tambem_repetem_com_a_mesma_seed()
 	{
-		var first = DungeonCombat.ShortcutSetups(Missions, TrainingSetup.Mathematics, 1, 3, new FixedRandomSource(5).NewStream()).Value!;
-		var again = DungeonCombat.ShortcutSetups(Missions, TrainingSetup.Mathematics, 1, 3, new FixedRandomSource(5).NewStream()).Value!;
-		var master = DungeonCombat.MasterSetups(Missions, 1, 4, new FixedRandomSource(5).NewStream()).Value!;
-		var masterAgain = DungeonCombat.MasterSetups(Missions, 1, 4, new FixedRandomSource(5).NewStream()).Value!;
+		var first = DungeonCombat.ShortcutSetups(Missions, "matematica", 1, 3, new FixedRandomSource(5).NewStream()).Value!;
+		var again = DungeonCombat.ShortcutSetups(Missions, "matematica", 1, 3, new FixedRandomSource(5).NewStream()).Value!;
+		var master = DungeonCombat.MasterSetups(Missions, ["matematica", "portugues"], 1, 4, new FixedRandomSource(5).NewStream()).Value!;
+		var masterAgain = DungeonCombat.MasterSetups(Missions, ["matematica", "portugues"], 1, 4, new FixedRandomSource(5).NewStream()).Value!;
 
 		Assert.Equal(first, again);
 		Assert.Equal(master, masterAgain);

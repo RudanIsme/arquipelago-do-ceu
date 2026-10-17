@@ -1,0 +1,29 @@
+{
+  "towers": [
+    {
+      "id": "matematica",
+      "name": "Torre dos Números",
+      "role": "Matemático",
+      "subject": "Matemática",
+      "mechanics": [
+        "compor_numero"
+      ],
+      "levels": 3,
+      "exchangeWith": "portugues"
+    },
+    {
+      "id": "portugues",
+      "name": "Torre das Letras",
+      "role": "Escriba",
+      "subject": "Português",
+      "mechanics": [
+        "formar_palavras",
+        "escrever_palavra",
+        "ordenar_frases",
+        "completar_frase"
+      ],
+      "levels": 3,
+      "exchangeWith": "matematica"
+    }
+  ]
+}

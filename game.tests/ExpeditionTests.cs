@@ -284,8 +284,8 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(1, 2), Math(1, 3) };
 
-		Assert.Equal(1, DungeonCombat.Setup(missions, TrainingSetup.Mathematics, 1, 1).Value!.Difficulty);
-		Assert.Equal(3, DungeonCombat.Setup(missions, TrainingSetup.Mathematics, 1, 3).Value!.Difficulty);
+		Assert.Equal(1, DungeonCombat.Setup(missions, "matematica", 1, 1).Value!.Difficulty);
+		Assert.Equal(3, DungeonCombat.Setup(missions, "matematica", 1, 3).Value!.Difficulty);
 	}
 
 	[Fact]
@@ -293,8 +293,8 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(1, 2) };
 
-		Assert.Equal(2, DungeonCombat.Setup(missions, TrainingSetup.Mathematics, 1, 4).Value!.Difficulty);
-		Assert.Equal(2, DungeonCombat.Setup(missions, TrainingSetup.Mathematics, 1, 9).Value!.Difficulty);
+		Assert.Equal(2, DungeonCombat.Setup(missions, "matematica", 1, 4).Value!.Difficulty);
+		Assert.Equal(2, DungeonCombat.Setup(missions, "matematica", 1, 9).Value!.Difficulty);
 	}
 
 	[Fact]
@@ -302,13 +302,13 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(2, 1) };
 
-		Assert.Equal(2, DungeonCombat.Setup(missions, TrainingSetup.Mathematics, 3, 1).Value!.Year);
+		Assert.Equal(2, DungeonCombat.Setup(missions, "matematica", 3, 1).Value!.Year);
 	}
 
 	[Fact]
 	public void Sem_nenhuma_Missao_da_disciplina_e_uma_falha_e_nao_uma_excecao()
 	{
-		var result = DungeonCombat.Setup([Math(1, 1)], TrainingSetup.Portuguese, 1, 1);
+		var result = DungeonCombat.Setup([Math(1, 1)], "portugues", 1, 1);
 
 		Assert.False(result.IsOk);
 	}
@@ -318,7 +318,7 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(1, 2), Math(1, 3), Math(1, 4) };
 
-		var setups = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+		var setups = DungeonCombat.ShortcutSetups(missions, "matematica", 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
 
 		Assert.Equal(3, setups.Count);
 		Assert.Equal(3, setups.Select(s => s.Difficulty).Distinct().Count());
@@ -330,8 +330,8 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(1, 2) };
 
-		var a = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
-		var b = DungeonCombat.ShortcutSetups(missions, TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+		var a = DungeonCombat.ShortcutSetups(missions, "matematica", 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
+		var b = DungeonCombat.ShortcutSetups(missions, "matematica", 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(7)).Value!;
 
 		Assert.Equal(3, a.Count);
 		Assert.Equal(a, b);
@@ -340,7 +340,7 @@ public class DungeonCombatTests
 	[Fact]
 	public void O_Atalho_sem_Missoes_e_uma_falha()
 	{
-		Assert.False(DungeonCombat.ShortcutSetups([], TrainingSetup.Mathematics, 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(1)).IsOk);
+		Assert.False(DungeonCombat.ShortcutSetups([], "matematica", 1, 3, new ArquipelagoDoCeu.Generation.Pcg32(1)).IsOk);
 	}
 
 	[Fact]
@@ -348,11 +348,11 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), Math(1, 2), TrainingFixtures.NameMission("n1", ["pa", "to"], 1, 1), TrainingFixtures.NameMission("n2", ["pa", "to"], 1, 2), Math(2, 1) };
 
-		var setups = DungeonCombat.MasterSetups(missions, 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
+		var setups = DungeonCombat.MasterSetups(missions, ["matematica", "portugues"], 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
 
 		Assert.Equal(4, setups.Count);
-		Assert.Equal(2, setups.Count(s => s.Discipline == TrainingSetup.Mathematics));
-		Assert.Equal(2, setups.Count(s => s.Discipline == TrainingSetup.Portuguese));
+		Assert.Equal(2, setups.Count(s => s.Discipline == "matematica"));
+		Assert.Equal(2, setups.Count(s => s.Discipline == "portugues"));
 		Assert.All(setups, s => Assert.Equal(1, s.Year));
 	}
 
@@ -361,7 +361,7 @@ public class DungeonCombatTests
 	{
 		var missions = new[] { Math(1, 1), TrainingFixtures.NameMission("n1", ["pa", "to"], 1, 1) };
 
-		var setups = DungeonCombat.MasterSetups(missions, 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
+		var setups = DungeonCombat.MasterSetups(missions, ["matematica", "portugues"], 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).Value!;
 
 		Assert.NotEqual(setups[0].Discipline, setups[1].Discipline);
 		Assert.Equal(setups[0].Discipline, setups[2].Discipline);
@@ -370,7 +370,7 @@ public class DungeonCombatTests
 	[Fact]
 	public void O_Desafio_mestre_sem_Missoes_de_uma_disciplina_e_uma_falha()
 	{
-		Assert.False(DungeonCombat.MasterSetups([Math(1, 1)], 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).IsOk);
+		Assert.False(DungeonCombat.MasterSetups([Math(1, 1)], ["matematica", "portugues"], 1, 4, new ArquipelagoDoCeu.Generation.Pcg32(3)).IsOk);
 	}
 
 	[Fact]

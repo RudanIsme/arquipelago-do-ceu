@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Rewards;
@@ -16,11 +17,12 @@ public partial class Main
 
 	ProgressServices progress = null!;
 	RewardService rewardService = null!;
+	TowerCatalog towers = TowerCatalog.Empty;
 	DungeonRun? dungeon;
 	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
 
-	static string TowerName(string discipline) => DungeonRun.TowerName(discipline);
+	string TowerName(string discipline) => towers.Find(discipline)?.Name ?? discipline;
 
 	// O portal do Lobby: um destino por Fast travel encontrado.
 	PortalScreen BuildPortal()
@@ -41,7 +43,7 @@ public partial class Main
 	{
 		if (current is null) return;
 		var level = UnlockedLevel();
-		ShowOverlay(new MasterScreen(level, progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Mathematics, level)), progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Portuguese, level)),
+		ShowOverlay(new MasterScreen(level, towers.All.Select(t => (t.Name, progress.Levels.EpicDone(current.Id, new LevelKey(t.Id, level)))).ToList(),
 			() =>
 			{
 				if (master.Start(current.Id, level) is { } problem) Notify(problem);
@@ -108,7 +110,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
