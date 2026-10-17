@@ -1,0 +1,71 @@
+{
+  "stockSize": 3,
+  "cosmetics": [
+    {
+      "id": "mercador-laco",
+      "price": 6
+    },
+    {
+      "id": "mercador-chapeu",
+      "price": 7
+    },
+    {
+      "id": "mercador-mochila",
+      "price": 8
+    },
+    {
+      "id": "mercador-capa",
+      "price": 9
+    },
+    {
+      "id": "mercador-cachecol",
+      "price": 10
+    },
+    {
+      "id": "mercador-gravata",
+      "price": 11
+    },
+    {
+      "id": "mercador-asas",
+      "price": 12
+    },
+    {
+      "id": "mercador-bone",
+      "price": 6
+    }
+  ],
+  "gear": [
+    {
+      "id": "scout",
+      "price": 4
+    },
+    {
+      "id": "open",
+      "price": 4
+    },
+    {
+      "id": "lantern",
+      "price": 5
+    },
+    {
+      "id": "wings",
+      "price": 5
+    },
+    {
+      "id": "crystal",
+      "price": 7
+    },
+    {
+      "id": "scholar",
+      "price": 7
+    },
+    {
+      "id": "amulet",
+      "price": 6
+    },
+    {
+      "id": "guardian",
+      "price": 10
+    }
+  ]
+}

@@ -215,6 +215,78 @@
         "kind": "cape",
         "color": "#4DA3A3"
       }
+    },
+    {
+      "id": "mercador-laco",
+      "name": "Laço Dourado",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "bow",
+        "color": "#E2B93B"
+      }
+    },
+    {
+      "id": "mercador-chapeu",
+      "name": "Chapéu de Feira",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "hat",
+        "color": "#C0583C"
+      }
+    },
+    {
+      "id": "mercador-mochila",
+      "name": "Mochila de Viajante",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "backpack",
+        "color": "#6B8E4E"
+      }
+    },
+    {
+      "id": "mercador-capa",
+      "name": "Capa Cometa",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "cape",
+        "color": "#5B6FD6"
+      }
+    },
+    {
+      "id": "mercador-cachecol",
+      "name": "Cachecol Nuvem",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "scarf",
+        "color": "#E8E4F2"
+      }
+    },
+    {
+      "id": "mercador-gravata",
+      "name": "Gravata Listrada",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "tie",
+        "color": "#D9534F"
+      }
+    },
+    {
+      "id": "mercador-asas",
+      "name": "Asas de Vidro",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "wings",
+        "color": "#7FD6E8"
+      }
+    },
+    {
+      "id": "mercador-bone",
+      "name": "Boné Cinza",
+      "description": "Um enfeite do Mercador, que a criança compra com moedas do jogo. Só muda a aparência.",
+      "look": {
+        "kind": "cap",
+        "color": "#8A8F98"
+      }
     }
   ]
 }

@@ -14,15 +14,15 @@ public sealed record AttributeChange(string Effect, string Label, double From, d
 // Uma linha da biblioteca: o equipamento, se está vestido e se falta Maestria para vesti-lo.
 public sealed record LibraryEntry(GearItem Item, bool Equipped, bool Locked);
 
-// A biblioteca de equipamentos da criança e a comparação que o Inventário mostra. Enquanto nada concede equipamento
-// (#130), tudo o que está no catálogo é dela; o inventário acumula tudo, sem limite.
+// A biblioteca de equipamentos da criança (só o que ela tem) e a comparação que o Inventário mostra; o inventário acumula tudo, sem limite.
 public sealed class GearLibrary(GearCatalog catalog)
 {
 	const double Tolerance = 1e-9;
 
 	// Os vestidos primeiro; depois o mais novo (o que está mais para o fim do catálogo).
-	public IReadOnlyList<LibraryEntry> Entries(Gear worn, int mastery) =>
+	public IReadOnlyList<LibraryEntry> Entries(Gear worn, int mastery, IReadOnlyCollection<string> owned) =>
 		catalog.Items
+			.Where(i => owned.Contains(i.Id) || worn.In(i.Slot) == i.Id)
 			.Select(i => new LibraryEntry(i, worn.In(i.Slot) == i.Id, mastery < i.MinMastery))
 			.Reverse()
 			.OrderByDescending(e => e.Equipped)
@@ -57,6 +57,23 @@ public sealed class InventoryService(SaveSession session, CosmeticCatalog cosmet
 
 	public IReadOnlyList<CosmeticLook> WornLooks(string profileId) =>
 		Worn(profileId).Select(id => cosmetics.Find(id)?.Look).OfType<CosmeticLook>().ToList();
+
+	// Os equipamentos da criança: os que ganhou ou recomprou e os que já estão vestidos em algum Papel.
+	public IReadOnlyList<string> OwnedGear(string profileId)
+	{
+		var profile = Profile(profileId);
+		var worn = (profile?.Gear ?? new Dictionary<string, Gear>()).Values.SelectMany(g => g.Items.Values);
+		return (profile?.Progress?.Equipment ?? []).Concat(worn).Distinct().ToList();
+	}
+
+	// Perfis do experimento vestiam equipamento sem tê-lo na lista: o que está vestido passa a contar como da criança, uma vez só.
+	public Result<IReadOnlyList<string>> ClaimWorn(string profileId)
+	{
+		if (Profile(profileId) is not { } profile) return Result<IReadOnlyList<string>>.Fail("Perfil não encontrado.");
+		if (profile.Progress?.Equipment is not null) return Result<IReadOnlyList<string>>.Ok(profile.Progress.Equipment);
+		var owned = OwnedGear(profileId);
+		return Save(profileId, p => p with { Progress = (p.Progress ?? new ProgressSave()) with { Equipment = owned } }, p => p.Progress?.Equipment);
+	}
 
 	public Result<IReadOnlyList<string>> Wear(string profileId, string cosmeticId, IReadOnlyList<string> owned)
 	{

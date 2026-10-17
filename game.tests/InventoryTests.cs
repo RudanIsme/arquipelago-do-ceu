@@ -13,6 +13,8 @@ public sealed class InventoryTests : IDisposable
 
 	static readonly CosmeticCatalog Cosmetics = CosmeticCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "cosmeticos.json"))).Value!;
 
+	static readonly string[] AllGear = Catalog.Items.Select(i => i.Id).ToArray();
+
 	public void Dispose()
 	{
 		if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
@@ -72,7 +74,7 @@ public sealed class InventoryTests : IDisposable
 		var library = new GearLibrary(Catalog);
 		var worn = new Gear().With("armor", "scout");
 
-		var entries = library.Entries(worn, mastery: 9);
+		var entries = library.Entries(worn, mastery: 9, owned: AllGear);
 
 		Assert.Equal("scout", entries[0].Item.Id);
 		Assert.True(entries[0].Equipped);
@@ -86,10 +88,49 @@ public sealed class InventoryTests : IDisposable
 	{
 		var library = new GearLibrary(Catalog);
 
-		var entries = library.Entries(new Gear(), mastery: 0);
+		var entries = library.Entries(new Gear(), mastery: 0, owned: AllGear);
 
 		Assert.All(entries, e => Assert.Equal(e.Item.MinMastery > 0, e.Locked));
 		Assert.Contains(entries, e => e.Locked);
+	}
+
+[Fact]
+	public void A_biblioteca_so_mostra_o_que_a_crianca_tem_e_o_que_ela_veste()
+	{
+		var library = new GearLibrary(Catalog);
+		var worn = new Gear().With("armor", "scout");
+
+		var entries = library.Entries(worn, mastery: 9, owned: ["open"]);
+
+		Assert.Equal(["scout", "open"], entries.Select(e => e.Item.Id));
+		Assert.Empty(library.Entries(new Gear(), 9, []));
+	}
+
+	[Fact]
+	public void Os_equipamentos_da_crianca_sao_os_ganhos_mais_os_vestidos_sem_repetir()
+	{
+		var session = NewSession();
+		session.Commit(d => d with { Profiles = [d.Profiles[0] with { Progress = new ProgressSave(Equipment: ["open"]) }] });
+		new GearService(session, Catalog).Equip("p", "matematica", "scout", 1);
+		new GearService(session, Catalog).Equip("p", "portugues", "open", 1);
+
+		Assert.Equal(["open", "scout"], new InventoryService(session, Cosmetics).OwnedGear("p").Order());
+	}
+
+	[Fact]
+	public void Quem_ja_vestia_equipamento_no_experimento_passa_a_te_lo_uma_vez_so()
+	{
+		var session = NewSession();
+		new GearService(session, Catalog).Equip("p", "matematica", "scout", 1);
+		var service = new InventoryService(session, Cosmetics);
+
+		Assert.True(service.ClaimWorn("p").IsOk);
+		new GearService(session, Catalog).Unequip("p", "matematica", "armor");
+
+		Assert.Equal(["scout"], service.OwnedGear("p"));
+		Assert.Equal(["scout"], session.Data.Profiles[0].Progress!.Equipment!);
+		service.ClaimWorn("p");
+		Assert.Equal(["scout"], session.Data.Profiles[0].Progress!.Equipment!);
 	}
 
 	[Fact]
