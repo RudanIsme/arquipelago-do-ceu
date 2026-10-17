@@ -46,6 +46,25 @@ public partial class DevDriver
 		foreach (var letter in word.Word) await PlayPiece(keys.IndexOf(letter));
 	}
 
+	// Monta o valor do desafio de dinheiro seguindo as sugestões do jogo e confere; com `wrong`, põe a maior nota e confere.
+	public async Task PlayMoney(bool wrong = false)
+	{
+		if (Fighting?.Session?.Change is not { } battle) { GD.PushError("Piloto: não há desafio de dinheiro na tela."); return; }
+		if (wrong)
+		{
+			await PlayPiece(battle.Pieces.Count - 1);
+			await Press("Conferir");
+			return;
+		}
+		for (var step = 0; step < 40 && battle.Total != battle.Target; step++)
+		{
+			var (piece, undo) = battle.Suggest();
+			if (undo || piece is null) break;
+			await PlayPiece(piece.Value);
+		}
+		await Press("Conferir");
+	}
+
 	// Um erro de Matemática: monta a maior conta que a mão deixa. Se ela ainda não passa do escudo (seria um acerto), o erro
 	// vem pela mesma saída da luta, para o roteiro testar a Energia e a travessura sem depender da mão sorteada.
 	public async Task OvershootWithKeys()

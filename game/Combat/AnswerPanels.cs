@@ -10,6 +10,7 @@ public sealed record PanelEvents(
 	Action<AttackResult> Attacked,
 	Action<NameVerdict> NameChecked,
 	Action<WordResult> WordChecked,
+	Action<ChangeResult> ChangeChecked,
 	Action<bool> Composing,
 	Action Hint,
 	Action Read);
@@ -30,6 +31,7 @@ public static class AnswerPanels
 	{
 		if (session.Math is { } math) return new MathPresenter(math, session.Rules, creature, events.Attacked);
 		if (session.Name is { } name) return new NamePresenter(name, events.NameChecked);
+		if (session.Change is { } change) return new ChangePresenter(change, creature, events.ChangeChecked);
 		return new WordPresenter(session.Word!, events.WordChecked);
 	}
 

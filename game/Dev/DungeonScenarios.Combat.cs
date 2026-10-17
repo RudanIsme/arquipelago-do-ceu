@@ -52,6 +52,35 @@ static partial class DungeonScenarios
 		await d.Press("Sair do treino");
 	}
 
+	// Cenário `combate-dinheiro`: pagar e dar troco com moedas e notas do Real, sem modal e com dica que nunca custa.
+	public static async Task CombatMoney(DevDriver d)
+	{
+		await EnsureProfile(d);
+		await d.GoNearDummy();
+		await d.Tap(Controls.Target);
+		await d.Press("5 · Muito difícil");
+		await d.Press("Começar");
+		d.Expect(d.Hud?.Presenter is ChangePresenter, "o treino de dinheiro abriu a HUD de pagar e dar troco");
+		d.Expect(d.HasVisible("R$") && d.Button("Conferir") is not null, "o preço aparece em Reais e há o botão de conferir");
+		await d.Shot("01-hud-dinheiro");
+
+		await d.PlayPiece(0);
+		await d.Press("Sugerir peça");
+		await d.Shot("02-sugestao");
+		d.Expect(d.Hud is not null, "pedir a dica não custa Energia nem fecha nada");
+		await d.PlayMoney(wrong: true);
+		await d.Wait(0.5);
+		await d.Shot("03-valor-errado");
+		d.Expect(d.HasVisible("Passou do valor") || d.HasVisible("falta dinheiro") || d.HasVisible("Faltou"), "o valor errado custa um erro e diz se passou ou faltou");
+
+		await d.Wait(4.0);
+		await d.PlayMoney();
+		await d.Wait(0.6);
+		await d.Shot("04-valor-certo");
+		d.Expect(d.HasVisible("acalmada") || d.HasVisible("Valor certo"), "seguir as sugestões sempre chega ao valor certo");
+		await d.Press("Sair do treino");
+	}
+
 	// Cenário `combate-niveis`: a palavra inteira do 2º ano e a frase do 3º, sem modal. Precisa de um save com Perfil no Nível 3.
 	public static async Task CombatLevels(DevDriver d)
 	{

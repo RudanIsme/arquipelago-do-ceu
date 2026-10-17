@@ -82,6 +82,9 @@ public partial class TrainingArea : Node
 	// Dentro de uma Dungeon só se luta com a criatura da Sala; não há escolha de treino.
 	public bool InDungeon { get; set; }
 
+	// As Mecânicas de luta que o jogo conhece (a de dinheiro entra quando o catálogo do Real carrega).
+	public BattleMechanics Mechanics { get; set; } = BattleMechanics.Default;
+
 	// Sem bolhas, como no Puzzle: a porta não ataca, só espera a resposta.
 	public bool Bubbles { get; set; } = true;
 
@@ -201,7 +204,7 @@ public partial class TrainingArea : Node
 	string? TryStart(TrainingSetup setup)
 	{
 		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
-		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, random.NewStream());
+		var started = CombatSession.Start(rules.Combat, new Energy(rules.MaxEnergy + bonus), unlockedLevel(), setup, missions, random.NewStream(), mechanics: Mechanics);
 		if (!started.IsOk) return started.Error;
 
 		RoleChosen?.Invoke(setup.Discipline);
@@ -221,7 +224,7 @@ public partial class TrainingArea : Node
 	{
 		if (session is null || panel is not null) return;
 		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, () => settings.Current.ReduceMotion, new PanelEvents(
-			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, OnComposing,
+			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing,
 			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
 			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
 

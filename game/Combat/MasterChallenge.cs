@@ -84,7 +84,7 @@ public partial class MasterChallenge : Node
 	void BeginRound()
 	{
 		var setup = rounds[round];
-		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, random.NewStream());
+		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, random.NewStream(), mechanics: training.Mechanics);
 		if (!fight.IsOk)
 		{
 			Finish($"Não foi possível montar o Desafio mestre: {fight.Error}");

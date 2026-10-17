@@ -74,6 +74,7 @@ public partial class Main : Node3D
 		rewardService = new RewardService(new ProgressStore(session));
 		inventory = new ArquipelagoDoCeu.Equipment.InventoryService(session, LoadCosmetics());
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
+		battleMechanics = LoadMoney().Denominations.Count > 0 ? BattleMechanics.Default.With(new ChangeMechanic(LoadMoney())) : BattleMechanics.Default;
 		merchant = new ArquipelagoDoCeu.Trade.MerchantService(new ProgressStore(session), LoadMerchant());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
@@ -266,6 +267,7 @@ public partial class Main : Node3D
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
 		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
+		training.Mechanics = battleMechanics;
 		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random, rewardService, LoadRewards, towers);
 		AddChild(master);
 	}

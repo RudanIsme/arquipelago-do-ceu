@@ -1,0 +1,30 @@
+{
+  "id": "mat-din-a3-002",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "sistema-monetario",
+  "bncc": [
+    "EF03MA24"
+  ],
+  "year": 3,
+  "difficulty": 5,
+  "mechanic": "pagar_troco",
+  "params": {
+    "task": "troco",
+    "price": 1250,
+    "given": 2000
+  },
+  "prompt": "O caderno custa R$ 12,50 e você deu uma nota de R$ 20,00. Monte o troco!",
+  "hints": [
+    "O troco é o que sobra da nota depois de pagar o preço.",
+    "De R$ 12,50 até R$ 20,00 falta quanto?",
+    "Peça a dica para ver a próxima peça."
+  ],
+  "explanation": "R$ 20,00 menos R$ 12,50 é R$ 7,50: esse é o troco.",
+  "accessibility": {
+    "timerAllowed": false
+  },
+  "review": {
+    "status": "pending"
+  }
+}

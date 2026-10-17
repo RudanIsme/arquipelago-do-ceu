@@ -185,7 +185,7 @@ public partial class DungeonRun : Node
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
 		if (!InShortcut) fightSetup = (expedition.Floor.Number, setup.Value!);
-		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), ctx.Free ? history : null);
+		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), ctx.Free ? history : null, ctx.Mechanics);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, hud.Energy, OnWon, OnLost);

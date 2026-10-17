@@ -1,0 +1,30 @@
+{
+  "id": "mat-din-a3-003",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "sistema-monetario",
+  "bncc": [
+    "EF03MA24"
+  ],
+  "year": 3,
+  "difficulty": 5,
+  "mechanic": "pagar_troco",
+  "params": {
+    "task": "troco",
+    "price": 3590,
+    "given": 5000
+  },
+  "prompt": "O picolé custa R$ 35,90 e você deu uma nota de R$ 50,00. Monte o troco!",
+  "hints": [
+    "O troco é o que sobra da nota depois de pagar o preço.",
+    "De R$ 35,90 até R$ 50,00 falta quanto?",
+    "Peça a dica para ver a próxima peça."
+  ],
+  "explanation": "R$ 50,00 menos R$ 35,90 é R$ 14,10: esse é o troco.",
+  "accessibility": {
+    "timerAllowed": false
+  },
+  "review": {
+    "status": "pending"
+  }
+}

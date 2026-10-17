@@ -1,0 +1,16 @@
+{
+  "denominations": [
+    { "value": 5, "kind": "moeda", "name": "5 centavos" },
+    { "value": 10, "kind": "moeda", "name": "10 centavos" },
+    { "value": 25, "kind": "moeda", "name": "25 centavos" },
+    { "value": 50, "kind": "moeda", "name": "50 centavos" },
+    { "value": 100, "kind": "moeda", "name": "1 real" },
+    { "value": 200, "kind": "nota", "name": "2 reais" },
+    { "value": 500, "kind": "nota", "name": "5 reais" },
+    { "value": 1000, "kind": "nota", "name": "10 reais" },
+    { "value": 2000, "kind": "nota", "name": "20 reais" },
+    { "value": 5000, "kind": "nota", "name": "50 reais" },
+    { "value": 10000, "kind": "nota", "name": "100 reais" },
+    { "value": 20000, "kind": "nota", "name": "200 reais" }
+  ]
+}

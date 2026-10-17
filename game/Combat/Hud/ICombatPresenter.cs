@@ -39,6 +39,11 @@ public interface ICombatPresenter
 
 	string? ExtraLabel { get; }
 
+	// Mecânicas com número livre de peças (o dinheiro) conferem por um botão; as outras conferem na última ação.
+	string? ConfirmLabel => null;
+
+	bool CanConfirm => false;
+
 	// O que a criança traça para esta peça, ou null quando a peça entra direto, sem traço.
 	string? TraceText(int piece);
 

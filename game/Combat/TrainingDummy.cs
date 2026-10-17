@@ -266,6 +266,11 @@ public partial class TrainingDummy : Node3D
 			ShowCreature(null);
 			Reset(math.Shield.Remaining, "Escudo");
 		}
+		else if (session.Change is { } change)
+		{
+			ShowCreature(null);
+			Reset(change.Remaining, "Valores que faltam");
+		}
 		else if (session.Name is { } name)
 		{
 			ShowCreature(name.Image);

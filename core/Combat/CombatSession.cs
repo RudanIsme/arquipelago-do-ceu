@@ -47,6 +47,8 @@ public sealed class CombatSession
 
 	public WordBattle? Word => Battle as WordBattle;
 
+	public ChangeBattle? Change => Battle as ChangeBattle;
+
 	public Mission Mission => Battle.Mission;
 
 	// Os acertos e erros do Desafio de agora, para o resultado da batalha.

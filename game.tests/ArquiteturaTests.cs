@@ -82,7 +82,7 @@ public class ArquiteturaTests
 	// Cada pasta de core/ só depende das pastas listadas aqui. Dependência nova tem de ser decidida e entrar na lista.
 	static readonly Dictionary<string, string[]> DependenciasPermitidas = new()
 	{
-		["Combat"] = ["Generation", "Missions", "Rules"],
+		["Combat"] = ["Data", "Generation", "Missions", "Rules"],
 		["Data"] = [],
 		["Dungeon"] = ["Combat", "Data", "Generation", "Missions"],
 		["Equipment"] = ["Data", "Saves"],

@@ -164,6 +164,7 @@ public partial class CombatHud : OverlayScreen
 		actions.AddChild(undo);
 		actions.AddChild(BookStyle.Button("Dica", () => HintRequested?.Invoke(), "Hint", PieceSize));
 		if (presenter.ExtraLabel is { } extra) actions.AddChild(BookStyle.Button(extra, Extra, "Extra", PieceSize));
+		if (presenter.ConfirmLabel is { } confirm) actions.AddChild(BookStyle.Button(confirm, Confirm, "Confirm", PieceSize));
 		actions.AddChild(BookStyle.Button("Soltar alvo", Abandon, "Release", PieceSize));
 		return actions;
 	}
@@ -296,6 +297,17 @@ public partial class CombatHud : OverlayScreen
 		Refresh();
 	}
 
+	void Confirm()
+	{
+		if (tracing || !rhythm.PlayerReady || !presenter.CanConfirm) return;
+		if (presenter.Resolved)
+		{
+			Tell(presenter.ResolvedText);
+			return;
+		}
+		Strike();
+	}
+
 	void Undo()
 	{
 		if (!presenter.Undo()) return;
@@ -322,6 +334,12 @@ public partial class CombatHud : OverlayScreen
 	public override void _Input(InputEvent @event)
 	{
 		if (tracing || @event is not InputEventKey { Pressed: true, Echo: false } key) return;
+		if (key.PhysicalKeycode is Key.Enter or Key.KpEnter && presenter.ConfirmLabel is not null)
+		{
+			GetViewport().SetInputAsHandled();
+			Confirm();
+			return;
+		}
 		if (key.PhysicalKeycode == Key.Backspace)
 		{
 			GetViewport().SetInputAsHandled();

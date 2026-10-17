@@ -88,6 +88,9 @@ static class Scenarios
 			case "combate-niveis":
 				await DungeonScenarios.CombatLevels(d);
 				break;
+			case "combate-dinheiro":
+				await DungeonScenarios.CombatMoney(d);
+				break;
 			case "combate":
 				await DungeonScenarios.Combat(d);
 				break;
