@@ -67,7 +67,6 @@ public partial class Main
 	// O tema Livro vale para todas as telas: textos 3D menores para liberar a vista do cenário.
 	void ApplyTheme()
 	{
-		training.RefreshPresentation();
 		FitUiRoot();
 		conceptAmbience?.SetVariant("book");
 		lobby.SetCompactSigns(true);

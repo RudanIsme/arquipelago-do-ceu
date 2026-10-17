@@ -35,7 +35,7 @@ public sealed record MissionLoad(IReadOnlyList<Mission> Missions, IReadOnlyList<
 public sealed class MissionLoader
 {
 	// O schema aceita as Mecânicas planejadas; esta lista é a das que o jogo sabe executar.
-	public static readonly IReadOnlyList<string> KnownMechanics = ["compor_numero", "formar_palavras", "escrever_palavra", "ordenar_frases", "completar_frase"];
+	public static readonly IReadOnlyList<string> KnownMechanics = ["compor_numero", "formar_palavras", "escrever_palavra", "ordenar_frases", "completar_frase", "pagar_troco"];
 
 	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 

@@ -58,6 +58,8 @@ public sealed class Shield
 
 	public bool IsDissolved => Remaining == 0;
 
+	public void Dissolve() => Remaining = 0;
+
 	public HitOutcome Hit(ExpressionResult result)
 	{
 		switch (result.Comparison)

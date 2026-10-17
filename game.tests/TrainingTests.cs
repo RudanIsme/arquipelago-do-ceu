@@ -859,7 +859,7 @@ public class Year2MathTests
 	public void Missoes_do_2o_ano_de_Matematica_cobrem_dezenas_e_subtracao()
 	{
 		var loaded = MissionLoader.Create(File.ReadAllText(MissionFiles.SchemaPath)).Value!.Load(MissionFiles.All());
-		var year2 = loaded.Missions.Where(m => m.Discipline == "matematica" && m.Year == 2).ToList();
+		var year2 = loaded.Missions.Where(m => m.Discipline == "matematica" && m.Year == 2 && m.Mechanic == "compor_numero").ToList();
 
 		Assert.Contains(year2, m => m.Concept == "adicao-ate-99-sem-reagrupamento");
 		Assert.Contains(year2, m => m.Concept == "subtracao-ate-99-sem-reagrupamento");

@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Trade;
 using Godot;
@@ -8,6 +9,13 @@ namespace ArquipelagoDoCeu;
 public partial class Main
 {
 	MerchantService merchant = null!;
+
+	// O dinheiro do Real vem dos dados; sem ele a Mecânica de dinheiro não entra e o resto do jogo segue.
+	MoneyCatalog LoadMoney() => moneyCatalog ??= catalogs.Optional("dinheiro.json", MoneyCatalog.Parse, MoneyCatalog.Empty);
+
+	MoneyCatalog? moneyCatalog;
+
+	BattleMechanics battleMechanics = BattleMechanics.Default;
 	MerchantCatalog? merchantCatalog;
 
 	// Sem o catálogo o Mercador fica sem estoque, e a criança segue jogando: ele é um extra.
@@ -21,6 +29,7 @@ public partial class Main
 			ProfileId = current.Id,
 			Merchant = merchant,
 			Catalog = LoadMerchant(),
+			Money = LoadMoney(),
 			Cosmetics = LoadCosmetics(),
 			Gear = LoadGear(),
 			Inventory = inventory,

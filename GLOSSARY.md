@@ -48,6 +48,18 @@ O modal onde a criança vê o Personagem equipado em caixinhas, a biblioteca de 
 **Dock**:
 O canto inferior esquerdo do HUD, com o botão do Inventário (e o selo "novo", sempre em texto) e o nome do Papel.
 
+**Trilha**:
+O caminho de traço de um número, sinal ou letra, na ordem de escrita, com início numerado e seta. A criança o segue com o dedo ou o mouse e a tinta preenche; a conferência é tolerante. Substitui o pontilhado.
+
+**HUD de combate**:
+O pedido e a bolsa de peças embaixo da cena, sem painel que abra por cima. A criança toca na peça, ela sobe até a área de traço e é traçada; a última ação confere e golpeia.
+
+**Pagar e dar troco**:
+A Mecânica em que a criança monta um valor com moedas e notas do Real, para pagar um preço ou dar o troco de uma nota. O jogo calcula o troco; a dica nunca custa.
+
+**Eu pago** e **Pagar sozinho**:
+As duas formas de pagar no Mercador, escolhidas a cada compra ou venda. Em "Eu pago" a criança monta o valor (ou o troco) com a Mecânica de dinheiro; em "Pagar sozinho" o jogo faz a conta. Nada disso conta para a aprendizagem.
+
 **Mercador**:
 O comerciante do Lobby. Compra Equipamento da criança (em lote, nunca o vestido, com recompra pelo mesmo preço e sem prazo) e vende Cosméticos de um estoque que só troca quando a criança usa o botão Rotacionar. Só moedas do jogo; toda compra, venda e recompra pede confirmação.
 

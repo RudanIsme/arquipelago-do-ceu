@@ -1,3 +1,4 @@
+using System;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Voice;
@@ -10,46 +11,53 @@ namespace ArquipelagoDoCeu;
 // Quem tira a Energia é a luta; aqui só se mostra e se conta o acerto.
 public sealed class BubbleDirector
 {
-	readonly BubbleAttack bubble;
+	// Um quadro longo (janela parada) não vale como tempo de jogo.
+	const float MaxFrameSeconds = 0.1f;
+
+	readonly AttackRhythm rhythm;
 	readonly BubbleRules rules;
-	readonly ICombatStage stage;
+	readonly Func<Vector2> creatureGround;
 	readonly TrainingDummy dummy;
 	readonly Player player;
 	readonly VoiceService voice;
 
-	public BubbleDirector(BubbleRules rules, ICombatStage stage, TrainingDummy dummy, Player player, VoiceService voice)
+	public BubbleDirector(BubbleRules rules, AttackRhythm rhythm, Func<Vector2> creatureGround, TrainingDummy dummy, Player player, VoiceService voice)
 	{
 		this.rules = rules;
-		this.stage = stage;
+		this.rhythm = rhythm;
+		this.creatureGround = creatureGround;
 		this.dummy = dummy;
 		this.player = player;
 		this.voice = voice;
-		bubble = new BubbleAttack(rules);
 	}
 
-	public void Reset() => bubble.Reset();
+	public void Reset() => rhythm.Bubble.Reset();
 
 	// Apaga a bolha e o aviso da cena.
 	public void Clear()
 	{
-		bubble.Reset();
+		rhythm.Bubble.Reset();
 		dummy.HideWarning();
 		dummy.HideBubble();
 	}
 
-	// Avança a bolha; devolve verdadeiro no quadro em que ela atinge a criança. Parada (Modo calmo, Puzzle), o Boneco só reage a erros.
-	public bool Tick(float delta, bool stopped)
+	// Devolve verdadeiro no quadro em que a bolha atinge a criança. O ritmo quer tempo de relógio, então desfaz a escala
+	// que o Godot já aplicou a `processDelta`. Parada (Modo calmo, Puzzle), a criatura só reage a erros.
+	public bool Tick(double processDelta, bool stopped)
 	{
+		var scale = (float)Engine.TimeScale;
+		var realSeconds = scale > 0f ? Math.Min((float)processDelta / scale, MaxFrameSeconds) : 0f;
+		var bubble = rhythm.Bubble;
 		if (stopped)
 		{
 			if (bubble.Phase != BubblePhase.Waiting) Clear();
+			rhythm.Tick(realSeconds, Vector2.Zero, Vector2.Zero, stopped: true);
 			return false;
 		}
 
-		var (ground, _) = stage.CreatureSpot;
-		var origin = new Vector2(ground.X, ground.Z);
+		var origin = creatureGround();
 		var radius = rules.Radius;
-		switch (bubble.Update(delta, origin, player.GroundPosition))
+		switch (rhythm.Tick(realSeconds, origin, player.GroundPosition, stopped: false))
 		{
 			case BubbleEvent.Warned:
 				voice.Say("Cuidado! Bolha de névoa vindo. Saia do caminho.", interrupt: false);

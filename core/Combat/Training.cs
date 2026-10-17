@@ -9,7 +9,7 @@ public sealed record AttackResult(ExpressionResult Expression, HitOutcome Outcom
 
 // A luta com o Boneco de treino. O escudo é o alvo de uma Missão de compor número; a mão e o cajado
 // são os mesmos das Dungeons. Nada aqui toca em save: o treino não conta para o progresso.
-public sealed class TrainingBattle
+public sealed class TrainingBattle : IBattle
 {
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
@@ -45,6 +45,10 @@ public sealed class TrainingBattle
 			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng, history));
 	}
 
+	public void Reveal() => Bag.Reveal();
+
+	public Prank PlayPrank() => Bag.PlayPrank();
+
 	// Novo escudo, de outra Missão quando houver mais de uma.
 	public void Next()
 	{
@@ -59,6 +63,7 @@ public sealed class TrainingBattle
 		history?.Add(Mission.Id);
 		StartingShield = Mission.Params["target"].GetInt32();
 		Shield = new Shield(StartingShield);
+		Bag.EnsureReach(StartingShield);
 	}
 
 	public Result<AttackResult> Confirm()
@@ -69,6 +74,13 @@ public sealed class TrainingBattle
 		if (!result.IsOk) return Result<AttackResult>.Fail(result.Error!);
 
 		var outcome = Shield.Hit(result.Value!);
+		// Um resto que nenhuma conta da bolsa forma (ex.: 1 só com "+") deixaria a criança sem saída: o Escudo se dissolve.
+		if (outcome == HitOutcome.Reduced && Bag.IsDeadEnd(Shield.Remaining))
+		{
+			Shield.Dissolve();
+			outcome = HitOutcome.Dissolved;
+		}
+		if (!Shield.IsDissolved) Bag.EnsureReach(Shield.Remaining);
 		return Result<AttackResult>.Ok(new AttackResult(result.Value!, outcome, Shield.Remaining, $"{assembled} = {result.Value!.Total}"));
 	}
 }

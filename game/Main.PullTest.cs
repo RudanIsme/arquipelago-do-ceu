@@ -8,13 +8,11 @@ namespace ArquipelagoDoCeu;
 
 public partial class Main
 {
-	public NamePanel CreatePullQaPanel(NameBattle b) { var p = new NamePanel(b, rules.Combat.Tracing, voice); uiRoot.AddChild(p); return p; }
 	void InstallPullTest() { var gate = new PullTestGate { Host = this, Preferences = () => (settings.Current.ReduceEffects, settings.Current.ReduceMotion) }; GetTree().Root.AddChild(gate); }
 }
 public partial class PullTestGate : Node
 {
 	public Node3D Host = null!; public Func<(bool effects, bool motion)> Preferences = null!;
-	NamePanel? sourcePanel;
 	PullTestArena? arena; CanvasLayer launch = null!; Camera3D? camera; bool paused, visible; double speed; Input.MouseModeEnum mouse;
 	Dictionary<Node, ProcessModeEnum> modes = new(); Dictionary<CanvasLayer, bool> layers = new();
 	public override void _Ready()
@@ -29,22 +27,20 @@ public partial class PullTestGate : Node
 	}
 	IEnumerable<Node> Walk(Node n) { yield return n; foreach (var c in n.GetChildren()) foreach (var x in Walk(c)) yield return x; }
 	public static NameBattle PracticeBattle() { var m = MissionSource.Load().Missions.Where(m => m.Mechanic == "formar_palavras").OrderByDescending(m => m.Params["syllables"].GetArrayLength()).First(); return NameBattle.Start(new[] { m }, new Pcg32(41)).Value!; }
-	public void EnterWithPanel(NamePanel panel) { if (arena != null) return; sourcePanel = panel; Enter(); }
 	// A pesca de teste não vale dentro de uma Dungeon: ela pausa e esconde o jogo todo.
 	public bool Blocked { get => blocked; set { blocked = value; if (IsInstanceValid(launch)) launch.Visible = !value && arena == null; } }
 	bool blocked;
 	public void Enter()
 	{
-		if (arena != null || blocked) return; var battle = sourcePanel?.PullBattle ?? PracticeBattle(); camera = GetViewport().GetCamera3D(); paused = GetTree().Paused; speed = Engine.TimeScale; mouse = Input.MouseMode; visible = Host.Visible;
+		if (arena != null || blocked) return; var battle = PracticeBattle(); camera = GetViewport().GetCamera3D(); paused = GetTree().Paused; speed = Engine.TimeScale; mouse = Input.MouseMode; visible = Host.Visible;
 		modes = Walk(Host).ToDictionary(n => n, n => n.ProcessMode); layers = Walk(Host).OfType<CanvasLayer>().ToDictionary(n => n, n => n.Visible);
 		foreach (var n in modes.Keys) n.ProcessMode = ProcessModeEnum.Disabled; foreach (var n in layers.Keys) n.Visible = false; Host.Visible = false; GetTree().Paused = true; Engine.TimeScale = 1; Input.MouseMode = Input.MouseModeEnum.Visible; launch.Hide();
-		var pref = Preferences(); arena = new PullTestArena { ProcessMode = ProcessModeEnum.Always, ReduceEffects = pref.effects, ReduceMotion = pref.motion, ExitRequested = Exit, Battle = battle, Linked = sourcePanel != null, Letters = sourcePanel == null, CheckRequested = () => ExitAndCheck() }; GetTree().Root.AddChild(arena); GD.Print("PULL_TEST_ENTER");
+		var pref = Preferences(); arena = new PullTestArena { ProcessMode = ProcessModeEnum.Always, ReduceEffects = pref.effects, ReduceMotion = pref.motion, ExitRequested = Exit, Battle = battle, Linked = false, Letters = true, CheckRequested = Exit }; GetTree().Root.AddChild(arena); GD.Print("PULL_TEST_ENTER");
 	}
-	void ExitAndCheck() { var p = sourcePanel; Exit(); if (IsInstanceValid(p)) p!.ReturnFromPull(true); }
 	public void Exit()
 	{
 		if (arena == null) return; arena.QueueFree(); arena = null; foreach (var x in modes) if (IsInstanceValid(x.Key)) x.Key.ProcessMode = x.Value; foreach (var x in layers) if (IsInstanceValid(x.Key)) x.Key.Visible = x.Value;
-		Host.Visible = visible; GetTree().Paused = paused; Engine.TimeScale = speed; Input.MouseMode = mouse; if (IsInstanceValid(camera)) camera!.MakeCurrent(); launch.Show(); var p = sourcePanel; sourcePanel = null; if (IsInstanceValid(p)) p!.ReturnFromPull(false); GD.Print("PULL_TEST_EXIT_RESTORED");
+		Host.Visible = visible; GetTree().Paused = paused; Engine.TimeScale = speed; Input.MouseMode = mouse; if (IsInstanceValid(camera)) camera!.MakeCurrent(); launch.Show(); GD.Print("PULL_TEST_EXIT_RESTORED");
 	}
 	public override void _Input(InputEvent e) { if (e is not InputEventKey { Pressed: true, Echo: false } k) return; if (k.PhysicalKeycode == Key.F9) { if (arena == null) Enter(); else Exit(); GetViewport().SetInputAsHandled(); } else if (arena != null) { if (k.PhysicalKeycode == Key.Escape) { if (arena.Drawing) arena.CancelDrawing(); else Exit(); } else arena.HandleKey(k.PhysicalKeycode); GetViewport().SetInputAsHandled(); } }
 	async System.Threading.Tasks.Task Delay(double t) => await ToSignal(GetTree().CreateTimer(t, true), SceneTreeTimer.SignalName.Timeout);
@@ -69,7 +65,6 @@ public partial class PullTestGate : Node
 			Exit(); Check(!GetTree().Paused && Host.Visible == visible, "exit_restores_pause_and_host"); Check(modes.All(x => x.Key.ProcessMode == x.Value) && layers.All(x => x.Key.Visible == x.Value) && GetViewport().GetCamera3D() == camera && Engine.TimeScale == speed, "restore_camera_ui_process");
 			Enter(); await Delay(.2); await ClickTile(NextCorrect()); await Delay(.25); Exit(); Enter(); Check(arena!.Chosen.Count == 0 && arena.CaptureCount == 0, "cancel_pull_and_clean_reentry"); await Delay(.2); arena.ToggleMode(); Check(!arena.Letters, "syllable_mode_preserved"); Exit();
 			Enter(); await Delay(.3); await ClickTile(NextCorrect()); await Delay(3.1); Check(arena!.MotionState.StartsWith("Golpe"), "approved_attack_phase_reached"); Check(!arena.Capture() && !arena.Undo(), "attack_input_stays_locked"); _Input(new InputEventKey { PhysicalKeycode = Key.Escape, Pressed = true }); Check(arena == null && !GetTree().Paused, "escape_during_attack_restores_game"); Enter(); Check(arena!.Chosen.Count == 0, "reentry_after_attack_clean"); Exit();
-			var battle = PracticeBattle(); var panel = ((Main)Host).CreatePullQaPanel(battle); EnterWithPanel(panel); await Delay(.3); Check(ReferenceEquals(arena!.Battle, battle) && !arena.Letters, "linked_original_battle"); arena.ReduceEffects = true; arena.ReduceMotion = true; await ClickTile(NextCorrect()); await WaitIdle(); Exit(); Check(battle.Chosen.Count == 1, "linked_capture_preserved"); panel.QueueFree();
 			Enter(); DisplayServer.WindowSetSize(new Vector2I(1920, 1080)); await Delay(.5); for (int i = 0; i < 3; i++) { await ClickTile(NextCorrect()); await WaitIdle(); }
 			arena!.Check(); await DrawLetter(); Check(arena.Trace.Completed, "mouse_drawing_1920"); await Shot("letters-1920"); Exit(); GD.Print("LETTERS_QA_ALL_PASS"); GetTree().Quit();
 		}

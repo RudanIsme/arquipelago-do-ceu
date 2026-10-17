@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Trade;
@@ -15,6 +16,8 @@ public sealed class MerchantHost
 	public required MerchantService Merchant { get; init; }
 
 	public required MerchantCatalog Catalog { get; init; }
+
+	public required MoneyCatalog Money { get; init; }
 
 	public required CosmeticCatalog Cosmetics { get; init; }
 

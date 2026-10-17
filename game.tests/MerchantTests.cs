@@ -300,4 +300,22 @@ public sealed class MerchantTests : IDisposable
 		Assert.False(merchant.AddCharge("nada").IsOk);
 		Assert.Empty(merchant.Stock("nada"));
 	}
+
+	[Fact]
+	public void O_valor_de_uma_moeda_do_jogo_em_centavos_vem_dos_dados_e_e_validado()
+	{
+		Assert.Equal(100, Catalog.CentsPerCoin);
+		Assert.False(MerchantCatalog.Parse("""{"stockSize":2,"centsPerCoin":3,"cosmetics":[{"id":"mercador-laco","price":3}],"gear":[]}""", Cosmetics, Gear).IsOk);
+	}
+
+	[Fact]
+	public void Nada_do_Mercador_conta_para_a_aprendizagem_nem_para_a_repeticao_espacada()
+	{
+		var tradeFolder = Path.Combine(MissionFiles.RepositoryRoot(), "game", "Trade");
+		var forbidden = new[] { "Mastery", "BattleEnded", "Conclude(", "MissionHistory", "RewardService", "Occurrences" };
+
+		var touching = Directory.EnumerateFiles(tradeFolder, "*.cs").Where(f => forbidden.Any(token => File.ReadAllText(f).Contains(token))).Select(Path.GetFileName);
+
+		Assert.Empty(touching);
+	}
 }

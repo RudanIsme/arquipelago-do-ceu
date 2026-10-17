@@ -24,6 +24,9 @@ public partial class TrainingDummy : Node3D
 	};
 	readonly AudioStreamPlayer sound = new();
 	Vector3 center;
+	// O corpo anda pela Sala; a faixa de aviso e a bolha ficam no mundo.
+	readonly Node3D body = new();
+	Vector2 home;
 	Tween? pulse;
 	readonly MeshInstance3D ring = new()
 	{
@@ -73,7 +76,10 @@ public partial class TrainingDummy : Node3D
 	public bool ReduceMotion { get; set; }
 
 	// O meio do corpo, para o clique escolher o Boneco e o raio chegar nele.
-	public Vector3 Center => center;
+	public Vector3 Center => center + body.Position;
+
+	// Anda com o corpo para `ground` (x, z no mundo), longe ou perto de casa.
+	public void MoveTo(Vector2 ground) => body.Position = new Vector3(ground.X - home.X, 0f, ground.Y - home.Y);
 
 	// O anel no chão mostra qual criatura está escolhida; é forma, não só cor.
 	public void SetSelected(bool selected)
@@ -90,22 +96,24 @@ public partial class TrainingDummy : Node3D
 	// `ground` é o pé do Boneco e `top` a altura do topo no mundo.
 	public void Place(Vector3 ground, float top)
 	{
+		home = new Vector2(ground.X, ground.Z);
+		AddChild(body);
 		center = ground + new Vector3(0f, (top - ground.Y) * 0.5f, 0f);
 		mist.Position = center;
 		ring.Position = ground + new Vector3(0f, 0.08f, 0f);
-		AddChild(ring);
+		body.AddChild(ring);
 		mist.MaterialOverride = mistMaterial;
 		shieldLabel.Position = new Vector3(ground.X, top + 2.3f, ground.Z);
 		popup.Position = new Vector3(ground.X, top + 3.3f, ground.Z);
-		AddChild(mist);
-		AddChild(shieldLabel);
+		body.AddChild(mist);
+		body.AddChild(shieldLabel);
 		foreach (var label in new Label3D[] { shieldLabel, popup, creatureMark }) label.AddToGroup(CameraController.LabelGroup);
-		AddChild(popup);
-		AddChild(sound);
+		body.AddChild(popup);
+		body.AddChild(sound);
 		creature.Position = new Vector3(ground.X, top + 0.5f, ground.Z);
 		creature.AddChild(creaturePicture);
 		creature.AddChild(creatureMark);
-		AddChild(creature);
+		body.AddChild(creature);
 		AddChild(warning);
 		AddChild(bubbleBall);
 		UiKit.Outline3D(shieldLabel);
@@ -156,7 +164,7 @@ public partial class TrainingDummy : Node3D
 	// A conta confirmada vira um raio de dourado, do Personagem até o Boneco.
 	public void Ray(Vector3 from, bool perfect)
 	{
-		var to = center;
+		var to = Center;
 		var length = from.DistanceTo(to);
 		var beam = new MeshInstance3D
 		{
@@ -257,6 +265,11 @@ public partial class TrainingDummy : Node3D
 		{
 			ShowCreature(null);
 			Reset(math.Shield.Remaining, "Escudo");
+		}
+		else if (session.Change is { } change)
+		{
+			ShowCreature(null);
+			Reset(change.Remaining, "Valores que faltam");
 		}
 		else if (session.Name is { } name)
 		{

@@ -9,4 +9,7 @@ public interface ICombatStage
 	Camera3D Camera { get; }
 
 	(Vector3 Ground, float Top) CreatureSpot { get; }
+
+	// Se uma criatura pode pisar neste ponto do chão (x, z), sem rocha nem borda.
+	bool CanStand(System.Numerics.Vector2 ground);
 }

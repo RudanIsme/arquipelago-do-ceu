@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Rules;
@@ -9,25 +11,34 @@ using NumericsVector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// A área onde a criança liga o pontilhado de um número ou letra; quem confere é Tracing (core).
-// Há sempre "Pular o desenho", e no teclado digitar o pedido vale como escrever.
+// Onde a criança traça um número, sinal ou letra seguindo a trilha; quem confere é Tracing (core). Uma sílaba ou palavra
+// vira uma trilha por letra. Nada depende de precisão: "Completar sozinho" ou Enter segurado anima a tinta, e digitar vale como escrever.
 public partial class TracePad : VBoxContainer
 {
 	public static readonly Vector2I CanvasSize = new(392, 270);
 
+	const double GlyphPauseSeconds = 0.35;
 
 	readonly TracingRules rules;
+	readonly TraceTrails trails;
 	readonly TraceCanvas canvas;
 	readonly Label prompt;
 	readonly Label message;
+	readonly List<string> glyphs = [];
 	string expected = "";
 	string typed = "";
+	string label = "";
+	int current;
 	bool done;
+	// Entre uma letra e a próxima o traço e a tinta ficam parados: nada conta duas vezes.
+	bool between;
+	bool guided;
 	int version;
 
-	public TracePad(TracingRules rules)
+	public TracePad(TracingRules rules, TraceTrails? trails = null)
 	{
 		this.rules = rules;
+		this.trails = trails ?? TrailSource.Shared;
 		AddThemeConstantOverride("separation", 10);
 		prompt = UiKit.Heading("");
 		AddChild(prompt);
@@ -47,7 +58,7 @@ public partial class TracePad : VBoxContainer
 		buttons.AddThemeConstantOverride("v_separation", 8);
 		buttons.AddChild(UiKit.BigButton("Apagar", Clear, 190));
 		buttons.AddChild(UiKit.BigButton("Voltar", () => Cancelled?.Invoke(), 190));
-		buttons.AddChild(UiKit.BigButton("Pular o desenho", () => Finish(), CanvasSize.X));
+		buttons.AddChild(UiKit.BigButton("Completar sozinho", () => guided = true, CanvasSize.X));
 		AddChild(buttons);
 	}
 
@@ -55,47 +66,83 @@ public partial class TracePad : VBoxContainer
 
 	public event Action? Cancelled;
 
-	// Mostra o pontilhado de `text` (um número, uma letra ou uma sílaba) e espera o desenho.
-	public async Task Begin(string text, string label)
+	// Mostra a trilha do primeiro glifo de `text` (um número, uma letra ou uma sílaba) e espera o traço.
+	public Task Begin(string text, string label)
 	{
 		expected = text;
 		typed = "";
+		this.label = label;
 		done = false;
-		prompt.Text = label;
-		message.Text = "Ligue os pontinhos com o dedo ou o mouse.";
-		canvas.Clear();
-
-		var mine = ++version;
-		var mask = await GlyphMask.Render(this, text, GetThemeDefaultFont(), CanvasSize);
-		if (mine != version) return; // a criança voltou antes de o pontilhado ficar pronto
-		var guide = mask is null ? Result<TraceGuide>.Fail("A imagem do pontilhado não ficou pronta.") : Tracing.GuideFromMask(mask, rules);
-		if (!guide.IsOk)
+		between = false;
+		guided = false;
+		version++;
+		var usable = GlyphsOf(text).Where(g => trails.Find(g) is not null).ToList();
+		glyphs.Clear();
+		glyphs.AddRange(usable);
+		current = 0;
+		if (usable.Count == 0)
 		{
-			// Sem como desenhar o pontilhado, a criança segue sem ele: o jogo nunca trava por isso.
-			GD.PushWarning($"Pontilhado indisponível para '{text}'.");
+			// Sem trilha para nada do pedido, a criança segue sem o desenho: o jogo nunca trava por isso.
+			GD.PushWarning($"Trilha indisponível para '{text}'.");
 			Finish();
-			return;
+			return Task.CompletedTask;
 		}
-		canvas.SetGuide(guide.Value!);
+		ShowGlyph();
+		return Task.CompletedTask;
 	}
 
-	// Cancela um pontilhado que ainda estava sendo preparado.
+	// Cancela um desenho que ainda estava em andamento.
 	public void Abort() => version++;
 
 	// Para o piloto de desenvolvimento: os pontos do guia em coordenadas de tela.
 	public IReadOnlyList<Vector2> GuideOnScreen() => canvas.GuideOnScreen();
 
+	// Letras e números sem acento: o acento não tem traço, e o desenho confere só o corpo da letra.
+	static IEnumerable<string> GlyphsOf(string text) =>
+		text.Normalize(NormalizationForm.FormD)
+			.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark && !char.IsWhiteSpace(c))
+			.Select(c => char.ToUpperInvariant(c).ToString());
+
+	void ShowGlyph()
+	{
+		var glyph = glyphs[current];
+		var guide = trails.Guide(glyph, new NumericsVector2(CanvasSize.X, CanvasSize.Y), rules);
+		canvas.Clear();
+		canvas.SetGuide(guide.Value!);
+		prompt.Text = glyphs.Count > 1 ? $"{label} · {glyph} ({current + 1} de {glyphs.Count})" : label;
+		message.Text = guided ? "Olhe a tinta seguir a trilha." : "Siga a trilha, do número 1 na direção da seta. Se preferir, toque em Completar sozinho.";
+	}
+
 	void Clear()
 	{
 		canvas.Clear();
-		message.Text = "Pode tentar de novo. Ligue os pontinhos.";
+		message.Text = "Pode tentar de novo. Siga a trilha.";
 	}
 
 	void OnStrokeEnded(bool passed)
 	{
-		if (done) return;
-		if (passed) Finish("Muito bem!");
-		else message.Text = "Continue ligando os pontinhos. Se quiser, apague e tente de novo.";
+		if (done || between) return;
+		if (passed) GlyphDone();
+		else message.Text = "Continue pela trilha. Se quiser, apague e tente de novo.";
+	}
+
+	void GlyphDone()
+	{
+		if (current + 1 >= glyphs.Count)
+		{
+			Finish("Muito bem!");
+			return;
+		}
+		current++;
+		between = true;
+		message.Text = "Muito bem! Agora a próxima.";
+		var mine = version;
+		GetTree().CreateTimer(GlyphPauseSeconds, true, false, true).Timeout += () =>
+		{
+			if (mine != version || done) return;
+			between = false;
+			ShowGlyph();
+		};
 	}
 
 	void Finish(string? text = null)
@@ -103,12 +150,21 @@ public partial class TracePad : VBoxContainer
 		if (done) return;
 		done = true;
 		message.Text = text ?? "Tudo bem, vamos seguir.";
-		// Um instante para a criança ver os pontos acesos antes de a montagem continuar.
+		// Um instante para a criança ver a tinta antes de a montagem continuar.
 		var mine = version;
 		GetTree().CreateTimer(text is null ? 0.05 : 0.5, true, false, true).Timeout += () =>
 		{
 			if (mine == version) Completed?.Invoke(); // voltar ou começar outro desenho cancela este
 		};
+	}
+
+	// "Completar sozinho" (botão) ou Enter segurado: a tinta anda sozinha pela trilha.
+	public override void _Process(double delta)
+	{
+		if (!IsVisibleInTree() || done || between || glyphs.Count == 0) return;
+		var holding = Input.IsKeyPressed(Key.Enter) || Input.IsKeyPressed(Key.KpEnter);
+		if (!guided && !holding) return;
+		if (canvas.AutoFill((float)delta)) GlyphDone();
 	}
 
 	// No teclado, escrever é digitar: o que está pedido, tecla por tecla, vale como o desenho.
@@ -124,24 +180,31 @@ public partial class TracePad : VBoxContainer
 	}
 }
 
-// A tela de desenho em si: pontos-guia, o traço da criança e o aviso de quais pontos já foram ligados.
+// A tela de desenho em si: a trilha como faixa larga e translúcida, o início numerado com a seta, a tinta que
+// preenche conforme a criança passa e o traço dela.
 sealed partial class TraceCanvas : Control
 {
-	const float DotRadius = 7f;
-	const float LitRadius = 11f;
-	const float StrokeWidth = 14f;
+	const float BandWidth = 46f;
+	const float InkWidth = 22f;
+	const float StrokeWidth = 8f;
+	const float MarkerRadius = 15f;
+	const float ArrowLength = 34f;
+	const float ArrowSize = 12f;
+	const float AutoDotsPerSecond = 22f;
 
-	static readonly Color Paper = Color.FromHtml("#2A2138");
-	static readonly Color Border = Color.FromHtml("#D9A64A");
-	static readonly Color Dot = Color.FromHtml("#F2D27A");
-	static readonly Color Lit = Color.FromHtml("#7BD88F");
-	static readonly Color Ink = Color.FromHtml("#8FD3FF");
+	static readonly Color Paper = Color.FromHtml("#F6EACB");
+	static readonly Color Border = Color.FromHtml("#946239");
+	static readonly Color Band = new(0.24f, 0.17f, 0.15f, 0.16f);
+	static readonly Color Ink = Color.FromHtml("#3FA796");
+	static readonly Color Mark = Color.FromHtml("#3D2C25");
+	static readonly Color Stroke = Color.FromHtml("#3D6EA8");
 
 	readonly TracingRules rules;
 	readonly List<List<NumericsVector2>> strokes = [];
 	TraceGuide? guide;
 	bool[] lit = [];
 	bool drawing;
+	float auto;
 
 	public TraceCanvas(TracingRules rules)
 	{
@@ -155,6 +218,7 @@ sealed partial class TraceCanvas : Control
 	{
 		guide = next;
 		lit = new bool[next.Dots.Count];
+		auto = 0f;
 		QueueRedraw();
 	}
 
@@ -163,6 +227,7 @@ sealed partial class TraceCanvas : Control
 		strokes.Clear();
 		Array.Clear(lit);
 		drawing = false;
+		auto = 0f;
 		QueueRedraw();
 	}
 
@@ -170,6 +235,16 @@ sealed partial class TraceCanvas : Control
 	{
 		var transform = GetGlobalTransformWithCanvas();
 		return guide is null ? [] : guide.Dots.Select(d => transform * new Vector2(d.X, d.Y)).ToList();
+	}
+
+	// Anima a tinta pela trilha, ponto a ponto; devolve verdadeiro quando a trilha toda está coberta.
+	public bool AutoFill(float seconds)
+	{
+		if (guide is null) return false;
+		auto += seconds * AutoDotsPerSecond;
+		for (var i = 0; i < Math.Min(lit.Length, (int)auto); i++) lit[i] = true;
+		QueueRedraw();
+		return lit.All(l => l);
 	}
 
 	public override void _GuiInput(InputEvent @event)
@@ -202,7 +277,6 @@ sealed partial class TraceCanvas : Control
 		}
 	}
 
-
 	// Acende os pontos perto do traço; o ponteiro anda aos saltos, então o caminho entre dois eventos também conta.
 	void Light(NumericsVector2 point)
 	{
@@ -224,81 +298,59 @@ sealed partial class TraceCanvas : Control
 		var rect = new Rect2(Vector2.Zero, Size);
 		DrawRect(rect, Paper);
 		DrawRect(rect, Border, filled: false, width: 3f);
-		if (guide is null) return;
+		if (guide?.Paths is null) return;
 
-		for (var i = 0; i < guide.Dots.Count; i++)
+		for (var index = 0; index < guide.Paths.Count; index++)
 		{
-			var dot = guide.Dots[i];
-			// Ponto ligado fica maior e cheio: a pista não depende só da cor.
-			DrawCircle(new Vector2(dot.X, dot.Y), lit[i] ? LitRadius : DotRadius, lit[i] ? Lit : Dot);
+			var path = guide.Paths[index];
+			DrawPolyline(Convert(path.Points), Band, BandWidth, antialiased: true);
+			DrawInk(path);
+			DrawStart(path, index + 1);
 		}
 		foreach (var stroke in strokes.Where(s => s.Count > 1))
-			DrawPolyline(stroke.Select(p => new Vector2(p.X, p.Y)).ToArray(), Ink, StrokeWidth, antialiased: true);
+			DrawPolyline(Convert(stroke), Stroke, StrokeWidth, antialiased: true);
 	}
 
-}
-
-// Desenha o texto com a fonte do jogo fora da tela e devolve onde há tinta, recortada e ampliada para a área,
-// então qualquer fonte gera um pontilhado grande, inteiro e centralizado.
-static class GlyphMask
-{
-	const float Fill = 0.88f;
-	const int Oversample = 2;
-	const float RenderFontSize = 360f;
-
-	public static async Task<bool[,]?> Render(Node host, string text, Font font, Vector2I size)
+	// A tinta cobre os trechos da trilha em que a criança já passou.
+	void DrawInk(TrailPath path)
 	{
-		var big = size * Oversample;
-		var measured = font.GetStringSize(text, HorizontalAlignment.Left, -1, (int)RenderFontSize);
-		var fontSize = (int)Mathf.Min(RenderFontSize, RenderFontSize * big.X * 0.9f / Mathf.Max(measured.X, 1f));
-
-		var viewport = new SubViewport { Size = big, TransparentBg = true, Disable3D = true, RenderTargetUpdateMode = SubViewport.UpdateMode.Once };
-		var label = new Label
+		var run = new List<Vector2>();
+		for (var i = 0; i < path.DotCount; i++)
 		{
-			Text = text,
-			HorizontalAlignment = HorizontalAlignment.Center,
-			VerticalAlignment = VerticalAlignment.Center,
-			LabelSettings = new LabelSettings { Font = font, FontSize = fontSize, FontColor = Colors.White },
-		};
-		label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-		viewport.AddChild(label);
-		host.AddChild(viewport);
-
-		// A imagem só fica pronta depois de o quadro ser desenhado.
-		await host.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-		await host.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-		var image = GodotObject.IsInstanceValid(viewport) ? viewport.GetTexture()?.GetImage() : null;
-		if (GodotObject.IsInstanceValid(viewport)) viewport.QueueFree();
-		if (image is null || image.IsEmpty() || image.GetSize() != big) return null;
-		return FitToCanvas(image, size);
+			if (lit[path.FirstDot + i])
+			{
+				run.Add(Convert(guide!.Dots[path.FirstDot + i]));
+				continue;
+			}
+			FlushInk(run);
+		}
+		FlushInk(run);
 	}
 
-	static bool[,]? FitToCanvas(Image image, Vector2I size)
+	void FlushInk(List<Vector2> run)
 	{
-		int minX = image.GetWidth(), maxX = -1, minY = image.GetHeight(), maxY = -1;
-		for (var y = 0; y < image.GetHeight(); y++)
-			for (var x = 0; x < image.GetWidth(); x++)
-				if (image.GetPixel(x, y).A > 0.5f)
-				{
-					minX = Mathf.Min(minX, x);
-					maxX = Mathf.Max(maxX, x);
-					minY = Mathf.Min(minY, y);
-					maxY = Mathf.Max(maxY, y);
-				}
-		if (maxX < 0) return null;
-
-		var ink = image.GetRegion(new Rect2I(minX, minY, maxX - minX + 1, maxY - minY + 1));
-		var scale = Mathf.Min(size.X * Fill / ink.GetWidth(), size.Y * Fill / ink.GetHeight());
-		var width = Mathf.Max(1, (int)(ink.GetWidth() * scale));
-		var height = Mathf.Max(1, (int)(ink.GetHeight() * scale));
-		ink.Resize(width, height, Image.Interpolation.Bilinear);
-
-		var offsetX = (size.X - width) / 2;
-		var offsetY = (size.Y - height) / 2;
-		var mask = new bool[size.X, size.Y];
-		for (var y = 0; y < height; y++)
-			for (var x = 0; x < width; x++)
-				mask[offsetX + x, offsetY + y] = ink.GetPixel(x, y).A > 0.5f;
-		return mask;
+		if (run.Count > 1) DrawPolyline([.. run], Ink, InkWidth, antialiased: true);
+		else if (run.Count == 1) DrawCircle(run[0], InkWidth / 2f, Ink);
+		run.Clear();
 	}
+
+	// O início numerado e a seta que mostra para onde o traço vai primeiro.
+	void DrawStart(TrailPath path, int number)
+	{
+		var start = Convert(path.Points[0]);
+		var direction = (Convert(path.Points[Math.Min(2, path.Points.Count - 1)]) - start).Normalized();
+		var tip = start + direction * (MarkerRadius + ArrowLength);
+		var side = new Vector2(-direction.Y, direction.X);
+		DrawLine(start + direction * MarkerRadius, tip, Mark, 3f, antialiased: true);
+		DrawColoredPolygon([tip + direction * ArrowSize, tip + side * ArrowSize * 0.6f, tip - side * ArrowSize * 0.6f], Mark);
+		DrawCircle(start, MarkerRadius, Mark);
+		var font = ThemeDB.FallbackFont;
+		var text = number.ToString(CultureInfo.InvariantCulture);
+		var size = font.GetStringSize(text, HorizontalAlignment.Center, -1, 20);
+		DrawString(font, start + new Vector2(-size.X / 2f, size.Y / 3f), text, HorizontalAlignment.Left, -1, 20, Paper);
+	}
+
+	static Vector2[] Convert(IEnumerable<NumericsVector2> points) => [.. points.Select(Convert)];
+
+	static Vector2 Convert(NumericsVector2 p) => new(p.X, p.Y);
 }

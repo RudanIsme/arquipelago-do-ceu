@@ -88,6 +88,28 @@ public sealed class AnswerReactions
 		else area.Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : $"Ainda faltam {piece}s. Escolha mais uma.");
 	}
 
+	// Pagar e dar troco: o valor montado bate com o pedido ou não; errar é erro e mostra se passou ou faltou.
+	public void ChangeChecked(ChangeResult result)
+	{
+		if (area.Session is not { Change: { } change } session) return;
+		var from = RayOrigin;
+		area.AttackAnimation();
+		if (result.Correct)
+		{
+			dummy.Ray(from, perfect: true);
+			dummy.Dissolved();
+			session.Hit(perfect: true);
+			area.UpdateEnergy();
+			var done = change.Task == MoneyTask.Pay ? $"Você pagou {MoneyCatalog.Format(result.Target)}." : $"O troco é {MoneyCatalog.Format(result.Target)}.";
+			area.Say("Valor certo!", $"Muito bem! {done} A criatura foi acalmada.");
+			area.Won();
+			return;
+		}
+		dummy.Overshoot();
+		var lead = result.Total > result.Target ? "Passou do valor." : "Ainda falta dinheiro.";
+		area.Mistake(result.Total > result.Target ? "Passou do valor!" : "Faltou dinheiro!", $"{lead} Você montou {MoneyCatalog.Format(result.Total)}.");
+	}
+
 	// O Escriba do 2º ano: a palavra inteira, com a grafia exata. Acertar liberta a criatura; errar é erro.
 	public void WordChecked(WordResult result)
 	{

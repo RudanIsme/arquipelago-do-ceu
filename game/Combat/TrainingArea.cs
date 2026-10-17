@@ -31,6 +31,8 @@ public partial class TrainingArea : Node
 	readonly Action<OverlayScreen> showOverlay;
 	readonly Action<string> notify;
 	readonly CombatTime time;
+	readonly AttackRhythm rhythm;
+	readonly CreatureMotion motion;
 	readonly BubbleDirector bubbles;
 	readonly AnswerReactions reactions;
 	readonly IReadOnlyList<Mission> missions;
@@ -45,15 +47,8 @@ public partial class TrainingArea : Node
 	Action? fightWon;
 	Action? fightLost;
 	bool ownsEnergyView = true;
-	// Cada erro e cada fim de treino mudam a época; um temporizador de uma época antiga não faz mais nada.
+	// Cada erro e cada fim de treino mudam a época: um temporizador antigo não faz mais nada.
 	int epoch;
-	int extraEnergy;
-	public void SetEquipmentEnergy(int bonus)
-	{
-		extraEnergy = Math.Clamp(bonus, 0, 2);
-		session?.Energy.SetMaximum(rules.MaxEnergy + extraEnergy);
-		UpdateEnergy();
-	}
 
 	public TrainingArea(GameRules rules, ICombatStage stage, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
 		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify, IRandomSource random, TowerCatalog towers)
@@ -72,17 +67,23 @@ public partial class TrainingArea : Node
 		this.showOverlay = showOverlay;
 		this.notify = notify;
 		time = new CombatTime(rules.Combat);
-		bubbles = new BubbleDirector(rules.Combat.Bubble, stage, dummy, player, voice);
+		rhythm = new AttackRhythm(rules.Combat, time);
+		bubbles = new BubbleDirector(rules.Combat.Bubble, rhythm, () => motion!.Ground, dummy, player, voice);
 		reactions = new AnswerReactions(this, dummy, player);
 		missions = MissionSource.Load().Missions;
 
 		var (ground, top) = stage.CreatureSpot;
 		dummy.Place(ground, top);
 		dummy.Idle();
+		var stream = random.NewStream();
+		motion = new CreatureMotion(rules.Combat.Movement, stage, dummy, () => stream.NextInt(10_000) / 10_000.0);
 	}
 
 	// Dentro de uma Dungeon só se luta com a criatura da Sala; não há escolha de treino.
 	public bool InDungeon { get; set; }
+
+	// As Mecânicas de luta que o jogo conhece (a de dinheiro entra quando o catálogo do Real carrega).
+	public BattleMechanics Mechanics { get; set; } = BattleMechanics.Default;
 
 	// Sem bolhas, como no Puzzle: a porta não ataca, só espera a resposta.
 	public bool Bubbles { get; set; } = true;
@@ -97,7 +98,6 @@ public partial class TrainingArea : Node
 	public int? EnergyTop { get; set; }
 
 	public bool HasTarget => panel is not null;
-	public void RefreshPresentation() => UpdateEnergyDock();
 	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (panel is null ? 154 : 12); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
@@ -105,8 +105,7 @@ public partial class TrainingArea : Node
 
 	public bool InTargetRange()
 	{
-		var (ground, _) = stage.CreatureSpot;
-		return Vector2.Distance(player.GroundPosition, new Vector2(ground.X, ground.Z)) <= rules.Combat.TargetRange;
+		return Vector2.Distance(player.GroundPosition, motion.Ground) <= rules.Combat.TargetRange;
 	}
 
 	public void ToggleTarget()
@@ -142,6 +141,9 @@ public partial class TrainingArea : Node
 
 	public event Action? FightAborted;
 
+	// Toda batalha, do Treino ou da Dungeon, termina com um resultado. O Treino o emite mas nada o conta.
+	public event Action<BattleResult>? BattleEnded;
+
 	// A Missão que acabou de ser vencida numa luta de Sala, antes de a Sala valer como vencida. O treino não dispara isto.
 	public event Action<Mission>? ChallengeSolved;
 
@@ -161,6 +163,7 @@ public partial class TrainingArea : Node
 		fightLost = lost;
 		reacting = false;
 		bubbles.Reset();
+		rhythm.Reset();
 		UpdateEnergy();
 		dummy.ShowChallenge(session);
 	}
@@ -198,18 +201,16 @@ public partial class TrainingArea : Node
 	// O treino é de um Papel; o equipamento dele é o que vale na luta.
 	public event Action<string>? RoleChosen;
 
-	// A Energia extra do equipamento do Papel escolhido, antes de ele valer para o resto do jogo.
-	public Func<string, int>? EnergyBonusFor { get; set; }
-
 	string? TryStart(TrainingSetup setup)
 	{
 		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
-		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, random.NewStream());
+		var started = CombatSession.Start(rules.Combat, new Energy(rules.MaxEnergy + bonus), unlockedLevel(), setup, missions, random.NewStream(), mechanics: Mechanics);
 		if (!started.IsOk) return started.Error;
 
 		RoleChosen?.Invoke(setup.Discipline);
 		session = started.Value!;
 		bubbles.Reset();
+		rhythm.Reset();
 		energyView = new EnergyView();
 		energyView.LeaveRequested += () => Finish("Treino encerrado. Quando quiser, é só escolher o Boneco de novo.");
 		uiRoot.AddChild(energyView);
@@ -222,8 +223,8 @@ public partial class TrainingArea : Node
 	void OpenPanel()
 	{
 		if (session is null || panel is not null) return;
-		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, allowPull: !InDungeon, new PanelEvents(
-			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, OnComposing,
+		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, () => settings.Current.ReduceMotion, new PanelEvents(
+			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing,
 			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
 			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
 
@@ -302,6 +303,7 @@ public partial class TrainingArea : Node
 	// Num treino vem logo o próximo Desafio; numa Sala, vencer o Desafio vence a Sala.
 	internal void Won()
 	{
+		if (session is not null) BattleEnded?.Invoke(session.Conclude(calmed: true));
 		if (fightWon is null) { NextChallengeSoon(); return; }
 		reacting = true;
 		bubbles.Clear();
@@ -343,18 +345,13 @@ public partial class TrainingArea : Node
 
 	internal void AttackAnimation()
 	{
-		var (ground, _) = stage.CreatureSpot;
-		player.Attack(new Vector2(ground.X, ground.Z));
-	}
-
-	internal void UpdateEnergy()
-	{
-		if (session is not null) energyView?.Set(session.Energy.Current, session.Energy.Max);
+		player.Attack(motion.Ground);
 	}
 
 	// Energia zerada, "Sair do treino" ou troca de Perfil: a criança só sai da Área de treino, sem perder nada.
 	void Finish(string message)
 	{
+		if (session is { IsOver: true }) BattleEnded?.Invoke(session.Conclude(calmed: false));
 		if (fightLost is not null)
 		{
 			var lost = fightLost;
@@ -381,9 +378,11 @@ public partial class TrainingArea : Node
 
 	public override void _Process(double delta)
 	{
+		if (canAct()) motion.Tick((float)delta, player.GroundPosition, Creature.Moves, panel is not null, settings.Current.CalmMode);
 		if (session is null || reacting || !canAct()) return;
+		rhythm.UseCreature(Creature.Kind);
 		// Modo calmo e Puzzle: o Boneco não lança bolhas e só reage a erros.
-		if (!bubbles.Tick((float)delta, stopped: settings.Current.CalmMode || !Bubbles)) return;
+		if (!bubbles.Tick(delta, stopped: settings.Current.CalmMode || !Bubbles)) return;
 		session.BubbleHit();
 		UpdateEnergy();
 		if (session.IsOver) Finish("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");

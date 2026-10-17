@@ -29,17 +29,16 @@ static class E2E
 		await d.Tap(Controls.Target);
 		d.Expect(d.Button("Começar") is not null, "a escolha do treino abriu");
 		await d.Press("Começar");
-		d.Expect(d.Button("Atacar") is not null, "o treino de Matemática começou");
-		await d.PressNumberKey();
+		d.Expect(d.Hud is not null && d.Button("Atacar") is null, "o treino de Matemática começou, sem botão de atacar");
+		await d.PlayPiece(0);
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
 
 		await d.Tap(Controls.Target);
 		await d.Press("Escriba");
 		await d.Press("Começar");
-		d.Expect(d.Button("Conferir") is not null, "o treino de Português começou");
-		await d.TypeName();
-		await d.PressKey(Key.Enter);
+		d.Expect(d.Hud is not null && d.Button("Conferir") is null, "o treino de Português começou, sem botão de conferir");
+		await d.PlayName();
 		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "o nome certo libertou a criatura");
 		await d.Press("Sair do treino");
 

@@ -3,35 +3,17 @@ using ArquipelagoDoCeu.Rules;
 
 namespace ArquipelagoDoCeu.Combat;
 
-// Os pontos pontilhados que a criança liga ao desenhar um número ou uma letra.
-public sealed record TraceGuide(IReadOnlyList<Vector2> Dots);
+// Os pontos que a criança cobre ao desenhar um número ou uma letra. `Paths` traz os traços da trilha (para a tela desenhar a faixa).
+public sealed record TraceGuide(IReadOnlyList<Vector2> Dots, IReadOnlyList<TrailPath>? Paths = null);
 
 public sealed record TraceCheck(float Coverage, float Stray, bool Passed);
 
-// O traço é conferido em código, contra o próprio guia: quanto dos pontos a criança tocou e quanto do traço
-// ficou longe de qualquer ponto. Não reconhece o desenho; só confere se ela seguiu o pontilhado.
+// O traço é conferido em código, contra o próprio guia (a trilha): quanto dos pontos a criança cobriu e quanto do traço
+// ficou longe de qualquer ponto. Não reconhece o desenho; só confere se ela seguiu a trilha, e é tolerante.
 public static class Tracing
 {
 	// O traço pode sair um pouco do miolo sem contar como rabisco.
 	const float StrayFactor = 1.6f;
-
-	// `mask[x, y]` é verdadeiro onde o desenho da letra tem tinta. Os pontos ficam em grade e só onde há tinta
-	// ao redor, para seguirem o miolo do traço e não a borda.
-	public static Result<TraceGuide> GuideFromMask(bool[,] mask, TracingRules rules)
-	{
-		var width = mask.GetLength(0);
-		var height = mask.GetLength(1);
-		var margin = Math.Max(1, rules.DotSpacing / 3);
-		var dots = new List<Vector2>();
-		for (var y = margin; y < height - margin; y += rules.DotSpacing)
-			for (var x = margin; x < width - margin; x += rules.DotSpacing)
-				if (mask[x, y] && mask[x - margin, y] && mask[x + margin, y] && mask[x, y - margin] && mask[x, y + margin])
-					dots.Add(new Vector2(x, y));
-
-		return dots.Count < 3
-			? Result<TraceGuide>.Fail("Não foi possível desenhar o pontilhado dessa letra.")
-			: Result<TraceGuide>.Ok(new TraceGuide(dots));
-	}
 
 	// `strokes` são os traços da criança, cada um como a sequência de pontos do ponteiro.
 	public static TraceCheck Check(TraceGuide guide, IReadOnlyList<IReadOnlyList<Vector2>> strokes, TracingRules rules)

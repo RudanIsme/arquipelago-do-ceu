@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Saves;
 using Godot;
@@ -220,7 +221,7 @@ public partial class MerchantScreen : OverlayScreen
 	{
 		if (owned) { host.Say("Você já tem esse Cosmético."); return; }
 		if (host.Balance < price) { host.Say($"Faltam {MerchantHost.Coins(price - host.Balance)}."); return; }
-		Ask($"Comprar {cosmetic.Name} por {MerchantHost.Coins(price)}?", () => Done(host.Merchant.Buy(host.ProfileId, cosmetic.Id), $"{cosmetic.Name} comprado."));
+		AskPay($"Comprar {cosmetic.Name} por {MerchantHost.Coins(price)}?", price, sale: false, () => Done(host.Merchant.Buy(host.ProfileId, cosmetic.Id), $"{cosmetic.Name} comprado."));
 	}
 
 	void AskSell()
@@ -228,7 +229,7 @@ public partial class MerchantScreen : OverlayScreen
 		var ids = selected.ToList();
 		var total = ids.Sum(host.Catalog.SellPrice);
 		var names = string.Join(", ", ids.Select(id => host.Gear.Find(id)?.Name));
-		Ask($"Vender {names} por {MerchantHost.Coins(total)}?", () =>
+		AskPay($"Vender {names} por {MerchantHost.Coins(total)}?", total, sale: true, () =>
 		{
 			var sold = host.Merchant.Sell(host.ProfileId, ids);
 			selected.Clear();
@@ -239,11 +240,22 @@ public partial class MerchantScreen : OverlayScreen
 	void AskRebuy(GearItem item, int price)
 	{
 		if (host.Balance < price) { host.Say($"Faltam {MerchantHost.Coins(price - host.Balance)}."); return; }
-		Ask($"Recomprar {item.Name} por {MerchantHost.Coins(price)}?", () => Done(host.Merchant.Rebuy(host.ProfileId, item.Id), $"{item.Name} recomprado."));
+		AskPay($"Recomprar {item.Name} por {MerchantHost.Coins(price)}?", price, sale: false, () => Done(host.Merchant.Rebuy(host.ProfileId, item.Id), $"{item.Name} recomprado."));
 	}
 
 	void AskRotate() =>
 		Ask("Trocar o estoque agora? Isso gasta a carga.", () => Done(host.Merchant.Rotate(host.ProfileId), "O estoque mudou."));
+
+	// Toda compra, venda e recompra pergunta como pagar: "Eu pago" (monta o valor ou o troco do Real) ou "Pagar sozinho".
+	void AskPay(string question, int coins, bool sale, System.Action yes)
+	{
+		var cents = coins * host.Catalog.CentsPerCoin;
+		var challenge = sale ? new ChangeChallenge(MoneyTask.Pay, cents, cents) : ChangeChallenge.ForPurchase(cents, host.Money);
+		var prompt = sale ? $"O Mercador paga {MoneyCatalog.Format(cents)}. Monte esse valor para conferir."
+			: challenge.Task == MoneyTask.Pay ? $"Pague {MoneyCatalog.Format(cents)}. Monte esse valor com moedas e notas."
+			: $"A compra deu {MoneyCatalog.Format(cents)}. Você dá uma nota de {MoneyCatalog.Format(challenge.Given)}. Monte o troco!";
+		AddChild(new PaymentDialog(question, prompt, challenge, host.Money, host.Say, yes));
+	}
 
 	void Ask(string question, System.Action yes) => AddChild(new ConfirmDialog(question, host.Say, yes));
 

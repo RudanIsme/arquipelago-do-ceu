@@ -6,7 +6,8 @@
       "role": "Matemático",
       "subject": "Matemática",
       "mechanics": [
-        "compor_numero"
+        "compor_numero",
+        "pagar_troco"
       ],
       "levels": 3,
       "exchangeWith": "portugues"

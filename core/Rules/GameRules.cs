@@ -58,7 +58,7 @@ public sealed record GameRules(
 			new ProfileRules(dto.Profile!.MaxNicknameLength!.Value, dto.Profile.MaxProfiles!.Value),
 			AppearanceChecks.Build(dto.Appearance!),
 			LobbyChecks.BuildSettings(dto.Settings!),
-			CombatChecks.Build(dto.Combat!),
+			CombatChecks.Build(dto.Combat!) with { DefaultMaxEnergy = dto.MaxEnergy!.Value },
 			DungeonChecks.Build(dto.Dungeon!),
 			LobbyChecks.BuildLobby(dto.Lobby!)));
 	}

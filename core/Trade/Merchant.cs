@@ -11,21 +11,26 @@ public sealed record MerchantOffer(string Id, int Price);
 public sealed class MerchantCatalog
 {
 	const int MaxPrice = 100000;
+	const int DefaultCentsPerCoin = 100;
 
 	readonly IReadOnlyDictionary<string, int> sellPrices;
 
-	MerchantCatalog(int stockSize, IReadOnlyList<MerchantOffer> cosmetics, IReadOnlyList<MerchantOffer> gear)
+	MerchantCatalog(int stockSize, int centsPerCoin, IReadOnlyList<MerchantOffer> cosmetics, IReadOnlyList<MerchantOffer> gear)
 	{
 		StockSize = stockSize;
+		CentsPerCoin = centsPerCoin;
 		Cosmetics = cosmetics;
 		sellPrices = gear.ToDictionary(o => o.Id, o => o.Price);
 	}
 
 	public int StockSize { get; }
 
+	// No "Eu pago" o preço vira dinheiro do Real: cada moeda do jogo vale tantos centavos.
+	public int CentsPerCoin { get; }
+
 	public IReadOnlyList<MerchantOffer> Cosmetics { get; }
 
-	public static MerchantCatalog Empty => new(1, [], []);
+	public static MerchantCatalog Empty => new(1, DefaultCentsPerCoin, [], []);
 
 	// Quanto o Mercador paga por um equipamento, e quanto custa recomprá-lo; zero quando ele não compra.
 	public int SellPrice(string itemId) => sellPrices.GetValueOrDefault(itemId);
@@ -38,12 +43,13 @@ public sealed class MerchantCatalog
 		if (!read.IsOk) return Result<MerchantCatalog>.Fail(read.Error!);
 		var dto = read.Value!;
 		if (dto.StockSize < 1) return Result<MerchantCatalog>.Fail("O Mercador precisa mostrar ao menos 1 Cosmético por vez.");
+		if (dto.CentsPerCoin is < 5 or > 1000 || dto.CentsPerCoin % 5 != 0) return Result<MerchantCatalog>.Fail("O Mercador precisa de 'centsPerCoin' entre 5 e 1000, múltiplo de 5 centavos.");
 
 		var sold = (dto.Cosmetics ?? []).Select(o => new MerchantOffer(o.Id ?? "", o.Price)).ToList();
 		var bought = (dto.Gear ?? []).Select(o => new MerchantOffer(o.Id ?? "", o.Price)).ToList();
 		var problem = Problem(sold, bought, cosmetics, gear);
 		return problem is null
-			? Result<MerchantCatalog>.Ok(new MerchantCatalog(dto.StockSize, sold, bought))
+			? Result<MerchantCatalog>.Ok(new MerchantCatalog(dto.StockSize, dto.CentsPerCoin, sold, bought))
 			: Result<MerchantCatalog>.Fail(problem);
 	}
 
@@ -57,7 +63,7 @@ public sealed class MerchantCatalog
 		return CatalogJson.Duplicate(bought, o => o.Id) is { } repeatedGear ? $"O Mercador repete o equipamento {repeatedGear}." : null;
 	}
 
-	sealed record FileDto(int StockSize, List<OfferDto>? Cosmetics, List<OfferDto>? Gear);
+	sealed record FileDto(int StockSize, List<OfferDto>? Cosmetics, List<OfferDto>? Gear, int CentsPerCoin = DefaultCentsPerCoin);
 
 	sealed record OfferDto(string? Id, int Price);
 }
