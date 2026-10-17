@@ -351,6 +351,7 @@ public partial class Main : Node3D
 			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
+		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
 		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
 		AddChild(master);
 	}

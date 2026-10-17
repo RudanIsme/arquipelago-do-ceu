@@ -131,6 +131,7 @@ public partial class Main
   if(overlay is not null)return;
   workshop=new EquipmentWorkshop(journey.Variant,ActiveEquipment, false);
   workshop.PreviewChanged += value => player.ApplyEquipment(value);
+  workshop.Summarize = loadout => LoadGear().Summary(new Gear(Helmet: loadout.Helmet == "none" ? null : loadout.Helmet, Armor: loadout.Armor == "original" ? null : loadout.Armor, Accessory: gear.Get(current.Id, role).Accessory));
   workshop.Cancelled += CloseEquipment;
   workshop.Applied += value => {
    // A Maestria do Papel decide o que se veste: quem não tem a Maestria vê o motivo e nada é salvo.
@@ -149,6 +150,8 @@ public partial class Main
     workshop?.ShowError(message);
     voice.Say(message, interrupt:true);
     GD.PushWarning(saved.Error!);
+    // O equipamento já pode ter sido gravado: o Personagem na tela volta a mostrar o que está salvo.
+    ApplyJourneyEquipment();
     return;
    }
    journey=next;current=saved.Value!;

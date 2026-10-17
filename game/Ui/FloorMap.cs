@@ -184,15 +184,26 @@ public partial class FloorMap : Control
 	public event Action<int>? RoomPointed;
 
 	int? pointed;
+	int pointEpoch;
+
+	public override void _Ready() => MouseExited += () => pointed = null;
 
 	public override void _GuiInput(InputEvent @event)
 	{
 		if (@event is not (InputEventMouseMotion or InputEventMouseButton { Pressed: true })) return;
 		var position = ((InputEventMouse)@event).Position;
 		var near = positions.Where(p => SightOf(p.Key) != Sight.Hidden && p.Value.DistanceTo(position) <= Radius + 6).Select(p => (int?)p.Key).FirstOrDefault();
-		if (near == pointed) return;
+		var click = @event is InputEventMouseButton;
+		if (near == pointed && !click) return;
 		pointed = near;
-		if (near is { } room) RoomPointed?.Invoke(room);
+		var mine = ++pointEpoch;
+		if (near is not { } room) return;
+		// Passar o mouse pelo mapa não fala a cada Sala: só a em que ele para (um clique ou toque fala na hora).
+		if (click) RoomPointed?.Invoke(room);
+		else GetTree().CreateTimer(0.4f, true, false, true).Timeout += () =>
+		{
+			if (mine == pointEpoch && pointed == room) RoomPointed?.Invoke(room);
+		};
 	}
 
 	// A Sala sob névoa é um círculo cinza com "?"; o cadeado é desenhado (corpo e argola), e nunca só uma cor.

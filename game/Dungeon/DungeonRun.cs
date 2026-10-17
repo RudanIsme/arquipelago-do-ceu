@@ -618,7 +618,8 @@ public partial class DungeonRun : Node
 		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
 		var locked = rooms.Count(expedition.IsLocked);
 		var done = IsFloorDone() ? " Este Andar está completo." : "";
-		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
+		var item = ctx.Free ? "" : $" Item de troca da {TowerName(Other)}: {(HasTradeItem() ? "você tem" : "ainda não")}.";
+		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
 	}
 
 	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number)));
@@ -640,7 +641,7 @@ public partial class DungeonRun : Node
 		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 250)) { Source = expedition };
 		map.RoomPointed += room => Say(RoomSpeech(room));
 		mapBox.AddChild(map);
-		mapBox.MoveChild(map, 3);
+		mapBox.MoveChild(map, 0);
 	}
 
 	string OfTotal() => ctx.Free ? "" : $" de {expedition.Plan.Floors.Count}";

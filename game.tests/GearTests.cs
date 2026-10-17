@@ -87,6 +87,14 @@ public sealed class GearTests : IDisposable
 	}
 
 	[Fact]
+	public void O_texto_dos_atributos_vem_da_mesma_conta_que_vale_em_jogo()
+	{
+		var gear = Catalog.Equip(Catalog.Equip(new Gear(), "scout", 9).Value!, "open", 9).Value!;
+
+		Assert.Equal("Velocidade +12% · Energia máxima +1 · Alcance +0", Catalog.Summary(gear));
+	}
+
+	[Fact]
 	public void Desequipar_esvazia_so_o_espaco_pedido()
 	{
 		var gear = Catalog.Equip(Catalog.Equip(new Gear(), "scout", 9).Value!, "open", 9).Value!;

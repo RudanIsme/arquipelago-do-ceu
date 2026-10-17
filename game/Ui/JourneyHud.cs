@@ -39,7 +39,7 @@ public partial class JourneyHud : Control
   float w=Size.X,h=Size.Y; if(w<=0||h<=0)return; const float m=12;
   JourneyStyle.Place(selector,Math.Max(m,w-492),m,Math.Min(480,w-24),44);
   float infoY=w<1100?64:12;
-  JourneyStyle.Place(identity,m,infoY,Math.Min(325,w-24),84);
+  JourneyStyle.Place(identity,m,infoY,Math.Min(325,w-24),Math.Max(84,identity.GetCombinedMinimumSize().Y));
   if(variant=="adventure") { JourneyStyle.Place(navigation,m,infoY+84,106,192); JourneyStyle.Place(context,130,h-112,Math.Min(410,w-272),100); }
   else if(variant=="book") { JourneyStyle.Place(navigation,w-130,h-266,118,192); JourneyStyle.Place(context,m,h-124,Math.Min(420,w-164),104); }
   else if(variant=="crystal") { JourneyStyle.Place(navigation,(w-370)/2,h-58,370,44); JourneyStyle.Place(context,(w-390)/2,h-170,390,104); }

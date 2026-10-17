@@ -69,6 +69,14 @@ public sealed class GearCatalog
 			(float)Math.Min(Limits.Reach, Sum(GearAttribute.Reach)));
 	}
 
+	// O texto dos atributos de um conjunto, na mesma conta que vale em jogo.
+	public string Summary(Gear gear)
+	{
+		var bonus = Bonuses(gear);
+		var pt = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+		return $"Velocidade +{Math.Round((bonus.SpeedMultiplier - 1) * 100)}% · Energia máxima +{bonus.ExtraEnergy} · Alcance +{bonus.InteractionReachBonus.ToString("0.##", pt)}";
+	}
+
 	public static Result<GearCatalog> Parse(string json)
 	{
 		FileDto? dto;
