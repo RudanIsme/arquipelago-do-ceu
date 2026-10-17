@@ -128,7 +128,7 @@ public class CatalogTests
 		var loader = new CatalogLoader(new DiskSource(), message => throw new Xunit.Sdk.XunitException(message));
 
 		Assert.True(loader.Required("cosmeticos.json", CosmeticCatalog.Parse).IsOk);
-		Assert.True(loader.Required("equipamentos.json", GearCatalog.Parse).IsOk);
+		Assert.True(loader.Required("equipamentos.json", json => GearCatalog.Parse(json, GearEffects.Default)).IsOk);
 		Assert.True(loader.Required("conceitos.json", ConceptNames.Parse).IsOk);
 		Assert.True(loader.Required("andares-reserva.json", FallbackFloors.Parse).IsOk);
 		Assert.True(loader.Required("rules.json", GameRules.Parse).IsOk);
@@ -147,7 +147,7 @@ public class CatalogTests
 		var result = file switch
 		{
 			"cosmeticos.json" => Fail(loader.Required(file, CosmeticCatalog.Parse)),
-			"equipamentos.json" => Fail(loader.Required(file, GearCatalog.Parse)),
+			"equipamentos.json" => Fail(loader.Required(file, json => GearCatalog.Parse(json, GearEffects.Default))),
 			"conceitos.json" => Fail(loader.Required(file, ConceptNames.Parse)),
 			"andares-reserva.json" => Fail(loader.Required(file, FallbackFloors.Parse)),
 			_ => Fail(loader.Required(file, GameRules.Parse)),

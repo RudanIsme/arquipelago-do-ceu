@@ -19,12 +19,12 @@ public partial class Main
 		{
 			var worn = current is null ? new Gear() : gear.Get(current.Id, role);
 			var colors = EquipmentCatalog.Normalize(journey.Equipment);
-			return EquipmentCatalog.Normalize(colors with { Armor = worn.Armor ?? "original", Helmet = worn.Helmet ?? "none" });
+			return EquipmentCatalog.Normalize(colors with { Armor = worn.In("armor") ?? "original", Helmet = worn.In("helmet") ?? "none" });
 		}
 	}
 
 	// Sem o catálogo o jogo segue sem equipamento: ele é um extra, e a criança não fica sem jogar por isso.
-	GearCatalog LoadGear() => catalogs.Optional("equipamentos.json", GearCatalog.Parse, GearCatalog.Empty);
+	GearCatalog LoadGear() => catalogs.Optional("equipamentos.json", json => GearCatalog.Parse(json, GearEffects.Default), GearCatalog.Empty);
 
 	EquipmentBonuses BonusesOf(string papel) => current is null ? new() : gear.Bonuses(current.Id, papel);
 
@@ -81,7 +81,7 @@ public partial class Main
 		UiKit.SetVariant(journey.Variant);
 		training.RefreshPresentation();
 		FitUiRoot();
-		journeyHud?.Configure(journey.Variant, current?.Nickname ?? "Viajante", EquipmentCatalog.Summary(ActiveEquipment));
+		journeyHud?.Configure(journey.Variant, current?.Nickname ?? "Viajante", current is null ? "" : LoadGear().Summary(gear.Get(current.Id, role)));
 		RefreshCard();
 		conceptAmbience?.SetVariant(journey.Variant);
 		lobby.SetCompactSigns(journey.Variant != "base");
@@ -122,8 +122,10 @@ public partial class Main
 		DropTarget();
 		if (overlay is not null) return;
 		workshop = new EquipmentWorkshop(journey.Variant, ActiveEquipment, false);
+		workshop.Armors = Choices("armor", "original", "Traje original", "Aparência original, sem bônus.");
+		workshop.Helmets = Choices("helmet", "none", "Sem capacete", "Rosto livre, sem bônus adicional.");
 		workshop.PreviewChanged += value => player.ApplyEquipment(value);
-		workshop.Summarize = loadout => LoadGear().Summary(new Gear(Helmet: loadout.Helmet == "none" ? null : loadout.Helmet, Armor: loadout.Armor == "original" ? null : loadout.Armor, Accessory: gear.Get(current.Id, role).Accessory));
+		workshop.Summarize = loadout => LoadGear().Summary(gear.Get(current.Id, role).With("helmet", loadout.Helmet == "none" ? null : loadout.Helmet).With("armor", loadout.Armor == "original" ? null : loadout.Armor));
 		workshop.Cancelled += CloseEquipment;
 		workshop.Applied += value =>
 		{
@@ -157,14 +159,18 @@ public partial class Main
 		UpdatePlayerControl();
 	}
 
+	// As peças de um espaço para a oficina, com a opção de não vestir nada na frente.
+	System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Choices(string slot, string noneId, string noneName, string noneText) =>
+		[(noneId, noneName, noneText), .. System.Linq.Enumerable.Select(LoadGear().For(slot), i => (i.Id, i.Name, i.Description))];
+
 	// Veste a armadura e o capacete escolhidos no Papel de agora; devolve o motivo se algum não puder, sem gravar nada.
 	string? TryWear(EquipmentLoadout value)
 	{
 		var mastery = progress.Mastery.Of(current!.Id, role);
 		var now = gear.Get(current.Id, role);
-		var armor = value.Armor == "original" ? Result<Gear>.Ok(LoadGear().Unequip(now, GearSlot.Armor)) : LoadGear().Equip(now, value.Armor, mastery);
+		var armor = value.Armor == "original" ? Result<Gear>.Ok(LoadGear().Unequip(now, "armor")) : LoadGear().Equip(now, value.Armor, mastery);
 		if (!armor.IsOk) return armor.Error;
-		var helmet = value.Helmet == "none" ? Result<Gear>.Ok(LoadGear().Unequip(armor.Value!, GearSlot.Helmet)) : LoadGear().Equip(armor.Value!, value.Helmet, mastery);
+		var helmet = value.Helmet == "none" ? Result<Gear>.Ok(LoadGear().Unequip(armor.Value!, "helmet")) : LoadGear().Equip(armor.Value!, value.Helmet, mastery);
 		if (!helmet.IsOk) return helmet.Error;
 		var saved = gear.Set(current.Id, role, helmet.Value!);
 		return saved.IsOk ? null : "Não foi possível salvar o equipamento. Tente aplicar novamente.";

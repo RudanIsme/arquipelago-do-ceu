@@ -16,7 +16,9 @@ public partial class EquipmentWorkshop : Control
 	public EquipmentWorkshop() : this("minimal", new EquipmentLoadout()) { }
 	// O texto dos bônus vem de quem conhece o catálogo em dados; sem ele, o do experimento.
 	public Func<EquipmentLoadout, string>? Summarize { get; set; }
-	string Describe(EquipmentLoadout value) => (Summarize ?? EquipmentCatalog.Summary)(value);
+	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Armors { get; set; } = [];
+	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Helmets { get; set; } = [];
+	string Describe(EquipmentLoadout value) => (Summarize ?? (_ => ""))(value);
 	public void SetVariant(string value) { variant = Array.IndexOf(JourneyStyle.Ids, value) >= 0 ? value : "minimal"; if (IsInsideTree()) Build(); }
 	public EquipmentWorkshop(string variant, EquipmentLoadout current, bool comparisonOnly = false)
 	{ this.comparisonOnly = comparisonOnly; this.variant = variant; draft = EquipmentCatalog.Normalize(current); Name = "EquipmentWorkshop"; MouseFilter = MouseFilterEnum.Stop; SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect); Resized += () => { settleFrames = 12; Arrange(); }; }
@@ -72,9 +74,9 @@ public partial class EquipmentWorkshop : Control
 		if (!string.IsNullOrEmpty(focusName)) Callable.From(() => { if (IsInstanceValid(shell)) (shell.FindChild(focusName, true, false) as Control)?.GrabFocus(); }).CallDeferred();
 	}
 	void AddArmor(VBoxContainer list)
-	{ list.AddChild(JourneyStyle.Text(variant, "Armadura", 20)); foreach (var item in EquipmentCatalog.Armors) { string id = item.Id; var b = JourneyStyle.Button(variant, (draft.Armor == id ? "✓ " : "") + item.Name, () => Change(draft with { Armor = id }), "Armor_" + id); b.TooltipText = item.Description; list.AddChild(b); list.AddChild(JourneyStyle.Text(variant, item.Description, 16)); } }
+	{ list.AddChild(JourneyStyle.Text(variant, "Armadura", 20)); foreach (var item in Armors) { string id = item.Id; var b = JourneyStyle.Button(variant, (draft.Armor == id ? "✓ " : "") + item.Name, () => Change(draft with { Armor = id }), "Armor_" + id); b.TooltipText = item.Description; list.AddChild(b); list.AddChild(JourneyStyle.Text(variant, item.Description, 16)); } }
 	void AddHelmet(VBoxContainer list)
-	{ list.AddChild(JourneyStyle.Text(variant, "Capacete", 20)); foreach (var item in EquipmentCatalog.Helmets) { string id = item.Id; var b = JourneyStyle.Button(variant, (draft.Helmet == id ? "✓ " : "") + item.Name, () => Change(draft with { Helmet = id }), "Helmet_" + id); b.TooltipText = item.Description; list.AddChild(b); } }
+	{ list.AddChild(JourneyStyle.Text(variant, "Capacete", 20)); foreach (var item in Helmets) { string id = item.Id; var b = JourneyStyle.Button(variant, (draft.Helmet == id ? "✓ " : "") + item.Name, () => Change(draft with { Helmet = id }), "Helmet_" + id); b.TooltipText = item.Description; list.AddChild(b); } }
 	void AddColors(VBoxContainer list)
 	{
 		ColorRow(list, "Tecido", draft.ClothColor, c => draft with { ClothColor = c }, "ClothColor"); ColorRow(list, "Metal", draft.MetalColor, c => draft with { MetalColor = c }, "MetalColor"); ColorRow(list, "Detalhes", draft.AccentColor, c => draft with { AccentColor = c }, "AccentColor");

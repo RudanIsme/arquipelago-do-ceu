@@ -54,14 +54,14 @@ O que varia por tipo é uma definição registrada por id: em dados quando só d
 
 | Para adicionar | Hoje | Depois do pivô |
 |---|---|---|
-| Peça de equipamento | Uma entrada em `game/data/equipamentos.json` (espaço, atributo, valor, Maestria mínima). Sem visual 3D, a peça só dá o atributo | Igual, com a lista da oficina lida do catálogo (#164, #127) |
+| Peça de equipamento | Uma entrada em `game/data/equipamentos.json` (espaço, efeito, valor, Maestria mínima). Sem visual 3D, a peça só dá o efeito (aparece com a aparência original) | Igual, com a aparência também em dados (#127) |
 | Cosmético | Uma entrada em `game/data/cosmeticos.json`, ligada a um Andar (só um por Andar) | Ligada a um gatilho, vários por gatilho (#167) |
 | Missão | Um JSON em `content/missions/`, validado pelo schema | Igual |
 | Conceito | Nome em `game/data/conceitos.json`; um teste cobra | Igual |
 | Andar de reserva | Uma entrada em `game/data/andares-reserva.json` | Igual |
 | Valor de regra | `game/data/rules.json` | Igual |
-| Espaço de equipamento | Código: `GearSlot`, `Gear`, o parser e a oficina | Só dados (#164) |
-| Efeito de equipamento | Código: `GearAttribute`, `GearCatalog.Bonuses` e os limites | Uma classe e uma linha no registro (#164) |
+| Espaço de equipamento | Só dados: uma entrada em `slots` do mesmo arquivo (a oficina atual só mostra armadura e capacete) | Igual (#127 mostra todos) |
+| Efeito de equipamento | Uma classe que implementa `IGearEffect` registrada em `GearEffects`, mais o limite em `effects` do arquivo; o cálculo dos bônus não muda | Igual |
 | Tipo de Sala | Código: `RoomKind`, gerador, validador, progresso, `FloorMap` e `DungeonWorld` | Uma definição e o desenho dela (#165, #166) |
 | Gatilho de recompensa | Código: `DungeonRun` e `RewardService.CompleteFloor` | Uma classe e uma linha no registro (#167) |
 | Mecânica | Código: `MissionLoader.KnownMechanics`, a luta em `core/Combat` e o painel em `game/Ui` | Igual, registrada por id |

@@ -36,7 +36,7 @@ public sealed class SaveCompatTests : IDisposable
 		Assert.True(loaded.IsOk);
 		Assert.Equal(SaveNotice.None, loaded.Value!.Notice);
 		var session = new SaveSession(store, loaded.Value.Data);
-		gear = new GearService(session, GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json"))).Value!);
+		gear = new GearService(session, GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!);
 		untouched = json;
 		return ProgressServices.Create(session);
 	}
@@ -104,7 +104,7 @@ public sealed class SaveCompatTests : IDisposable
 		Assert.Equal(12, grown.Wallet.Balance("p"));
 
 		Open(Gear, out var gear, out _);
-		Assert.Equal("scout", gear.Get("p", "matematica").Armor);
+		Assert.Equal("scout", gear.Get("p", "matematica").In("armor"));
 	}
 
 	[Fact]

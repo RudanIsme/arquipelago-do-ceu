@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Saves;
@@ -9,9 +10,10 @@ public sealed class GearTests : IDisposable
 {
 	readonly string folder = Path.Combine(Path.GetTempPath(), "arquipelago-gear-" + Guid.NewGuid().ToString("N"));
 	string PathName => Path.Combine(folder, "save.json");
-	SaveData Example => new(1, [new ProfileSave("p", "Luna", 1), new ProfileSave("q", "Davi", 1)], new SettingsSave(Voice: false));
 
-	static readonly GearCatalog Catalog = GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json"))).Value!;
+	static SaveData Example => new(1, [new ProfileSave("p", "Luna", 1), new ProfileSave("q", "Davi", 1)], new SettingsSave(Voice: false));
+
+	static readonly GearCatalog Catalog = GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!;
 
 	public void Dispose()
 	{
@@ -30,8 +32,8 @@ public sealed class GearTests : IDisposable
 		var equipped = Catalog.Equip(new Gear(), "scout", mastery: 1);
 
 		Assert.True(equipped.IsOk);
-		Assert.Equal("scout", equipped.Value!.Armor);
-		Assert.Null(equipped.Value.Helmet);
+		Assert.Equal("scout", equipped.Value!.In("armor"));
+		Assert.Null(equipped.Value.In("helmet"));
 		Assert.Equal(1.12f, Catalog.Bonuses(equipped.Value).SpeedMultiplier, 3);
 	}
 
@@ -52,13 +54,13 @@ public sealed class GearTests : IDisposable
 
 		var swapped = Catalog.Equip(first, "guardian", 9).Value!;
 
-		Assert.Equal("guardian", swapped.Armor);
+		Assert.Equal("guardian", swapped.In("armor"));
 		Assert.Equal(1f, Catalog.Bonuses(swapped).SpeedMultiplier);
 		Assert.Equal(2, Catalog.Bonuses(swapped).ExtraEnergy);
 	}
 
 	[Fact]
-	public void Os_tres_espacos_somam_mas_nunca_passam_dos_limites_do_experimento()
+	public void Os_espacos_somam_mas_nunca_passam_dos_limites_do_experimento()
 	{
 		var gear = new Gear();
 		foreach (var id in new[] { "guardian", "open", "amulet", "scholar", "crystal", "scout", "lantern", "wings" })
@@ -76,7 +78,7 @@ public sealed class GearTests : IDisposable
 	{
 		var gear = Catalog.Equip(new Gear(), "amulet", 99).Value!;
 
-		Assert.Equal("amulet", gear.Accessory);
+		Assert.Equal("amulet", gear.In("accessory"));
 		Assert.Equal(1, Catalog.Bonuses(gear).ExtraEnergy);
 	}
 
@@ -84,6 +86,17 @@ public sealed class GearTests : IDisposable
 	public void Item_inexistente_e_recusado()
 	{
 		Assert.False(Catalog.Equip(new Gear(), "nao-existe", 99).IsOk);
+	}
+
+	[Fact]
+	public void Desequipar_esvazia_so_o_espaco_pedido()
+	{
+		var gear = Catalog.Equip(Catalog.Equip(new Gear(), "scout", 9).Value!, "open", 9).Value!;
+
+		var bare = Catalog.Unequip(gear, "armor");
+
+		Assert.Null(bare.In("armor"));
+		Assert.Equal("open", bare.In("helmet"));
 	}
 
 	[Fact]
@@ -95,17 +108,6 @@ public sealed class GearTests : IDisposable
 	}
 
 	[Fact]
-	public void Desequipar_esvazia_so_o_espaco_pedido()
-	{
-		var gear = Catalog.Equip(Catalog.Equip(new Gear(), "scout", 9).Value!, "open", 9).Value!;
-
-		var bare = Catalog.Unequip(gear, GearSlot.Armor);
-
-		Assert.Null(bare.Armor);
-		Assert.Equal("open", bare.Helmet);
-	}
-
-	[Fact]
 	public void Trocar_equipamento_nunca_cura_a_Energia_ferida()
 	{
 		var energy = new Energy(5);
@@ -113,7 +115,7 @@ public sealed class GearTests : IDisposable
 		var guardian = Catalog.Equip(new Gear(), "guardian", 9).Value!;
 
 		energy.SetMaximum(5 + Catalog.Bonuses(guardian).ExtraEnergy);
-		energy.SetMaximum(5 + Catalog.Bonuses(Catalog.Unequip(guardian, GearSlot.Armor)).ExtraEnergy);
+		energy.SetMaximum(5 + Catalog.Bonuses(Catalog.Unequip(guardian, "armor")).ExtraEnergy);
 		energy.SetMaximum(5 + Catalog.Bonuses(guardian).ExtraEnergy);
 
 		Assert.Equal(2, energy.Current);
@@ -129,9 +131,9 @@ public sealed class GearTests : IDisposable
 		Assert.True(service.Equip("p", "portugues", "open", mastery: 1).IsOk);
 
 		var reopened = new GearService(new SaveSession(store, store.Load().Value!.Data), Catalog);
-		Assert.Equal("scout", reopened.Get("p", "matematica").Armor);
-		Assert.Null(reopened.Get("p", "matematica").Helmet);
-		Assert.Equal("open", reopened.Get("p", "portugues").Helmet);
+		Assert.Equal("scout", reopened.Get("p", "matematica").In("armor"));
+		Assert.Null(reopened.Get("p", "matematica").In("helmet"));
+		Assert.Equal("open", reopened.Get("p", "portugues").In("helmet"));
 		Assert.Equal(new Gear(), reopened.Get("q", "matematica"));
 		Assert.Equal(1, reopened.Bonuses("p", "portugues").ExtraEnergy);
 	}
@@ -163,10 +165,38 @@ public sealed class GearTests : IDisposable
 	}
 
 	[Fact]
+	public void Save_antigo_com_tres_campos_fixos_abre_e_continua_com_o_mesmo_formato()
+	{
+		Directory.CreateDirectory(folder);
+		const string json = """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"gear":{"matematica":{"helmet":"open","armor":"scout","accessory":null}}}]}""";
+		File.WriteAllText(PathName, json);
+		var store = new SaveStore(PathName);
+		var service = new GearService(new SaveSession(store, store.Load().Value!.Data), Catalog);
+
+		var gear = service.Get("p", "matematica");
+
+		Assert.Equal("scout", gear.In("armor"));
+		Assert.Equal("open", gear.In("helmet"));
+		Assert.Null(gear.In("accessory"));
+		Assert.Equal(json, File.ReadAllText(PathName));
+	}
+
+	[Fact]
+	public void O_equipamento_grava_como_objeto_simples_de_espaco_para_peca()
+	{
+		var gear = new Gear().With("armor", "scout").With("helmet", "open");
+
+		var written = JsonSerializer.Serialize(gear);
+
+		Assert.Equal("""{"armor":"scout","helmet":"open"}""", written);
+		Assert.Equal(gear, JsonSerializer.Deserialize<Gear>(written));
+	}
+
+	[Fact]
 	public void Item_guardado_que_saiu_do_catalogo_e_ignorado_ao_calcular()
 	{
 		Directory.CreateDirectory(folder);
-		File.WriteAllText(PathName, """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"gear":{"matematica":{"armor":"sumiu","helmet":"open"}}}]}""");
+		File.WriteAllText(PathName, """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"gear":{"matematica":{"armor":"sumiu","helmet":"open","capa":"antiga"}}}]}""");
 		var store = new SaveStore(PathName);
 		var service = new GearService(new SaveSession(store, store.Load().Value!.Data), Catalog);
 
@@ -176,37 +206,70 @@ public sealed class GearTests : IDisposable
 		Assert.Equal(1f, bonus.SpeedMultiplier);
 	}
 
-	// Os cinco itens do experimento do PR #97 mantêm os mesmos atributos: o catálogo em dados é a fonte, sem divergir do que já havia.
-	[Fact]
-	public void Os_itens_do_experimento_do_97_continuam_com_os_mesmos_atributos()
-	{
-		foreach (var armor in new[] { "original", "scout", "guardian", "scholar" })
-			foreach (var helmet in new[] { "none", "open", "crystal" })
-			{
-				var old = EquipmentCatalog.Bonuses(new EquipmentLoadout(armor, helmet));
-				var gear = new Gear(Helmet: helmet == "none" ? null : helmet, Armor: armor == "original" ? null : armor);
-				var now = Catalog.Bonuses(gear);
+	static string Json(string slots, string effects, params string[] items) =>
+		"{\"slots\":[" + slots + "],\"effects\":[" + effects + "],\"items\":[" + string.Join(",", items) + "]}";
 
-				Assert.Equal(old.ExtraEnergy, now.ExtraEnergy);
-				Assert.Equal(old.SpeedMultiplier, now.SpeedMultiplier, 3);
-				Assert.Equal(old.InteractionReachBonus, now.InteractionReachBonus, 3);
-			}
+	const string Basic = "{\"id\":\"helmet\",\"name\":\"Capacete\"},{\"id\":\"armor\",\"name\":\"Armadura\"}";
+
+	const string BasicEffects = "{\"id\":\"energy\",\"limit\":2},{\"id\":\"speed\",\"limit\":0.12}";
+
+	static string Item(string id, string slot, string effect, double value, int mastery = 0) =>
+		"{\"id\":\"" + id + "\",\"name\":\"N\",\"description\":\"\",\"slot\":\"" + slot + "\",\"effect\":\"" + effect + "\",\"value\":"
+		+ value.ToString(System.Globalization.CultureInfo.InvariantCulture) + ",\"minMastery\":" + mastery + "}";
+
+	[Fact]
+	public void Um_espaco_novo_entra_so_com_dados()
+	{
+		var json = Json(Basic + ",{\"id\":\"boots\",\"name\":\"Botas\"}", BasicEffects, Item("trail", "boots", "speed", 0.05));
+		var catalog = GearCatalog.Parse(json, GearEffects.Default).Value!;
+
+		var gear = catalog.Equip(new Gear(), "trail", 0).Value!;
+
+		Assert.Equal("trail", gear.In("boots"));
+		Assert.Equal(1.05f, catalog.Bonuses(gear).SpeedMultiplier, 3);
+		Assert.Contains(catalog.Slots, s => s.Id == "boots" && s.Name == "Botas");
 	}
 
-	static string Json(params string[] items) =>
-		"{\"limits\":{\"energy\":2,\"speed\":0.12,\"reach\":0.5},\"items\":[" + string.Join(",", items) + "]}";
+	sealed class LuckEffect : IGearEffect
+	{
+		public string Id => "luck";
 
-	static string Item(string id, string slot, double value) =>
-		"{\"id\":\"" + id + "\",\"name\":\"N\",\"description\":\"\",\"slot\":\"" + slot + "\",\"attribute\":\"energy\",\"value\":" + value.ToString(System.Globalization.CultureInfo.InvariantCulture) + ",\"minMastery\":0}";
+		public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) =>
+			bonuses with { Extras = new Dictionary<string, double>(bonuses.Extras ?? new Dictionary<string, double>()) { ["luck"] = total } };
+
+		public string Describe(double total) => $"Sorte +{total}";
+	}
 
 	[Fact]
-	public void Catalogo_recusa_json_quebrado_item_repetido_ou_valor_fora_do_limite()
+	public void Um_efeito_novo_entra_com_uma_classe_e_o_registro_sem_mexer_no_calculo()
 	{
-		Assert.False(GearCatalog.Parse("{").IsOk);
-		Assert.False(GearCatalog.Parse(Json()).IsOk);
-		Assert.False(GearCatalog.Parse(Json(Item("a", "armor", 1), Item("a", "helmet", 1))).IsOk);
-		Assert.False(GearCatalog.Parse(Json(Item("a", "armor", 3))).IsOk);
-		Assert.False(GearCatalog.Parse(Json(Item("a", "capa", 1))).IsOk);
-		Assert.True(GearCatalog.Parse(Json(Item("a", "armor", 2))).IsOk);
+		var effects = GearEffects.Default.With(new LuckEffect());
+		var json = Json(Basic, BasicEffects + ",{\"id\":\"luck\",\"limit\":3}", Item("clover", "helmet", "luck", 2), Item("more", "armor", "luck", 3));
+		var catalog = GearCatalog.Parse(json, effects).Value!;
+
+		var gear = catalog.Equip(catalog.Equip(new Gear(), "clover", 0).Value!, "more", 0).Value!;
+		var bonus = catalog.Bonuses(gear);
+
+		Assert.Equal(3, bonus.Extras!["luck"]);
+		Assert.Contains("Sorte +3", catalog.Summary(gear));
+	}
+
+	[Fact]
+	public void O_catalogo_recusa_espaco_ou_efeito_que_nao_existem_e_valor_acima_do_limite()
+	{
+		Assert.False(GearCatalog.Parse(Json(Basic, BasicEffects, Item("a", "capa", "speed", 0.01)), GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic, BasicEffects, Item("a", "armor", "sorte", 1)), GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic, BasicEffects, Item("a", "armor", "energy", 3)), GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic, "{\"id\":\"luck\",\"limit\":3}", Item("a", "armor", "luck", 1)), GearEffects.Default).IsOk);
+		Assert.True(GearCatalog.Parse(Json(Basic, BasicEffects, Item("a", "armor", "energy", 2)), GearEffects.Default).IsOk);
+	}
+
+	[Fact]
+	public void Catalogo_recusa_json_quebrado_item_repetido_e_espaco_repetido()
+	{
+		Assert.False(GearCatalog.Parse("{", GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic, BasicEffects), GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic, BasicEffects, Item("a", "armor", "energy", 1), Item("a", "helmet", "energy", 1)), GearEffects.Default).IsOk);
+		Assert.False(GearCatalog.Parse(Json(Basic + ",{\"id\":\"armor\",\"name\":\"Outra\"}", BasicEffects, Item("a", "armor", "energy", 1)), GearEffects.Default).IsOk);
 	}
 }
