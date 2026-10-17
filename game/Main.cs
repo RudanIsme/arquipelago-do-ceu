@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ArquipelagoDoCeu.Data;
 using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Combat;
@@ -19,14 +20,12 @@ namespace ArquipelagoDoCeu;
 // Raiz de composição: liga os adaptadores do Godot às regras de core/ e conduz o fluxo das telas.
 public partial class Main : Node3D
 {
-	const string SavePath = "user://save.json";
-	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
-	const string PilotSavePath = "user://piloto-save.json";
 	const string DyslexiaFontPath = "res://assets/fontes/OpenDyslexic-Regular.otf";
 	const int DyslexiaLetterSpacing = 1;
 
 	CanvasLayer ui = null!;
 	Control uiRoot = null!;
+	RootUi rootUi = null!;
 	Label title = null!;
 	Label notice = null!;
 	Label controlHint = null!;
@@ -66,10 +65,15 @@ public partial class Main : Node3D
 		title.Text = rules.GameName;
 		GD.Print($"Regras carregadas: {rules.GameName}");
 
-		var store = new SaveStore(ProjectSettings.GlobalizePath(ChooseSavePath()));
-		var save = OpenSave(store);
+		var store = new SaveStore(ProjectSettings.GlobalizePath(SaveOpener.ChoosePath()));
+		var save = SaveOpener.Open(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
-		var session = new SaveSession(store, save.Value!);
+		if (save.Value!.Notice is { } saveNotice)
+		{
+			notice.Text = saveNotice;
+			GD.PushWarning(saveNotice);
+		}
+		var session = new SaveSession(store, save.Value.Data);
 		progress = ProgressServices.Create(session);
 		rewardService = new RewardService(new ProgressStore(session));
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
@@ -102,74 +106,32 @@ public partial class Main : Node3D
 			notice.Text = missing;
 			GD.PushWarning(missing);
 		}
-		DevDriver.AttachIfRequested(this);
+		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, master, training, () => current?.Id ?? "", UnlockedLevel));
 		CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
 	}
 
-	// Toda a interface vive num Control que muda de escala: o tamanho do texto vale na hora em todas as telas,
-	// e o Control cobre a janela inteira na nova escala para as âncoras continuarem certas.
 	void BuildUiRoot()
 	{
-		uiRoot = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
-		ui.AddChild(uiRoot);
-		foreach (var name in new[] { "Message", "Notice" })
-		{
-			var label = ui.GetNode<Label>(name);
-			ui.RemoveChild(label);
-			uiRoot.AddChild(label);
-		}
-		title = uiRoot.GetNode<Label>("Message");
-		notice = uiRoot.GetNode<Label>("Notice");
-		// Abaixo da fileira de botões, para nunca cobri-los com texto maior ou janela estreita.
-		title.HorizontalAlignment = HorizontalAlignment.Left;
-		title.OffsetLeft = 16;
-		title.OffsetTop = 80;
-		title.OffsetBottom = 120;
-		UiKit.Outline(title);
-		UiKit.Outline(notice);
+		rootUi = new RootUi(ui);
+		uiRoot = rootUi.Root;
+		title = rootUi.Title;
+		notice = rootUi.Notice;
 		GetViewport().SizeChanged += FitUiRoot;
 		FitUiRoot();
 	}
 
-	void FitUiRoot()
-	{
-		var stretch = Mathf.Max(.1f, GetViewport().GetFinalTransform().Scale.X);
-		var effectiveScale = journey.Variant == "base" ? uiScale : uiScale / stretch;
-		uiRoot.Scale = Vector2.One * effectiveScale;
-		uiRoot.Size = GetViewport().GetVisibleRect().Size / effectiveScale;
-	}
+	void FitUiRoot() => rootUi.Fit(GetViewport(), uiScale, compensateStretch: journey.Variant != "base");
 
 	void BuildHud()
 	{
-		var hud = new HBoxContainer();
-		legacyHud = hud;
-		hud.AddThemeConstantOverride("separation", 8);
-		hud.AddChild(UiKit.BigButton("Perfis", ShowProfiles, 160));
-		characterButton = UiKit.BigButton("Personagem", ShowEditor, 220);
-		characterButton.Visible = false;
-		hud.AddChild(characterButton);
-		hud.AddChild(UiKit.BigButton("Configurações", ShowSettings, 260));
-		uiRoot.AddChild(hud);
-
-		// O botão de interação e a dica de controle ficam embaixo, centralizados, longe das telas do alto.
-		var bottom = bottomBar = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End, MouseFilter = Control.MouseFilterEnum.Ignore };
-		bottom.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomWide);
-		bottom.OffsetTop = -200;
-		bottom.OffsetBottom = -90;
-		bottom.AddThemeConstantOverride("separation", 8);
-		interactButton = UiKit.BigButton("", () => Interact(interactTarget), 380);
-		interactButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-		interactButton.Visible = false;
-		bottom.AddChild(interactButton);
-		controlHint = UiKit.Hint("");
-		controlHint.CustomMinimumSize = new Vector2(760, 0);
-		var hintBar = UiKit.HintBar(controlHint);
-		hintBar.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-
-		bottom.AddChild(hintBar);
-		uiRoot.AddChild(bottom);
+		var hud = new LegacyHud(uiRoot, ShowProfiles, ShowEditor, ShowSettings, () => Interact(interactTarget));
+		legacyHud = hud.Bar;
+		characterButton = hud.CharacterButton;
+		bottomBar = hud.Bottom;
+		interactButton = hud.InteractButton;
+		controlHint = hud.Hint;
 	}
 
 	void Stop(string text)
@@ -178,43 +140,7 @@ public partial class Main : Node3D
 		GD.PushError(text);
 	}
 
-	// Com o piloto de desenvolvimento, o jogo trabalha numa cópia do save: nada do que o piloto clica volta para o real.
-	static string ChooseSavePath()
-	{
-		// O teste de ponta a ponta fecha e reabre o jogo no mesmo save, então `--save=` aponta um arquivo que fica de uma execução para a outra.
-		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--save="))?["--save=".Length..] is { Length: > 0 } fixedPath) return fixedPath;
-		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
-		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
-		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
-		return PilotSavePath;
-	}
-
 	Result<GameRules> LoadRules() => catalogs.Required("rules.json", GameRules.Parse);
-
-	// Abre o save; se precisou recuperá-lo ou migrá-lo, grava o estado novo para o problema não se repetir
-	// e avisa o Responsável na tela.
-	Result<SaveData> OpenSave(SaveStore store)
-	{
-		var loaded = store.Load();
-		if (!loaded.IsOk) return Result<SaveData>.Fail(loaded.Error!);
-
-		var outcome = loaded.Value!;
-		if (outcome.Notice == SaveNotice.None) return Result<SaveData>.Ok(outcome.Data);
-
-		var written = store.Write(outcome.Data);
-		if (!written.IsOk) return written;
-
-		if (outcome.Notice == SaveNotice.Migrated)
-			GD.Print($"Save migrado; o original está em {outcome.CopyPath}");
-		else
-		{
-			notice.Text = outcome.Notice == SaveNotice.Recovered
-				? "Não foi possível ler o progresso anterior. Ele foi guardado numa cópia e o jogo começou do zero."
-				: "Este progresso é de uma versão mais nova do jogo. Ele foi guardado numa cópia e o jogo começou do zero.";
-			GD.PushWarning(notice.Text);
-		}
-		return written;
-	}
 
 	// Aplica as configurações em tudo que já está na tela; é chamado ao abrir o jogo e a cada mudança.
 	void ApplySettings(GameSettings s)
@@ -382,28 +308,12 @@ public partial class Main : Node3D
 
 	GodotSpeechEngine speech = null!;
 
-	// Sai do jogo depois de a fala em andamento terminar (no máximo alguns segundos); o piloto de desenvolvimento usa o mesmo caminho.
-	public async System.Threading.Tasks.Task QuitAsync(int code = 0)
+	public Task QuitAsync(int code = 0)
 	{
-		if (quitting) return;
+		if (quitting) return Task.CompletedTask;
 		quitting = true;
-		speech?.Stop();
-		var start = Time.GetTicksMsec();
-		while (speech is { Silent: false } && Time.GetTicksMsec() - start < 6000)
-			await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-		WatchExit(code);
-		GetTree().Quit(code);
+		return GameExit.QuitAsync(GetTree(), speech, code);
 	}
-
-	// O encerramento do TTS do sistema às vezes não termina e deixaria um processo preso e invisível.
-	// Se o jogo não sair em poucos segundos, o vigia o encerra: nada fica pendente, o save é gravado a cada mudança.
-	static void WatchExit(int code) =>
-		new System.Threading.Thread(() =>
-		{
-			System.Threading.Thread.Sleep(8000);
-			System.Environment.Exit(code);
-		})
-		{ IsBackground = true, Name = "Vigia da saída" }.Start();
 
 	bool quitting;
 

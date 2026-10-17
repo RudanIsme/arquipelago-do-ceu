@@ -135,6 +135,6 @@ public sealed class MasteryAndCoinsTests : IDisposable
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 
 		Assert.Empty(Callers(".Wallet.Add("));
-		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".Mastery.Record(").ToArray());
+		Assert.Equal(new[] { "DungeonRewards.cs" }, Callers(".Mastery.Record(").ToArray());
 	}
 }

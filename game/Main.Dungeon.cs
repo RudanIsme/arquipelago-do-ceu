@@ -50,13 +50,6 @@ public partial class Main
 			}));
 	}
 
-	// Ganchos só do piloto de desenvolvimento.
-	public ProgressServices DevProgress => progress;
-	public RewardService DevRewards => rewardService;
-	public string DevProfileId => current?.Id ?? "";
-	public int DevLevel => UnlockedLevel();
-	public MasterChallenge DevMaster => master;
-	public ArquipelagoDoCeu.Equipment.GearService DevGear => gear;
 
 	void DropTarget()
 	{

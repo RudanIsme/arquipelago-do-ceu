@@ -1,4 +1,5 @@
 using System;
+using ArquipelagoDoCeu.Combat;
 using Godot;
 
 namespace ArquipelagoDoCeu;
@@ -8,6 +9,7 @@ namespace ArquipelagoDoCeu;
 public partial class TrainingDummy : Node3D
 {
 	const float MistRadius = 1.15f;
+	const float PickRadius = 1.3f;
 	const float PopupSeconds = 2.8f;
 	static readonly Color Gold = Color.FromHtml("#F2B632");
 
@@ -237,6 +239,35 @@ public partial class TrainingDummy : Node3D
 		bubbleBall.Visible = true;
 		bubbleBall.Scale = Vector3.One * (radius * 2f);
 		bubbleBall.Position = ground + new Vector3(0f, radius + 0.15f, 0f);
+	}
+
+	// O raio do clique passa perto do centro do Boneco.
+	public bool IsPickedBy(Camera3D camera, Vector2 screenPoint)
+	{
+		var origin = camera.ProjectRayOrigin(screenPoint);
+		var direction = camera.ProjectRayNormal(screenPoint);
+		var closest = origin + direction * (Center - origin).Dot(direction);
+		return closest.DistanceTo(Center) <= PickRadius;
+	}
+
+	// Mostra o Desafio atual: o escudo (Matemático) ou a criatura sem nome (Escriba).
+	public void ShowChallenge(CombatSession session)
+	{
+		if (session.Math is { } math)
+		{
+			ShowCreature(null);
+			Reset(math.Shield.Remaining, "Escudo");
+		}
+		else if (session.Name is { } name)
+		{
+			ShowCreature(name.Image);
+			Reset(name.Remaining, name.Kind switch { NameKind.Sentence => "Palavras que faltam", NameKind.Gap => "Lacunas que faltam", _ => "Sílabas que faltam" });
+		}
+		else
+		{
+			ShowCreature(session.Word!.Image);
+			Reset(session.Word.Remaining, "Palavras que faltam");
+		}
 	}
 
 	public void HideBubble() => bubbleBall.Visible = false;
