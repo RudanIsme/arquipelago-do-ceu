@@ -37,7 +37,7 @@ public class ExpeditionTests
 		var e = ExpeditionFixtures.Start();
 
 		Assert.Equal(1, e.Floor.Number);
-		Assert.Equal(RoomKind.Entrance, e.Current.Kind);
+		Assert.Equal(RoomTypes.Entrance, e.Current.Kind);
 		Assert.Equal(5, e.Energy.Current);
 		Assert.False(e.Defeated);
 		Assert.False(e.Finished);
@@ -96,10 +96,10 @@ public class ExpeditionTests
 		ExpeditionFixtures.ClearAndGo(e, 4);
 		ExpeditionFixtures.ClearAndGo(e, 5);
 
-		Assert.Equal(RoomKind.Exit, e.Current.Kind);
+		Assert.Equal(RoomTypes.Exit, e.Current.Kind);
 		Assert.True(e.Ascend());
 		Assert.Equal(2, e.Floor.Number);
-		Assert.Equal(RoomKind.Entrance, e.Current.Kind);
+		Assert.Equal(RoomTypes.Entrance, e.Current.Kind);
 	}
 
 	[Fact]
@@ -120,12 +120,12 @@ public class ExpeditionTests
 		var e = ExpeditionFixtures.Start(hasItem: () => hasItem);
 		GoToSecondFloorMarco(e);
 
-		Assert.Equal(RoomKind.Marco, e.Current.Kind);
+		Assert.Equal(RoomTypes.Marco, e.Current.Kind);
 		Assert.Equal(Passage.NeedsItem, e.MoveTo(6));
 
 		hasItem = true;
 		Assert.Equal(Passage.Open, e.MoveTo(6));
-		Assert.Equal(RoomKind.Epic, e.Current.Kind);
+		Assert.Equal(RoomTypes.Epic, e.Current.Kind);
 	}
 
 	[Fact]
@@ -234,7 +234,7 @@ public class ExpeditionTests
 		var e = ExpeditionFixtures.Start(startFloor: 2);
 
 		Assert.Equal(2, e.Floor.Number);
-		Assert.Equal(RoomKind.Entrance, e.Current.Kind);
+		Assert.Equal(RoomTypes.Entrance, e.Current.Kind);
 	}
 
 	[Fact]
@@ -242,7 +242,7 @@ public class ExpeditionTests
 	{
 		var e = ExpeditionFixtures.Start(atFastTravel: true);
 
-		Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
+		Assert.Equal(RoomTypes.FastTravel, e.Current.Kind);
 		Assert.True(e.IsCleared(1), "o combate no caminho já foi vencido");
 		Assert.Equal(Passage.Open, e.MoveTo(1));
 		Assert.Equal(Passage.Open, e.MoveTo(0));
@@ -254,7 +254,7 @@ public class ExpeditionTests
 		var e = ExpeditionFixtures.Start(atEpic: true);
 
 		Assert.Equal(2, e.Floor.Number);
-		Assert.Equal(RoomKind.Epic, e.Current.Kind);
+		Assert.Equal(RoomTypes.Epic, e.Current.Kind);
 		Assert.False(e.Finished);
 		Assert.True(e.IsCleared(5), "o Marco do caminho fica para trás");
 
@@ -410,7 +410,7 @@ public class ResumeTests
 			{
 				var e = Expedition.Start(provider, plan, seed, 1, new Energy(5), null, floor, atFastTravel: true);
 
-				Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
+				Assert.Equal(RoomTypes.FastTravel, e.Current.Kind);
 				Assert.Equal(floor, e.Floor.Number);
 				Assert.Contains(e.Floor.Entrance, e.Visited);
 				Assert.All(e.Visited.Where(r => e.NeedsClearing(e.Floor.Rooms[r]) && !e.Floor.Rooms[r].HoldsItem), r => Assert.True(e.IsCleared(r)));
@@ -436,7 +436,7 @@ public class TradeItemTests
 				path = Path(e.Floor, e.CurrentRoom, r => r.Id == e.Floor.Exit);
 				if (path.Count < 2) return false;
 			}
-			if (e.NeedsClearing(e.Current) && !e.IsCleared(e.CurrentRoom) && e.Current.Kind != RoomKind.Marco)
+			if (e.NeedsClearing(e.Current) && !e.IsCleared(e.CurrentRoom) && e.Current.Kind != RoomTypes.Marco)
 				onCleared(e.ClearCurrent().Value!);
 			if (e.MoveTo(path[1]) != Passage.Open) return false;
 		}
@@ -481,8 +481,8 @@ public class TradeItemTests
 			math.ClearCurrent();
 			letters.ClearCurrent();
 			mathItem = lettersItem = true;
-			Assert.True(Reach(math, r => r.Kind == RoomKind.Epic, r => { }), where);
-			Assert.True(Reach(letters, r => r.Kind == RoomKind.Epic, r => { }), where);
+			Assert.True(Reach(math, r => r.Kind == RoomTypes.Epic, r => { }), where);
+			Assert.True(Reach(letters, r => r.Kind == RoomTypes.Epic, r => { }), where);
 		}
 	}
 
@@ -494,7 +494,7 @@ public class TradeItemTests
 		var otherItem = false;
 		var e = Expedition.Start(provider, plan, 5, 1, new Energy(5), () => otherItem);
 
-		Assert.True(Reach(e, r => r.Kind == RoomKind.Marco, r => { }));
+		Assert.True(Reach(e, r => r.Kind == RoomTypes.Marco, r => { }));
 		var beyond = e.Floor.Neighbors(e.CurrentRoom).First(n => !e.Visited.Contains(n));
 		Assert.Equal(Passage.NeedsItem, e.MoveTo(beyond));
 

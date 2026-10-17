@@ -53,8 +53,8 @@ public sealed class Expedition
 		Floor = FloorOf(startNumber);
 		CurrentRoom = Floor.Entrance;
 		State.Visited.Add(CurrentRoom);
-		if (atEpic) MoveToRoom(RoomKind.Epic);
-		else if (atFastTravel) MoveToRoom(RoomKind.FastTravel);
+		if (atEpic) MoveToRoom(RoomTypes.Epic);
+		else if (atFastTravel) MoveToRoom(RoomTypes.FastTravel);
 	}
 
 	// Recomeça na entrada de `startFloor`, no Fast travel dele ou, com `atEpic`, no épico (o caminho conta como vencido).
@@ -92,7 +92,7 @@ public sealed class Expedition
 	// não é gasto: a criança pode voltar quando precisar.
 	public Result<int> UseRest(int amount)
 	{
-		if (Current.Kind != RoomKind.Rest) return Result<int>.Fail("Aqui não dá para descansar.");
+		if (!Current.Kind.Restores) return Result<int>.Fail("Aqui não dá para descansar.");
 		if (State.Rested.Contains(CurrentRoom)) return Result<int>.Fail("Você já descansou aqui.");
 		var gained = Math.Min(amount, Energy.Max - Energy.Current);
 		if (gained <= 0) return Result<int>.Fail("Sua Energia já está cheia.");
@@ -102,7 +102,7 @@ public sealed class Expedition
 		return Result<int>.Ok(gained);
 	}
 
-	public bool NeedsClearing(Room room) => room.Kind is RoomKind.Combat or RoomKind.Puzzle or RoomKind.Marco or RoomKind.Epic;
+	public bool NeedsClearing(Room room) => room.Kind.NeedsVictory;
 
 	public Passage CanMoveTo(int room)
 	{
@@ -115,7 +115,7 @@ public sealed class Expedition
 	{
 		var room = Floor.Rooms[from];
 		if (!NeedsClearing(room) || Cleared.Contains(from)) return Passage.Open;
-		return room.Kind == RoomKind.Marco ? (hasItem() ? Passage.Open : Passage.NeedsItem) : Passage.MustClearRoom;
+		return room.Kind.OpensWithItem ? (hasItem() ? Passage.Open : Passage.NeedsItem) : Passage.MustClearRoom;
 	}
 
 	public Passage MoveTo(int room)
@@ -124,7 +124,7 @@ public sealed class Expedition
 		if (passage != Passage.Open) return passage;
 
 		// O Marco só vale como aberto se a criança tem o Item; voltar atrás sem ele não pode deixá-lo aberto.
-		if (Current.Kind == RoomKind.Marco && hasItem()) State.Cleared.Add(CurrentRoom);
+		if (Current.Kind.OpensWithItem && hasItem()) State.Cleared.Add(CurrentRoom);
 		CurrentRoom = room;
 		State.Visited.Add(room);
 		return Passage.Open;
@@ -133,16 +133,16 @@ public sealed class Expedition
 	// Vence a Sala em que a criança está. O Marco não se vence: ele abre sozinho para quem tem o Item.
 	public Result<Room> ClearCurrent()
 	{
-		if (!NeedsClearing(Current) || Current.Kind == RoomKind.Marco) return Result<Room>.Fail("Esta Sala não se vence.");
+		if (!Current.Kind.HasChallenge) return Result<Room>.Fail("Esta Sala não se vence.");
 		State.Cleared.Add(CurrentRoom);
-		if (Current.Kind == RoomKind.Epic) Finished = true;
+		if (Current.Kind.EndsExpedition) Finished = true;
 		return Result<Room>.Ok(Current);
 	}
 
 	// A escada está sempre aberta: sobe-se pela saída do Andar e desce-se pela entrada. O que trava o avanço é o Marco e o épico.
-	public bool CanAscend => Current.Kind == RoomKind.Exit && plan.HasFloor(Floor.Number + 1);
+	public bool CanAscend => Current.Kind.Stairs == RoomStairs.Up && plan.HasFloor(Floor.Number + 1);
 
-	public bool CanDescend => Current.Kind == RoomKind.Entrance && Floor.Number > 1;
+	public bool CanDescend => Current.Kind.Stairs == RoomStairs.Down && Floor.Number > 1;
 
 	public bool Ascend()
 	{
@@ -173,15 +173,15 @@ public sealed class Expedition
 	public FloorProgress ProgressOf(int floorNumber)
 	{
 		var state = StateOf(floorNumber);
-		var rooms = FloorOf(floorNumber).Rooms.Where(r => r.Kind is not (RoomKind.Entrance or RoomKind.Exit)).ToList();
+		var rooms = FloorOf(floorNumber).Rooms.Where(r => r.Kind.Counts != RoomCounting.None).ToList();
 		var resolved = rooms.Count(r => IsResolved(r, state));
 		return new FloorProgress(resolved, rooms.Count);
 	}
 
 	// O Marco aberto pelo Item já vale como vencido ao chegar nele, sem esperar a criança sair por uma porta nova.
 	bool IsResolved(Room room, FloorState state) =>
-		!NeedsClearing(room) ? state.Visited.Contains(room.Id)
-		: state.Cleared.Contains(room.Id) || (room.Kind == RoomKind.Marco && hasItem() && state.Visited.Contains(room.Id));
+		room.Kind.Counts != RoomCounting.Victory ? state.Visited.Contains(room.Id)
+		: state.Cleared.Contains(room.Id) || (room.Kind.OpensWithItem && hasItem() && state.Visited.Contains(room.Id));
 
 	public bool IsFloorComplete(int floorNumber) => ProgressOf(floorNumber) is { Resolved: var done, Total: var total } && total > 0 && done == total;
 
@@ -220,7 +220,7 @@ public sealed class Expedition
 		return state;
 	}
 
-	void MoveToRoom(RoomKind kind)
+	void MoveToRoom(RoomType kind)
 	{
 		// Um Andar guardado sem a Sala pedida (o gerador mudou) cai na entrada, em vez de quebrar a Expedição.
 		if (Floor.Rooms.FirstOrDefault(r => r.Kind == kind) is not { } room) return;

@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Linq;
 using ArquipelagoDoCeu.Dungeon;
@@ -21,19 +22,14 @@ public sealed class DungeonNarration
 	string OtherName => ctx.TowerNameOf(ctx.OtherTower);
 
 	// A fala de quem entra na Sala; o Fast travel tem fala própria, porque achá-lo salva o ponto.
-	public string? RoomLine(RoomKind kind) => kind switch
-	{
-		RoomKind.Marco => ctx.HasTradeItem() ? "O Marco brilhou! O Item de troca abriu o caminho." : $"Este é o Marco. Ele só abre com o Item de troca da {OtherName}.",
-		RoomKind.Rest => "Sala de descanso. Descanse um pouco, se quiser.",
-		RoomKind.Exit => "Sala de saída. A escada leva ao próximo Andar.",
-		_ => null,
-	};
+	public string? RoomLine(RoomType kind) =>
+		(kind.LineOpen is { } open && ctx.HasTradeItem() ? open : kind.Line)?.Replace("{other}", OtherName, StringComparison.Ordinal);
 
 	// O que a criança precisa saber desta Sala sobre o Item de troca, em texto e com a estrela.
 	public string? RoomNote()
 	{
 		var current = expedition.Current;
-		if (current.Kind == RoomKind.Marco)
+		if (current.Kind.OpensWithItem)
 			return ctx.HasTradeItem() ? $"★ O Item da {OtherName} abriu o Marco" : $"★ Falta o Item de troca da {OtherName}";
 		return current.HoldsItem && !expedition.IsCleared(expedition.CurrentRoom) ? "★ Vença esta Sala para ganhar o Item de troca" : null;
 	}
@@ -42,7 +38,7 @@ public sealed class DungeonNarration
 	public (string Label, bool Locked, bool Known) Describe(int room)
 	{
 		var known = expedition.Visited.Contains(room);
-		var name = known ? FloorMap.NameOf(expedition.Floor.Rooms[room].Kind) : "Sala nova";
+		var name = known ? expedition.Floor.Rooms[room].Kind.Name : "Sala nova";
 		return expedition.CanMoveTo(room) switch
 		{
 			Passage.MustClearRoom => ($"{name}\n(vença esta Sala)", true, known),
@@ -57,7 +53,7 @@ public sealed class DungeonNarration
 		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
 		if (id == "stairs-down") return $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
 		var room = int.Parse(id["door:".Length..], CultureInfo.InvariantCulture);
-		return expedition.Visited.Contains(room) ? $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
+		return expedition.Visited.Contains(room) ? $"Ir para {expedition.Floor.Rooms[room].Kind.Name.ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
 	}
 
 	public string ProgressSpeech()
@@ -75,7 +71,7 @@ public sealed class DungeonNarration
 		var where = expedition.CurrentRoom == room ? " Você está aqui." : "";
 		return expedition.SightOf(room) switch
 		{
-			Sight.Seen => $"Sala de {FloorMap.NameOf(kind.Kind).ToLowerInvariant()}{(expedition.IsCleared(room) ? ", vencida" : "")}.{where}",
+			Sight.Seen => $"Sala de {kind.Kind.Name.ToLowerInvariant()}{(expedition.IsCleared(room) ? ", vencida" : "")}.{where}",
 			Sight.Fog => expedition.IsLocked(room) ? "Sala nova sob névoa, com cadeado: falta vencer uma Sala." : "Sala nova sob névoa.",
 			_ => "Ainda não se vê nada aqui.",
 		};

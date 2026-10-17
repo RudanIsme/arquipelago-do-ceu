@@ -47,7 +47,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		var list = doors.Select(d => new Interactable($"door:{d.Target}", new System.Numerics.Vector2(d.Ground.X, d.Ground.Z))).ToList();
 		if (expedition.CanAscend) list.Add(new Interactable("stairs", StairsSpot));
 		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", StairsSpot));
-		if (expedition.Current.Kind == RoomKind.Rest) list.Add(new Interactable("rest", FountainSpot));
+		if (expedition.Current.Kind.Restores) list.Add(new Interactable("rest", FountainSpot));
 		return list;
 	}
 
@@ -130,10 +130,10 @@ public partial class DungeonWorld : Node3D, ICombatStage
 			AddDoor(door, known ? FloorMap.ColorOf(floor.Rooms[neighbors[i]].Kind) : Color.FromHtml("#8A8399"));
 		}
 
-		AddSign($"{FloorMap.NameOf(kind)}", new Vector3(0f, kind is RoomKind.Combat or RoomKind.Epic or RoomKind.Puzzle ? 5.6f : 2.4f, 0f), 56);
+		AddSign($"{kind.Name}", new Vector3(0f, kind.HasChallenge ? 5.6f : 2.4f, 0f), 56);
 		if (note is not null) AddSign(note, new Vector3(0f, 3.4f, 0f), 34);
-		if (kind == RoomKind.Exit || stairsDown) AddStairs(stairsDown);
-		if (kind == RoomKind.Rest) AddFountain(cleared.Contains(roomId));
+		if (kind.Stairs == RoomStairs.Up || stairsDown) AddStairs(stairsDown);
+		if (kind.Restores) AddFountain(cleared.Contains(roomId));
 	}
 
 	// A porta da Sala `target`, para a criança chegar nela vinda de lá.
@@ -211,7 +211,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	void AddStairs(bool down)
 	{
-		var material = new StandardMaterial3D { AlbedoColor = FloorMap.ColorOf(RoomKind.Exit), Roughness = 0.8f };
+		var material = new StandardMaterial3D { AlbedoColor = FloorMap.ColorOf(RoomTypes.Exit), Roughness = 0.8f };
 		if (down) AddSign("Escada para baixo", new Vector3(0f, 3.4f, 0f), 40);
 		for (var step = 0; step < 4; step++)
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.8f - step * 0.3f, 0.25f, 1.8f - step * 0.3f) }, MaterialOverride = material, Position = new Vector3(0f, 0.15f + step * 0.25f, 0f) });

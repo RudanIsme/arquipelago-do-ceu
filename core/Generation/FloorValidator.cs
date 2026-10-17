@@ -32,7 +32,7 @@ public static class FloorValidator
 	{
 		if (floor.Rooms.Count == 0) return "não tem Salas.";
 		if (floor.Rooms.Select((r, i) => r.Id == i).Contains(false)) return "os números das Salas estão fora de ordem.";
-		if (!Exists(floor, floor.Entrance) || floor.Rooms[floor.Entrance].Kind != RoomKind.Entrance) return "a entrada não é uma Sala de entrada.";
+		if (!Exists(floor, floor.Entrance) || floor.Rooms[floor.Entrance].Kind != RoomTypes.Entrance) return "a entrada não é uma Sala de entrada.";
 		if (!Exists(floor, floor.Exit)) return "a saída não existe.";
 		if (floor.Links.Any(l => !Exists(floor, l.A) || !Exists(floor, l.B) || l.A == l.B)) return "há uma ligação com uma Sala que não existe.";
 		return null;
@@ -40,15 +40,15 @@ public static class FloorValidator
 
 	static string? Contents(Floor floor, FloorPlan plan)
 	{
-		int Count(RoomKind kind) => floor.Rooms.Count(r => r.Kind == kind);
-		if (Count(RoomKind.Entrance) != 1) return "precisa de exatamente uma entrada.";
-		if (Count(RoomKind.FastTravel) != 1) return "precisa de exatamente um Fast travel.";
-		if (Count(RoomKind.Marco) != (plan.HasMarco ? 1 : 0)) return plan.HasMarco ? "falta o Marco do Plano." : "tem um Marco que o Plano não manda.";
+		int Count(RoomType kind) => floor.Rooms.Count(r => r.Kind == kind);
+		if (Count(RoomTypes.Entrance) != 1) return "precisa de exatamente uma entrada.";
+		if (Count(RoomTypes.FastTravel) != 1) return "precisa de exatamente um Fast travel.";
+		if (Count(RoomTypes.Marco) != (plan.HasMarco ? 1 : 0)) return plan.HasMarco ? "falta o Marco do Plano." : "tem um Marco que o Plano não manda.";
 		var items = floor.Rooms.Where(r => r.HoldsItem).ToList();
 		if (items.Count != (plan.HoldsItem ? 1 : 0)) return plan.HoldsItem ? "falta a Sala do Item do Plano." : "tem uma Sala do Item que o Plano não manda.";
-		if (items.Any(r => r.Kind is not (RoomKind.Combat or RoomKind.Puzzle))) return "a Sala do Item precisa ser de combate ou de Puzzle.";
+		if (items.Any(r => !r.Kind.Free)) return "a Sala do Item precisa ser de combate ou de Puzzle.";
 		var exit = floor.Rooms[floor.Exit].Kind;
-		if (plan.HasEpic ? exit != RoomKind.Epic : exit != RoomKind.Exit) return plan.HasEpic ? "o Desafio épico precisa ser a saída do último Andar." : "a saída precisa ser a escada.";
+		if (plan.HasEpic ? exit != RoomTypes.Epic : exit != RoomTypes.Exit) return plan.HasEpic ? "o Desafio épico precisa ser a saída do último Andar." : "a saída precisa ser a escada.";
 		return null;
 	}
 
@@ -57,11 +57,11 @@ public static class FloorValidator
 		var all = Walk(floor, blocked: null);
 		if (all.Count != floor.Rooms.Count) return "há Sala que não é alcançável a partir da entrada.";
 
-		var marco = floor.Rooms.FirstOrDefault(r => r.Kind == RoomKind.Marco)?.Id;
+		var marco = floor.Rooms.FirstOrDefault(r => r.Kind == RoomTypes.Marco)?.Id;
 		var free = Walk(floor, marco);
-		foreach (var room in floor.Rooms.Where(r => r.Kind is RoomKind.FastTravel or RoomKind.Puzzle or RoomKind.Rest || r.HoldsItem))
+		foreach (var room in floor.Rooms.Where(r => r.Kind.BeforeGate || r.HoldsItem))
 			if (!free.Contains(room.Id))
-				return $"{Name(room.Kind)} só é alcançável passando pelo Marco.";
+				return $"{room.Kind.Name} só é alcançável passando pelo Marco.";
 
 		// O Marco só vale se for mesmo a passagem: se a saída dá para alcançar sem ele, o Item não serviria para nada.
 		if (plan.HasMarco && free.Contains(floor.Exit)) return "a saída é alcançável sem passar pelo Marco.";
@@ -80,12 +80,4 @@ public static class FloorValidator
 	}
 
 	static bool Exists(Floor floor, int id) => id >= 0 && id < floor.Rooms.Count;
-
-	static string Name(RoomKind kind) => kind switch
-	{
-		RoomKind.FastTravel => "o Fast travel",
-		RoomKind.Puzzle => "um Puzzle",
-		RoomKind.Rest => "o Descanso",
-		_ => "a Sala do Item",
-	};
 }

@@ -13,18 +13,6 @@ public partial class FloorMap : Control
 {
 	const float Radius = 17f;
 
-	static readonly Dictionary<RoomKind, (string Letter, string Name, Color Color)> Look = new()
-	{
-		[RoomKind.Entrance] = ("E", "Entrada", Color.FromHtml("#8BC34A")),
-		[RoomKind.Combat] = ("C", "Combate", Color.FromHtml("#E57373")),
-		[RoomKind.Puzzle] = ("P", "Puzzle", Color.FromHtml("#64B5F6")),
-		[RoomKind.Rest] = ("D", "Descanso", Color.FromHtml("#BA9BEA")),
-		[RoomKind.FastTravel] = ("F", "Fast travel", Color.FromHtml("#4DD0C4")),
-		[RoomKind.Marco] = ("M", "Marco", Color.FromHtml("#FFB74D")),
-		[RoomKind.Epic] = ("É", "Épico", Color.FromHtml("#FFD54F")),
-		[RoomKind.Exit] = ("S", "Saída", Color.FromHtml("#B0BEC5")),
-	};
-
 	readonly Floor floor;
 	readonly Dictionary<int, Vector2> positions = new();
 
@@ -69,11 +57,9 @@ public partial class FloorMap : Control
 		Layout(size);
 	}
 
-	public static Color ColorOf(RoomKind kind) => Look[kind].Color;
+	public static Color ColorOf(RoomType kind) => Color.FromHtml(kind.Color);
 
-	public static string NameOf(RoomKind kind) => Look[kind].Name;
-
-	public static string Legend => string.Join("   ", Look.Values.Select(v => $"{v.Letter} {v.Name}")) + "\n? Sala nova (névoa)   Cadeado: falta vencer uma Sala";
+	public static string Legend => string.Join("   ", RoomTypes.Default.All.Select(t => $"{t.Letter} {t.Name}")) + "\n? Sala nova (névoa)   Cadeado: falta vencer uma Sala";
 
 	void Layout(Vector2 size)
 	{
@@ -106,7 +92,7 @@ public partial class FloorMap : Control
 			if (SightOf(link.A) == Sight.Seen || SightOf(link.B) == Sight.Seen)
 			{
 				DrawLine(positions[link.A], positions[link.B], line, 3f, true);
-				if (floor.Rooms[link.A].Kind == RoomKind.Puzzle || floor.Rooms[link.B].Kind == RoomKind.Puzzle) DrawDoorMark(positions[link.A], positions[link.B]);
+				if (floor.Rooms[link.A].Kind.IsDoor || floor.Rooms[link.B].Kind.IsDoor) DrawDoorMark(positions[link.A], positions[link.B]);
 			}
 
 		var font = ThemeDB.FallbackFont;
@@ -120,7 +106,8 @@ public partial class FloorMap : Control
 				continue;
 			}
 
-			var (letter, _, color) = Look[room.Kind];
+			var letter = room.Kind.Letter;
+			var color = ColorOf(room.Kind);
 			var at = positions[room.Id];
 			var done = Cleared.Contains(room.Id);
 			Shape(room.Kind, at, new Color(color.R, color.G, color.B, done ? 0.55f : 1f));
@@ -130,7 +117,7 @@ public partial class FloorMap : Control
 				DrawString(font, at + new Vector2(Radius - 4, -Radius + 6), "★", HorizontalAlignment.Left, -1, 18, Color.FromHtml("#FFEB3B"));
 			// Cada estado tem forma própria: visto (vencida), arco (Fast travel) e boneco (onde a criança está).
 			if (done) DrawCheck(at + new Vector2(-Radius + 3, -Radius + 5));
-			if (room.Kind == RoomKind.FastTravel) DrawArch(at + new Vector2(-Radius + 2, Radius - 2));
+			if (room.Kind.SavesPoint) DrawArch(at + new Vector2(-Radius + 2, Radius - 2));
 			if (Here == room.Id) DrawPerson(at + new Vector2(Radius - 1, Radius - 3));
 		}
 
@@ -220,18 +207,18 @@ public partial class FloorMap : Control
 		DrawRect(new Rect2(lock_ + new Vector2(-6, -1), new Vector2(12, 9)), Color.FromHtml("#FFD54F"));
 	}
 
-	// Combate é círculo, Puzzle é quadrado, Marco e épico são losangos e o resto é um hexágono: a forma diz a função.
-	void Shape(RoomKind kind, Vector2 at, Color fill)
+	// A forma vem da definição da Sala: a forma diz a função, para a cor nunca ser a única informação.
+	void Shape(RoomType kind, Vector2 at, Color fill)
 	{
-		switch (kind)
+		switch (kind.Shape)
 		{
-			case RoomKind.Combat or RoomKind.Entrance:
+			case RoomShape.Circle:
 				DrawCircle(at, Radius, fill);
 				break;
-			case RoomKind.Puzzle:
+			case RoomShape.Square:
 				DrawRect(new Rect2(at - new Vector2(Radius, Radius), new Vector2(Radius * 2, Radius * 2)), fill);
 				break;
-			case RoomKind.Marco or RoomKind.Epic:
+			case RoomShape.Diamond:
 				DrawColoredPolygon([at + new Vector2(0, -Radius - 4), at + new Vector2(Radius + 4, 0), at + new Vector2(0, Radius + 4), at + new Vector2(-Radius - 4, 0)], fill);
 				break;
 			default:

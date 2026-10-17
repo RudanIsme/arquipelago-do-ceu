@@ -137,7 +137,7 @@ public partial class DungeonRun : Node
 		RefreshHud();
 		exploration.Save(expedition);
 		var kind = expedition.Current.Kind;
-		var text = kind == RoomKind.FastTravel ? FindFastTravel() : narration.RoomLine(kind);
+		var text = kind.SavesPoint ? FindFastTravel() : narration.RoomLine(kind);
 		var spoken = string.Join(" ", new[] { lead, text, rewards.ForFloor(expedition) }.Where(t => t is not null));
 		if (spoken.Length != 0) Say(spoken);
 	}
@@ -166,8 +166,8 @@ public partial class DungeonRun : Node
 	void StartFight()
 	{
 		var current = expedition.Current;
-		var needsFight = expedition.NeedsClearing(current) && current.Kind != RoomKind.Marco && !expedition.IsCleared(expedition.CurrentRoom);
-		var puzzle = current.Kind == RoomKind.Puzzle;
+		var needsFight = current.Kind.HasChallenge && !expedition.IsCleared(expedition.CurrentRoom);
+		var puzzle = current.Kind.IsDoor;
 		world.ShowTarget(needsFight, puzzle);
 		if (!needsFight) return;
 
@@ -193,12 +193,7 @@ public partial class DungeonRun : Node
 			Say($"Atalho de Nível! Desafio {shortcutIndex + 1} de {shortcut.Count}. Errar encerra a tentativa. Escolha a criatura (clique ou F).");
 			return;
 		}
-		Say(current.Kind switch
-		{
-			RoomKind.Epic => "Desafio épico! Chegue perto da criatura e escolha-a (clique ou F) para atacar.",
-			RoomKind.Puzzle => "Uma porta trancada! Chegue perto dela e escolha-a (clique ou F) para abrir.",
-			_ => "Uma criatura da névoa! Chegue perto dela e escolha-a (clique ou F) para atacar.",
-		});
+		Say(current.Kind.Intro ?? "Uma criatura da névoa! Chegue perto dela e escolha-a (clique ou F) para atacar.");
 	}
 
 	internal void OnWon()
@@ -227,7 +222,7 @@ public partial class DungeonRun : Node
 		var mastery = rewards.TakeMasteryNote();
 		var completed = rewards.ForFloor(expedition);
 		RefreshHud();
-		if (room.Kind == RoomKind.Epic)
+		if (room.Kind.EndsExpedition)
 		{
 			ConcludeLevel(Join(coins, mastery, completed));
 			return;
@@ -239,7 +234,7 @@ public partial class DungeonRun : Node
 			if (extra is not null) Say($"{hud.Message} {extra}");
 			return;
 		}
-		var won = expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.";
+		var won = room.Kind.WonLine ?? "Sala vencida! As portas estão livres.";
 		Say(Join(won, coins, mastery, narration.ProgressSpeech(), completed)!);
 	}
 

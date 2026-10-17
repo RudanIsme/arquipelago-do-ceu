@@ -56,7 +56,7 @@ public sealed class DungeonRewards
 
 	// As moedas de uma Sala vencida: a criatura acalmada e a Sala do Item.
 	public string? ForRoom(Room room, int floor) =>
-		Join(room.Kind is RoomKind.Combat or RoomKind.Epic ? Reward("creature-calmed") : null, room.HoldsItem ? Reward("item-room", floor) : null);
+		Join(room.Kind.CalmsCreature ? Reward("creature-calmed") : null, room.HoldsItem ? Reward("item-room", floor) : null);
 
 	// Registra o Andar completo uma única vez e diz o que a criança ganhou; falha de gravação não trava ninguém.
 	public string? ForFloor(Expedition expedition)

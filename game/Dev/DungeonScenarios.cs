@@ -19,7 +19,7 @@ static partial class DungeonScenarios
 		var run = await Enter(d);
 		if (run is null) return;
 		await d.Shot("01-sala-de-entrada");
-		d.Expect(run.Expedition.Current.Kind == RoomKind.Entrance && run.Expedition.Floor.Number == 1, "a Expedição começa na entrada do Andar 1");
+		d.Expect(run.Expedition.Current.Kind == RoomTypes.Entrance && run.Expedition.Floor.Number == 1, "a Expedição começa na entrada do Andar 1");
 		d.Expect(run.Expedition.Energy.Current == run.Expedition.Energy.Max, "a Energia da Expedição começa cheia");
 
 		var shotFight = false;
@@ -47,7 +47,7 @@ static partial class DungeonScenarios
 			if (!await Step(d, run, next))
 			{
 				// Só o Marco barra o caminho, e esta torre ainda não tem o Item de troca.
-				d.Expect(expedition.Current.Kind == RoomKind.Marco, "só o Marco barra o caminho sem o Item de troca");
+				d.Expect(expedition.Current.Kind == RoomTypes.Marco, "só o Marco barra o caminho sem o Item de troca");
 				await d.Shot("03-marco-barrado");
 				run.Leave("");
 				await d.Wait(0.5);
@@ -68,8 +68,8 @@ static partial class DungeonScenarios
 		if (run is null) return;
 		var expedition = run.Expedition;
 
-		await GoTo(d, run, RoomKind.Rest);
-		d.Expect(expedition.Current.Kind == RoomKind.Rest, "chegou à Sala de Descanso");
+		await GoTo(d, run, RoomTypes.Rest);
+		d.Expect(expedition.Current.Kind == RoomTypes.Rest, "chegou à Sala de Descanso");
 		expedition.Energy.Lose(3);
 		var before = expedition.Energy.Current;
 		run.Player.PlaceAt(DungeonWorld.FountainSpot + new Vector2(0.5f, 0.5f));
@@ -80,8 +80,8 @@ static partial class DungeonScenarios
 		await d.Tap(Controls.Interact);
 		d.Expect(expedition.Energy.Current == before + 2, "o Descanso só vale uma vez");
 
-		await GoTo(d, run, RoomKind.Puzzle);
-		d.Expect(expedition.Current.Kind == RoomKind.Puzzle, "chegou a uma Sala de Puzzle");
+		await GoTo(d, run, RoomTypes.Puzzle);
+		d.Expect(expedition.Current.Kind == RoomTypes.Puzzle, "chegou a uma Sala de Puzzle");
 		d.Expect(!run.Combat.Bubbles, "o Puzzle não lança bolhas");
 		d.Expect(run.World.Creature.Visible, "a porta mostra o escudo a resolver");
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
@@ -105,8 +105,8 @@ static partial class DungeonScenarios
 
 		var letters = await Enter(d, letters: true);
 		if (letters is null) return;
-		await GoTo(d, letters, r => r.Kind == RoomKind.Marco);
-		d.Expect(letters.Expedition.Current.Kind == RoomKind.Marco, "chegou ao Marco da Torre das Letras");
+		await GoTo(d, letters, r => r.Kind == RoomTypes.Marco);
+		d.Expect(letters.Expedition.Current.Kind == RoomTypes.Marco, "chegou ao Marco da Torre das Letras");
 		d.Expect(!letters.Progress.Levels.HasItem(letters.ProfileId, new LevelKey("matematica", 1)), "ainda não há Item de troca da Torre dos Números");
 		var beyond = letters.Expedition.Floor.Neighbors(letters.Expedition.CurrentRoom).First(n => !letters.Expedition.Visited.Contains(n));
 		await d.Shot("01-marco-sem-item");
@@ -129,7 +129,7 @@ static partial class DungeonScenarios
 
 		var again = await Enter(d, letters: true);
 		if (again is null) return;
-		await GoTo(d, again, r => r.Kind == RoomKind.Marco);
+		await GoTo(d, again, r => r.Kind == RoomTypes.Marco);
 		var next = again.Expedition.Floor.Neighbors(again.Expedition.CurrentRoom).First(n => !again.Expedition.Visited.Contains(n));
 		d.Expect(await Step(d, again, next), "com o Item de troca o Marco abre");
 		await d.Shot("05-marco-aberto");
@@ -142,8 +142,8 @@ static partial class DungeonScenarios
 		if (run is null) return;
 		// O Marco desta torre pede o Item da outra: o piloto o entrega para chegar ao épico.
 		run.Progress.Levels.GiveItem(run.ProfileId, new LevelKey("portugues", 1));
-		await GoTo(d, run, RoomKind.Epic);
-		d.Expect(run.Expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
+		await GoTo(d, run, RoomTypes.Epic);
+		d.Expect(run.Expedition.Current.Kind == RoomTypes.Epic, "chegou ao Desafio épico");
 		d.Expect(!run.Progress.Levels.EpicDone(run.ProfileId, new LevelKey("matematica", 1)), "o Nível ainda não está concluído");
 		PilotPort.WinRoom(run);
 		await d.Wait(0.5);
@@ -163,7 +163,7 @@ static partial class DungeonScenarios
 		var run = await Enter(d, shortcut: true);
 		if (run is null) return;
 		var expedition = run.Expedition;
-		d.Expect(expedition.Current.Kind == RoomKind.Epic && expedition.Floor.Number == expedition.Plan.Floors.Count, "o Atalho começa direto no Desafio épico");
+		d.Expect(expedition.Current.Kind == RoomTypes.Epic && expedition.Floor.Number == expedition.Plan.Floors.Count, "o Atalho começa direto no Desafio épico");
 		d.Expect(run.Progress.Levels.ShortcutTried(run.ProfileId, new LevelKey("matematica", 1)), "a tentativa do Atalho foi gravada ao começar");
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);
@@ -233,7 +233,7 @@ static partial class DungeonScenarios
 	static List<DungeonRun> Runs(DevDriver d) => d.GetTree().Root.FindChildren("*", "", true, false).OfType<DungeonRun>().ToList();
 
 	static bool NeedsFight(ArquipelagoDoCeu.Dungeon.Expedition e) =>
-		e.NeedsClearing(e.Current) && !e.IsCleared(e.CurrentRoom) && e.Current.Kind != RoomKind.Marco;
+		e.NeedsClearing(e.Current) && !e.IsCleared(e.CurrentRoom) && e.Current.Kind != RoomTypes.Marco;
 
 	// Vence a Sala, se for preciso, anda até a porta da próxima e passa por ela; devolve se a criança mudou de Sala.
 	static async Task<bool> Step(DevDriver d, DungeonRun run, int next)
@@ -265,7 +265,7 @@ static partial class DungeonScenarios
 	}
 
 	// Anda de Sala em Sala, subindo de Andar se preciso, até uma Sala da função pedida.
-	static Task GoTo(DevDriver d, DungeonRun run, RoomKind kind) => GoTo(d, run, r => r.Kind == kind);
+	static Task GoTo(DevDriver d, DungeonRun run, RoomType kind) => GoTo(d, run, r => r.Kind == kind);
 
 	static async Task GoTo(DevDriver d, DungeonRun run, Func<Room, bool> goal)
 	{
