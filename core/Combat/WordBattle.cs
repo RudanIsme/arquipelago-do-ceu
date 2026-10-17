@@ -15,14 +15,16 @@ public sealed class WordBattle
 
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
+	readonly MissionHistory? history;
 	readonly List<char> typed = [];
 	List<char> keys = [];
 	char? hidden;
 
-	WordBattle(IReadOnlyList<Mission> missions, Pcg32 rng)
+	WordBattle(IReadOnlyList<Mission> missions, Pcg32 rng, MissionHistory? history)
 	{
 		this.missions = missions;
 		this.rng = rng;
+		this.history = history;
 		Mission = missions[0];
 		Word = "";
 	}
@@ -43,13 +45,14 @@ public sealed class WordBattle
 	// Enquanto a palavra não for libertada falta 1 golpe; é o "escudo" do Escriba do 2º ano.
 	public int Remaining { get; private set; } = 1;
 
-	public static Result<WordBattle> Start(IEnumerable<Mission> available, Pcg32 rng)
+	public static Result<WordBattle> Start(IEnumerable<Mission> available, Pcg32 rng, MissionHistory? history = null)
 	{
 		var usable = available.Where(m => m.Mechanic == "escrever_palavra").ToList();
 		if (usable.Count == 0) return Result<WordBattle>.Fail("Não há Missão de escrever palavra para o Boneco.");
 
-		var battle = new WordBattle(usable, rng);
-		var dealt = battle.Deal(usable[rng.NextInt(usable.Count)]);
+		var battle = new WordBattle(usable, rng, history);
+		var first = MissionHistory.Narrow(history, usable);
+		var dealt = battle.Deal(first[rng.NextInt(first.Count)]);
 		return dealt.IsOk ? Result<WordBattle>.Ok(battle) : Result<WordBattle>.Fail(dealt.Error!);
 	}
 
@@ -57,7 +60,7 @@ public sealed class WordBattle
 	public void Next()
 	{
 		var others = missions.Where(m => m != Mission).ToList();
-		var pool = others.Count > 0 ? others : missions;
+		var pool = MissionHistory.Narrow(history, others.Count > 0 ? others : missions);
 		for (var attempt = 0; attempt < pool.Count; attempt++)
 			if (Deal(pool[(rng.NextInt(pool.Count) + attempt) % pool.Count]).IsOk) return;
 		Deal(Mission);
@@ -124,6 +127,7 @@ public sealed class WordBattle
 			rng.Shuffle(chosen);
 
 			Mission = mission;
+			history?.Add(mission.Id);
 			Word = word;
 			Image = image;
 			keys = chosen;

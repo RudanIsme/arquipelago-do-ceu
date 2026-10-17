@@ -8,8 +8,8 @@ public partial class JourneyHud : Control
  public event Action? EquipmentRequested, RestoreBaseRequested, ProfilesRequested, SettingsRequested, InteractRequested;
  string variant="book", nickname="Viajante", bonus="", notice="Explore a ilha e converse com o Guia.";
  string? interactionText;
- Control? selector, identity, navigation, context, details;
- Label? noticeLabel; Button? interact; bool expanded; bool comparisonUi;
+ Control? selector, identity, navigation, context;
+ Label? noticeLabel; Button? interact; bool comparisonUi;
  public JourneyHud() { Name="JourneyHud"; MouseFilter=MouseFilterEnum.Ignore; SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect); Resized+=()=>{settleFrames=12;Arrange();}; }
  public override void _Ready() { Build(); }
  public void Configure(string variant,string nickname,string bonusSummary) { this.variant=variant; this.nickname=nickname; bonus=bonusSummary; if(IsInsideTree())Build(); }
@@ -29,13 +29,11 @@ public partial class JourneyHud : Control
   var ctx=new VBoxContainer(); ctx.AddThemeConstantOverride("separation",4); noticeLabel=JourneyStyle.Text(variant,notice,18); noticeLabel.MaxLinesVisible=2; ctx.AddChild(noticeLabel);
   interact=JourneyStyle.Button(variant,"Conversar",()=>InteractRequested?.Invoke(),"Interact"); interact.Visible=!string.IsNullOrWhiteSpace(interactionText); interact.Text=interactionText??"Conversar";ctx.AddChild(interact);
   context=JourneyStyle.Panel(variant,ctx); AddChild(context); UpdateContext();
-  var d=new VBoxContainer(); d.AddChild(JourneyStyle.Button(variant,"Controles / bônus",()=>{expanded=!expanded;Build();},"ToggleDetails"));
-  if(expanded) { d.AddChild(JourneyStyle.Text(variant,"WASD / setas: mover · Shift: correr\nClique: caminhar · E: interagir · F8: capa",16)); d.AddChild(JourneyStyle.Text(variant,bonus,16)); }
-  details=JourneyStyle.Panel(variant,d);AddChild(details); Arrange();
+  Arrange();
  }
  void Arrange()
  {
-  if(selector==null||identity==null||navigation==null||context==null||details==null)return;
+  if(selector==null||identity==null||navigation==null||context==null)return;
   float w=Size.X,h=Size.Y; if(w<=0||h<=0)return; const float m=12;
   JourneyStyle.Place(selector,Math.Max(m,w-492),m,Math.Min(480,w-24),44);
   float infoY=w<1100?64:12;
@@ -44,7 +42,6 @@ public partial class JourneyHud : Control
   else if(variant=="book") { JourneyStyle.Place(navigation,w-130,h-266,118,192); JourneyStyle.Place(context,m,h-124,Math.Min(420,w-164),104); }
   else if(variant=="crystal") { JourneyStyle.Place(navigation,(w-370)/2,h-58,370,44); JourneyStyle.Place(context,(w-390)/2,h-170,390,104); }
   else { JourneyStyle.Place(navigation,m,h-58,Math.Min(370,w-24),44); JourneyStyle.Place(context,m,h-170,Math.Min(380,w-24),104); }
-  JourneyStyle.Place(details,w-220,(variant=="crystal"||variant=="book")?64:h-(expanded?196:66),208,expanded?182:54);
  }
  public void SetInteraction(string? text) { interactionText=text; if(interact==null)return; interact.Visible=!string.IsNullOrWhiteSpace(text);interact.Text=text??""; UpdateContext(); }
  public void SetNotice(string text) { notice=text;if(noticeLabel!=null)noticeLabel.Text=text; UpdateContext(); }

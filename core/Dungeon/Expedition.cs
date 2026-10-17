@@ -49,7 +49,7 @@ public sealed class Expedition
 		this.hasItem = hasItem;
 		this.explored = explored;
 		Energy = energy;
-		startNumber = atEpic ? plan.Floors.Count : Math.Clamp(startFloor, 1, plan.Floors.Count);
+		startNumber = atEpic ? plan.Floors.Count : plan.Endless ? Math.Max(startFloor, 1) : Math.Clamp(startFloor, 1, plan.Floors.Count);
 		// Quem recomeça num Andar alto sem ter exploração guardada dos de baixo (save antigo) já os percorreu; no Atalho não.
 		legacyBelow = !atEpic;
 		Floor = FloorOf(startNumber);
@@ -145,7 +145,7 @@ public sealed class Expedition
 	}
 
 	// A escada está sempre aberta: sobe-se pela saída do Andar e desce-se pela entrada. O que trava o avanço é o Marco e o épico.
-	public bool CanAscend => Current.Kind == RoomKind.Exit && Floor.Number < plan.Floors.Count;
+	public bool CanAscend => Current.Kind == RoomKind.Exit && plan.HasFloor(Floor.Number + 1);
 
 	public bool CanDescend => Current.Kind == RoomKind.Entrance && Floor.Number > 1;
 
@@ -206,7 +206,7 @@ public sealed class Expedition
 		return floor;
 	}
 
-	Floor BuildFloor(int number) => floors.Get(world, plan.Discipline, plan.Level, plan.Floors[number - 1], version);
+	Floor BuildFloor(int number) => floors.Get(world, plan.Discipline, plan.Level, plan.For(number), version);
 
 	FloorState StateOf(int number)
 	{

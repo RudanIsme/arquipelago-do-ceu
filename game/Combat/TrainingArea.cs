@@ -151,6 +151,12 @@ public partial class TrainingArea : Node
 
 	public event Action? FightAborted;
 
+	// A Missão que acabou de ser vencida numa luta de Sala, antes de a Sala valer como vencida. O treino não dispara isto.
+	public event Action<Mission>? ChallengeSolved;
+
+	// A Missão em jogo, para o piloto de desenvolvimento.
+	public Mission? CurrentMission => session?.Mission;
+
 	// Começa a luta de uma Sala com a Energia da Expedição. A criança escolhe a criatura (clique ou F) para atacar.
 	public void BeginFight(CombatSession fight, EnergyView energy, Action won, Action lost)
 	{
@@ -460,7 +466,9 @@ public partial class TrainingArea : Node
 		{
 			if (epoch != mine || session is null) return;
 			var won = fightWon;
+			var solved = session.Mission;
 			EndFight();
+			ChallengeSolved?.Invoke(solved);
 			won();
 		};
 	}

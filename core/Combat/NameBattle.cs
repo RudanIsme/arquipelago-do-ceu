@@ -18,15 +18,17 @@ public sealed class NameBattle
 
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
+	readonly MissionHistory? history;
 	readonly List<int> chosen = [];
 	readonly HashSet<int> hidden = [];
 	List<string> pieces = [];
 	bool[] struck = [];
 
-	NameBattle(IReadOnlyList<Mission> missions, Pcg32 rng)
+	NameBattle(IReadOnlyList<Mission> missions, Pcg32 rng, MissionHistory? history)
 	{
 		this.missions = missions;
 		this.rng = rng;
+		this.history = history;
 		Mission = missions[0];
 		Name = [];
 	}
@@ -66,13 +68,14 @@ public sealed class NameBattle
 
 	public bool IsHidden(int piece) => hidden.Contains(piece);
 
-	public static Result<NameBattle> Start(IEnumerable<Mission> available, Pcg32 rng)
+	public static Result<NameBattle> Start(IEnumerable<Mission> available, Pcg32 rng, MissionHistory? history = null)
 	{
 		var usable = available.Where(m => Mechanics.Contains(m.Mechanic)).ToList();
 		if (usable.Count == 0) return Result<NameBattle>.Fail("Não há Missão de nome, sílabas ou frase para o Boneco.");
 
-		var battle = new NameBattle(usable, rng);
-		var dealt = battle.Deal(usable[rng.NextInt(usable.Count)]);
+		var battle = new NameBattle(usable, rng, history);
+		var first = MissionHistory.Narrow(history, usable);
+		var dealt = battle.Deal(first[rng.NextInt(first.Count)]);
 		return dealt.IsOk ? Result<NameBattle>.Ok(battle) : Result<NameBattle>.Fail(dealt.Error!);
 	}
 
@@ -81,7 +84,7 @@ public sealed class NameBattle
 	public void Next()
 	{
 		var others = missions.Where(m => m != Mission).ToList();
-		var pool = others.Count > 0 ? others : missions;
+		var pool = MissionHistory.Narrow(history, others.Count > 0 ? others : missions);
 		for (var attempt = 0; attempt < pool.Count; attempt++)
 		{
 			var pick = pool[(rng.NextInt(pool.Count) + attempt) % pool.Count];
@@ -156,6 +159,7 @@ public sealed class NameBattle
 		if (!dealt.IsOk) return Result<bool>.Fail($"{mission.Id}: {dealt.Error}");
 
 		Mission = mission;
+		history?.Add(mission.Id);
 		Name = p.Name;
 		Image = p.Image;
 		Before = p.Before;

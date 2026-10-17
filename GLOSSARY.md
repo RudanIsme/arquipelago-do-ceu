@@ -108,6 +108,17 @@ _Avoid_: Chave
 
 ### Progressão
 
+**Moeda**:
+O saldo do Perfil, só do jogo e nunca dinheiro de verdade. Ganha-se por criatura acalmada, Sala do Item e Andar completo (os valores vêm de dados), e não se perde, nem ao zerar a Energia. Não há teto, e velocidade e sequência não rendem nada. O treino do Lobby não dá moedas.
+_Avoid_: Dinheiro, ouro
+
+**Progressão**:
+O modo de Expedição que segue o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível.
+
+**Expedição livre**:
+O outro modo de Expedição: os Andares seguem sem fim, a partir da mesma seed, no Nível que a criança já liberou, sem Marco, Item de troca nem Desafio épico. O conteúdo varia (o mesmo problema não se repete na Expedição) e rende moedas, mas não avança o Plano do Nível, o Desafio épico nem o Desafio mestre. A criança sai quando quiser, sem punição.
+_Avoid_: Modo infinito
+
 **Expedição**:
 Uma tentativa contínua, desde a saída do Lobby até a volta. Termina quando a criança decide voltar ou quando a Energia acaba; ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Perde-se o que é temporário; Andares salvos e habilidades ficam.
 _Avoid_: Run, partida, sessão
@@ -177,6 +188,10 @@ _Avoid_: Herói, avatar
 **Papel**:
 O que a Dungeon faz o Personagem ser: roupas, ferramenta e habilidades próprias. As habilidades crescem conforme a criança aprende Conceitos.
 _Avoid_: Classe
+
+**Maestria**:
+O número de um Papel, que sobe cada vez que a criança domina um Conceito na Dungeon daquele Papel (acumulando as vitórias que os dados pedem). Não há XP separado, não cai nunca e ficar sem jogar não tira nada. O treino do Lobby não conta, e velocidade e número de tentativas não entram.
+_Avoid_: Nível do Papel, XP
 
 **Matemático** (nome provisório):
 O Papel da Dungeon de Matemática, que monta contas com uma bolsa de números.
