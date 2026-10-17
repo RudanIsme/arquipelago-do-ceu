@@ -104,6 +104,7 @@ public partial class DungeonRun : Node
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
 		combat.EnergyTop = DungeonHud.EnergyTop;
+		hud.InCombat = () => combat.HasTarget;
 		combat.ChallengeSolved += OnSolved;
 		AddChild(combat);
 
@@ -279,7 +280,7 @@ public partial class DungeonRun : Node
 	public override void _Process(double delta)
 	{
 		if (left) return;
-		world.Creature.SetCaptionContext(UiKit.Compact, enabled && combat.InTargetRange());
+		world.Creature.SetCaptionContext(true, enabled && combat.InTargetRange());
 		combat.CheckRange();
 		hud.RefreshEnergy();
 		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, world.Interactables(expedition), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
@@ -368,6 +369,8 @@ public partial class DungeonRun : Node
 		var subject = ctx.Tower.Subject;
 		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";
 	}
+
+	public void RefreshDock() => hud.RefreshDock();
 
 	void RefreshHud() =>
 		hud.Refresh($"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}\n{Objective()}", IsFloorDone());

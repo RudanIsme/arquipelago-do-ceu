@@ -80,6 +80,10 @@ public partial class PortalScreen : OverlayScreen
 // Conversa com o Guia: cada fala aparece escrita (a legenda) e é dita pela voz, se estiver ligada.
 public partial class GuideScreen : OverlayScreen
 {
+	const float CharactersPerSecond = 48;
+	const float PanelHeight = 212;
+	const float PanelBottomGap = 12;
+
 	readonly string name;
 	readonly IReadOnlyList<string> lines;
 	readonly VoiceService voice;
@@ -88,46 +92,121 @@ public partial class GuideScreen : OverlayScreen
 	Button? advance;
 	PanelContainer? panel;
 	double revealed;
+
 	public GuideScreen(string name, IReadOnlyList<string> lines, VoiceService voice)
-	{ this.name = name; this.lines = lines; this.voice = voice; }
+	{
+		this.name = name;
+		this.lines = lines;
+		this.voice = voice;
+	}
+
 	public override void _Ready()
 	{
-		base._Ready(); MouseFilter = MouseFilterEnum.Stop;
-		var box = new VBoxContainer(); box.AddThemeConstantOverride("separation", 8);
-		box.AddChild(JourneyStyle.Text(UiKit.Compact ? UiKit.Variant : "minimal", name, 24));
-		caption = JourneyStyle.Text(UiKit.Compact ? UiKit.Variant : "minimal", "", 20); caption.Name = "GuideCaption"; caption.CustomMinimumSize = new Vector2(0, 78); box.AddChild(caption);
-		var footer = new HBoxContainer(); footer.AddThemeConstantOverride("separation", 8);
-		footer.AddChild(JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal", "Ouvir de novo", () => { if (lines.Count > 0) voice.Say(lines[index], interrupt: true); }, "ReplayGuide"));
-		advance = JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal", "Revelar", Advance, "AdvanceGuide"); advance.SizeFlagsHorizontal = SizeFlags.ExpandFill; footer.AddChild(advance);
-		footer.AddChild(JourneyStyle.Button(UiKit.Compact ? UiKit.Variant : "minimal", "Sair", Close, "CloseGuide")); box.AddChild(footer);
-		panel = JourneyStyle.Panel(UiKit.Compact ? UiKit.Variant : "minimal", box); panel.Name = "GuideDialogue"; AddChild(panel); Resized += Arrange; Arrange(); ShowLine(); advance.GrabFocus();
+		base._Ready();
+		MouseFilter = MouseFilterEnum.Stop;
+		panel = BookStyle.Panel(BuildDialogue());
+		panel.Name = "GuideDialogue";
+		AddChild(panel);
+		Resized += Arrange;
+		Arrange();
+		ShowLine();
+		advance!.GrabFocus();
 	}
-	void Arrange()
-	{
-		if (panel == null) return;
-		float width = System.Math.Min(850, Size.X - 24);
-		JourneyStyle.Place(panel, (Size.X - width) / 2, Size.Y - 224, width, 212);
-	}
-	void ShowLine()
-	{
-		if (lines.Count == 0) { Close(); return; }
-		revealed = 0; caption!.Text = lines[index]; caption.VisibleCharacters = 0; advance!.Text = "Revelar · Enter"; voice.Say(lines[index], interrupt: true);
-	}
+
 	public override void _Process(double delta)
 	{
-		Arrange(); if (caption == null || lines.Count == 0 || caption.VisibleCharacters < 0) return;
-		revealed += delta * 48; caption.VisibleCharacters = (int)revealed;
-		if (caption.VisibleCharacters >= caption.GetTotalCharacterCount()) { caption.VisibleCharacters = -1; advance!.Text = index == lines.Count - 1 ? "Concluir · Enter" : "Continuar · Enter"; }
+		Arrange();
+		if (caption is null || lines.Count == 0 || caption.VisibleCharacters < 0) return;
+		revealed += delta * CharactersPerSecond;
+		caption.VisibleCharacters = (int)revealed;
+		if (caption.VisibleCharacters >= caption.GetTotalCharacterCount()) ShowRevealed();
 	}
-	void Advance()
-	{
-		if (caption == null || lines.Count == 0) return;
-		if (caption.VisibleCharacters >= 0) { caption.VisibleCharacters = -1; advance!.Text = index == lines.Count - 1 ? "Concluir · Enter" : "Continuar · Enter"; return; }
-		if (index == lines.Count - 1) Close(); else { index++; ShowLine(); }
-	}
+
 	public override void _Input(InputEvent @event)
 	{
-		if (@event is InputEventKey key && key.Pressed && !key.Echo && (key.Keycode == Key.Enter || key.Keycode == Key.KpEnter)) { Advance(); GetViewport().SetInputAsHandled(); }
+		if (@event is not InputEventKey { Pressed: true, Echo: false, Keycode: Key.Enter or Key.KpEnter }) return;
+		Advance();
+		GetViewport().SetInputAsHandled();
 	}
-	public override void _ExitTree() { base._ExitTree(); voice.Stop(); }
+
+	public override void _ExitTree()
+	{
+		base._ExitTree();
+		voice.Stop();
+	}
+
+	VBoxContainer BuildDialogue()
+	{
+		var box = new VBoxContainer();
+		box.AddThemeConstantOverride("separation", 8);
+		box.AddChild(BookStyle.Text(name, 24));
+		caption = BookStyle.Text("", 20);
+		caption.Name = "GuideCaption";
+		caption.CustomMinimumSize = new Vector2(0, 78);
+		box.AddChild(caption);
+		box.AddChild(BuildFooter());
+		return box;
+	}
+
+	HBoxContainer BuildFooter()
+	{
+		var footer = new HBoxContainer();
+		footer.AddThemeConstantOverride("separation", 8);
+		footer.AddChild(BookStyle.Button("Ouvir de novo", SayAgain, "ReplayGuide"));
+		advance = BookStyle.Button("Revelar", Advance, "AdvanceGuide");
+		advance.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+		footer.AddChild(advance);
+		footer.AddChild(BookStyle.Button("Sair", Close, "CloseGuide"));
+		return footer;
+	}
+
+	void SayAgain()
+	{
+		if (lines.Count > 0) voice.Say(lines[index], interrupt: true);
+	}
+
+	void Arrange()
+	{
+		if (panel is null) return;
+		var width = System.Math.Min(850, Size.X - 24);
+		BookStyle.Place(panel, (Size.X - width) / 2, Size.Y - PanelHeight - PanelBottomGap, width, PanelHeight);
+	}
+
+	void ShowLine()
+	{
+		if (lines.Count == 0)
+		{
+			Close();
+			return;
+		}
+		revealed = 0;
+		caption!.Text = lines[index];
+		caption.VisibleCharacters = 0;
+		advance!.Text = "Revelar · Enter";
+		voice.Say(lines[index], interrupt: true);
+	}
+
+	void ShowRevealed()
+	{
+		caption!.VisibleCharacters = -1;
+		advance!.Text = index == lines.Count - 1 ? "Concluir · Enter" : "Continuar · Enter";
+	}
+
+	// O primeiro Enter revela a fala inteira; o seguinte passa para a próxima ou conclui.
+	void Advance()
+	{
+		if (caption is null || lines.Count == 0) return;
+		if (caption.VisibleCharacters >= 0)
+		{
+			ShowRevealed();
+			return;
+		}
+		if (index == lines.Count - 1)
+		{
+			Close();
+			return;
+		}
+		index++;
+		ShowLine();
+	}
 }

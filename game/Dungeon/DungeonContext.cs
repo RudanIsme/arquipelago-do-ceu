@@ -40,7 +40,9 @@ public sealed record DungeonContext(
 	Action<OverlayScreen>? ShowOverlay = null,
 	bool Shortcut = false,
 	bool Free = false,
-	ConceptNames? Concepts = null)
+	ConceptNames? Concepts = null,
+	Action? OpenInventory = null,
+	Func<int>? NewInventoryItems = null)
 {
 	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
 	public const int GeneratorVersion = 1;

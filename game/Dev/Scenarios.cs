@@ -79,6 +79,12 @@ static class Scenarios
 			case "torre-salas":
 				await DungeonScenarios.Rooms(d);
 				break;
+			case "cosmeticos":
+				await DungeonScenarios.Cosmetics(d);
+				break;
+			case "inventario":
+				await DungeonScenarios.Inventory(d);
+				break;
 			case "torre-equipamento":
 				await DungeonScenarios.Equipment(d);
 				break;

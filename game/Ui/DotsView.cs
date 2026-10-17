@@ -37,7 +37,7 @@ sealed partial class DotsView : Control
 			var inRow = Mathf.Min(PerRow, count - row * PerRow);
 			var x = Size.X / 2f + (i % PerRow - (inRow - 1) / 2f) * (Radius * 2.6f);
 			var y = Size.Y / 2f + (row - (rows - 1) / 2f) * (Radius * 2.6f);
-			DrawCircle(new Vector2(x, y), Radius, UiKit.Compact ? UiKit.TextColor : Colors.White);
+			DrawCircle(new Vector2(x, y), Radius, UiKit.TextColor);
 		}
 	}
 
@@ -52,14 +52,14 @@ sealed partial class DotsView : Control
 		var height = Mathf.Max(8f, Size.Y - 6f);
 		for (var i = 0; i < tens; i++)
 		{
-			DrawRect(new Rect2(x, (Size.Y - height) / 2f, BarWidth, height), UiKit.Compact ? UiKit.TextColor : Colors.White);
+			DrawRect(new Rect2(x, (Size.Y - height) / 2f, BarWidth, height), UiKit.TextColor);
 			x += BarWidth + Gap;
 		}
 		for (var i = 0; i < ones; i++)
 		{
 			var column = i % 2;
 			var row = i / 2;
-			DrawCircle(new Vector2(x + Radius + column * Radius * 2.6f, Size.Y / 2f + (row - (Mathf.CeilToInt(ones / 2f) - 1) / 2f) * Radius * 2.6f), Radius, UiKit.Compact ? UiKit.TextColor : Colors.White);
+			DrawCircle(new Vector2(x + Radius + column * Radius * 2.6f, Size.Y / 2f + (row - (Mathf.CeilToInt(ones / 2f) - 1) / 2f) * Radius * 2.6f), Radius, UiKit.TextColor);
 		}
 	}
 }

@@ -25,7 +25,6 @@ public partial class EquipmentVisuals : Node3D
 		foreach (var mount in mounts)
 			mount.Node.Transform = model.GlobalTransform.AffineInverse() * rig.GlobalTransform * rig.GetBoneGlobalPose(mount.Bone) * mount.Offset;
 	}
-	public void ApplySelection(string armor, string helmet, string cloth, string metal, string accent) => Apply(EquipmentCatalog.Normalize(new EquipmentLoadout(armor, helmet, cloth, metal, accent)));
 	public void Apply(EquipmentLoadout loadout)
 	{
 		foreach (var mount in mounts) { RemoveChild(mount.Node); mount.Node.QueueFree(); }
@@ -85,6 +84,7 @@ public partial class EquipmentVisuals : Node3D
 					Gem(head, new(side < 0 ? -.313f : .295f, 1.17f, .118f), .026f, trim);
 			}
 		}
+		AddCosmetics(loadout.Cosmetics);
 		_Process(0);
 	}
 	void OpenHelmetBand(Node3D parent, Material mat)

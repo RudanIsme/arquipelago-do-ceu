@@ -55,6 +55,9 @@ public sealed class InventoryService(SaveSession session, CosmeticCatalog cosmet
 	public IReadOnlyList<string> Worn(string profileId) =>
 		(Profile(profileId)?.Worn ?? []).Where(id => cosmetics.Find(id) is not null).ToList();
 
+	public IReadOnlyList<CosmeticLook> WornLooks(string profileId) =>
+		Worn(profileId).Select(id => cosmetics.Find(id)?.Look).OfType<CosmeticLook>().ToList();
+
 	public Result<IReadOnlyList<string>> Wear(string profileId, string cosmeticId, IReadOnlyList<string> owned)
 	{
 		if (cosmetics.Find(cosmeticId) is null) return Result<IReadOnlyList<string>>.Fail("Esse Cosmético não existe.");

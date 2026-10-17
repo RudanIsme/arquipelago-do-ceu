@@ -11,8 +11,8 @@ namespace ArquipelagoDoCeu;
 // "Sugerir letra" mostra a próxima com forma e texto, nunca custa Energia; só Conferir conta como resposta.
 public partial class WordPanel : OverlayScreen
 {
-	static int KeySize => UiKit.Compact ? 48 : 76;
-	static int PanelWidth => UiKit.Compact ? 340 : 4 * 110 + 3 * 8;
+	static int KeySize => 48;
+	static int PanelWidth => 340;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
 	static readonly Color Gold = Color.FromHtml("#D9A64A");
@@ -77,7 +77,7 @@ public partial class WordPanel : OverlayScreen
 		style.SetCornerRadiusAll(16);
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Surface());
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 
@@ -141,7 +141,7 @@ public partial class WordPanel : OverlayScreen
 			var key = letter;
 			var button = UiKit.BigButton("", () => TypeLetter(key), KeySize);
 			button.CustomMinimumSize = new Vector2(KeySize, KeySize);
-			button.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 24 : 34);
+			button.AddThemeFontSizeOverride("font_size", 24);
 			button.FocusMode = FocusModeEnum.None;
 			keyRow.AddChild(button);
 			keyButtons.Add(button);

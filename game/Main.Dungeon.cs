@@ -103,7 +103,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts(), ShowInventory, NewInventoryCount));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -149,7 +149,7 @@ public partial class Main
 	}
 
 	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
-	CosmeticCatalog LoadCosmetics() => catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
+	CosmeticCatalog LoadCosmetics() => cosmeticCatalog ??= catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
 	// Sem as recompensas o jogo segue, só sem moedas nem Cosméticos: elas são um extra.
 	RewardCatalog LoadRewards() => catalogs.Optional("recompensas.json", json => RewardCatalog.Parse(json, RewardTriggers.Default, LoadCosmetics()), RewardCatalog.Empty);

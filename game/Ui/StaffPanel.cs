@@ -11,8 +11,8 @@ namespace ArquipelagoDoCeu;
 // Não é modal: o Personagem anda e o tempo só desacelera. Nada depende de velocidade; só Confirmar conta como resposta.
 public partial class StaffPanel : OverlayScreen
 {
-	static int KeySize => UiKit.Compact ? 64 : 96;
-	static int PanelWidth => UiKit.Compact ? 5 * KeySize + 4 * 8 : 4 * KeySize + 3 * 8;
+	static int KeySize => 64;
+	static int PanelWidth => 5 * KeySize + 4 * 8;
 	const double TensWaitSeconds = 0.7;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
@@ -91,7 +91,7 @@ public partial class StaffPanel : OverlayScreen
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
 		// Na lateral direita, para o Boneco e a ilha continuarem à vista; encolhe se não couber.
-		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Surface());
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 
@@ -125,7 +125,7 @@ public partial class StaffPanel : OverlayScreen
 		{
 			var index = slot;
 			var key = UiKit.BigButton("", () => ChooseNumber(index), KeySize);
-			if (UiKit.Compact) { key.AddThemeFontSizeOverride("font_size", 24); }
+			key.AddThemeFontSizeOverride("font_size", 24);
 			var dots = new DotsView();
 			dots.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
 			dots.OffsetTop = -38;
@@ -144,7 +144,7 @@ public partial class StaffPanel : OverlayScreen
 			var sign = symbol;
 			var key = UiKit.BigButton(sign, () => PlaceOperator(sign), KeySize);
 			key.CustomMinimumSize = new Vector2(KeySize, KeySize);
-			key.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 30 : 44);
+			key.AddThemeFontSizeOverride("font_size", 30);
 			signs.AddChild(key);
 			operatorKeys.Add(key);
 		}

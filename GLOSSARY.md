@@ -38,13 +38,15 @@ _Avoid_: Biblioteca de descobertas
 Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
 _Avoid_: Skin
 
-**Equipamento** (experimento do PR #97, não decidido como regra):
-Armadura e capacete do Personagem, escolhidos na oficina. Além da aparência, dão bônus limitados (velocidade, Energia máxima, alcance de interação) e por isso contradizem a definição de Cosmético. Vive em `core/Equipment` e no `Journey` do Perfil.
+**Equipamento**:
+Capacete, Armadura ou Acessório do Personagem, um por espaço e por Papel, escolhido no Inventário. Dá atributos (velocidade, Energia máxima, alcance de interação) e pede uma Maestria mínima do Papel; um substitui o outro, sem evoluir. É a exceção declarada a "Cosmético não dá vantagem". Vive em `core/Equipment`.
 _Avoid_: Skin, item (Item de troca é de Dungeon)
 
-**Interface** (Caminho):
-Um dos quatro temas de HUD e oficina do experimento: Essencial, Livro, Aventura e Cristais; Base é a interface anterior. Cada um tem um conjunto de Equipamento sugerido, aplicado só por clique explícito. Mudar a Interface não troca o Equipamento. O código usa `Journey` e `variant`.
-_Avoid_: Skin, tema (Tema é o pacote de dados de uma Dungeon)
+**Inventário**:
+O modal onde a criança vê o Personagem equipado em caixinhas, a biblioteca de Equipamentos e Itens (os vestidos primeiro) e compara só o que muda antes de equipar. Tem a aba Cosméticos, sem atributos. Abre pelo Dock, no Lobby e na Dungeon fora de combate.
+
+**Dock**:
+O canto inferior esquerdo do HUD, com o botão do Inventário (e o selo "novo", sempre em texto) e o nome do Papel.
 
 **Pesca** (modo de teste, F9):
 Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
