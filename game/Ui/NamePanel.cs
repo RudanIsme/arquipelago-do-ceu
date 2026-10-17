@@ -12,7 +12,7 @@ namespace ArquipelagoDoCeu;
 // Toque numa sílaba a lê e abre o pontilhado; teclado: 1 a 9, Backspace desfaz, Enter confere, Esc solta. Nenhum tempo é cobrado.
 public partial class NamePanel : OverlayScreen
 {
-	static int PieceSize => UiKit.Compact ? 76 : 110;
+	static int PieceSize => 76;
 	static int PanelWidth => 4 * PieceSize + 3 * 8;
 
 	static readonly Color PanelFill = Color.FromHtml("#1B1424");
@@ -90,7 +90,7 @@ public partial class NamePanel : OverlayScreen
 		style.SetCornerRadiusAll(16);
 		style.SetContentMarginAll(18);
 		var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-		panel.AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
+		panel.AddThemeStyleboxOverride("panel", UiKit.Surface());
 		AddChild(panel);
 		UiKit.DockFit(this, panel, right: true);
 

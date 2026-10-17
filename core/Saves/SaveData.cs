@@ -1,8 +1,9 @@
 namespace ArquipelagoDoCeu.Saves;
 
-// Appearance guarda, por categoria, o id da opção escolhida; ausente significa a primeira opção.
-// É opcional, então saves antigos continuam válidos na mesma versão do formato.
-public sealed record ProfileSave(string Id, string Nickname, int Level, IReadOnlyDictionary<string, string>? Appearance = null, ArquipelagoDoCeu.Equipment.JourneyPreferences? Journey = null, ProgressSave? Progress = null, IReadOnlyDictionary<string, ArquipelagoDoCeu.Equipment.Gear>? Gear = null);
+// Os campos além de Level são opcionais, então saves antigos continuam válidos na mesma versão do formato.
+// Appearance guarda a opção escolhida por categoria; Worn, os Cosméticos vestidos; Seen e GuideSeen, o que o Inventário já mostrou.
+public sealed record ProfileSave(string Id, string Nickname, int Level, IReadOnlyDictionary<string, string>? Appearance = null, ProgressSave? Progress = null, IReadOnlyDictionary<string, ArquipelagoDoCeu.Equipment.Gear>? Gear = null,
+	IReadOnlyList<string>? Worn = null, IReadOnlyList<string>? Seen = null, bool? GuideSeen = null);
 
 // Cada campo ausente vale o padrão dos dados; por isso saves sem configurações continuam válidos.
 public sealed record SettingsSave(string? TextSize = null, bool? Voice = null, bool? ReduceMotion = null, bool? DyslexiaFont = null, bool? CalmMode = null, string? Controls = null, string? VoiceId = null, string? VoiceSpeed = null, bool? ReduceEffects = null);

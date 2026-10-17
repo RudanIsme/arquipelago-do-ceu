@@ -14,11 +14,12 @@ public sealed class PilotPort
 	readonly Func<int> level;
 	readonly TrainingArea training;
 
-	public PilotPort(ProgressServices progress, RewardService rewards, GearService gear, MasterChallenge master, TrainingArea training, Func<string> profileId, Func<int> level)
+	public PilotPort(ProgressServices progress, RewardService rewards, GearService gear, InventoryService inventory, MasterChallenge master, TrainingArea training, Func<string> profileId, Func<int> level)
 	{
 		Progress = progress;
 		Rewards = rewards;
 		Gear = gear;
+		Inventory = inventory;
 		Master = master;
 		this.training = training;
 		this.profileId = profileId;
@@ -28,6 +29,7 @@ public sealed class PilotPort
 	public ProgressServices Progress { get; }
 	public RewardService Rewards { get; }
 	public GearService Gear { get; }
+	public InventoryService Inventory { get; }
 	public MasterChallenge Master { get; }
 	public string ProfileId => profileId();
 	public int Level => level();

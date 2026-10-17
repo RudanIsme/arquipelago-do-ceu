@@ -97,8 +97,8 @@ public partial class TrainingArea : Node
 	public int? EnergyTop { get; set; }
 
 	public bool HasTarget => panel is not null;
-	public void RefreshPresentation() { energyView?.RefreshTheme(); UpdateEnergyDock(); }
-	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (UiKit.Compact ? (panel is null ? 154 : 12) : 126); }
+	public void RefreshPresentation() => UpdateEnergyDock();
+	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (panel is null ? 154 : 12); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
 	public bool HitsDummy(Godot.Vector2 screenPoint) => dummy.IsPickedBy(stage.Camera, screenPoint);

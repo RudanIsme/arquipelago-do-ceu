@@ -28,7 +28,6 @@ public partial class Main : Node3D
 	RootUi rootUi = null!;
 	Label title = null!;
 	Label notice = null!;
-	Label controlHint = null!;
 	GameRules rules = null!;
 	ProfileService profiles = null!;
 	SettingsService settings = null!;
@@ -37,9 +36,6 @@ public partial class Main : Node3D
 	CharacterEditor? editor;
 	OverlayScreen? overlay;
 	TrainingArea training = null!;
-	Button characterButton = null!;
-	Button interactButton = null!;
-	Control bottomBar = null!;
 	ProfileSave? current;
 	Lobby lobby = null!;
 	Player player = null!;
@@ -76,7 +72,7 @@ public partial class Main : Node3D
 		var session = new SaveSession(store, save.Value.Data);
 		progress = ProgressServices.Create(session);
 		rewardService = new RewardService(new ProgressStore(session));
-		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
+		inventory = new ArquipelagoDoCeu.Equipment.InventoryService(session, LoadCosmetics());
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
@@ -94,10 +90,8 @@ public partial class Main : Node3D
 		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion));
 		SetUpTraining();
 
-		UiKit.SetVariant("base");
-		BuildHud();
-		UiKit.SetVariant(journey.Variant);
-		BuildJourneyHud();
+		BuildLobbyHud();
+		ApplyTheme();
 		settings.Changed += ApplySettings;
 		ApplySettings(settings.Current);
 		StartFlow();
@@ -106,7 +100,7 @@ public partial class Main : Node3D
 			notice.Text = missing;
 			GD.PushWarning(missing);
 		}
-		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, master, training, () => current?.Id ?? "", UnlockedLevel));
+		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, inventory, master, training, () => current?.Id ?? "", UnlockedLevel));
 		CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
@@ -122,17 +116,8 @@ public partial class Main : Node3D
 		FitUiRoot();
 	}
 
-	void FitUiRoot() => rootUi.Fit(GetViewport(), uiScale, compensateStretch: journey.Variant != "base");
+	void FitUiRoot() => rootUi.Fit(GetViewport(), uiScale, compensateStretch: true);
 
-	void BuildHud()
-	{
-		var hud = new LegacyHud(uiRoot, ShowProfiles, ShowEditor, ShowSettings, () => Interact(interactTarget));
-		legacyHud = hud.Bar;
-		characterButton = hud.CharacterButton;
-		bottomBar = hud.Bottom;
-		interactButton = hud.InteractButton;
-		controlHint = hud.Hint;
-	}
 
 	void Stop(string text)
 	{
@@ -160,7 +145,6 @@ public partial class Main : Node3D
 		if (dungeon is not null) dungeon.Player.ReduceMotion = player.ReduceMotion;
 		lobby.ReduceMotion = player.ReduceMotion;
 		dummy.ReduceMotion = player.ReduceMotion;
-		controlHint.Text = ControlHints.For(s.Controls);
 		interactTarget = null; // força o botão de interação a refazer o texto com a dica nova
 	}
 
@@ -174,7 +158,7 @@ public partial class Main : Node3D
 	void ShowProfiles()
 	{
 		DropTarget();
-		if (screen is not null || overlay is not null || editor is not null || workshop is not null) return;
+		if (screen is not null || overlay is not null || editor is not null) return;
 		screen = new ProfileScreen(profiles, canCancel: current is not null);
 		screen.Chosen += Enter;
 		screen.Cancelled += () =>
@@ -198,11 +182,10 @@ public partial class Main : Node3D
 		dungeon?.Leave("");
 		if (current?.Id != profile.Id) training.End();
 		current = profile;
-		characterButton.Visible = true;
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
 		player.Visible = true;
 		ApplyAppearance();
-		LoadJourney();
+		LoadProfileLook();
 		UpdatePlayerControl();
 		GD.Print($"Perfil ativo: {profile.Nickname}");
 	}
@@ -210,7 +193,7 @@ public partial class Main : Node3D
 	void ShowEditor()
 	{
 		DropTarget();
-		if (editor is not null || screen is not null || overlay is not null || workshop is not null || current is null) return;
+		if (editor is not null || screen is not null || overlay is not null || current is null) return;
 		editor = new CharacterEditor(profiles, current.Id);
 		editor.Changed += ApplyAppearance;
 		editor.Done += () =>
@@ -228,7 +211,7 @@ public partial class Main : Node3D
 	void ShowOverlay(OverlayScreen next)
 	{
 		DropTarget();
-		if (overlay is not null || screen is not null || editor is not null || workshop is not null)
+		if (overlay is not null || screen is not null || editor is not null)
 		{
 			next.QueueFree();
 			return;
@@ -332,11 +315,10 @@ public partial class Main : Node3D
 	// Com uma tela aberta, teclado e toque são da tela, não do Personagem.
 	void UpdatePlayerControl()
 	{
-		var free = current is not null && screen is null && editor is null && overlay is null && workshop is null;
+		var free = current is not null && screen is null && editor is null && overlay is null;
 		player.Enabled = free && !inDungeon;
 		dungeon?.SetEnabled(free);
-		bottomBar.Visible = player.Enabled;
-		RefreshJourneyVisibility();
+		RefreshLobbyVisibility();
 	}
 
 	// Clicar (ou tocar) na criatura a escolhe; o clique não vira caminhada. Cliques sobre a interface ficam com ela.
@@ -353,6 +335,7 @@ public partial class Main : Node3D
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (@event.IsActionPressed(Controls.Interact)) Interact(interactTarget);
+		if (@event.IsActionPressed(Controls.Inventory) && Controls.TypingPanels == 0 && (inDungeon ? dungeon is { Player.Enabled: true } : player.Enabled)) ShowInventory();
 		if (@event.IsActionPressed(Controls.Target) && inDungeon && dungeon is { Player.Enabled: true }) dungeon.Combat.ToggleTarget();
 		else if (@event.IsActionPressed(Controls.Target) && player.Enabled) training.ToggleTarget();
 	}
@@ -361,10 +344,9 @@ public partial class Main : Node3D
 	public override void _Process(double delta)
 	{
 		if (player is null || inDungeon) return;
-		journeyHud?.SetNotice(notice.Text);
-		journeyHud?.SetPlayState(player.Enabled && journey.Variant != "base" && !training.HasTarget);
-		if (returnJourney is not null && journey.Variant == "base") returnJourney.Visible = player.Enabled && !training.HasTarget;
-		dummy.SetCaptionContext(journey.Variant != "base", player.Enabled && training.InTargetRange());
+		lobbyHud?.SetNotice(notice.Text);
+		lobbyHud?.SetPlayState(player.Enabled && !training.HasTarget);
+		dummy.SetCaptionContext(true, player.Enabled && training.InTargetRange());
 		var target = player.Enabled
 			? InteractionFinder.Nearest(player.GroundPosition, lobby.Interactables, rules.Lobby.InteractionReach + equipmentBonuses.InteractionReachBonus)?.Id
 			: null;
@@ -373,15 +355,7 @@ public partial class Main : Node3D
 		{
 			interactTarget = target;
 			lobby.Highlight(target);
-			interactButton.Visible = target is not null;
-			journeyHud?.SetInteraction(target is null ? null : rules.Lobby.Objects.First(o => o.Id == target).Prompt + " [E]");
-			if (target is not null)
-			{
-				var prompt = rules.Lobby.Objects.First(o => o.Id == target).Prompt;
-
-				interactButton.Text = settings.Current.Controls == "teclado" ? $"[E]  {prompt}" : prompt;
-			}
+			lobbyHud?.SetInteraction(target is null ? null : rules.Lobby.Objects.First(o => o.Id == target).Prompt + " [E]");
 		}
-
 	}
 }

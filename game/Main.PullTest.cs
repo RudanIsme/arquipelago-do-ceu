@@ -19,8 +19,8 @@ public partial class PullTestGate : Node
 	Dictionary<Node, ProcessModeEnum> modes = new(); Dictionary<CanvasLayer, bool> layers = new();
 	public override void _Ready()
 	{
-		ProcessMode = ProcessModeEnum.Always; launch = new CanvasLayer { Layer = 90 }; AddChild(launch); var b = new Button { Text = "Pescar com puxada · F9", Position = new Vector2(16, 650), CustomMinimumSize = new Vector2(230, 46) }; launch.AddChild(b); b.Pressed += Enter;
-		GetViewport().SizeChanged += () => b.Position = new Vector2(16, GetViewport().GetVisibleRect().Size.Y - 60);
+		ProcessMode = ProcessModeEnum.Always; launch = new CanvasLayer { Layer = 90 }; AddChild(launch); var b = new Button { Text = "Pescar com puxada · F9", Position = new Vector2((GetViewport().GetVisibleRect().Size.X - 230) / 2, 12), CustomMinimumSize = new Vector2(230, 46) }; launch.AddChild(b); b.Pressed += Enter;
+		GetViewport().SizeChanged += () => b.Position = new Vector2((GetViewport().GetVisibleRect().Size.X - 230) / 2, 12);
 		if (OS.GetCmdlineUserArgs().Contains("--pull-test")) CallDeferred(nameof(Enter));
 		if (OS.GetCmdlineUserArgs().Contains("--attack-diagnostic")) CallDeferred(nameof(AttackDiagnostic));
 		if (OS.GetCmdlineUserArgs().Contains("--letters-demo")) CallDeferred(nameof(LettersDemo));

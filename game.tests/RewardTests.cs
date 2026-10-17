@@ -239,13 +239,13 @@ public sealed class RewardTests : IDisposable
 			trigger => Assert.Contains(catalog.For(new RewardContext(trigger, "matematica", 1, 1)), r => r.Coins > 0));
 	}
 
-	// O treino do Lobby não conta progresso: só a Dungeon e o Desafio mestre pedem recompensa.
+	// O treino do Lobby não conta progresso: só a Dungeon e o Desafio mestre pedem recompensa. O piloto de depuração (game/Dev) fica de fora.
 	[Fact]
 	public void So_a_Dungeon_e_o_Desafio_mestre_pedem_recompensa()
 	{
 		var game = Path.Combine(MissionFiles.RepositoryRoot(), "game");
 		var callers = Directory.EnumerateFiles(game, "*.cs", SearchOption.AllDirectories)
-			.Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + ".godot" + Path.DirectorySeparatorChar))
+			.Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + ".godot" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + "Dev" + Path.DirectorySeparatorChar))
 			.Where(f => File.ReadAllText(f).Contains(".Grant("))
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 

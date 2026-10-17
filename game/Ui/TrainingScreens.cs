@@ -66,7 +66,7 @@ public partial class TrainingSetupScreen : OverlayScreen
 	// Uma fileira de botões de escolha única; o escolhido fica marcado em palavras e forma, não só em cor.
 	static Control Choices<T>(IReadOnlyList<(T Id, string Name)> options, T current, Action<T> onChosen, int width) where T : notnull
 	{
-		var row = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, CustomMinimumSize = new Vector2(UiKit.Compact ? 420 : 600, 0) };
+		var row = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, CustomMinimumSize = new Vector2(420, 0) };
 		row.AddThemeConstantOverride("h_separation", 10);
 		row.AddThemeConstantOverride("v_separation", 10);
 		var group = new ButtonGroup();
@@ -93,15 +93,11 @@ public partial class EnergyView : PanelContainer
 	public EnergyView(string leaveText = "Sair do treino")
 	{
 		MouseFilter = MouseFilterEnum.Stop;
-		var style = new StyleBoxFlat { BgColor = new Color(Color.FromHtml("#1B1424"), 0.9f), BorderColor = Color.FromHtml("#D9A64A") };
-		style.SetBorderWidthAll(2);
-		style.SetCornerRadiusAll(12);
-		style.SetContentMarginAll(10);
-		AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : style);
+		AddThemeStyleboxOverride("panel", UiKit.Surface());
 
 		var row = new HBoxContainer();
 		row.AddThemeConstantOverride("separation", 12);
-		label.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 18 : 26);
+		label.AddThemeFontSizeOverride("font_size", 18);
 		label.AddThemeColorOverride("font_color", UiKit.TextColor);
 		row.AddChild(label);
 		row.AddChild(dots);
@@ -113,19 +109,7 @@ public partial class EnergyView : PanelContainer
 		SetAnchorsAndOffsetsPreset(LayoutPreset.TopLeft, LayoutPresetMode.Minsize);
 
 		OffsetLeft = 16;
-		OffsetTop = UiKit.Compact ? 154 : 126;
-	}
-
-	public void RefreshTheme()
-	{
-		var legacy = new StyleBoxFlat { BgColor = new Color(Color.FromHtml("#1B1424"), 0.9f), BorderColor = Color.FromHtml("#D9A64A") }; legacy.SetBorderWidthAll(2); legacy.SetCornerRadiusAll(12); legacy.SetContentMarginAll(10);
-		AddThemeStyleboxOverride("panel", UiKit.Compact ? UiKit.Surface() : legacy);
-		label.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 18 : 26); label.AddThemeColorOverride("font_color", UiKit.TextColor);
-		var template = UiKit.BigButton("Sair do treino", () => { }, 230);
-		foreach (string state in new[] { "normal", "hover", "pressed", "hover_pressed", "focus", "disabled" }) leave.AddThemeStyleboxOverride(state, template.GetThemeStylebox(state));
-		foreach (string color in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_disabled_color" }) leave.AddThemeColorOverride(color, template.GetThemeColor(color));
-		leave.AddThemeFontSizeOverride("font_size", UiKit.Compact ? 16 : 28); leave.CustomMinimumSize = template.CustomMinimumSize; template.Free();
-		OffsetTop = UiKit.Compact ? 154 : 126; dots.RefreshTheme(); Callable.From(() => Size = GetCombinedMinimumSize()).CallDeferred();
+		OffsetTop = 154;
 	}
 
 	public event Action? LeaveRequested;
@@ -139,8 +123,8 @@ public partial class EnergyView : PanelContainer
 
 sealed partial class EnergyDots : Control
 {
-	float Radius => UiKit.Compact ? 7f : 13f;
-	float Gap => UiKit.Compact ? 4f : 8f;
+	float Radius => 7f;
+	float Gap => 4f;
 
 	int current;
 	int max = 1;
@@ -151,7 +135,6 @@ sealed partial class EnergyDots : Control
 		CustomMinimumSize = new Vector2(Radius * 2f, Radius * 2f);
 	}
 
-	public void RefreshTheme() => Show(current, max);
 	public void Show(int newCurrent, int newMax)
 	{
 		current = newCurrent;
@@ -163,7 +146,7 @@ sealed partial class EnergyDots : Control
 	// Energia que sobrou: raio cheio. Energia que falta: só o contorno do raio.
 	public override void _Draw()
 	{
-		var gold = UiKit.Compact ? UiKit.TextColor : Color.FromHtml("#F2B632");
+		var gold = UiKit.TextColor;
 		for (var i = 0; i < max; i++)
 		{
 			var center = new Vector2(Radius + i * (Radius * 2f + Gap), Size.Y / 2f);

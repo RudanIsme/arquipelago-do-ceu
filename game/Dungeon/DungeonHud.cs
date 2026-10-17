@@ -26,6 +26,7 @@ public partial class DungeonHud : Node
 	readonly Label floorLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly ProgressBar floorBar = new() { ShowPercentage = false, CustomMinimumSize = new Godot.Vector2(0, 14) };
 	AvatarCard card = null!;
+	Dock dock = null!;
 	Button interactButton = null!;
 	FloorMap? map;
 	int toastEpoch;
@@ -38,6 +39,9 @@ public partial class DungeonHud : Node
 	}
 
 	public EnergyView Energy { get; } = new("Voltar ao Lobby");
+
+	// Diz se há uma luta aberta; com ela o Inventário não abre e o dock some.
+	public Func<bool> InCombat { get; set; } = () => false;
 
 	public event Action? InteractPressed;
 
@@ -59,6 +63,7 @@ public partial class DungeonHud : Node
 		// O card (avatar, apelido e Maestria) fica no canto; a Energia, em raios, logo abaixo.
 		card = new AvatarCard(text => ctx.Voice.Say(text, interrupt: true), canEdit: false);
 		hud.AddChild(card);
+		dock = BuildDock();
 		BuildCoinToast();
 		ShowCoins($"Moedas: {ctx.Progress.Wallet.Balance(ctx.ProfileId)}");
 		ctx.UiRoot.AddChild(Energy);
@@ -120,6 +125,20 @@ public partial class DungeonHud : Node
 		hud.AddChild(interactButton);
 	}
 
+	// O dock do Inventário no canto de baixo, igual ao do Lobby: o botão e o nome do Papel.
+	Dock BuildDock()
+	{
+		var built = new Dock();
+		built.SetRole(ctx.RoleName);
+		built.InventoryRequested += () => ctx.OpenInventory?.Invoke();
+		hud.AddChild(built);
+		return built;
+	}
+
+	public void RefreshDock() => dock.SetNewCount(ctx.NewInventoryItems?.Invoke() ?? 0);
+
+	public override void _Process(double delta) => dock.Visible = !InCombat();
+
 	// Aviso curto das moedas ("+3 moedas"): some sozinho e nunca bloqueia o jogo nem o combate.
 	void BuildCoinToast()
 	{
@@ -177,6 +196,7 @@ public partial class DungeonHud : Node
 
 	public void Refresh(string title, bool floorComplete)
 	{
+		RefreshDock();
 		header.Text = title;
 		card.Set(ctx.Nickname, ctx.RoleName, ctx.Progress.Mastery.Of(ctx.ProfileId, ctx.Discipline));
 		var progress = expedition.ProgressOf(expedition.Floor.Number);

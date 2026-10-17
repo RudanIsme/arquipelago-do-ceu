@@ -124,13 +124,13 @@ public sealed class MasteryAndCoinsTests : IDisposable
 		Assert.Equal(0, progress.Wallet.Balance("p"));
 	}
 
-	// O treino no Lobby não conta progresso: só a Expedição soma moedas e vitórias de Conceito.
+	// O treino no Lobby não conta progresso: só a Expedição soma moedas e vitórias de Conceito. O piloto de depuração (game/Dev) fica de fora.
 	[Fact]
 	public void So_a_Dungeon_da_moedas_e_Maestria()
 	{
 		var game = Path.Combine(MissionFiles.RepositoryRoot(), "game");
 		List<string> Callers(string call) => Directory.EnumerateFiles(game, "*.cs", SearchOption.AllDirectories)
-			.Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + ".godot" + Path.DirectorySeparatorChar))
+			.Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + ".godot" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + "Dev" + Path.DirectorySeparatorChar))
 			.Where(f => File.ReadAllText(f).Contains(call))
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 
