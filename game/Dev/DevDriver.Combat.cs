@@ -69,6 +69,7 @@ public partial class DevDriver
 	// vem pela mesma saída da luta, para o roteiro testar a Energia e a travessura sem depender da mão sorteada.
 	public async Task OvershootWithKeys()
 	{
+		if (Fighting?.Session?.Change is not null) { await PlayMoney(wrong: true); await Wait(0.4); return; }
 		if (Fighting is not { Session.Math: { } math } area) { GD.PushError("Piloto: não há luta de Matemática na tela."); return; }
 		var hand = Enumerable.Range(0, math.Bag.Hand.Count).Where(slot => math.Bag.Hand[slot] is not null).OrderByDescending(slot => math.Bag.Hand[slot]).Take(2).ToList();
 		var sum = hand.Sum(slot => math.Bag.Hand[slot]!.Value);
