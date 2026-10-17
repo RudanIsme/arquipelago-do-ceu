@@ -203,7 +203,7 @@ static partial class DungeonScenarios
 	}
 
 	// Cada torre tem a porta na beira da ilha; o piloto anda até um hexágono perto dela.
-	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false, bool free = false)
+	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false)
 	{
 		await EnsureProfile(d);
 		if (letters) await WalkTo(d, 2, -4);
@@ -211,15 +211,8 @@ static partial class DungeonScenarios
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
-		// A porta da torre pergunta o modo: Progressão (o Plano do Nível) ou Livre.
-		if (d.Button("Progressão") is not null)
-		{
-			await d.Shot("00-escolha-do-modo");
-			await d.Press(free ? "Livre" : "Progressão");
-			await d.Wait(0.5);
-		}
 		// Com o Atalho de Nível ainda não tentado, a porta da torre pergunta antes de entrar.
-		if (!free && d.Button("Entrar na torre") is not null)
+		if (d.Button("Entrar na torre") is not null)
 		{
 			await d.Shot("00-oferta-do-atalho");
 			await d.Press(shortcut ? "Tentar o Atalho" : "Entrar na torre");

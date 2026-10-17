@@ -64,7 +64,7 @@ As duas formas de pagar no Mercador, escolhidas a cada compra ou venda. Em "Eu p
 O comerciante do Lobby. Compra Equipamento da criança (em lote, nunca o vestido, com recompra pelo mesmo preço e sem prazo) e vende Cosméticos de um estoque que só troca quando a criança usa o botão Rotacionar. Só moedas do jogo; toda compra, venda e recompra pede confirmação.
 
 **Carga de rotação**:
-O que cada Expedição concluída (Progressão ou Livre) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
+O que cada Expedição concluída (com ou sem Andares profundos) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
 
 **Pesca** (modo de teste, F9):
 Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
@@ -133,11 +133,11 @@ O saldo do Perfil, só do jogo e nunca dinheiro de verdade. Ganha-se por criatur
 _Avoid_: Dinheiro, ouro
 
 **Progressão**:
-O modo de Expedição que segue o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível.
+O que a criança sempre joga ao entrar numa torre: o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível. Não há tela de escolha de modo.
 
-**Expedição livre**:
-O outro modo de Expedição: os Andares seguem sem fim, a partir da mesma seed, no Nível que a criança já liberou, sem Marco, Item de troca nem Desafio épico. O conteúdo varia (o mesmo problema não se repete na Expedição) e rende moedas, mas não avança o Plano do Nível, o Desafio épico nem o Desafio mestre. A criança sai quando quiser, sem punição.
-_Avoid_: Modo infinito
+**Andar profundo**:
+Andar além do Plano do Nível, gerado pela mesma seed e sem fim. A criança chega depois do último Andar do Plano ou pela escada lateral opcional, na entrada de qualquer Andar da Progressão. Não tem Marco, Item de troca nem Desafio épico, nunca é obrigatório e nunca bloqueia nada. Rende moedas e Maestria, mas não avança o Plano do Nível, o Desafio épico nem o Desafio mestre. O conteúdo varia (o mesmo problema não se repete na Expedição). O Fast travel dele volta à Progressão, e a criança sai quando quiser, sem punição.
+_Avoid_: Modo infinito, Expedição livre
 
 **Expedição**:
 Uma tentativa contínua, desde a saída do Lobby até a volta. Termina quando a criança decide voltar ou quando a Energia acaba; ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Perde-se o que é temporário; Andares salvos e habilidades ficam.

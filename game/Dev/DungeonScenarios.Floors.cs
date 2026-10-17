@@ -158,19 +158,23 @@ static partial class DungeonScenarios
 		await d.Wait(0.5);
 	}
 
-	// A Expedição livre, as moedas, a Maestria e o HUD por contexto (#120, #121, #131 e #135).
-	public static async Task FreeExpedition(DevDriver d)
+	// Os Andares profundos, as moedas, a Maestria e o HUD por contexto (#120, #121, #131 e #153).
+	public static async Task DeepFloors(DevDriver d)
 	{
-		var run = await Enter(d, free: true);
+		var run = await Enter(d);
 		if (run is null) return;
 		var expedition = run.Expedition;
 		var progress = run.Progress;
 		var profile = run.ProfileId;
-		d.Expect(expedition.Plan.Endless, "a Expedição livre tem Plano sem fim");
+		d.Expect(!expedition.InDeep && expedition.CanEnterDeep, "entrar numa torre começa a Progressão, com a escada lateral na entrada");
+		run.Player.PlaceAt(DungeonWorld.DeepStairsSpot + new Vector2(0.3f, 0.3f));
+		await d.Wait(0.3);
+		await d.Tap(Controls.Interact);
+		d.Expect(expedition.InDeep && expedition.Floor.Number == 1, "a escada lateral leva ao Andar profundo 1");
 		d.Expect(progress.Wallet.Balance(profile) == 0, "o Perfil novo não tem moedas");
 
 		// Exploração: placa, mapa e nada de bolsa nem pedido.
-		d.Expect(d.HasVisible("Livre") && d.HasVisible("Matemática:"), "a placa diz o modo e o objetivo (o Conceito do Andar)");
+		d.Expect(d.HasVisible("Profundo") && d.HasVisible("Matemática:"), "a placa diz o modo e o objetivo (o Conceito do Andar)");
 		d.Expect(d.Hud is null, "em exploração não há bolsa de números");
 		await d.Shot("01-exploracao");
 
@@ -201,13 +205,13 @@ static partial class DungeonScenarios
 			if (floor == 1) await d.Shot("03-andar-1-saida");
 			await Ascend(d, run);
 		}
-		d.Expect(expedition.Floor.Number == 6 && !expedition.Finished, "a Livre passa do fim de qualquer Plano e não termina");
+		d.Expect(expedition.Floor.Number == 6 && expedition.InDeep && !expedition.Finished, "o fundo passa do fim de qualquer Plano e não termina");
 		var seen = run.History.Seen;
 		d.Expect(seen.Count > 1 && Enumerable.Range(1, seen.Count - 1).All(i => seen[i] != seen[i - 1]), "dois problemas seguidos nunca se repetem");
 		d.Expect(progress.Wallet.Balance(profile) > 1, "os Andares seguintes renderam mais moedas");
 		d.Expect(!progress.Levels.FloorDiscovered(profile, new FloorKey("matematica", 1, 2)) && !progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)) && !progress.Levels.HasItem(profile, new LevelKey("matematica", 1)),
-			"a Livre não avança o Plano do Nível, o Item nem o épico");
-		d.Expect(progress.Explored.Get(profile, new FloorKey("matematica", 1, 1), 1) is null && !progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "a Livre não guarda exploração nem Andar completo");
+			"o fundo não avança o Plano do Nível, o Item nem o épico");
+		d.Expect(progress.Explored.Get(profile, new FloorKey("matematica", 1, 2), 1) is null && !progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "o fundo não guarda exploração nem Andar completo");
 		await d.Shot("04-andar-6");
 		run.Leave("");
 		await d.Wait(0.5);

@@ -65,11 +65,12 @@ public sealed class DungeonRewards
 	public string? ForFloor(Expedition expedition)
 	{
 		var number = expedition.Floor.Number;
-		if (ctx.Shortcut || !expedition.IsFloorComplete(number)) return null;
-		// A Livre paga o Andar uma vez só por Expedição e não registra Andar completo nem Cosmético: isso é do Plano do Nível.
-		if (ctx.Free && !paidFloors.Add(number)) return null;
-		var rewards = Reward(ctx.Free ? "free-floor-complete" : "floor-complete", number);
-		return rewards is null && !ctx.Free ? null : Join($"Andar {number} completo!", rewards);
+		var deep = expedition.InDeep;
+		if (ctx.Shortcut || !expedition.IsFloorComplete(number, deep)) return null;
+		// O Andar profundo paga uma vez só por Expedição e não registra Andar completo nem Cosmético: isso é do Plano do Nível.
+		if (deep && !paidFloors.Add(number)) return null;
+		var rewards = Reward(deep ? "free-floor-complete" : "floor-complete", number);
+		return rewards is null && !deep ? null : Join($"Andar {number} completo!", rewards);
 	}
 
 	// Pede as recompensas do gatilho e devolve o que a criança ganhou, em texto.

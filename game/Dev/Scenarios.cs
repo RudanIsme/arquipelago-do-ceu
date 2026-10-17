@@ -100,8 +100,8 @@ static class Scenarios
 			case "torre-equipamento":
 				await DungeonScenarios.Equipment(d);
 				break;
-			case "torre-livre":
-				await DungeonScenarios.FreeExpedition(d);
+			case "torre-profunda":
+				await DungeonScenarios.DeepFloors(d);
 				break;
 			case "torre-andares":
 				await DungeonScenarios.Floors(d);

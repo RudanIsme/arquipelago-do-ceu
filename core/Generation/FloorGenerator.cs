@@ -7,7 +7,7 @@ public sealed record Room(int Id, RoomType Kind, bool HoldsItem = false);
 public sealed record Link(int A, int B);
 
 // Um Andar: grafo de Salas ligadas entre si. Combate, Puzzle, Marco e épico se vencem para seguir adiante.
-public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<Link> Links, int Entrance, int Exit)
+public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<Link> Links, int Entrance, int Exit, bool Deep = false)
 {
 	public IEnumerable<int> Neighbors(int room) =>
 		Links.Where(l => l.A == room || l.B == room).Select(l => l.A == room ? l.B : l.A);
@@ -17,11 +17,13 @@ public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<
 // então Fast travel, Descanso e todo Puzzle são alcançáveis sem Item.
 public static class FloorGenerator
 {
+	// Os Andares profundos usam números de seed acima dos do Plano, para o fundo 1 não repetir o Andar 1.
+	const int DeepSeedBase = 1000;
 	const int Fixed = 3; // entrada, saída e Fast travel; o Descanso entra junto das Salas livres
 
 	public static Floor Generate(DungeonRules rules, ulong world, string discipline, int level, FloorPlan plan, int generatorVersion, RoomTypes? types = null)
 	{
-		var rng = new Pcg32(Seed.Mix(world, discipline, level, plan.Number, generatorVersion));
+		var rng = new Pcg32(Seed.Mix(world, discipline, level, plan.Deep ? DeepSeedBase + plan.Number : plan.Number, generatorVersion));
 		var total = rules.RoomsMin + rng.NextInt(rules.RoomsMax - rules.RoomsMin + 1);
 
 		var loose = FreeRooms(plan, total, rng, types ?? RoomTypes.Default);
@@ -51,7 +53,7 @@ public static class FloorGenerator
 		var exit = rooms.Count;
 		links.Add(new Link(gate, exit));
 		rooms.Add(new Room(exit, plan.HasEpic ? RoomTypes.Epic : RoomTypes.Exit));
-		return new Floor(plan.Number, rooms, links, 0, exit);
+		return new Floor(plan.Number, rooms, links, 0, exit, plan.Deep);
 	}
 
 	// As Salas que ficam antes do Marco, em ordem sorteada: Fast travel, Descanso e as de combate ou Puzzle.

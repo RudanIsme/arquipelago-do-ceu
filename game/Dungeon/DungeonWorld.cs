@@ -48,6 +48,8 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		var list = doors.Select(d => new Interactable($"door:{d.Target}", new System.Numerics.Vector2(d.Ground.X, d.Ground.Z))).ToList();
 		if (expedition.CanAscend) list.Add(new Interactable("stairs", StairsSpot));
 		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", StairsSpot));
+		if (expedition.CanEnterDeep) list.Add(new Interactable("stairs-deep", DeepStairsSpot));
+		if (expedition.CanReturnToProgression) list.Add(new Interactable("progression", FountainSpot));
 		if (expedition.Current.Kind.Restores) list.Add(new Interactable("rest", FountainSpot));
 		return list;
 	}
@@ -113,7 +115,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	// Reconstrói a Sala: chão pela função, portas para as vizinhas e o letreiro do centro.
 	// `describe` dá o texto da porta, se está trancada e se a Sala já é conhecida: a porta de uma Sala nova não a revela.
-	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false)
+	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false, bool deepStairs = false)
 	{
 		foreach (var child in room.GetChildren()) child.QueueFree();
 		doors.Clear();
@@ -137,6 +139,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		if (note is not null) AddSign(note, new Vector3(0f, 3.4f, 0f), 34);
 		if (kind.Stairs == RoomStairs.Up || stairsDown) AddStairs(stairsDown);
 		if (kind.Restores) AddFountain(cleared.Contains(roomId));
+		if (deepStairs) AddDeepStairs();
 	}
 
 	// A porta da Sala `target`, para a criança chegar nela vinda de lá.
@@ -149,6 +152,9 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	// A escada do Andar fica no meio da Sala de saída (para subir) ou da entrada (para descer).
 	public static System.Numerics.Vector2 StairsSpot => new(0f, 0f);
+
+	// A escada lateral dos Andares profundos fica ao lado, fora do caminho das portas e da escada principal.
+	public static System.Numerics.Vector2 DeepStairsSpot => new(-2.4f, 1.4f);
 
 	void AddFloor(Color baseColor, bool cleared)
 	{
@@ -218,6 +224,15 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		if (down) AddSign("Escada para baixo", new Vector3(0f, 3.4f, 0f), 40);
 		for (var step = 0; step < 4; step++)
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.8f - step * 0.3f, 0.25f, 1.8f - step * 0.3f) }, MaterialOverride = material, Position = new Vector3(0f, 0.15f + step * 0.25f, 0f) });
+	}
+
+	void AddDeepStairs()
+	{
+		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#6F5BB0"), Roughness = 0.8f };
+		var at = new Vector3(DeepStairsSpot.X, 0f, DeepStairsSpot.Y);
+		for (var step = 0; step < 3; step++)
+			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f - step * 0.35f, 0.2f, 1.5f - step * 0.35f) }, MaterialOverride = material, Position = at + new Vector3(0f, 0.1f + step * 0.2f, 0f) });
+		AddSign("Escada lateral\nAndares profundos", at + new Vector3(0f, 1.9f, 0f), 36);
 	}
 
 	void AddSign(string text, Vector3 at, int size)

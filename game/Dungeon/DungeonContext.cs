@@ -39,7 +39,6 @@ public sealed record DungeonContext(
 	bool AtFastTravel = false,
 	Action<OverlayScreen>? ShowOverlay = null,
 	bool Shortcut = false,
-	bool Free = false,
 	ConceptNames? Concepts = null,
 	Action? OpenInventory = null,
 	Func<int>? NewInventoryItems = null,

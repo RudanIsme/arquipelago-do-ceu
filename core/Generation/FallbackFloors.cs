@@ -15,7 +15,7 @@ public sealed class FallbackFloors
 	public Floor For(FloorPlan plan)
 	{
 		var t = templates.First(t => t.Item == plan.HoldsItem && t.Marco == plan.HasMarco && t.Epic == plan.HasEpic);
-		return new Floor(plan.Number, t.Rooms, t.Links, 0, t.Rooms.Count - 1);
+		return new Floor(plan.Number, t.Rooms, t.Links, 0, t.Rooms.Count - 1, plan.Deep);
 	}
 
 	public static Result<FallbackFloors> Parse(string json)

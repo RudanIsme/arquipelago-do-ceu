@@ -51,18 +51,20 @@ public sealed class DungeonNarration
 	{
 		if (id == "rest") return "Descansar [E]";
 		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
-		if (id == "stairs-down") return $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
+		if (id == "stairs-down") return expedition.InDeep && expedition.Floor.Number == 1 ? "Voltar à Progressão [E]" : $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
+		if (id == "stairs-deep") return "Descer aos Andares profundos [E]";
+		if (id == "progression") return "Voltar à Progressão [E]";
 		var room = int.Parse(id["door:".Length..], CultureInfo.InvariantCulture);
 		return expedition.Visited.Contains(room) ? $"Ir para {expedition.Floor.Rooms[room].Kind.Name.ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
 	}
 
 	public string ProgressSpeech()
 	{
-		var progress = expedition.ProgressOf(expedition.Floor.Number);
+		var progress = expedition.ProgressOf(expedition.Floor.Number, expedition.InDeep);
 		return $"{progress.Resolved} de {progress.Total} Salas resolvidas.";
 	}
 
-	public string OfTotal() => ctx.Free ? "" : $" de {expedition.Plan.Floors.Count}";
+	public string OfTotal() => expedition.InDeep ? "" : $" de {expedition.Plan.Floors.Count}";
 
 	// O que a voz diz de uma Sala do mapa: o que é (se já visitada), se está vencida, se tem cadeado. Sala sob névoa não revela o tipo.
 	public string RoomSpeech(int room)
@@ -84,7 +86,7 @@ public sealed class DungeonNarration
 		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
 		var locked = rooms.Count(expedition.IsLocked);
 		var done = floorDone ? " Este Andar está completo." : "";
-		var item = ctx.Free ? "" : $" Item de troca da {OtherName}: {(ctx.HasTradeItem() ? "você tem" : "ainda não")}.";
+		var item = expedition.InDeep ? "" : $" Item de troca da {OtherName}: {(ctx.HasTradeItem() ? "você tem" : "ainda não")}.";
 		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
 	}
 }

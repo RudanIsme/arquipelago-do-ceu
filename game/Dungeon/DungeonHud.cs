@@ -199,7 +199,7 @@ public partial class DungeonHud : Node
 		RefreshDock();
 		header.Text = title;
 		card.Set(ctx.Nickname, ctx.RoleName, ctx.Progress.Mastery.Of(ctx.ProfileId, ctx.Discipline));
-		var progress = expedition.ProgressOf(expedition.Floor.Number);
+		var progress = expedition.ProgressOf(expedition.Floor.Number, expedition.InDeep);
 		floorBar.MaxValue = progress.Total;
 		floorBar.Value = progress.Resolved;
 		floorLabel.Text = $"{progress.Resolved} de {progress.Total} Salas resolvidas" + (floorComplete ? "  ★ Andar completo" : "");

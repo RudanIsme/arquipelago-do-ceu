@@ -3,17 +3,18 @@ using ArquipelagoDoCeu.Rules;
 namespace ArquipelagoDoCeu.Generation;
 
 // O que um Andar do Plano manda ter: a Sala do Item, o Marco e o Desafio épico (o último Andar).
-public sealed record FloorPlan(int Number, bool HoldsItem, bool HasMarco, bool HasEpic);
+// `Deep` é o Andar profundo: `Number` é a profundidade (1, 2, ...), sem Item, Marco nem épico.
+public sealed record FloorPlan(int Number, bool HoldsItem, bool HasMarco, bool HasEpic, bool Deep = false);
 
 // A divisão de um Nível em Andares (ADR 0003): o Item vem antes do Marco e o Marco antes do épico (ADR 0002).
-// Na Expedição livre o Plano é sem fim: só Andares comuns, sem Marco, épico nem Item.
-public sealed record LevelPlan(string Discipline, int Level, IReadOnlyList<FloorPlan> Floors, bool Endless = false)
+// Os Andares profundos ficam fora do Plano: não têm fim e nascem da mesma seed (ADR 0003).
+public sealed record LevelPlan(string Discipline, int Level, IReadOnlyList<FloorPlan> Floors)
 {
-	public static LevelPlan Free(string discipline, int level) => new(discipline, level, [], Endless: true);
+	public static FloorPlan DeepFloor(int depth) => new(depth, false, false, false, Deep: true);
 
-	public bool HasFloor(int number) => number >= 1 && (Endless || number <= Floors.Count);
+	public bool HasFloor(int number) => number >= 1 && number <= Floors.Count;
 
-	public FloorPlan For(int number) => Endless ? new FloorPlan(number, false, false, false) : Floors[number - 1];
+	public FloorPlan For(int number) => Floors[number - 1];
 
 	// O Plano usa o Andar 0 na seed: ele nasce antes de qualquer Andar.
 	public static LevelPlan Create(DungeonRules rules, ulong world, string discipline, int level, int generatorVersion)
