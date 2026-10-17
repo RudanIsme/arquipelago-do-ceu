@@ -107,6 +107,8 @@ public sealed class NameBattle
 		return true;
 	}
 
+	public void UndoAll() => chosen.Clear();
+
 	public NameVerdict Check()
 	{
 		var check = NameChecker.Check(Name, chosen.Select(i => pieces[i]).ToList());

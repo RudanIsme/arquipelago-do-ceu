@@ -53,7 +53,7 @@ public sealed class FloorProgressTests : IDisposable
 		var progress = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
 
 		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 2)));
-		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
+		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
 		Assert.Empty(progress.Rewards.Cosmetics("p"));
 		Assert.Equal(new FloorKey("matematica", 1, 2), progress.Levels.LastFastTravel("p", new LevelKey("matematica", 1)));
 		Assert.Equal(json, File.ReadAllText(PathName));
@@ -90,8 +90,8 @@ public sealed class FloorProgressTests : IDisposable
 		Assert.Null(again.Value.Cosmetic);
 
 		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
-		Assert.True(reopened.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
-		Assert.False(reopened.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
+		Assert.True(reopened.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.False(reopened.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
 		Assert.Equal(new[] { "m11" }, reopened.Rewards.Cosmetics("p").ToArray());
 		Assert.Empty(reopened.Rewards.Cosmetics("q"));
 	}
@@ -117,7 +117,7 @@ public sealed class FloorProgressTests : IDisposable
 		var progress = ProgressServices.Create(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
 
 		Assert.False(progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog).IsOk);
-		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
 		Assert.Empty(progress.Rewards.Cosmetics("p"));
 	}
 
@@ -159,7 +159,7 @@ public sealed class FloorProgressTests : IDisposable
 		var done = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), CosmeticCatalog.Empty);
 
 		Assert.False(done.Value!.NewlyDone);
-		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
 	}
 
 	[Fact]

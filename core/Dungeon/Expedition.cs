@@ -57,8 +57,8 @@ public sealed class Expedition
 		else if (atFastTravel) MoveToRoom(RoomKind.FastTravel);
 	}
 
-	// Recomeça na entrada de `startFloor`, no Fast travel dele ou, com `atEpic`, no épico (as Salas do caminho contam como vencidas).
-	// `explored` traz o que o save guardou por Andar; os Descansos nunca vão para o save.
+	// Recomeça na entrada de `startFloor`, no Fast travel dele ou, com `atEpic`, no épico (o caminho conta como vencido).
+	// `hasItem` abre o Marco; `explored` vem do save (nada, num save antigo); os Descansos nunca vão para o save.
 	public static Expedition Start(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool>? hasItem = null,
 		int startFloor = 1, bool atFastTravel = false, bool atEpic = false, Func<int, FloorExploration?>? explored = null) =>
 		new(floors, plan, world, version, energy, hasItem ?? (() => false), startFloor, atFastTravel, atEpic, explored ?? (_ => null));

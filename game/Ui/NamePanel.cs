@@ -78,8 +78,7 @@ public partial class NamePanel : OverlayScreen
 	public void Abandon()
 	{
 		pad.Abort();
-		var more = true;
-		while (more) more = battle.Undo();
+		battle.UndoAll();
 		tracing = false;
 		Close();
 	}

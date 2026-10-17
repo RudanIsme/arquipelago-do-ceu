@@ -98,10 +98,12 @@ public partial class DungeonRun : Node
 
 	// O Atalho não carrega nem guarda exploração: ele pula o caminho, e as Salas do caminho não foram jogadas. A Livre também
 	// não: ela não mexe no que a Progressão guardou.
+	LevelKey TowerLevel => new(ctx.Discipline, ctx.Level);
+	FloorKey FloorOf(int number) => new(ctx.Discipline, ctx.Level, number);
 	bool Persists => !ctx.Shortcut && !ctx.Free;
 
 	FloorExploration? Explored(int floor) =>
-		!Persists ? null : ctx.Progress.Explored.Get(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, floor), GeneratorVersion);
+		!Persists ? null : ctx.Progress.Explored.Get(ctx.ProfileId, FloorOf(floor), GeneratorVersion);
 
 	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
 	static ulong WorldSeed(string profileId) =>
@@ -279,7 +281,7 @@ public partial class DungeonRun : Node
 			Leave("Não foi possível abrir o Atalho agora.");
 			return false;
 		}
-		var marked = ctx.Progress.Levels.MarkShortcutTried(ctx.ProfileId, new LevelKey(ctx.Discipline, ctx.Level));
+		var marked = ctx.Progress.Levels.MarkShortcutTried(ctx.ProfileId, TowerLevel);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		shortcut = setups.Value!;
 		return true;
@@ -437,9 +439,9 @@ public partial class DungeonRun : Node
 	// O Desafio épico vencido conclui o Nível nesta torre (também pelo Atalho, que ainda entrega o Item); a criança escolhe seguir.
 	void ConcludeLevel(string? extra = null)
 	{
-		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, new LevelKey(ctx.Discipline, ctx.Level));
+		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, TowerLevel);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
-		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, new LevelKey(ctx.Discipline, ctx.Level)) && GiveItem();
+		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, TowerLevel) && GiveItem();
 		RefreshHud();
 		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}." + (extra is null ? "" : " " + extra);
 		Say(text);
@@ -454,7 +456,7 @@ public partial class DungeonRun : Node
 
 	bool GiveItem()
 	{
-		var saved = ctx.Progress.Levels.GiveItem(ctx.ProfileId, new LevelKey(ctx.Discipline, ctx.Level));
+		var saved = ctx.Progress.Levels.GiveItem(ctx.ProfileId, TowerLevel);
 		if (!saved.IsOk)
 		{
 			GD.PushWarning(saved.Error!);
@@ -541,7 +543,7 @@ public partial class DungeonRun : Node
 	{
 		// Na Livre o ponto não é guardado: ele não pertence ao Plano do Nível.
 		if (ctx.Free) return "Fast travel! Aqui você pode voltar ao Lobby quando quiser.";
-		var saved = ctx.Progress.Levels.FindFastTravel(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, expedition.Floor.Number));
+		var saved = ctx.Progress.Levels.FindFastTravel(ctx.ProfileId, FloorOf(expedition.Floor.Number));
 		if (!saved.IsOk) GD.PushWarning(saved.Error!);
 		return "Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.";
 	}
@@ -569,7 +571,7 @@ public partial class DungeonRun : Node
 		// Só grava quando algo mudou: voltar a uma Sala já visitada não precisa reescrever o save.
 		var stamp = (expedition.Floor.Number, expedition.Visited.Count, expedition.Cleared.Count);
 		if (stamp == lastSaved) return;
-		var saved = ctx.Progress.Explored.Save(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, expedition.Floor.Number), expedition.Exploration(), GeneratorVersion);
+		var saved = ctx.Progress.Explored.Save(ctx.ProfileId, FloorOf(expedition.Floor.Number), expedition.Exploration(), GeneratorVersion);
 		if (saved.IsOk) lastSaved = stamp;
 		else GD.PushWarning(saved.Error!);
 	}
@@ -581,8 +583,8 @@ public partial class DungeonRun : Node
 		if (ctx.Shortcut || !expedition.IsFloorComplete(number)) return null;
 		// A Livre paga as moedas do Andar uma vez só, mas não registra Andar completo nem Cosmético: isso é do Plano do Nível.
 		if (ctx.Free) return paidFloors.Add(number) ? Join($"Andar {number} completo!", PayCoins(ctx.Rules.Dungeon.CoinsFloor)) : null;
-		if (ctx.Progress.Explored.IsFloorDone(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, number))) return null;
-		var done = ctx.Progress.Rewards.CompleteFloor(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, number), ctx.Catalog);
+		if (ctx.Progress.Rewards.IsFloorDone(ctx.ProfileId, FloorOf(number))) return null;
+		var done = ctx.Progress.Rewards.CompleteFloor(ctx.ProfileId, FloorOf(number), ctx.Catalog);
 		if (!done.IsOk)
 		{
 			GD.PushWarning(done.Error!);
@@ -623,14 +625,14 @@ public partial class DungeonRun : Node
 		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
 	}
 
-	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.Explored.IsFloorDone(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, expedition.Floor.Number))));
+	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.Rewards.IsFloorDone(ctx.ProfileId, FloorOf(expedition.Floor.Number))));
 
 	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
 	{
 		if (!ctx.Free)
 		{
-			var saved = ctx.Progress.Levels.DiscoverFloor(ctx.ProfileId, new FloorKey(ctx.Discipline, ctx.Level, expedition.Floor.Number));
+			var saved = ctx.Progress.Levels.DiscoverFloor(ctx.ProfileId, FloorOf(expedition.Floor.Number));
 			if (!saved.IsOk) GD.PushWarning(saved.Error!);
 		}
 		BuildMap();

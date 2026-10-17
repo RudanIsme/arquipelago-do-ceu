@@ -79,6 +79,8 @@ public sealed class WordBattle
 		return true;
 	}
 
+	public void Clear() => typed.Clear();
+
 	public WordResult Check()
 	{
 		if (typed.Count < Word.Length) return WordResult.Incomplete;

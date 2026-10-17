@@ -17,8 +17,6 @@ public sealed class ExplorationService(ProgressStore store)
 		var entry = new ExploredFloor(key, exploration.Visited.ToList(), exploration.Cleared.ToList(), version);
 		return store.Update(profileId, p => p with { Explored = [.. (p.Explored ?? []).Where(e => e.Key != key), entry] });
 	}
-
-	public bool IsFloorDone(string profileId, FloorKey floor) => store.Has(profileId, p => p.FloorsDone, floor.ToString());
 }
 
 // O que aconteceu ao registrar um Andar completo: se foi a primeira vez e qual Cosmético a criança ganhou.
@@ -29,12 +27,14 @@ public sealed class RewardService(ProgressStore store)
 {
 	public IReadOnlyList<string> Cosmetics(string profileId) => store.Of(profileId)?.Cosmetics ?? [];
 
+	public bool IsFloorDone(string profileId, FloorKey floor) => store.Has(profileId, p => p.FloorsDone, floor.ToString());
+
 	// Registra o Andar completo e dá o Cosmético dele, juntos num só salvamento e só na primeira vez: voltar ao Andar ou
 	// recomeçar a Expedição não repete o prêmio. Se o save falha, nada vale e a criança completa de novo no próximo passo.
 	public Result<FloorCompletion> CompleteFloor(string profileId, FloorKey floor, CosmeticCatalog catalog)
 	{
 		var key = floor.ToString();
-		if (store.Has(profileId, p => p.FloorsDone, key)) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));
+		if (IsFloorDone(profileId, floor)) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));
 
 		// Sem catálogo (o arquivo não abriu) o Andar fica por registrar, para o Cosmético não se perder para sempre.
 		if (catalog.All.Count == 0) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));

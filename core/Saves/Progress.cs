@@ -1,7 +1,7 @@
 namespace ArquipelagoDoCeu.Saves;
 
-// O que a criança conquistou nas Dungeons, com chaves de texto ("matematica:1:2") e ausente valendo vazio, para saves antigos abrirem.
-// O Nível liberado é o `Level` do Perfil. O treino no Lobby nunca escreve aqui.
+// Chaves de texto ("matematica:1:2") e ausente valendo vazio, para saves antigos abrirem; o Nível liberado é o `Level` do Perfil.
+// `Solved` conta vitórias por Conceito, `Mastered` os dominados (a Maestria) e `Coins` o saldo; o treino nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,

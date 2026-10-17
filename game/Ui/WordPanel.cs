@@ -66,8 +66,7 @@ public partial class WordPanel : OverlayScreen
 	// Perde o alvo sem responder: o que estava escrito se apaga.
 	public void Abandon()
 	{
-		var more = true;
-		while (more) more = battle.Backspace();
+		battle.Clear();
 		Close();
 	}
 

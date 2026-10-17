@@ -95,7 +95,7 @@ public sealed class SaveCompatTests : IDisposable
 	{
 		var explored = Open(Exploration, out _, out _);
 		Assert.Equal(new[] { 0, 1 }, explored.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 1)!.Visited.ToArray());
-		Assert.True(explored.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.True(explored.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
 		Assert.Equal(new[] { "matematica-1-1" }, explored.Rewards.Cosmetics("p").ToArray());
 
 		var grown = Open(Growth, out _, out _);

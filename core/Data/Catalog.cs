@@ -41,25 +41,27 @@ public static class CatalogJson
 // nomes de Conceito) é `Optional`: se falhar, o jogo segue com o padrão e a falha é avisada uma vez.
 public sealed class CatalogLoader(IDataSource source, Action<string> warn)
 {
-	readonly Dictionary<string, object> loaded = [];
+	readonly Dictionary<(string File, Type Kind), object> loaded = [];
+	readonly HashSet<string> warned = [];
 
+	// Só o que deu certo fica guardado: uma leitura que falhou é tentada de novo na próxima vez.
 	public Result<T> Required<T>(string file, Func<string, Result<T>> parse)
 	{
-		if (loaded.TryGetValue(file, out var cached)) return (Result<T>)cached;
+		if (loaded.TryGetValue((file, typeof(T)), out var cached)) return Result<T>.Ok((T)cached);
 
 		var text = source.Read(file);
 		var parsed = text.IsOk ? parse(text.Value!) : Result<T>.Fail(text.Error!);
-		var result = parsed.IsOk ? parsed : Result<T>.Fail($"{file}: {parsed.Error}");
-		loaded[file] = result;
-		return result;
+		if (!parsed.IsOk) return Result<T>.Fail($"{file}: {parsed.Error}");
+		loaded[(file, typeof(T))] = parsed.Value!;
+		return parsed;
 	}
 
+	// A falha é avisada uma vez por arquivo, mesmo que o jogo peça o catálogo muitas vezes.
 	public T Optional<T>(string file, Func<string, Result<T>> parse, T fallback)
 	{
-		var known = loaded.ContainsKey(file);
 		var result = Required(file, parse);
 		if (result.IsOk) return result.Value!;
-		if (!known) warn(result.Error!);
+		if (warned.Add(file)) warn(result.Error!);
 		return fallback;
 	}
 }

@@ -37,8 +37,6 @@ public sealed record GameRules(
 		var read = CatalogJson.Deserialize<Dto>(json, "O arquivo de regras");
 		if (!read.IsOk) return Fail(read.Error!);
 		var dto = read.Value!;
-		if (dto is null)
-			return Fail("O arquivo de regras não é um JSON válido.");
 
 		var error = CheckNames(dto)
 			?? CheckRange("maxEnergy", dto.MaxEnergy, MaxEnergyLimit)

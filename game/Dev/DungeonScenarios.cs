@@ -478,13 +478,13 @@ static class DungeonScenarios
 			}
 			if (i == content.Count / 2 - 1)
 			{
-				d.Expect(!progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "no meio do Andar ele ainda não está completo");
+				d.Expect(!progress.Rewards.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "no meio do Andar ele ainda não está completo");
 				await d.Shot("03-barra-parcial");
 			}
 		}
 		var total = expedition.ProgressOf(floor.Number);
 		d.Expect(total.Resolved == total.Total, "todas as Salas do Andar foram resolvidas");
-		d.Expect(progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "o Andar completo foi registrado");
+		d.Expect(progress.Rewards.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "o Andar completo foi registrado");
 		d.Expect(progress.Rewards.Cosmetics(profile).Contains("matematica-1-1"), "completar o Andar deu o Cosmético dele");
 		await d.Shot("04-selo-andar-completo");
 
@@ -613,7 +613,7 @@ static class DungeonScenarios
 		d.Expect(progress.Wallet.Balance(profile) > 1, "os Andares seguintes renderam mais moedas");
 		d.Expect(!progress.Levels.FloorDiscovered(profile, new FloorKey("matematica", 1, 2)) && !progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)) && !progress.Levels.HasItem(profile, new LevelKey("matematica", 1)),
 			"a Livre não avança o Plano do Nível, o Item nem o épico");
-		d.Expect(progress.Explored.Get(profile, new FloorKey("matematica", 1, 1), 1) is null && !progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "a Livre não guarda exploração nem Andar completo");
+		d.Expect(progress.Explored.Get(profile, new FloorKey("matematica", 1, 1), 1) is null && !progress.Rewards.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "a Livre não guarda exploração nem Andar completo");
 		await d.Shot("04-andar-6");
 		run.Leave("");
 		await d.Wait(0.5);

@@ -78,6 +78,33 @@ public class CatalogTests
 	}
 
 	[Fact]
+	public void Leitura_que_falhou_e_tentada_de_novo_na_proxima_vez()
+	{
+		var files = new Dictionary<string, string>();
+		var loader = new CatalogLoader(new FakeSource(files), _ => { });
+
+		Assert.False(loader.Required("a.json", ParseNumber).IsOk);
+		files["a.json"] = "5";
+
+		Assert.Equal(5, loader.Required("a.json", ParseNumber).Value);
+	}
+
+	[Fact]
+	public void O_mesmo_arquivo_pedido_com_outro_tipo_nao_quebra()
+	{
+		var loader = new CatalogLoader(new FakeSource(new() { ["a.json"] = "5" }), _ => { });
+
+		Assert.Equal(5, loader.Required("a.json", ParseNumber).Value);
+		Assert.Equal("5", loader.Required("a.json", text => Result<string>.Ok(text)).Value);
+	}
+
+	[Fact]
+	public void Regras_com_JSON_null_dizem_que_o_arquivo_esta_vazio()
+	{
+		Assert.Contains("vazio", GameRules.Parse("null").Error);
+	}
+
+	[Fact]
 	public void O_leitor_de_JSON_recusa_texto_quebrado_e_raiz_nula_dizendo_o_que_era()
 	{
 		var broken = CatalogJson.Deserialize<List<int>>("{", "O catálogo X");
