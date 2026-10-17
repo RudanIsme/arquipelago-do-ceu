@@ -303,6 +303,9 @@ static class Scenarios
 			case "torre-salas":
 				await DungeonScenarios.Rooms(d);
 				break;
+			case "torre-livre":
+				await DungeonScenarios.FreeExpedition(d);
+				break;
 			case "torre-andares":
 				await DungeonScenarios.Floors(d);
 				break;

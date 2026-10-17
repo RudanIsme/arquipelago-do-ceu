@@ -33,7 +33,9 @@ public sealed record DungeonContext(
 	int StartFloor = 1,
 	bool AtFastTravel = false,
 	Action<OverlayScreen>? ShowOverlay = null,
-	bool Shortcut = false);
+	bool Shortcut = false,
+	bool Free = false,
+	ConceptNames? Concepts = null);
 
 // Uma Expedição numa torre: liga as regras de core/ (Expedition) ao mundo 3D das Salas, à interface e ao combate.
 // Nada aqui decide regra: quem manda passar, vencer ou subir é a Expedition; este nó só mostra e conta o que a criança faz.
@@ -45,6 +47,11 @@ public partial class DungeonRun : Node
 	readonly DungeonContext ctx;
 	readonly IReadOnlyList<Mission> missions = MissionSource.Load().Missions;
 	readonly Expedition expedition;
+	// Na Expedição livre os problemas já vistos ficam de fora, e cada Andar paga as moedas dele uma vez só.
+	readonly MissionHistory history = new();
+	readonly HashSet<int> paidFloors = [];
+	readonly PanelContainer plate = new() { Name = "Placa" };
+	string? masteryNote;
 	readonly DungeonWorld world = new();
 	readonly Control hud = new() { MouseFilter = Control.MouseFilterEnum.Ignore };
 	readonly Label header = new();
@@ -75,15 +82,18 @@ public partial class DungeonRun : Node
 	{
 		this.ctx = ctx;
 		var seed = WorldSeed(ctx.ProfileId);
-		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
+		var plan = ctx.Free ? LevelPlan.Free(ctx.Discipline, ctx.Level) : LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
 		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), HasTradeItem,
-			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut, Explored);
+			ctx.Free ? 1 : ctx.StartFloor, !ctx.Free && ctx.AtFastTravel, ctx.Shortcut, Explored);
 	}
 
-	// O Atalho não carrega nem guarda exploração: ele pula o caminho, e as Salas do caminho não foram jogadas.
+	// O Atalho não carrega nem guarda exploração: ele pula o caminho, e as Salas do caminho não foram jogadas. A Livre também
+	// não: ela não mexe no que a Progressão guardou.
+	bool Persists => !ctx.Shortcut && !ctx.Free;
+
 	FloorExploration? Explored(int floor) =>
-		ctx.Shortcut ? null : ctx.Progress.Exploration(ctx.ProfileId, ctx.Discipline, ctx.Level, floor, GeneratorVersion);
+		!Persists ? null : ctx.Progress.Exploration(ctx.ProfileId, ctx.Discipline, ctx.Level, floor, GeneratorVersion);
 
 	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
 	static ulong WorldSeed(string profileId) =>
@@ -110,6 +120,8 @@ public partial class DungeonRun : Node
 	public Player Player => player;
 
 	public Expedition Expedition => expedition;
+
+	public MissionHistory History => history;
 
 	public ProgressService Progress => ctx.Progress;
 
@@ -141,6 +153,7 @@ public partial class DungeonRun : Node
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
 		combat.EnergyTop = 12;
+		combat.ChallengeSolved += OnSolved;
 		AddChild(combat);
 
 		BuildHud();
@@ -156,13 +169,15 @@ public partial class DungeonRun : Node
 		if (ctx.Shortcut) BuildMap();
 		else DiscoverFloor();
 		EnterRoom(expedition.CurrentRoom, -1);
-		Say($"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
+		Say(ctx.Free
+			? $"Expedição livre na {ctx.TowerName}! Os Andares não têm fim: volte ao Lobby quando quiser."
+			: $"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
 	}
 
 	void BuildHud()
 	{
 		hud.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		header.AddThemeFontSizeOverride("font_size", 20);
+		header.AddThemeFontSizeOverride("font_size", 18);
 		header.AddThemeColorOverride("font_color", UiKit.TextColor);
 		header.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 
@@ -180,7 +195,6 @@ public partial class DungeonRun : Node
 		mapLegend.AddThemeColorOverride("font_color", UiKit.TextColor);
 		floorLabel.AddThemeFontSizeOverride("font_size", 15);
 		floorLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
-		mapBox.AddChild(header);
 		mapBox.AddChild(floorBar);
 		mapBox.AddChild(floorLabel);
 		mapBox.AddChild(mapLegend);
@@ -190,6 +204,17 @@ public partial class DungeonRun : Node
 		mapBox.AddChild(UiKit.BigButton("Ouvir o mapa", () => Say(MapSpeech()), 200));
 		panel.AddChild(mapBox);
 		hud.AddChild(panel);
+
+		// A placa do centro: Nível, Andar e o objetivo (o Conceito do Andar, que vem das Missões).
+		plate.AddThemeStyleboxOverride("panel", UiKit.Surface());
+		plate.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
+		plate.OffsetLeft = -200;
+		plate.OffsetRight = 200;
+		plate.OffsetTop = 12;
+		plate.GrowHorizontal = Control.GrowDirection.Both;
+		header.HorizontalAlignment = HorizontalAlignment.Center;
+		plate.AddChild(header);
+		hud.AddChild(plate);
 
 		message.SetAnchorsPreset(Control.LayoutPreset.BottomWide);
 		message.OffsetTop = -190;
@@ -294,9 +319,11 @@ public partial class DungeonRun : Node
 		world.Creature.RestingHint = puzzle ? "Escolha-a para abrir" : "Escolha-a para lutar";
 		world.Creature.RestingCompact = puzzle ? "Abrir [F]" : "Lutar [F]";
 
-		var setup = InShortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex]) : DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		var setup = InShortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex])
+			: ctx.Free ? DungeonCombat.FreeSetup(missions, history, ctx.Discipline, ctx.Level, expedition.Floor.Number)
+			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
-		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()), ctx.Free ? history : null);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
@@ -330,43 +357,79 @@ public partial class DungeonRun : Node
 			StartFight();
 			return;
 		}
+		var paying = !InShortcut;
 		expedition.ClearCurrent();
 		world.ShowTarget(false, false);
 		RefreshRoom();
 		SaveExploration();
+		var coins = paying ? PayCoins((room.Kind is RoomKind.Combat or RoomKind.Epic ? ctx.Rules.Dungeon.CoinsCreature : 0) + (room.HoldsItem ? ctx.Rules.Dungeon.CoinsItem : 0)) : null;
+		var mastery = masteryNote;
+		masteryNote = null;
 		var completed = CheckFloorComplete();
 		RefreshHud();
 		if (room.Kind == RoomKind.Epic)
 		{
-			ConcludeLevel(completed);
+			ConcludeLevel(Join(coins, mastery, completed));
 			return;
 		}
 		if (room.HoldsItem)
 		{
-			// O recado do Item já está na tela; o Andar completo vem junto, sem apagá-lo.
-			if (completed is not null) Say($"{message.Text} {completed}");
+			// O recado do Item já está na tela; o resto vem junto, sem apagá-lo.
+			var extra = Join(coins, mastery, completed);
+			if (extra is not null) Say($"{message.Text} {extra}");
 			return;
 		}
 		var won = expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.";
-		Say(string.Join(" ", new[] { won, ProgressSpeech(), completed }.Where(t => t is not null)));
+		Say(Join(won, coins, mastery, ProgressSpeech(), completed)!);
+	}
+
+	static string? Join(params string?[] parts) => parts.Any(p => p is not null) ? string.Join(" ", parts.Where(p => p is not null)) : null;
+
+	// A vitória num Conceito conta para a Maestria do Papel (Dungeon, nunca treino); o aviso sai junto com o resto da Sala.
+	void OnSolved(Mission mission)
+	{
+		var update = ctx.Progress.RecordSolved(ctx.ProfileId, ctx.Discipline, mission.Concept, ctx.Rules.Dungeon.ConceptSolves);
+		if (!update.IsOk)
+		{
+			GD.PushWarning(update.Error!);
+			return;
+		}
+		if (!update.Value!.NewlyMastered) return;
+		var name = (ctx.Concepts ?? ConceptNames.Empty).NameOf(mission.Concept);
+		masteryNote = $"Você dominou \"{name}\"! Maestria {update.Value.Mastery}.";
+	}
+
+	// Moeda é só do jogo, ganha por aprendizado e exploração; falha de gravação não trava a criança.
+	string? PayCoins(int amount)
+	{
+		if (amount <= 0) return null;
+		var paid = ctx.Progress.AddCoins(ctx.ProfileId, amount);
+		if (!paid.IsOk)
+		{
+			GD.PushWarning(paid.Error!);
+			return null;
+		}
+		return $"Você ganhou {(amount == 1 ? "1 moeda" : $"{amount} moedas")}.";
 	}
 
 	// Só para o piloto de desenvolvimento: vence a Sala sem resolver o Desafio, pela mesma saída da vitória de verdade.
 	public void DevWinRoom()
 	{
 		if (!OS.IsDebugBuild()) return;
+		var mission = combat.CurrentMission;
 		combat.EndFight();
+		if (mission is not null) OnSolved(mission);
 		OnWon();
 	}
 
 	// O Desafio épico vencido conclui o Nível nesta torre (também pelo Atalho, que ainda entrega o Item); a criança escolhe seguir.
-	void ConcludeLevel(string? completed = null)
+	void ConcludeLevel(string? extra = null)
 	{
 		var marked = ctx.Progress.MarkEpicDone(ctx.ProfileId, ctx.Discipline, ctx.Level);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		var item = ctx.Shortcut && !ctx.Progress.HasItem(ctx.ProfileId, ctx.Discipline, ctx.Level) && GiveItem();
 		RefreshHud();
-		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}." + (completed is null ? "" : " " + completed);
+		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}." + (extra is null ? "" : " " + extra);
 		Say(text);
 		var screen = new LevelDoneScreen(TowerName(ctx.Discipline), ctx.Level, item, () => Leave(""));
 		levelDone = screen;
@@ -464,6 +527,8 @@ public partial class DungeonRun : Node
 	// Chegar ao Fast travel salva o ponto: é por ele que a criança retoma pelo portal do Lobby.
 	string FindFastTravel()
 	{
+		// Na Livre o ponto não é guardado: ele não pertence ao Plano do Nível.
+		if (ctx.Free) return "Fast travel! Aqui você pode voltar ao Lobby quando quiser.";
 		var saved = ctx.Progress.FindFastTravel(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!saved.IsOk) GD.PushWarning(saved.Error!);
 		return "Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.";
@@ -488,7 +553,7 @@ public partial class DungeonRun : Node
 	// O que a criança explorou fica no save a cada passo: ver o mapa sumir ao zerar a Energia seria punição.
 	void SaveExploration()
 	{
-		if (ctx.Shortcut) return;
+		if (!Persists) return;
 		// Só grava quando algo mudou: voltar a uma Sala já visitada não precisa reescrever o save.
 		var stamp = (expedition.Floor.Number, expedition.Visited.Count, expedition.Cleared.Count);
 		if (stamp == lastSaved) return;
@@ -501,14 +566,19 @@ public partial class DungeonRun : Node
 	string? CheckFloorComplete()
 	{
 		var number = expedition.Floor.Number;
-		if (ctx.Shortcut || !expedition.IsFloorComplete(number) || ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, number)) return null;
+		if (ctx.Shortcut || !expedition.IsFloorComplete(number)) return null;
+		// A Livre paga as moedas do Andar uma vez só, mas não registra Andar completo nem Cosmético: isso é do Plano do Nível.
+		if (ctx.Free) return paidFloors.Add(number) ? Join($"Andar {number} completo!", PayCoins(ctx.Rules.Dungeon.CoinsFloor)) : null;
+		if (ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, number)) return null;
 		var done = ctx.Progress.CompleteFloor(ctx.ProfileId, ctx.Discipline, ctx.Level, number, ctx.Catalog);
 		if (!done.IsOk)
 		{
 			GD.PushWarning(done.Error!);
 			return null;
 		}
-		return done.Value!.Cosmetic is { } prize ? $"Andar {number} completo! Você ganhou um Cosmético: {prize.Name}." : $"Andar {number} completo!";
+		if (!done.Value!.NewlyDone) return null;
+		var coins = PayCoins(ctx.Rules.Dungeon.CoinsFloor);
+		return done.Value.Cosmetic is { } prize ? Join($"Andar {number} completo! Você ganhou um Cosmético: {prize.Name}.", coins) : Join($"Andar {number} completo!", coins);
 	}
 
 	string ProgressSpeech()
@@ -524,16 +594,19 @@ public partial class DungeonRun : Node
 		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
 		var locked = rooms.Count(expedition.IsLocked);
 		var done = IsFloorDone() ? " Este Andar está completo." : "";
-		return $"Andar {expedition.Floor.Number} de {expedition.Plan.Floors.Count}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
+		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
 	}
 
-	bool IsFloorDone() => !ctx.Shortcut && (ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number) || expedition.IsFloorComplete(expedition.Floor.Number));
+	bool IsFloorDone() => !ctx.Shortcut && (ctx.Free || ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number) || expedition.IsFloorComplete(expedition.Floor.Number));
 
 	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
 	{
-		var saved = ctx.Progress.DiscoverFloor(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number);
-		if (!saved.IsOk) GD.PushWarning(saved.Error!);
+		if (!ctx.Free)
+		{
+			var saved = ctx.Progress.DiscoverFloor(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+			if (!saved.IsOk) GD.PushWarning(saved.Error!);
+		}
 		BuildMap();
 	}
 
@@ -545,9 +618,21 @@ public partial class DungeonRun : Node
 		mapBox.MoveChild(map, 3);
 	}
 
+	string OfTotal() => ctx.Free ? "" : $" de {expedition.Plan.Floors.Count}";
+
+	// O objetivo da placa é o Conceito do Andar, lido das Missões e nomeado em dados; o jogo nunca o inventa.
+	string Objective()
+	{
+		var setup = DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
+		var subject = ctx.Discipline == TrainingSetup.Mathematics ? "Matemática" : "Português";
+		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";
+	}
+
 	void RefreshHud()
 	{
-		header.Text = $"{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number} de {expedition.Plan.Floors.Count}";
+		header.Text = $"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{OfTotal()}\n{Objective()}";
+		itemsLabel.Visible = !ctx.Free;
 		itemsLabel.Text = "Itens de troca\n" + string.Join("\n", new[] { TrainingSetup.Mathematics, TrainingSetup.Portuguese }
 			.Select(d => $"{TowerName(d)}: {(ctx.Progress.HasItem(ctx.ProfileId, d, ctx.Level) ? "★ tenho" : "ainda não")}"));
 		var progress = expedition.ProgressOf(expedition.Floor.Number);

@@ -224,7 +224,11 @@
     "roomsMax": 9,
     "restEnergy": 2,
     "shortcutChallenges": 3,
-    "masterChallenges": 4
+    "masterChallenges": 4,
+    "conceptSolves": 3,
+    "coinsCreature": 1,
+    "coinsItem": 3,
+    "coinsFloor": 5
   },
   "lobby": {
     "interactionReach": 2.2,

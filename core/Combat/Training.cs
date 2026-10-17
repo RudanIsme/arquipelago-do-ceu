@@ -13,16 +13,18 @@ public sealed class TrainingBattle
 {
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
+	readonly MissionHistory? history;
 
-	TrainingBattle(CombatRules rules, IReadOnlyList<Mission> missions, MathBag bag, Pcg32 rng)
+	TrainingBattle(CombatRules rules, IReadOnlyList<Mission> missions, MathBag bag, Pcg32 rng, MissionHistory? history)
 	{
 		this.missions = missions;
 		this.rng = rng;
+		this.history = history;
 		Bag = bag;
 		Staff = new Staff(bag, rules);
 		Mission = missions[0];
 		Shield = new Shield(0);
-		Next();
+		Choose(missions);
 	}
 
 	public MathBag Bag { get; }
@@ -35,20 +37,26 @@ public sealed class TrainingBattle
 
 	public int StartingShield { get; private set; }
 
-	public static Result<TrainingBattle> Start(CombatRules rules, IEnumerable<Mission> available, Pcg32 rng)
+	public static Result<TrainingBattle> Start(CombatRules rules, IEnumerable<Mission> available, Pcg32 rng, MissionHistory? history = null)
 	{
 		var usable = available.Where(m => m.Mechanic == "compor_numero").ToList();
 		return usable.Count == 0
 			? Result<TrainingBattle>.Fail("Não há Missão de compor número para o Boneco.")
-			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng));
+			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng, history));
 	}
 
 	// Novo escudo, de outra Missão quando houver mais de uma.
 	public void Next()
 	{
 		var others = missions.Where(m => m != Mission).ToList();
-		var pool = others.Count > 0 ? others : missions;
+		Choose(others.Count > 0 ? others : missions);
+	}
+
+	void Choose(IReadOnlyList<Mission> candidates)
+	{
+		var pool = MissionHistory.Narrow(history, candidates);
 		Mission = pool[rng.NextInt(pool.Count)];
+		history?.Add(Mission.Id);
 		StartingShield = Mission.Params["target"].GetInt32();
 		Shield = new Shield(StartingShield);
 	}

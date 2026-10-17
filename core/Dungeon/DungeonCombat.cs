@@ -48,6 +48,29 @@ public static class DungeonCombat
 		return Result<IReadOnlyList<TrainingSetup>>.Ok(drawn);
 	}
 
+	// O Conceito do Andar: o que mais aparece entre as Missões da dificuldade dele (em empate, o primeiro em ordem alfabética).
+	// É o objetivo da placa do HUD; o jogo nunca o inventa, só lê o que as Missões já dizem.
+	public static string? ConceptOf(IEnumerable<Mission> missions, TrainingSetup setup) =>
+		missions.Where(m => m.Discipline == setup.Discipline && m.Year == setup.Year && m.Difficulty == setup.Difficulty)
+			.GroupBy(m => m.Concept).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
+			.Select(g => g.Key).FirstOrDefault();
+
+	// A Expedição livre: a dificuldade acompanha o Andar, mas procura, por perto, uma que ainda tenha problema novo, para o
+	// conteúdo variar mesmo depois de passar do último Andar que as Missões distinguem.
+	public static Result<TrainingSetup> FreeSetup(IEnumerable<Mission> missions, MissionHistory history, string discipline, int level, int floorNumber)
+	{
+		var list = missions.ToList();
+		var baseSetup = Setup(list, discipline, level, floorNumber);
+		if (!baseSetup.IsOk) return baseSetup;
+
+		var year = baseSetup.Value!.Year;
+		var inYear = list.Where(m => m.Discipline == discipline && m.Year == year).ToList();
+		var wanted = baseSetup.Value.Difficulty;
+		var near = inYear.Select(m => m.Difficulty).Distinct().OrderBy(d => Math.Abs(d - wanted)).ThenBy(d => d);
+		var fresh = near.FirstOrDefault(d => inYear.Any(m => m.Difficulty == d && !history.Seen.Contains(m.Id)));
+		return Result<TrainingSetup>.Ok(new TrainingSetup(discipline, year, fresh == 0 ? wanted : fresh));
+	}
+
 	public static Result<TrainingSetup> Setup(IEnumerable<Mission> missions, string discipline, int level, int floorNumber)
 	{
 		var ofDiscipline = missions.Where(m => m.Discipline == discipline).ToList();

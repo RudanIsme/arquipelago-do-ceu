@@ -555,6 +555,62 @@ static class DungeonScenarios
 		await d.Wait(0.5);
 	}
 
+	// A Expedição livre, as moedas, a Maestria e o HUD por contexto (#120, #121, #131 e #135).
+	public static async Task FreeExpedition(DevDriver d)
+	{
+		var run = await Enter(d, free: true);
+		if (run is null) return;
+		var expedition = run.Expedition;
+		var progress = run.Progress;
+		var profile = run.ProfileId;
+		d.Expect(expedition.Plan.Endless, "a Expedição livre tem Plano sem fim");
+		d.Expect(progress.Coins(profile) == 0, "o Perfil novo não tem moedas");
+
+		// Exploração: placa, mapa e nada de bolsa nem pedido.
+		d.Expect(d.HasVisible("Livre") && d.HasVisible("Matemática:"), "a placa diz o modo e o objetivo (o Conceito do Andar)");
+		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "em exploração não há bolsa de números");
+		await d.Shot("01-exploracao");
+
+		await GoTo(d, run, RoomKind.Combat);
+		run.Player.PlaceAt(new Vector2(0f, 1.5f));
+		await d.Wait(0.3);
+		await d.Tap(Controls.Target);
+		d.Expect(d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "em combate a bolsa de números aparece");
+		await d.Shot("02-combate");
+		var concept = run.Combat.CurrentMission!.Concept;
+		await d.PressKey(Key.Escape);
+		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "sair do combate fecha a bolsa");
+		run.DevWinRoom();
+		await d.Wait(0.3);
+		d.Expect(progress.Solves(profile, "matematica", concept) == 1, "vencer o Desafio conta uma vitória no Conceito");
+		d.Expect(progress.Coins(profile) >= 1, "acalmar a criatura rendeu moedas");
+
+		for (var floor = 1; floor <= 5; floor++)
+		{
+			await GoTo(d, run, RoomKind.Combat);
+			if (NeedsFight(expedition))
+			{
+				run.DevWinRoom();
+				await d.Wait(0.3);
+			}
+			await GoTo(d, run, RoomKind.Exit);
+			d.Expect(expedition.Current.Kind == RoomKind.Exit, $"chegou à saída do Andar {floor}");
+			if (floor == 1) await d.Shot("03-andar-1-saida");
+			await Ascend(d, run);
+		}
+		d.Expect(expedition.Floor.Number == 6 && !expedition.Finished, "a Livre passa do fim de qualquer Plano e não termina");
+		var seen = run.History.Seen;
+		d.Expect(seen.Count > 1 && Enumerable.Range(1, seen.Count - 1).All(i => seen[i] != seen[i - 1]), "dois problemas seguidos nunca se repetem");
+		d.Expect(progress.Coins(profile) > 1, "os Andares seguintes renderam mais moedas");
+		d.Expect(!progress.FloorDiscovered(profile, "matematica", 1, 2) && !progress.EpicDone(profile, "matematica", 1) && !progress.HasItem(profile, "matematica", 1),
+			"a Livre não avança o Plano do Nível, o Item nem o épico");
+		d.Expect(progress.Exploration(profile, "matematica", 1, 1, 1) is null && !progress.FloorDone(profile, "matematica", 1, 1), "a Livre não guarda exploração nem Andar completo");
+		await d.Shot("04-andar-6");
+		run.Leave("");
+		await d.Wait(0.5);
+		d.Expect(progress.Coins(profile) > 1, "as moedas continuam depois de voltar ao Lobby");
+	}
+
 	// Energia zerada numa luta volta ao Lobby sem mensagem que culpe a criança, e a Expedição acaba.
 	public static async Task Defeat(DevDriver d)
 	{
@@ -579,7 +635,7 @@ static class DungeonScenarios
 	}
 
 	// Cada torre tem a porta na beira da ilha; o piloto anda até um hexágono perto dela.
-	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false)
+	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false, bool free = false)
 	{
 		await EnsureProfile(d);
 		if (letters) await WalkTo(d, 2, -4);
@@ -587,8 +643,15 @@ static class DungeonScenarios
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
+		// A porta da torre pergunta o modo: Progressão (o Plano do Nível) ou Livre.
+		if (d.Button("Progressão") is not null)
+		{
+			await d.Shot("00-escolha-do-modo");
+			await d.Press(free ? "Livre" : "Progressão");
+			await d.Wait(0.5);
+		}
 		// Com o Atalho de Nível ainda não tentado, a porta da torre pergunta antes de entrar.
-		if (d.Button("Entrar na torre") is not null)
+		if (!free && d.Button("Entrar na torre") is not null)
 		{
 			await d.Shot("00-oferta-do-atalho");
 			await d.Press(shortcut ? "Tentar o Atalho" : "Entrar na torre");

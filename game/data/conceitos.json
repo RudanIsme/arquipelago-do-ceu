@@ -1,0 +1,27 @@
+{
+  "concepts": {
+    "adicao-ate-10": "Adição até 10",
+    "adicao-ate-99-sem-reagrupamento": "Adição até 99 sem reagrupamento",
+    "composicao-ate-10": "Composição até 10",
+    "composicao-ate-5": "Composição até 5",
+    "fatos-adicao-subtracao-ate-20": "Fatos de adição e subtração até 20",
+    "subtracao-ate-99-sem-reagrupamento": "Subtração até 99 sem reagrupamento",
+    "adjetivo": "Adjetivo",
+    "escrever-c-qu": "Escrever C e QU",
+    "escrever-p-b-t-d-f-v": "Escrever P, B, T, D, F e V",
+    "escrever-palavras-silabas-ja-dominadas": "Escrever palavras com sílabas já dominadas",
+    "nasalidade-m-n-til": "Nasalidade com M, N e til",
+    "nome-e-som-das-letras": "Nome e som das letras",
+    "ortografia-r-rr": "Ortografia de R e RR",
+    "ortografia-s-ss": "Ortografia de S e SS",
+    "palavras-dissilabas-grupo-1": "Palavras dissílabas",
+    "pontuacao-e-dialogo": "Pontuação e diálogo",
+    "segmentacao-silabica-oral": "Separar sílabas falando",
+    "silabas-ccv": "Sílabas com duas consoantes e vogal",
+    "silabas-cvc-e-v": "Sílabas com consoante, vogal e consoante",
+    "substantivo-e-verbo": "Substantivo e verbo",
+    "trocar-silaba-palavra-nova": "Trocar a sílaba e formar outra palavra",
+    "vogais-letra-som": "Vogais: letra e som",
+    "vogal-atona-final-e-o": "Vogais E e O no fim da palavra"
+  }
+}

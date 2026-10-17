@@ -85,6 +85,7 @@ public partial class SettingsScreen : OverlayScreen
 	void Accessibility(VBoxContainer box)
 	{
 		var current = settings.Current;
+		box.AddChild(UiKit.Hint("Controles: WASD ou setas para andar, Shift para correr, clique para caminhar, E para interagir e F para escolher a criatura."));
 		box.AddChild(UiKit.Hint("Tamanho do texto"));
 		var sizes = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
 		sizes.AddThemeConstantOverride("separation", 8);

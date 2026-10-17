@@ -5,6 +5,8 @@ namespace ArquipelagoDoCeu.Saves;
 // O que a criança conquistou nas Dungeons. Cada lista guarda chaves de texto ("matematica:1" para um Nível,
 // "matematica:1:2" para um Andar), e ausente vale vazio; por isso saves antigos continuam válidos na mesma versão.
 // `Explored` guarda as Salas visitadas e vencidas de cada Andar, `FloorsDone` os Andares completos e `Cosmetics` os ids ganhos.
+// `Solved` conta as vitórias de cada Conceito ("matematica:adicao-ate-10"), `Mastered` guarda os Conceitos já dominados (a Maestria
+// de um Papel é quantos há com a torre dele) e `Coins` é o saldo de moedas, que não tem teto e nunca diminui.
 // O Nível liberado continua sendo o `Level` do Perfil. O treino no Lobby nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
@@ -14,11 +16,17 @@ public sealed record ProgressSave(
 	IReadOnlyList<string>? ShortcutsTried = null,
 	IReadOnlyList<ExploredFloor>? Explored = null,
 	IReadOnlyList<string>? FloorsDone = null,
-	IReadOnlyList<string>? Cosmetics = null);
+	IReadOnlyList<string>? Cosmetics = null,
+	IReadOnlyDictionary<string, int>? Solved = null,
+	IReadOnlyList<string>? Mastered = null,
+	int? Coins = null);
 
 // As Salas visitadas e vencidas de um Andar, pela chave "matematica:1:2".
 // `Version` é a do gerador que desenhou o Andar: com outra versão os números das Salas não valem mais.
 public sealed record ExploredFloor(string Key, IReadOnlyList<int> Visited, IReadOnlyList<int> Cleared, int Version = 0);
+
+// O que aconteceu ao registrar uma vitória num Conceito: se ele acabou de ser dominado e a Maestria do Papel agora.
+public sealed record MasteryUpdate(bool NewlyMastered, int Mastery);
 
 // O que aconteceu ao registrar um Andar completo: se foi a primeira vez e qual Cosmético a criança ganhou.
 public sealed record FloorCompletion(bool NewlyDone, Cosmetic? Cosmetic);
@@ -113,6 +121,42 @@ public sealed class ProgressService(SaveSession session)
 
 	// Registra o Andar completo e dá o Cosmético dele, juntos num só salvamento e só na primeira vez: voltar ao Andar ou
 	// recomeçar a Expedição não repete o prêmio. Se o save falha, nada vale e a criança completa de novo no próximo passo.
+	// A Maestria do Papel (a torre) é quantos Conceitos ele já dominou. Nunca cai: o Conceito dominado fica guardado, mesmo que a
+	// regra de quantas vitórias bastam mude depois, e ficar sem jogar não tira nada.
+	public int Mastery(string profileId, string discipline) =>
+		(Find(profileId)?.Progress?.Mastered ?? []).Count(key => key.StartsWith(discipline + ":", StringComparison.Ordinal));
+
+	// Conta uma vitória no Conceito, em Dungeon. O que vale é o Desafio vencido, e não a pressa nem as tentativas até vencê-lo.
+	public Result<MasteryUpdate> RecordSolved(string profileId, string discipline, string concept, int solvesToMaster)
+	{
+		var key = $"{discipline}:{concept}";
+		var current = Find(profileId)?.Progress;
+		if (Find(profileId) is null) return Result<MasteryUpdate>.Fail("Perfil não encontrado.");
+		if ((current?.Mastered ?? []).Contains(key)) return Result<MasteryUpdate>.Ok(new MasteryUpdate(false, Mastery(profileId, discipline)));
+
+		var solves = ((current?.Solved ?? new Dictionary<string, int>()).GetValueOrDefault(key)) + 1;
+		var mastered = solves >= solvesToMaster;
+		var saved = Update(profileId, p => p with
+		{
+			Solved = new Dictionary<string, int>(p.Solved ?? new Dictionary<string, int>()) { [key] = solves },
+			Mastered = mastered ? [.. p.Mastered ?? [], key] : p.Mastered,
+		});
+		return saved.IsOk ? Result<MasteryUpdate>.Ok(new MasteryUpdate(mastered, Mastery(profileId, discipline))) : Result<MasteryUpdate>.Fail(saved.Error!);
+	}
+
+	// Quantas vitórias o Conceito já tem, dominado ou não.
+	public int Solves(string profileId, string discipline, string concept) =>
+		(Find(profileId)?.Progress?.Solved ?? new Dictionary<string, int>()).GetValueOrDefault($"{discipline}:{concept}");
+
+	public int Coins(string profileId) => Find(profileId)?.Progress?.Coins ?? 0;
+
+	// Moeda é só do jogo. Só soma: gastar ou perder não existe aqui, e o saldo não tem teto.
+	public Result<ProfileSave> AddCoins(string profileId, int amount)
+	{
+		if (Find(profileId) is not { } profile) return Result<ProfileSave>.Fail("Perfil não encontrado.");
+		return amount <= 0 ? Result<ProfileSave>.Ok(profile) : Update(profileId, p => p with { Coins = (p.Coins ?? 0) + amount });
+	}
+
 	public Result<FloorCompletion> CompleteFloor(string profileId, string discipline, int level, int floor, CosmeticCatalog catalog)
 	{
 		if (FloorDone(profileId, discipline, level, floor)) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));

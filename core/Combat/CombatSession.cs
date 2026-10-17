@@ -62,7 +62,10 @@ public sealed class CombatSession
 	public static Result<CombatSession> Start(CombatRules baseRules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng) =>
 		Start(baseRules, new Energy(maxEnergy), unlockedLevel, setup, available, rng);
 
-	public static Result<CombatSession> Start(CombatRules baseRules, Energy energy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng)
+
+	// Com `history` (a Expedição livre) a luta evita os problemas que já apareceram.
+	public static Result<CombatSession> Start(CombatRules baseRules, Energy energy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng,
+		MissionHistory? history = null)
 	{
 		var rules = baseRules.ForYear(setup.Year);
 		if (setup.Year < 1 || setup.Year > unlockedLevel)
@@ -77,7 +80,7 @@ public sealed class CombatSession
 		// Escrever a palavra só serve o treino se não houver Missão de nome, sílabas ou frase no mesmo ano e dificuldade.
 		if (setup.Discipline == TrainingSetup.Portuguese && pool.Any(m => m.Mechanic == "escrever_palavra") && !pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic)))
 		{
-			var word = WordBattle.Start(pool, rng);
+			var word = WordBattle.Start(pool, rng, history);
 			return word.IsOk
 				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, null, word.Value))
 				: Result<CombatSession>.Fail(word.Error!);
@@ -85,13 +88,13 @@ public sealed class CombatSession
 
 		if (setup.Discipline == TrainingSetup.Portuguese)
 		{
-			var name = NameBattle.Start(pool, rng);
+			var name = NameBattle.Start(pool, rng, history);
 			return name.IsOk
 				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, name.Value, null))
 				: Result<CombatSession>.Fail(name.Error!);
 		}
 
-		var math = TrainingBattle.Start(rules, pool, rng);
+		var math = TrainingBattle.Start(rules, pool, rng, history);
 		return math.IsOk
 			? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, math.Value, null, null))
 			: Result<CombatSession>.Fail(math.Error!);

@@ -219,6 +219,10 @@ Depois do Lobby, as duas torres ficaram jogáveis, sem arte nem tema definitivos
 - O Item de troca fica numa Sala de um Andar anterior ao Marco, e o Marco só abre com o Item da outra torre, do mesmo Nível.
 - O Desafio épico conclui o Nível naquela torre, e a criança escolhe continuar ou voltar. O Atalho de Nível, oferecido na porta da torre, leva direto ao épico com 3 Desafios sorteados do Nível; errar encerra a tentativa sem tirar Energia, e só há uma tentativa por Nível e torre. Acertar conclui o Nível e entrega o Item.
 - O Desafio mestre acontece no Lobby, num portal roxo que só abre com os dois épicos do Nível concluídos. São 4 Desafios alternando Matemática e Português contra o Guardião do Nível, e vencê-los sobe o Nível liberado nas duas torres.
+- Ao iniciar a Expedição a criança escolhe **Progressão** (o Plano do Nível) ou **Livre**. Na Livre os Andares seguem sem fim, no Nível já liberado, sem Marco, Item de troca nem Desafio épico; as Missões variam (o mesmo problema não se repete na Expedição e os últimos vistos são evitados) e a Livre não avança o Plano, o épico nem o Desafio mestre. Zerar a Energia volta ao Lobby como sempre.
+- Cada Papel tem uma **Maestria**: sobe quando a criança vence um mesmo Conceito na Dungeon o número de vezes definido em dados (`dungeon.conceptSolves`), sem XP e sem perda; o treino não conta.
+- A criança ganha **moedas** por criatura acalmada, Sala do Item e Andar completo (`dungeon.coinsCreature`, `coinsItem`, `coinsFloor`); o saldo fica no Perfil, não tem teto e não cai. Treino do Lobby não rende moedas.
+- O HUD mostra só o que se usa agora: na Dungeon, a placa do centro (Nível, Andar e objetivo, o Conceito do Andar, nomeado em `game/data/conceitos.json`), o mapa e a Energia; a bolsa de números e o pedido só aparecem em combate e no treino. O painel "Controles / bônus" saiu da tela de jogo (os controles estão nas Configurações).
 - Fora do marco, e ainda sem código: repetição espaçada, dificuldade adaptativa, Portal da Memória, Álbum com criaturas, aparência dos Cosméticos no Personagem e o cliente de rede.
 
 ### Primeiro marco: Lobby funcional

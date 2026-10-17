@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
+using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Saves;
 using Godot;
 
@@ -13,10 +14,12 @@ public partial class Main
 {
 	const string FallbackFloorsPath = "res://data/andares-reserva.json";
 	const string CosmeticsPath = "res://data/cosmeticos.json";
+	const string ConceptsPath = "res://data/conceitos.json";
 
 	ProgressService progress = null!;
 	FallbackFloors? fallbackFloors;
 	CosmeticCatalog? cosmetics;
+	ConceptNames? concepts;
 	DungeonRun? dungeon;
 	bool inDungeon;
 
@@ -65,6 +68,12 @@ public partial class Main
 	void EnterTower(string discipline)
 	{
 		if (current is null || inDungeon) return;
+		ShowOverlay(new ExpeditionModeScreen(TowerName(discipline), () => EnterProgression(discipline), () => EnterDungeon(discipline, free: true)));
+	}
+
+	void EnterProgression(string discipline)
+	{
+		if (current is null || inDungeon) return;
 		var level = UnlockedLevel();
 		if (progress.ShortcutTried(current.Id, discipline, level) || progress.EpicDone(current.Id, discipline, level))
 		{
@@ -75,7 +84,7 @@ public partial class Main
 			() => EnterDungeon(discipline, shortcut: true), () => EnterDungeon(discipline)));
 	}
 
-	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false, bool shortcut = false)
+	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false, bool shortcut = false, bool free = false)
 	{
 		if (current is null || inDungeon) return;
 		var floors = LoadFallbackFloors();
@@ -91,14 +100,14 @@ public partial class Main
 		var towerLevel = level ?? UnlockedLevel();
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
-		if (startFloor == 0 && !shortcut && progress.LastFastTravel(current.Id, discipline, towerLevel) is { } last)
+		if (startFloor == 0 && !shortcut && !free && progress.LastFastTravel(current.Id, discipline, towerLevel) is { } last)
 		{
 			startFloor = last.Floor;
 			atFastTravel = true;
 		}
 		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut));
+			progress, floors.Value!, LoadCosmetics(), equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -145,6 +154,16 @@ public partial class Main
 		var parsed = file is null ? Result<CosmeticCatalog>.Fail($"Não foi possível abrir {CosmeticsPath}: {FileAccess.GetOpenError()}") : CosmeticCatalog.Parse(file.GetAsText());
 		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
 		return cosmetics = parsed.IsOk ? parsed.Value! : CosmeticCatalog.Empty;
+	}
+
+	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
+	ConceptNames LoadConcepts()
+	{
+		if (concepts is not null) return concepts;
+		using var file = FileAccess.Open(ConceptsPath, FileAccess.ModeFlags.Read);
+		var parsed = file is null ? Result<ConceptNames>.Fail($"Não foi possível abrir {ConceptsPath}: {FileAccess.GetOpenError()}") : ConceptNames.Parse(file.GetAsText());
+		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
+		return concepts = parsed.IsOk ? parsed.Value! : ConceptNames.Empty;
 	}
 
 	// Os Cosméticos que o Perfil já ganhou, com nome e descrição, para o Álbum.
