@@ -61,6 +61,19 @@ docs/         documentação
 - **Legível por quem está começando:** funções curtas, sem herança profunda, testes como exemplo.
 - **Comentários só respondem "por quê"** (restrição, decisão não óbvia, armadilha). Nunca descreva o que o código já diz.
 
+## Portões de qualidade
+
+Rodam na CI (job `qualidade`, mais `segredos` e `arquivos`) e localmente com `tools\qualidade.cmd`. Nada entra na `main` sem eles verdes.
+
+- **Formatação:** `dotnet format whitespace --verify-no-changes`, com o `.editorconfig` (tabs e LF).
+- **Análise estática:** analisadores CA, Sonar e Roslynator no build, com aviso como erro. Regra desligada precisa de motivo na linha de cima, no `.editorconfig`; nunca desligue para passar.
+- **Dependências:** `NuGetAudit` ligado; pacote vulnerável quebra o build.
+- **Camadas e tamanho:** `ArquiteturaTests` barra `core` ver o Godot e arquivo de código acima de 400 linhas (os já grandes não podem crescer).
+- **Comentário:** no máximo 2 linhas seguidas, só o "porquê" (`node tools/check_comments.mjs`).
+- **Cobertura:** o `core` precisa de pelo menos 90% das linhas. O `game` fica fora porque depende do motor.
+- **Segredos e arquivos:** gitleaks e trivy na CI.
+- **Commits:** Conventional Commits em português (`feat(escopo): descrição`; tipos feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert), checados por `node tools/check_commits.mjs`.
+
 ## Ambiente local (Windows)
 
 Ferramentas instaladas sem administrador em `C:\dev\tools` e no PATH do usuário: .NET SDK 8, Godot 4.7.2 .NET e Node LTS. A variável `GODOT` aponta para o executável de console (use-a para exportar e rodar o jogo sem abrir o editor). `dotnet test game.tests` roda os testes de regra, que não abrem o Godot. Os roteiros `e2e-1`, `e2e-2` e `--pull-qa` precisam do motor (ver README e `docs/tecnico/teste-pesca-neon.md`). O Godot usa `net8.0` e `Godot.NET.Sdk/4.7.2`.

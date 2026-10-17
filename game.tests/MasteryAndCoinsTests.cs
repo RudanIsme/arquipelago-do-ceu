@@ -14,34 +14,34 @@ public sealed class MasteryAndCoinsTests : IDisposable
 		if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
 	}
 
-	ProgressService NewProgress(SaveStore store) => new(new SaveSession(store, Example));
+	ProgressServices NewProgress(SaveStore store) => ProgressServices.Create(new SaveSession(store, Example));
 
 	[Fact]
 	public void A_Maestria_comeca_em_zero_e_sobe_quando_um_Conceito_e_dominado()
 	{
 		var progress = NewProgress(new SaveStore(PathName));
-		Assert.Equal(0, progress.Mastery("p", "matematica"));
+		Assert.Equal(0, progress.Mastery.Of("p", "matematica"));
 
-		var first = progress.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 2).Value!;
-		var second = progress.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 2).Value!;
+		var first = progress.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 2).Value!;
+		var second = progress.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 2).Value!;
 
 		Assert.False(first.NewlyMastered);
 		Assert.Equal(0, first.Mastery);
 		Assert.True(second.NewlyMastered);
 		Assert.Equal(1, second.Mastery);
-		Assert.Equal(1, progress.Mastery("p", "matematica"));
+		Assert.Equal(1, progress.Mastery.Of("p", "matematica"));
 	}
 
 	[Fact]
 	public void Um_Conceito_dominado_conta_uma_vez_so_e_cada_Papel_tem_a_sua_Maestria()
 	{
 		var progress = NewProgress(new SaveStore(PathName));
-		for (var i = 0; i < 5; i++) progress.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 2);
-		progress.RecordSolved("p", "matematica", "composicao-ate-5", solvesToMaster: 1);
+		for (var i = 0; i < 5; i++) progress.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 2);
+		progress.Mastery.Record("p", new ConceptKey("matematica", "composicao-ate-5"), solvesToMaster: 1);
 
-		Assert.Equal(2, progress.Mastery("p", "matematica"));
-		Assert.Equal(0, progress.Mastery("p", "portugues"));
-		Assert.Equal(0, progress.Mastery("q", "matematica"));
+		Assert.Equal(2, progress.Mastery.Of("p", "matematica"));
+		Assert.Equal(0, progress.Mastery.Of("p", "portugues"));
+		Assert.Equal(0, progress.Mastery.Of("q", "matematica"));
 	}
 
 	[Fact]
@@ -49,12 +49,12 @@ public sealed class MasteryAndCoinsTests : IDisposable
 	{
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
-		progress.RecordSolved("p", "portugues", "adjetivo", solvesToMaster: 1);
+		progress.Mastery.Record("p", new ConceptKey("portugues", "adjetivo"), solvesToMaster: 1);
 
-		progress.RecordSolved("p", "portugues", "adjetivo", solvesToMaster: 10);
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
+		progress.Mastery.Record("p", new ConceptKey("portugues", "adjetivo"), solvesToMaster: 10);
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
 
-		Assert.Equal(1, reopened.Mastery("p", "portugues"));
+		Assert.Equal(1, reopened.Mastery.Of("p", "portugues"));
 	}
 
 	[Fact]
@@ -62,14 +62,14 @@ public sealed class MasteryAndCoinsTests : IDisposable
 	{
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
-		progress.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 3);
-		progress.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 3);
+		progress.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 3);
+		progress.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 3);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		var third = reopened.RecordSolved("p", "matematica", "adicao-ate-10", solvesToMaster: 3).Value!;
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		var third = reopened.Mastery.Record("p", new ConceptKey("matematica", "adicao-ate-10"), solvesToMaster: 3).Value!;
 
 		Assert.True(third.NewlyMastered);
-		Assert.Equal(1, reopened.Mastery("p", "matematica"));
+		Assert.Equal(1, reopened.Mastery.Of("p", "matematica"));
 	}
 
 	[Fact]
@@ -77,8 +77,8 @@ public sealed class MasteryAndCoinsTests : IDisposable
 	{
 		var progress = NewProgress(new SaveStore(PathName));
 
-		Assert.False(progress.RecordSolved("nao-existe", "matematica", "x", 1).IsOk);
-		Assert.False(progress.AddCoins("nao-existe", 3).IsOk);
+		Assert.False(progress.Mastery.Record("nao-existe", new ConceptKey("matematica", "x"), 1).IsOk);
+		Assert.False(progress.Wallet.Add("nao-existe", 3).IsOk);
 	}
 
 	[Fact]
@@ -86,14 +86,14 @@ public sealed class MasteryAndCoinsTests : IDisposable
 	{
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
-		Assert.Equal(0, progress.Coins("p"));
+		Assert.Equal(0, progress.Wallet.Balance("p"));
 
-		Assert.True(progress.AddCoins("p", 5).IsOk);
-		Assert.True(progress.AddCoins("p", 1_000_000).IsOk);
+		Assert.True(progress.Wallet.Add("p", 5).IsOk);
+		Assert.True(progress.Wallet.Add("p", 1_000_000).IsOk);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		Assert.Equal(1_000_005, reopened.Coins("p"));
-		Assert.Equal(0, reopened.Coins("q"));
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		Assert.Equal(1_000_005, reopened.Wallet.Balance("p"));
+		Assert.Equal(0, reopened.Wallet.Balance("q"));
 	}
 
 	[Fact]
@@ -102,13 +102,13 @@ public sealed class MasteryAndCoinsTests : IDisposable
 		Directory.CreateDirectory(folder);
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
-		progress.AddCoins("p", 4);
+		progress.Wallet.Add("p", 4);
 		var before = File.ReadAllText(PathName);
 
-		Assert.True(progress.AddCoins("p", 0).IsOk);
-		Assert.True(progress.AddCoins("p", -3).IsOk);
+		Assert.True(progress.Wallet.Add("p", 0).IsOk);
+		Assert.True(progress.Wallet.Add("p", -3).IsOk);
 
-		Assert.Equal(4, progress.Coins("p"));
+		Assert.Equal(4, progress.Wallet.Balance("p"));
 		Assert.Equal(before, File.ReadAllText(PathName));
 	}
 
@@ -118,10 +118,10 @@ public sealed class MasteryAndCoinsTests : IDisposable
 		Directory.CreateDirectory(folder);
 		File.WriteAllText(PathName, """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"progress":{"items":["matematica:1"]}}]}""");
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
+		var progress = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
 
-		Assert.Equal(0, progress.Mastery("p", "matematica"));
-		Assert.Equal(0, progress.Coins("p"));
+		Assert.Equal(0, progress.Mastery.Of("p", "matematica"));
+		Assert.Equal(0, progress.Wallet.Balance("p"));
 	}
 
 	// O treino no Lobby não conta progresso: só a Expedição soma moedas e vitórias de Conceito.
@@ -134,7 +134,7 @@ public sealed class MasteryAndCoinsTests : IDisposable
 			.Where(f => File.ReadAllText(f).Contains(call))
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 
-		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".AddCoins(").ToArray());
-		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".RecordSolved(").ToArray());
+		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".Wallet.Add(").ToArray());
+		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".Mastery.Record(").ToArray());
 	}
 }

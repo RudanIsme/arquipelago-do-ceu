@@ -89,9 +89,8 @@ public partial class Lobby : Node3D, ICombatStage
 		tiles.Where(t => t.Value == Kind.Water && new HexCell(t.Key.X, t.Key.Y) != BridgeCell).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
 			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R)));
 
-	// Luz quente e sombras suaves, como pede a direção de arte. O brilho (glow) só pega o que passa do limite de luz, ou seja, só os
-	// itens mágicos que têm emissão (o raio do ataque, por exemplo), e nunca os números nem o pontilhado, que são interface 2D.
-	// O SSAO está ligado nos dados do ambiente, mas só o renderizador Forward+ o desenha; no Mobile (o do jogo) ele é ignorado.
+	// Luz quente e sombras suaves (direção de arte). O glow só pega o que emite luz, nunca números nem pontilhado (interface 2D).
+	// O SSAO está nos dados, mas só o Forward+ o desenha; o Mobile, que é o do jogo, o ignora.
 	void AddEnvironment()
 	{
 		environment = new Godot.Environment

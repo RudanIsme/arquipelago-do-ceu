@@ -10,15 +10,15 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Desafio mestre, no Lobby: uma sequência de Desafios de Matemática e de Português do Nível, contra o Guardião do Nível
-// (o Boneco), com a Energia de uma Expedição. Vencer todos sobe o Nível liberado nas duas torres. Perder não pune: a criança
-// volta a andar pelo Lobby e tenta de novo quando quiser.
+// O Desafio mestre, no Lobby: Desafios de Matemática e Português do Nível contra o Guardião, com Energia de Expedição.
+// Vencer sobe o Nível nas duas torres; perder não pune.
 public partial class MasterChallenge : Node
 {
 	readonly GameRules rules;
+	readonly IRandomSource random;
 	readonly TrainingArea training;
 	readonly Control uiRoot;
-	readonly ProgressService progress;
+	readonly ProgressServices progress;
 	readonly IReadOnlyList<Mission> missions = MissionSource.Load().Missions;
 	readonly Func<int> extraEnergy;
 	readonly Action<string> notify;
@@ -30,9 +30,10 @@ public partial class MasterChallenge : Node
 	int level;
 	int round;
 
-	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressService progress, Func<int> extraEnergy,
-		Action<string> notify, Action<ProfileSave> levelRaised)
+	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressServices progress, Func<int> extraEnergy,
+		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random)
 	{
+		this.random = random;
 		this.rules = rules;
 		this.training = training;
 		this.uiRoot = uiRoot;
@@ -54,7 +55,7 @@ public partial class MasterChallenge : Node
 	public string? Start(string profile, int masterLevel)
 	{
 		if (Active) return "O Desafio mestre já está em andamento.";
-		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, new Pcg32((ulong)Time.GetTicksUsec()));
+		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, random.NewStream());
 		if (!setups.IsOk) return setups.Error;
 
 		training.End();
@@ -75,7 +76,7 @@ public partial class MasterChallenge : Node
 	void BeginRound()
 	{
 		var setup = rounds[round];
-		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, random.NewStream());
 		if (!fight.IsOk)
 		{
 			Finish($"Não foi possível montar o Desafio mestre: {fight.Error}");
@@ -94,7 +95,7 @@ public partial class MasterChallenge : Node
 			return;
 		}
 
-		var raised = progress.RaiseLevel(profileId, TrainingSetup.LastLevel);
+		var raised = progress.Levels.RaiseLevel(profileId, TrainingSetup.LastLevel);
 		var message = !raised.IsOk
 			? "Você venceu o Desafio mestre, mas não foi possível guardar o novo Nível agora. Tente de novo."
 			: raised.Value!.Level > level

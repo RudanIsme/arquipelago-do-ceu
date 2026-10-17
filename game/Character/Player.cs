@@ -20,14 +20,12 @@ public partial class Player : Node3D
 	const float TurnSharpness = 22f;
 
 	readonly System.Func<Vector2, float>? groundHeight;
-	readonly HexGrid grid;
 	readonly Camera3D camera;
 	readonly MovementController mover;
 	readonly CharacterView view = new() { UseSpectrumTest = true };
 
 	public Player(HexGrid grid, Camera3D camera, System.Func<Vector2, float>? groundHeight = null)
 	{
-		this.grid = grid;
 		this.groundHeight = groundHeight;
 		this.camera = camera;
 		mover = new MovementController(grid, HexGrid.ToWorld(new HexCell(0, 0)), Speed);

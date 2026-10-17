@@ -6,8 +6,7 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Cenário `andar` do piloto: desenha o Plano de um Nível, com os Andares lado a lado, e grava uma captura.
-// Serve para ver o gerador funcionando antes (e depois) de existir jogo em cima dele.
+// Cenário `andar` do piloto: desenha o Plano de um Nível, Andares lado a lado, e grava uma captura.
 //   godot --path game -- --driver=andar --saida=<pasta> [--mundo=1] [--dungeon=matematica] [--nivel=1]
 static class FloorShots
 {

@@ -12,14 +12,8 @@ namespace ArquipelagoDoCeu;
 // durante a Expedição, e ao sair tudo volta como estava.
 public partial class Main
 {
-	const string FallbackFloorsPath = "res://data/andares-reserva.json";
-	const string CosmeticsPath = "res://data/cosmeticos.json";
-	const string ConceptsPath = "res://data/conceitos.json";
 
-	ProgressService progress = null!;
-	FallbackFloors? fallbackFloors;
-	CosmeticCatalog? cosmetics;
-	ConceptNames? concepts;
+	ProgressServices progress = null!;
 	DungeonRun? dungeon;
 	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
@@ -29,7 +23,7 @@ public partial class Main
 	// O portal do Lobby: um destino por Fast travel encontrado.
 	PortalScreen BuildPortal()
 	{
-		var points = current is null ? [] : progress.FastTravels(current.Id);
+		var points = current is null ? [] : progress.Levels.FastTravels(current.Id);
 		return new PortalScreen(points.Select(p => ($"{TowerName(p.Discipline)} · Nível {p.Level} · Andar {p.Floor}",
 			(System.Action)(() => EnterDungeon(p.Discipline, p.Level, p.Floor, atFastTravel: true)))).ToList());
 	}
@@ -45,7 +39,7 @@ public partial class Main
 	{
 		if (current is null) return;
 		var level = UnlockedLevel();
-		ShowOverlay(new MasterScreen(level, progress.EpicDone(current.Id, TrainingSetup.Mathematics, level), progress.EpicDone(current.Id, TrainingSetup.Portuguese, level),
+		ShowOverlay(new MasterScreen(level, progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Mathematics, level)), progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Portuguese, level)),
 			() =>
 			{
 				if (master.Start(current.Id, level) is { } problem) Notify(problem);
@@ -53,7 +47,7 @@ public partial class Main
 	}
 
 	// Ganchos só do piloto de desenvolvimento.
-	public ProgressService DevProgress => progress;
+	public ProgressServices DevProgress => progress;
 	public string DevProfileId => current?.Id ?? "";
 	public int DevLevel => UnlockedLevel();
 	public MasterChallenge DevMaster => master;
@@ -77,7 +71,7 @@ public partial class Main
 	{
 		if (current is null || inDungeon) return;
 		var level = UnlockedLevel();
-		if (progress.ShortcutTried(current.Id, discipline, level) || progress.EpicDone(current.Id, discipline, level))
+		if (progress.Levels.ShortcutTried(current.Id, new LevelKey(discipline, level)) || progress.Levels.EpicDone(current.Id, new LevelKey(discipline, level)))
 		{
 			EnterDungeon(discipline);
 			return;
@@ -103,15 +97,15 @@ public partial class Main
 		var towerLevel = level ?? UnlockedLevel();
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
-		if (startFloor == 0 && !shortcut && !free && progress.LastFastTravel(current.Id, discipline, towerLevel) is { } last)
+		if (startFloor == 0 && !shortcut && !free && progress.Levels.LastFastTravel(current.Id, new LevelKey(discipline, towerLevel)) is { } last)
 		{
 			startFloor = last.Floor;
 			atFastTravel = true;
 		}
-		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
-		coinsAtStart = (current.Id, progress.Coins(current.Id));
+		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
+		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -138,10 +132,10 @@ public partial class Main
 		UpdatePlayerControl();
 		interactTarget = null;
 		RefreshCard();
-		if (reason != "") Notify(reason);
+		if (reason.Length != 0) Notify(reason);
 		// O que a criança ganhou na Expedição aparece ao voltar, com o número subindo até o saldo novo.
 		// Só vale a Expedição que acabou e do mesmo Perfil: nunca mostra moedas que a criança não ganhou ali.
-		if (coinsAtStart is { } start && current is not null && start.Profile == current.Id && progress.Coins(current.Id) is var coinsNow && coinsNow > start.Coins)
+		if (coinsAtStart is { } start && current is not null && start.Profile == current.Id && progress.Wallet.Balance(current.Id) is var coinsNow && coinsNow > start.Coins)
 			ShowOverlay(new CoinsArrivalScreen(start.Coins, coinsNow, player.ReduceMotion, text => voice.Say(text, interrupt: true)));
 		coinsAtStart = null;
 		GD.Print("De volta ao Lobby.");
@@ -157,39 +151,18 @@ public partial class Main
 	}
 
 	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
-	CosmeticCatalog LoadCosmetics()
-	{
-		if (cosmetics is not null) return cosmetics;
-		using var file = FileAccess.Open(CosmeticsPath, FileAccess.ModeFlags.Read);
-		var parsed = file is null ? Result<CosmeticCatalog>.Fail($"Não foi possível abrir {CosmeticsPath}: {FileAccess.GetOpenError()}") : CosmeticCatalog.Parse(file.GetAsText());
-		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
-		return cosmetics = parsed.IsOk ? parsed.Value! : CosmeticCatalog.Empty;
-	}
+	CosmeticCatalog LoadCosmetics() => catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
 	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
-	ConceptNames LoadConcepts()
-	{
-		if (concepts is not null) return concepts;
-		using var file = FileAccess.Open(ConceptsPath, FileAccess.ModeFlags.Read);
-		var parsed = file is null ? Result<ConceptNames>.Fail($"Não foi possível abrir {ConceptsPath}: {FileAccess.GetOpenError()}") : ConceptNames.Parse(file.GetAsText());
-		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
-		return concepts = parsed.IsOk ? parsed.Value! : ConceptNames.Empty;
-	}
+	ConceptNames LoadConcepts() => catalogs.Optional("conceitos.json", ConceptNames.Parse, ConceptNames.Empty);
 
 	// Os Cosméticos que o Perfil já ganhou, com nome e descrição, para o Álbum.
 	IReadOnlyList<Cosmetic> OwnedCosmetics()
 	{
 		var catalog = LoadCosmetics();
-		return current is null ? [] : progress.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
+		return current is null ? [] : progress.Rewards.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
 	}
 
-	Result<FallbackFloors> LoadFallbackFloors()
-	{
-		if (fallbackFloors is not null) return Result<FallbackFloors>.Ok(fallbackFloors);
-		using var file = FileAccess.Open(FallbackFloorsPath, FileAccess.ModeFlags.Read);
-		if (file is null) return Result<FallbackFloors>.Fail($"Não foi possível abrir {FallbackFloorsPath}: {FileAccess.GetOpenError()}");
-		var parsed = FallbackFloors.Parse(file.GetAsText());
-		if (parsed.IsOk) fallbackFloors = parsed.Value;
-		return parsed;
-	}
+	// Sem os Andares de reserva a torre não abre: o validador precisa deles como último recurso.
+	Result<FallbackFloors> LoadFallbackFloors() => catalogs.Required("andares-reserva.json", FallbackFloors.Parse);
 }

@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ArquipelagoDoCeu.Saves;
@@ -31,8 +32,6 @@ public sealed record Gear(string? Helmet = null, string? Armor = null, string? A
 // Quem não tem a Maestria do Papel não equipa. Os atributos vêm do conjunto de agora e nunca acumulam.
 public sealed class GearCatalog
 {
-	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) } };
-
 	GearCatalog(IReadOnlyList<GearItem> items, GearLimits limits)
 	{
 		Items = items;
@@ -79,20 +78,14 @@ public sealed class GearCatalog
 
 	public static Result<GearCatalog> Parse(string json)
 	{
-		FileDto? dto;
-		try
-		{
-			dto = JsonSerializer.Deserialize<FileDto>(json, Options);
-		}
-		catch (JsonException e)
-		{
-			return Result<GearCatalog>.Fail($"O catálogo de equipamentos não é um JSON válido: {e.Message}");
-		}
-		if (dto?.Limits is not { } limits || dto.Items is not { Count: > 0 }) return Result<GearCatalog>.Fail("O catálogo de equipamentos precisa de limites e de ao menos um item.");
+		var read = CatalogJson.Deserialize<FileDto>(json, "O catálogo de equipamentos");
+		if (!read.IsOk) return Result<GearCatalog>.Fail(read.Error!);
+		var dto = read.Value!;
+		if (dto.Limits is not { } limits || dto.Items is not { Count: > 0 }) return Result<GearCatalog>.Fail("O catálogo de equipamentos precisa de limites e de ao menos um item.");
 
 		var items = dto.Items.Select(i => new GearItem(i.Id ?? "", i.Name ?? "", i.Description ?? "", i.Slot, i.Attribute, i.Value, i.MinMastery)).ToList();
-		if (items.Any(i => i.Id == "" || i.Name == "" || i.MinMastery < 0 || i.Value < 0)) return Result<GearCatalog>.Fail("Um equipamento do catálogo está sem id, nome ou com valor inválido.");
-		if (items.Select(i => i.Id).Distinct().Count() != items.Count) return Result<GearCatalog>.Fail("O catálogo de equipamentos repete um id.");
+		if (items.Any(i => i.Id.Length == 0 || i.Name.Length == 0 || i.MinMastery < 0 || i.Value < 0)) return Result<GearCatalog>.Fail("Um equipamento do catálogo está sem id, nome ou com valor inválido.");
+		if (CatalogJson.Duplicate(items, i => i.Id) is { } repeated) return Result<GearCatalog>.Fail($"O catálogo de equipamentos repete o id {repeated}.");
 
 		var limit = new GearLimits(limits.Energy, limits.Speed, limits.Reach);
 		var over = items.FirstOrDefault(i => i.Value > (i.Attribute switch { GearAttribute.Energy => limit.Energy, GearAttribute.Speed => limit.Speed, _ => limit.Reach }));
@@ -106,7 +99,7 @@ public sealed class GearCatalog
 	sealed record ItemDto(string? Id, string? Name, string? Description, GearSlot Slot, GearAttribute Attribute, double Value, int MinMastery);
 }
 
-// Lê e grava o equipamento de cada Papel (a torre) no Perfil. A Maestria necessária vem de quem chama (ProgressService.Mastery).
+// Lê e grava o equipamento de cada Papel (a torre) no Perfil. A Maestria necessária vem de quem chama (MasteryService.Of).
 public sealed class GearService(SaveSession session, GearCatalog catalog)
 {
 	public Gear Get(string profileId, string role) =>

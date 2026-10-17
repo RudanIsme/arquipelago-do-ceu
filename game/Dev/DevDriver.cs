@@ -7,8 +7,7 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Ferramenta de desenvolvimento: percorre uma tela como uma criança faria (clica e digita) e grava
-// capturas, para conferir fluxos de interface sem teste manual. Só liga com argumentos de usuário:
+// Ferramenta de desenvolvimento: percorre uma tela como uma criança e grava capturas. Só liga com argumentos de usuário:
 //   godot --path game -- --driver=criar --saida=<pasta>
 public partial class DevDriver : Node
 {
@@ -578,15 +577,14 @@ static class Scenarios
 	}
 }
 
-// Roteiro de ponta a ponta, feito para rodar no executável do build (CI): cria o Perfil, anda, treina nos dois Papéis e
-// confere que o save não mudou; depois um segundo processo reabre o jogo e confere que o Perfil e o progresso continuam iguais.
-// Uso: <jogo> --headless -- --driver=e2e-1 --save=<arquivo>, e depois o mesmo com --driver=e2e-2.
+// Roteiro de ponta a ponta para o executável do build (CI): cria o Perfil, treina e confere que o save não mudou.
+// Uso: <jogo> --headless -- --driver=e2e-1 --save=<arquivo>, e depois e2e-2 reabre e confere.
 static class E2E
 {
 	public static async Task First(DevDriver d)
 	{
 		var save = d.Arg("save");
-		d.Expect(save != "", "o roteiro recebeu --save=<arquivo>");
+		d.Expect(save.Length != 0, "o roteiro recebeu --save=<arquivo>");
 
 		await d.Press("Criar");
 		await d.Type("Luna");

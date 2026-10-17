@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using ArquipelagoDoCeu.Data;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
@@ -16,7 +17,6 @@ namespace ArquipelagoDoCeu;
 // Raiz de composição: liga os adaptadores do Godot às regras de core/ e conduz o fluxo das telas.
 public partial class Main : Node3D
 {
-	const string RulesPath = "res://data/rules.json";
 	const string SavePath = "user://save.json";
 	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
 	const string PilotSavePath = "user://piloto-save.json";
@@ -46,6 +46,9 @@ public partial class Main : Node3D
 	float uiScale = 1f;
 	TrainingDummy dummy = null!;
 
+	readonly IRandomSource random = new GodotRandomSource();
+	readonly CatalogLoader catalogs = new(new GodotDataSource(), message => GD.PushWarning(message));
+
 	public override void _Ready()
 	{
 		ui = GetNode<CanvasLayer>("Interface");
@@ -61,7 +64,7 @@ public partial class Main : Node3D
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
-		progress = new ProgressService(session);
+		progress = ProgressServices.Create(session);
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
@@ -93,7 +96,7 @@ public partial class Main : Node3D
 			GD.PushWarning(missing);
 		}
 		DevDriver.AttachIfRequested(this);
-        CallDeferred(nameof(InstallPullTest));
+		CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
 	}
@@ -179,14 +182,7 @@ public partial class Main : Node3D
 		return PilotSavePath;
 	}
 
-	static Result<GameRules> LoadRules()
-	{
-		using var file = FileAccess.Open(RulesPath, FileAccess.ModeFlags.Read);
-		if (file is null)
-			return Result<GameRules>.Fail($"Não foi possível abrir {RulesPath}: {FileAccess.GetOpenError()}");
-
-		return GameRules.Parse(file.GetAsText());
-	}
+	Result<GameRules> LoadRules() => catalogs.Required("rules.json", GameRules.Parse);
 
 	// Abre o save; se precisou recuperá-lo ou migrá-lo, grava o estado novo para o problema não se repetir
 	// e avisa o Responsável na tela.
@@ -348,11 +344,11 @@ public partial class Main : Node3D
 		dummy = new TrainingDummy();
 		lobby.AddChild(dummy);
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
-			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
+			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify, random);
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
 		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
-		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random);
 		AddChild(master);
 	}
 
@@ -393,15 +389,15 @@ public partial class Main : Node3D
 		GetTree().Quit(code);
 	}
 
-	// O encerramento do TTS do sistema às vezes não termina, e a janela já fechada deixaria um processo preso e invisível.
-	// Se o jogo não sair em poucos segundos, o vigia o encerra, com o mesmo código de saída. Nada fica pendente nessa hora:
-	// o save é gravado de uma vez, a cada mudança.
+	// O encerramento do TTS do sistema às vezes não termina e deixaria um processo preso e invisível.
+	// Se o jogo não sair em poucos segundos, o vigia o encerra: nada fica pendente, o save é gravado a cada mudança.
 	static void WatchExit(int code) =>
 		new System.Threading.Thread(() =>
 		{
 			System.Threading.Thread.Sleep(8000);
 			System.Environment.Exit(code);
-		}) { IsBackground = true, Name = "Vigia da saída" }.Start();
+		})
+		{ IsBackground = true, Name = "Vigia da saída" }.Start();
 
 	bool quitting;
 

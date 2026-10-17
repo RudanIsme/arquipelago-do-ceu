@@ -5,9 +5,8 @@ namespace ArquipelagoDoCeu.Generation;
 // O que um Andar do Plano manda ter: a Sala do Item, o Marco e o Desafio épico (o último Andar).
 public sealed record FloorPlan(int Number, bool HoldsItem, bool HasMarco, bool HasEpic);
 
-// A divisão de um Nível em Andares (ADR 0003). O Item fica sempre num Andar anterior ao do Marco, e o Marco
-// nunca depois do épico, então as duas torres nunca esperam uma pela outra (ADR 0002).
-// Na Expedição livre o Plano é sem fim: não há Marco, Desafio épico nem Item, e todo Andar é um Andar comum.
+// A divisão de um Nível em Andares (ADR 0003): o Item vem antes do Marco e o Marco antes do épico (ADR 0002).
+// Na Expedição livre o Plano é sem fim: só Andares comuns, sem Marco, épico nem Item.
 public sealed record LevelPlan(string Discipline, int Level, IReadOnlyList<FloorPlan> Floors, bool Endless = false)
 {
 	public static LevelPlan Free(string discipline, int level) => new(discipline, level, [], Endless: true);

@@ -24,10 +24,10 @@ public sealed class ProgressTests : IDisposable
 		var loaded = store.Load();
 
 		Assert.Equal(SaveNotice.None, loaded.Value!.Notice);
-		var progress = new ProgressService(new SaveSession(store, loaded.Value.Data));
-		Assert.False(progress.EpicDone("p", "matematica", 1));
-		Assert.False(progress.HasItem("p", "matematica", 1));
-		Assert.False(progress.FloorDiscovered("p", "matematica", 1, 1));
+		var progress = ProgressServices.Create(new SaveSession(store, loaded.Value.Data));
+		Assert.False(progress.Levels.EpicDone("p", new LevelKey("matematica", 1)));
+		Assert.False(progress.Levels.HasItem("p", new LevelKey("matematica", 1)));
+		Assert.False(progress.Levels.FloorDiscovered("p", new FloorKey("matematica", 1, 1)));
 		Assert.Equal(json, File.ReadAllText(PathName));
 	}
 
@@ -35,39 +35,39 @@ public sealed class ProgressTests : IDisposable
 	public void Epico_Item_e_Andar_sobrevivem_a_gravar_e_reabrir()
 	{
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, Example));
+		var progress = ProgressServices.Create(new SaveSession(store, Example));
 
-		Assert.True(progress.MarkEpicDone("p", "matematica", 1).IsOk);
-		Assert.True(progress.GiveItem("p", "portugues", 1).IsOk);
-		Assert.True(progress.DiscoverFloor("p", "matematica", 1, 2).IsOk);
+		Assert.True(progress.Levels.MarkEpicDone("p", new LevelKey("matematica", 1)).IsOk);
+		Assert.True(progress.Levels.GiveItem("p", new LevelKey("portugues", 1)).IsOk);
+		Assert.True(progress.Levels.DiscoverFloor("p", new FloorKey("matematica", 1, 2)).IsOk);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		Assert.True(reopened.EpicDone("p", "matematica", 1));
-		Assert.True(reopened.HasItem("p", "portugues", 1));
-		Assert.True(reopened.FloorDiscovered("p", "matematica", 1, 2));
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		Assert.True(reopened.Levels.EpicDone("p", new LevelKey("matematica", 1)));
+		Assert.True(reopened.Levels.HasItem("p", new LevelKey("portugues", 1)));
+		Assert.True(reopened.Levels.FloorDiscovered("p", new FloorKey("matematica", 1, 2)));
 	}
 
 	[Fact]
 	public void O_progresso_e_de_cada_Perfil_Dungeon_e_Nivel()
 	{
-		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(PathName), Example));
 
-		progress.GiveItem("p", "matematica", 1);
+		progress.Levels.GiveItem("p", new LevelKey("matematica", 1));
 
-		Assert.True(progress.HasItem("p", "matematica", 1));
-		Assert.False(progress.HasItem("q", "matematica", 1));
-		Assert.False(progress.HasItem("p", "portugues", 1));
-		Assert.False(progress.HasItem("p", "matematica", 2));
+		Assert.True(progress.Levels.HasItem("p", new LevelKey("matematica", 1)));
+		Assert.False(progress.Levels.HasItem("q", new LevelKey("matematica", 1)));
+		Assert.False(progress.Levels.HasItem("p", new LevelKey("portugues", 1)));
+		Assert.False(progress.Levels.HasItem("p", new LevelKey("matematica", 2)));
 	}
 
 	[Fact]
 	public void Marcar_de_novo_nao_duplica_e_nao_apaga_o_resto_do_save()
 	{
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, Example));
+		var progress = ProgressServices.Create(new SaveSession(store, Example));
 
-		progress.GiveItem("p", "matematica", 1);
-		progress.GiveItem("p", "matematica", 1);
+		progress.Levels.GiveItem("p", new LevelKey("matematica", 1));
+		progress.Levels.GiveItem("p", new LevelKey("matematica", 1));
 
 		var saved = store.Load().Value!.Data;
 		Assert.Single(saved.Profiles[0].Progress!.Items!);
@@ -79,59 +79,59 @@ public sealed class ProgressTests : IDisposable
 	public void Os_Fast_travels_encontrados_ficam_no_save_sem_repetir_e_em_ordem()
 	{
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, Example));
+		var progress = ProgressServices.Create(new SaveSession(store, Example));
 
-		progress.FindFastTravel("p", "portugues", 1, 2);
-		progress.FindFastTravel("p", "matematica", 2, 1);
-		progress.FindFastTravel("p", "matematica", 1, 3);
-		progress.FindFastTravel("p", "matematica", 1, 3);
+		progress.Levels.FindFastTravel("p", new FloorKey("portugues", 1, 2));
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 2, 1));
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 1, 3));
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 1, 3));
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		Assert.Equal([new FastTravelPoint("matematica", 1, 3), new FastTravelPoint("matematica", 2, 1), new FastTravelPoint("portugues", 1, 2)], reopened.FastTravels("p"));
-		Assert.Empty(reopened.FastTravels("q"));
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		Assert.Equal([new FloorKey("matematica", 1, 3), new FloorKey("matematica", 2, 1), new FloorKey("portugues", 1, 2)], reopened.Levels.FastTravels("p"));
+		Assert.Empty(reopened.Levels.FastTravels("q"));
 	}
 
 	[Fact]
 	public void O_Atalho_de_Nivel_so_pode_ser_tentado_uma_vez_por_Nivel_e_Dungeon()
 	{
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, Example));
-		Assert.False(progress.ShortcutTried("p", "matematica", 1));
+		var progress = ProgressServices.Create(new SaveSession(store, Example));
+		Assert.False(progress.Levels.ShortcutTried("p", new LevelKey("matematica", 1)));
 
-		Assert.True(progress.MarkShortcutTried("p", "matematica", 1).IsOk);
+		Assert.True(progress.Levels.MarkShortcutTried("p", new LevelKey("matematica", 1)).IsOk);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		Assert.True(reopened.ShortcutTried("p", "matematica", 1));
-		Assert.False(reopened.ShortcutTried("p", "portugues", 1));
-		Assert.False(reopened.ShortcutTried("p", "matematica", 2));
-		Assert.False(reopened.ShortcutTried("q", "matematica", 1));
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		Assert.True(reopened.Levels.ShortcutTried("p", new LevelKey("matematica", 1)));
+		Assert.False(reopened.Levels.ShortcutTried("p", new LevelKey("portugues", 1)));
+		Assert.False(reopened.Levels.ShortcutTried("p", new LevelKey("matematica", 2)));
+		Assert.False(reopened.Levels.ShortcutTried("q", new LevelKey("matematica", 1)));
 	}
 
 	[Fact]
 	public void O_Desafio_mestre_so_abre_com_os_dois_epicos_do_Nivel_concluidos()
 	{
-		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
-		Assert.False(progress.MasterOpen("p", 1));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(PathName), Example));
+		Assert.False(progress.Levels.MasterOpen("p", 1));
 
-		progress.MarkEpicDone("p", "matematica", 1);
-		Assert.False(progress.MasterOpen("p", 1));
-		progress.MarkEpicDone("p", "portugues", 2);
-		Assert.False(progress.MasterOpen("p", 1), "o épico de outro Nível não vale");
+		progress.Levels.MarkEpicDone("p", new LevelKey("matematica", 1));
+		Assert.False(progress.Levels.MasterOpen("p", 1));
+		progress.Levels.MarkEpicDone("p", new LevelKey("portugues", 2));
+		Assert.False(progress.Levels.MasterOpen("p", 1), "o épico de outro Nível não vale");
 
-		progress.MarkEpicDone("p", "portugues", 1);
-		Assert.True(progress.MasterOpen("p", 1));
-		Assert.False(progress.MasterOpen("q", 1));
+		progress.Levels.MarkEpicDone("p", new LevelKey("portugues", 1));
+		Assert.True(progress.Levels.MasterOpen("p", 1));
+		Assert.False(progress.Levels.MasterOpen("q", 1));
 	}
 
 	[Fact]
 	public void Vencer_o_Desafio_mestre_sobe_o_Nivel_liberado_ate_o_maximo()
 	{
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, Example));
+		var progress = ProgressServices.Create(new SaveSession(store, Example));
 
-		Assert.Equal(2, progress.RaiseLevel("p", 3).Value!.Level);
-		Assert.Equal(3, progress.RaiseLevel("p", 3).Value!.Level);
-		Assert.Equal(3, progress.RaiseLevel("p", 3).Value!.Level);
+		Assert.Equal(2, progress.Levels.RaiseLevel("p", 3).Value!.Level);
+		Assert.Equal(3, progress.Levels.RaiseLevel("p", 3).Value!.Level);
+		Assert.Equal(3, progress.Levels.RaiseLevel("p", 3).Value!.Level);
 
 		var saved = store.Load().Value!.Data;
 		Assert.Equal(3, saved.Profiles.Single(p => p.Id == "p").Level);
@@ -141,23 +141,23 @@ public sealed class ProgressTests : IDisposable
 	[Fact]
 	public void O_Andar_mais_fundo_descoberto_vale_1_quando_nao_ha_nenhum()
 	{
-		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
-		Assert.Equal(1, progress.HighestFloor("p", "matematica", 1));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(PathName), Example));
+		Assert.Equal(1, progress.Levels.HighestFloor("p", new LevelKey("matematica", 1)));
 
-		progress.DiscoverFloor("p", "matematica", 1, 1);
-		progress.DiscoverFloor("p", "matematica", 1, 3);
-		progress.DiscoverFloor("p", "matematica", 2, 4);
+		progress.Levels.DiscoverFloor("p", new FloorKey("matematica", 1, 1));
+		progress.Levels.DiscoverFloor("p", new FloorKey("matematica", 1, 3));
+		progress.Levels.DiscoverFloor("p", new FloorKey("matematica", 2, 4));
 
-		Assert.Equal(3, progress.HighestFloor("p", "matematica", 1));
-		Assert.Equal(1, progress.HighestFloor("p", "portugues", 1));
+		Assert.Equal(3, progress.Levels.HighestFloor("p", new LevelKey("matematica", 1)));
+		Assert.Equal(1, progress.Levels.HighestFloor("p", new LevelKey("portugues", 1)));
 	}
 
 	[Fact]
 	public void Perfil_que_nao_existe_e_uma_falha_e_nao_uma_excecao()
 	{
-		var progress = new ProgressService(new SaveSession(new SaveStore(PathName), Example));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(PathName), Example));
 
-		Assert.False(progress.GiveItem("nao-existe", "matematica", 1).IsOk);
+		Assert.False(progress.Levels.GiveItem("nao-existe", new LevelKey("matematica", 1)).IsOk);
 	}
 
 	[Fact]
@@ -166,11 +166,11 @@ public sealed class ProgressTests : IDisposable
 		Directory.CreateDirectory(folder);
 		var blocker = Path.Combine(folder, "arquivo");
 		File.WriteAllText(blocker, "x");
-		var progress = new ProgressService(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
 
-		var result = progress.GiveItem("p", "matematica", 1);
+		var result = progress.Levels.GiveItem("p", new LevelKey("matematica", 1));
 
 		Assert.False(result.IsOk);
-		Assert.False(progress.HasItem("p", "matematica", 1));
+		Assert.False(progress.Levels.HasItem("p", new LevelKey("matematica", 1)));
 	}
 }

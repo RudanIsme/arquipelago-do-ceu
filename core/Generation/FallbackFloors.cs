@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Data;
 using System.Text.Json;
 using ArquipelagoDoCeu.Rules;
 
@@ -7,8 +8,6 @@ namespace ArquipelagoDoCeu.Generation;
 // Há um para cada combinação do que um Andar do Plano pode ter (Item, Marco, épico).
 public sealed class FallbackFloors
 {
-	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
-
 	readonly IReadOnlyList<Template> templates;
 
 	FallbackFloors(IReadOnlyList<Template> templates) => this.templates = templates;
@@ -21,16 +20,10 @@ public sealed class FallbackFloors
 
 	public static Result<FallbackFloors> Parse(string json)
 	{
-		FileDto? dto;
-		try
-		{
-			dto = JsonSerializer.Deserialize<FileDto>(json, Options);
-		}
-		catch (JsonException e)
-		{
-			return Result<FallbackFloors>.Fail($"O arquivo dos Andares de reserva não é um JSON válido: {e.Message}");
-		}
-		if (dto?.Floors is not { Count: > 0 }) return Result<FallbackFloors>.Fail("O arquivo dos Andares de reserva não traz nenhum Andar.");
+		var read = CatalogJson.Deserialize<FileDto>(json, "O arquivo dos Andares de reserva");
+		if (!read.IsOk) return Result<FallbackFloors>.Fail(read.Error!);
+		var dto = read.Value!;
+		if (dto.Floors is not { Count: > 0 }) return Result<FallbackFloors>.Fail("O arquivo dos Andares de reserva não traz nenhum Andar.");
 
 		var templates = new List<Template>();
 		foreach (var f in dto.Floors)

@@ -6,9 +6,8 @@ using Xunit;
 
 namespace ArquipelagoDoCeu.Tests;
 
-// Os Andares vêm do arquivo de reserva, que tem formato conhecido e sempre válido:
-//   Sem Marco:  0 entrada, 1 combate, 2 Fast travel, 3 Descanso, 4 Puzzle, 5 saída; ligações 0-1 1-2 0-3 1-4 4-5.
-//   Com Marco:  o mesmo, com o Marco (5) entre o Puzzle e a saída (6, o Desafio épico no último Andar).
+// Os Andares vêm do arquivo de reserva. Sem Marco: 0 entrada, 1 combate, 2 Fast travel, 3 Descanso, 4 Puzzle, 5 saída (0-1 1-2 0-3 1-4 4-5).
+// Com Marco: o Marco (5) entre o Puzzle e a saída (6, o épico no último Andar).
 static class ExpeditionFixtures
 {
 	public static readonly DungeonRules Rules = GameRules.Parse(TestJson.Rules).Value!.Dungeon;

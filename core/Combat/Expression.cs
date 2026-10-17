@@ -17,7 +17,7 @@ public readonly record struct Token(TokenKind Kind, int Value = 0)
 
 	public bool IsOperator => Kind != TokenKind.Number;
 
-	public override string ToString() => Kind switch { TokenKind.Plus => "+", TokenKind.Minus => "-", _ => Value.ToString() };
+	public override string ToString() => Kind switch { TokenKind.Plus => "+", TokenKind.Minus => "-", _ => Value.ToString(System.Globalization.CultureInfo.InvariantCulture) };
 }
 
 // A conta é calculada aqui, em código, sobre as peças montadas: nenhum texto de fora vira conta.

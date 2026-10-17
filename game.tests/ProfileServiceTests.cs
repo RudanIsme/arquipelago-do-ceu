@@ -81,7 +81,7 @@ public sealed class ProfileServiceTests : IDisposable
 		var excedente = servico.Create("Mais um");
 
 		Assert.False(excedente.IsOk);
-		Assert.Contains(regras.Profile.MaxProfiles.ToString(), excedente.Error);
+		Assert.Contains(regras.Profile.MaxProfiles.ToString(System.Globalization.CultureInfo.InvariantCulture), excedente.Error);
 	}
 
 	[Fact]

@@ -7,10 +7,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Escriba do 2º ano: a criança escreve o nome da criatura inteiro, com o teclado físico ou com as letras na tela.
-// Não é modal: o Personagem continua andando (com as setas ou o mouse; W A S D viram letras enquanto se escreve) e o
-// tempo só desacelera, ou para no Modo calmo, quando há letras escritas. Nada exige velocidade. "Sugerir letra" mostra
-// a próxima letra com forma e texto, não só cor, e nunca custa Energia. Só Conferir conta como resposta.
+// O Escriba do 2º ano: a criança escreve o nome inteiro, no teclado ou nas letras da tela. Não é modal e nada exige velocidade.
+// "Sugerir letra" mostra a próxima com forma e texto, nunca custa Energia; só Conferir conta como resposta.
 public partial class WordPanel : OverlayScreen
 {
 	static int KeySize => UiKit.Compact ? 48 : 76;
@@ -68,7 +66,7 @@ public partial class WordPanel : OverlayScreen
 	// Perde o alvo sem responder: o que estava escrito se apaga.
 	public void Abandon()
 	{
-		while (battle.Backspace()) { }
+		battle.Clear();
 		Close();
 	}
 

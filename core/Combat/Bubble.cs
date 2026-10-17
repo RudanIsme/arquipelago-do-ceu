@@ -8,9 +8,8 @@ public enum BubblePhase { Waiting, Warning, Flying }
 // O que aconteceu neste instante, para o Godot tocar o aviso, soltar a bolha ou mostrar o acerto.
 public enum BubbleEvent { None, Warned, Launched, Hit, Missed }
 
-// A bolha de névoa do Boneco: espera, avisa o caminho que vai fazer (a mira trava quando o aviso começa) e voa devagar
-// em linha reta por ele, até sumir. Quem sai do caminho não é atingida. Velocidade, aviso e intervalo vêm de dados
-// e não dependem do Nível: a ação nunca fica mais difícil com o ano escolar.
+// A bolha de névoa do Boneco: avisa o caminho (a mira trava no aviso), voa em linha reta e some.
+// Velocidade, aviso e intervalo vêm de dados e não dependem do Nível: a ação nunca fica mais difícil.
 public sealed class BubbleAttack
 {
 	readonly BubbleRules rules;

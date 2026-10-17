@@ -9,9 +9,8 @@ using NumericsVector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// A área onde a criança desenha um número ou uma letra: o pontilhado aparece e ela liga os pontos com o mouse
-// ou o dedo. Quem confere é Tracing (core). Para ninguém ficar preso por não conseguir desenhar, há sempre
-// "Pular o desenho", e no teclado digitar o que está pedido vale como escrever.
+// A área onde a criança liga o pontilhado de um número ou letra; quem confere é Tracing (core).
+// Há sempre "Pular o desenho", e no teclado digitar o pedido vale como escrever.
 public partial class TracePad : VBoxContainer
 {
 	public static readonly Vector2I CanvasSize = new(392, 270);
@@ -119,14 +118,14 @@ public partial class TracePad : VBoxContainer
 		if (@event is not InputEventKey { Pressed: true, Echo: false } key || key.Unicode == 0) return;
 
 		typed += char.ToUpperInvariant((char)key.Unicode);
-		if (!expected.ToUpperInvariant().StartsWith(typed)) typed = "";
+		if (!expected.ToUpperInvariant().StartsWith(typed, StringComparison.Ordinal)) typed = "";
 		else if (typed.Length == expected.Length) Finish("Muito bem!");
 		if (typed.Length > 0 || done) GetViewport().SetInputAsHandled();
 	}
 }
 
 // A tela de desenho em si: pontos-guia, o traço da criança e o aviso de quais pontos já foram ligados.
-partial class TraceCanvas : Control
+sealed partial class TraceCanvas : Control
 {
 	const float DotRadius = 7f;
 	const float LitRadius = 11f;
@@ -239,9 +238,8 @@ partial class TraceCanvas : Control
 
 }
 
-// Desenha o texto com a fonte do jogo (a fonte para dislexia, se ligada) fora da tela e devolve onde há tinta.
-// O desenho é recortado pela caixa da tinta e ampliado para preencher a área, então qualquer fonte, fina ou grossa,
-// gera um pontilhado grande, inteiro e centralizado.
+// Desenha o texto com a fonte do jogo fora da tela e devolve onde há tinta, recortada e ampliada para a área,
+// então qualquer fonte gera um pontilhado grande, inteiro e centralizado.
 static class GlyphMask
 {
 	const float Fill = 0.88f;

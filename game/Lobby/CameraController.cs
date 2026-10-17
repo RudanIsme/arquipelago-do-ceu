@@ -6,9 +6,8 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// Liga a câmera do Lobby ao CameraRig: zoom com a roda do mouse, a pinça (toque ou touchpad) e as teclas Page Up, Page Down e
-// Home, e acompanhamento suave do Personagem. O tempo da câmera é o real, para ela não parar nem se arrastar quando o jogo
-// fica em câmera lenta durante a montagem. O texto 3D da cena cresce com o afastamento, para continuar legível em qualquer zoom.
+// Liga a câmera do Lobby ao CameraRig: zoom (roda, pinça, teclas) e acompanhamento suave do Personagem.
+// O tempo da câmera é o real, para não parar em câmera lenta, e o texto 3D cresce com o afastamento.
 public partial class CameraController : Node
 {
 	// A câmera olha de cima, de um canto da ilha: este é o afastamento fixo entre o ponto focado e a câmera.

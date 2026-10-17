@@ -66,7 +66,7 @@ public partial class AvatarCard : PanelContainer
 	{
 		nameLabel.Text = nickname;
 		masteryLabel.Text = $"Maestria {mastery} · {role}";
-		badge.Initial = nickname.Length > 0 ? nickname[..1].ToUpperInvariant() : "?";
+		badge.SetInitial(nickname.Length > 0 ? nickname[..1].ToUpperInvariant() : "?");
 		spoken = $"{nickname}. Maestria {mastery} no Papel {role}.";
 		TooltipText = spoken;
 	}
@@ -78,12 +78,12 @@ public partial class AvatarCard : PanelContainer
 		if (!press.Pressed) return;
 		GetTree().CreateTimer(HoldSeconds, true, false, true).Timeout += () =>
 		{
-			if (mine == pressEpoch && IsInsideTree() && spoken != "") speak(spoken);
+			if (mine == pressEpoch && IsInsideTree() && spoken.Length != 0) speak(spoken);
 		};
 	}
 
 	// O avatar é um círculo com a inicial: com o texto ao lado, nada depende só da cor.
-	partial class Badge : Control
+	sealed partial class Badge : Control
 	{
 		string initial = "?";
 
@@ -93,9 +93,10 @@ public partial class AvatarCard : PanelContainer
 			CustomMinimumSize = new Vector2(56, 56);
 		}
 
-		public string Initial
+		public void SetInitial(string value)
 		{
-			set { initial = value; QueueRedraw(); }
+			initial = value;
+			QueueRedraw();
 		}
 
 		public override void _Draw()

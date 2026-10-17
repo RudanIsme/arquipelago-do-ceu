@@ -107,7 +107,13 @@ public partial class DynamicCape : Node3D
 		lastRight = RightAnchor(); lastLeft = LeftAnchor(); accumulator = 0;
 	}
 	public void Toggle() { selected = !selected; Reset(); UpdateMode(); }
-	public void SetReduced(bool value) { if (reduced == value) return; reduced = value; Reset(); UpdateMode(); }
+	public void SetReduced(bool value)
+	{
+		if (reduced == value) return;
+		reduced = value;
+		Reset();
+		UpdateMode();
+	}
 	void UpdateMode()
 	{
 		visual.Visible = selected && !reduced; baked.Visible = !visual.Visible;
@@ -233,10 +239,18 @@ public partial class DynamicCape : Node3D
 
 	public Godot.Collections.Dictionary Diagnostics() => new()
 	{
-		["dinamica"] = selected && !reduced, ["particulas"] = Count, ["triangulos"] = 192,
-		["finita"] = points.All(p => p.IsFinite()), ["alongamento_maximo"] = maxStretch, ["erro_fixacao"] = maxPinError,
-		["penetracao_colisor_maxima"] = maxProxyPenetration, ["deslocamento_barra_maximo"] = maxTipLag, ["reinicios_seguranca"] = resets,
-		["media_ms"] = frames > 20 ? totalMs / (frames - 20) : 0, ["pico_ms"] = peakMs,
-		["frames"] = frames, ["vertices_mundo"] = points,
+		["dinamica"] = selected && !reduced,
+		["particulas"] = Count,
+		["triangulos"] = 192,
+		["finita"] = points.All(p => p.IsFinite()),
+		["alongamento_maximo"] = maxStretch,
+		["erro_fixacao"] = maxPinError,
+		["penetracao_colisor_maxima"] = maxProxyPenetration,
+		["deslocamento_barra_maximo"] = maxTipLag,
+		["reinicios_seguranca"] = resets,
+		["media_ms"] = frames > 20 ? totalMs / (frames - 20) : 0,
+		["pico_ms"] = peakMs,
+		["frames"] = frames,
+		["vertices_mundo"] = points,
 	};
 }

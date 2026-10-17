@@ -15,10 +15,8 @@ public sealed record FloorProgress(int Resolved, int Total);
 // As Salas que a criança já visitou e venceu num Andar; é o que o save guarda para a exploração sobreviver à Energia zerada.
 public sealed record FloorExploration(IReadOnlyList<int> Visited, IReadOnlyList<int> Cleared);
 
-// Uma Expedição numa Dungeon: onde a criança está, o que já venceu em cada Andar e a Energia da Expedição (que segue de
-// uma luta para a outra). Só regras, sem Godot. Combate, Puzzle, Marco e épico precisam ser vencidos para seguir a uma Sala
-// nova; voltar a uma Sala já visitada é sempre permitido, para a criança nunca ficar presa numa Sala que ainda não resolveu.
-// A escada vale nos dois sentidos e cada Andar guarda o próprio estado (ADR 0004).
+// Uma Expedição numa Dungeon: onde a criança está, o que venceu em cada Andar e a Energia que segue de luta em luta (ADR 0004).
+// Voltar a uma Sala visitada é sempre permitido, para a criança nunca ficar presa.
 public sealed class Expedition
 {
 	sealed class FloorState
@@ -59,11 +57,8 @@ public sealed class Expedition
 		else if (atFastTravel) MoveToRoom(RoomKind.FastTravel);
 	}
 
-	// `hasItem` diz se a criança tem o Item de troca do Nível da outra Dungeon, que abre o Marco.
-	// Recomeça na entrada do Andar `startFloor` ou, com `atFastTravel`, no Fast travel dele; com `atEpic`, direto no
-	// Desafio épico do último Andar (o Atalho de Nível). Quem chega assim já passou pelas Salas do caminho, então elas contam
-	// como vencidas. `explored` devolve o que o save guardou de cada Andar (ou nada, num save antigo); os Descansos nunca são
-	// guardados, então cada Expedição nova os tem de volta.
+	// Recomeça na entrada de `startFloor`, no Fast travel dele ou, com `atEpic`, no épico (o caminho conta como vencido).
+	// `hasItem` abre o Marco; `explored` vem do save (nada, num save antigo); os Descansos nunca vão para o save.
 	public static Expedition Start(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool>? hasItem = null,
 		int startFloor = 1, bool atFastTravel = false, bool atEpic = false, Func<int, FloorExploration?>? explored = null) =>
 		new(floors, plan, world, version, energy, hasItem ?? (() => false), startFloor, atFastTravel, atEpic, explored ?? (_ => null));

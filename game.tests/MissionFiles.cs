@@ -7,7 +7,6 @@ static class MissionFiles
 
 	public static IEnumerable<(string Source, string Json)> All() =>
 		Directory.EnumerateFiles(Path.Combine(RepositoryRoot(), "content", "missions"), "*.json", SearchOption.AllDirectories)
-			.ToList()
 			.OrderBy(f => f, StringComparer.Ordinal)
 			.Select(f => (Path.GetRelativePath(RepositoryRoot(), f).Replace('\\', '/'), File.ReadAllText(f)));
 

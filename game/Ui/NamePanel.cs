@@ -8,11 +8,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A montagem do nome pelo Escriba: a criança junta sílabas da bolsa para formar o nome da criatura.
-// Não é modal, como o cajado do Matemático: o Personagem continua andando (para desviar de bolhas) e o tempo só
-// desacelera, ou para no Modo calmo, enquanto ela monta o nome. Com mouse ou toque, tocar numa sílaba a lê e abre o
-// pontilhado para desenhá-la; no teclado, 1 a 9 escolhem a sílaba. Backspace desfaz, Enter confere e Esc solta o alvo.
-// Nenhum tempo é cobrado, e a fonte para dislexia vem do tema da interface.
+// A montagem do nome pelo Escriba: a criança junta sílabas da bolsa. Não é modal: o Personagem anda e o tempo só desacelera.
+// Toque numa sílaba a lê e abre o pontilhado; teclado: 1 a 9, Backspace desfaz, Enter confere, Esc solta. Nenhum tempo é cobrado.
 public partial class NamePanel : OverlayScreen
 {
 	static int PieceSize => UiKit.Compact ? 76 : 110;
@@ -55,9 +52,13 @@ public partial class NamePanel : OverlayScreen
 	public IReadOnlyList<string> ExpectedName => battle.Name;
 
 	public IReadOnlyList<string> PieceNames => battle.Pieces;
- public NameBattle PullBattle => battle;
- public void ReturnFromPull(bool check) { Refresh(); if(check) Check(); }
- public void OpenPullMode() { if(tracing || battle.Kind != NameKind.Syllables) return; GetTree().Root.GetChildren().OfType<PullTestGate>().FirstOrDefault()?.EnterWithPanel(this); }
+	public NameBattle PullBattle => battle;
+	public void ReturnFromPull(bool check) { Refresh(); if (check) Check(); }
+	public void OpenPullMode()
+	{
+		if (tracing || battle.Kind != NameKind.Syllables) return;
+		GetTree().Root.GetChildren().OfType<PullTestGate>().FirstOrDefault()?.EnterWithPanel(this);
+	}
 
 	public event Action? HintRequested;
 
@@ -77,7 +78,7 @@ public partial class NamePanel : OverlayScreen
 	public void Abandon()
 	{
 		pad.Abort();
-		while (battle.Undo()) { }
+		battle.UndoAll();
 		tracing = false;
 		Close();
 	}
@@ -132,8 +133,8 @@ public partial class NamePanel : OverlayScreen
 		actions.AddChild(UiKit.BigButton("Soltar alvo", Abandon, 196));
 		actions.AddChild(UiKit.BigButton("Conferir", Check, 196));
 		content.AddChild(actions);
-        // A pesca de teste (F9) só existe no Lobby; dentro de uma Dungeon o botão nem aparece.
-        if(allowPull && battle.Kind == NameKind.Syllables) content.AddChild(UiKit.BigButton("Pescar com puxada", OpenPullMode, 260));
+		// A pesca de teste (F9) só existe no Lobby; dentro de uma Dungeon o botão nem aparece.
+		if (allowPull && battle.Kind == NameKind.Syllables) content.AddChild(UiKit.BigButton("Pescar com puxada", OpenPullMode, 260));
 
 		var keys = UiKit.Hint("Teclado: 1 a 9 escolhem a peça, Backspace desfaz, Enter confere, Esc solta o alvo.");
 		keys.CustomMinimumSize = new Vector2(PanelWidth, 0);

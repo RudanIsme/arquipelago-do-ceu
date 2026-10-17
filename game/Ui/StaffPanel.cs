@@ -7,11 +7,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A UI de combate: aparece quando há uma criatura escolhida e fica na lateral, para o cenário continuar à vista.
-// A criança monta a conta tecla a tecla e faz a soma de cabeça: o painel nunca mostra o resultado.
-// Com mouse ou toque, tocar num número abre o pontilhado para desenhá-lo; no teclado, digitar o número vale.
-// Não é modal: o Personagem continua andando enquanto o painel está aberto, e só fica lento (ou parado, no Modo
-// calmo) enquanto a criança monta a resposta. Nada depende de velocidade. Só Confirmar conta como resposta.
+// A UI de combate do Matemático, na lateral: monta a conta tecla a tecla e a soma é de cabeça (o resultado nunca aparece).
+// Não é modal: o Personagem anda e o tempo só desacelera. Nada depende de velocidade; só Confirmar conta como resposta.
 public partial class StaffPanel : OverlayScreen
 {
 	static int KeySize => UiKit.Compact ? 64 : 96;
@@ -128,8 +125,8 @@ public partial class StaffPanel : OverlayScreen
 		{
 			var index = slot;
 			var key = UiKit.BigButton("", () => ChooseNumber(index), KeySize);
-			if(UiKit.Compact)key.AddThemeFontSizeOverride("font_size",24);
-            var dots = new DotsView();
+			if (UiKit.Compact) { key.AddThemeFontSizeOverride("font_size", 24); }
+			var dots = new DotsView();
 			dots.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
 			dots.OffsetTop = -38;
 			dots.OffsetBottom = -6;
@@ -193,7 +190,7 @@ public partial class StaffPanel : OverlayScreen
 		pad.Visible = true;
 		NotifyComposing();
 		voice.Say($"Desenhe o número {number}.", interrupt: true);
-		await pad.Begin(number.ToString(), $"Desenhe o {number}");
+		await pad.Begin(number.ToString(System.Globalization.CultureInfo.InvariantCulture), $"Desenhe o {number}");
 	}
 
 	void OnTraced()
@@ -378,7 +375,7 @@ public partial class StaffPanel : OverlayScreen
 }
 
 // As bolinhas de uma tecla de número, desenhadas em vez de escritas: algumas fontes (a para dislexia) não têm o "•".
-partial class DotsView : Control
+sealed partial class DotsView : Control
 {
 	const float Radius = 5f;
 	const int PerRow = 5;

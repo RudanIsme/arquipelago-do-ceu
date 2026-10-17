@@ -16,9 +16,8 @@ public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<
 		Links.Where(l => l.A == room || l.B == room).Select(l => l.A == room ? l.B : l.A);
 }
 
-// Gera um Andar inteiro de uma vez, só a partir da seed e do que o Plano manda (ADR 0003).
-// Tudo o que não é o Marco nem a saída fica antes do Marco, então o Fast travel, o Descanso e todo Puzzle
-// são alcançáveis sem Item, e o Marco é o único caminho até a saída.
+// Gera um Andar inteiro só pela seed e pelo Plano (ADR 0003). Tudo fica antes do Marco, que é o único caminho até a saída,
+// então Fast travel, Descanso e todo Puzzle são alcançáveis sem Item.
 public static class FloorGenerator
 {
 	const int Fixed = 3; // entrada, saída e Fast travel; o Descanso entra junto das Salas livres

@@ -42,7 +42,7 @@ public sealed class GearTests : IDisposable
 
 		Assert.False(blocked.IsOk);
 		Assert.Contains("Maestria", blocked.Error);
-		Assert.Contains(Catalog.Find("guardian")!.MinMastery.ToString(), blocked.Error);
+		Assert.Contains(Catalog.Find("guardian")!.MinMastery.ToString(System.Globalization.CultureInfo.InvariantCulture), blocked.Error);
 	}
 
 	[Fact]
