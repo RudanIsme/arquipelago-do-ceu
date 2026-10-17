@@ -2,12 +2,8 @@ using ArquipelagoDoCeu.Dungeon;
 
 namespace ArquipelagoDoCeu.Saves;
 
-// O que a criança conquistou nas Dungeons. Cada lista guarda chaves de texto ("matematica:1" para um Nível,
-// "matematica:1:2" para um Andar), e ausente vale vazio; por isso saves antigos continuam válidos na mesma versão.
-// `Explored` guarda as Salas visitadas e vencidas de cada Andar, `FloorsDone` os Andares completos e `Cosmetics` os ids ganhos.
-// `Solved` conta as vitórias de cada Conceito ("matematica:adicao-ate-10"), `Mastered` guarda os Conceitos já dominados (a Maestria
-// de um Papel é quantos há com a torre dele) e `Coins` é o saldo de moedas, que não tem teto e nunca diminui.
-// O Nível liberado continua sendo o `Level` do Perfil. O treino no Lobby nunca escreve aqui.
+// O que a criança conquistou nas Dungeons, com chaves de texto ("matematica:1:2") e ausente valendo vazio, para saves antigos abrirem.
+// O Nível liberado é o `Level` do Perfil. O treino no Lobby nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,

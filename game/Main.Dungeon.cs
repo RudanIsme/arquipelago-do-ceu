@@ -138,7 +138,7 @@ public partial class Main
 		UpdatePlayerControl();
 		interactTarget = null;
 		RefreshCard();
-		if (reason != "") Notify(reason);
+		if (reason.Length != 0) Notify(reason);
 		// O que a criança ganhou na Expedição aparece ao voltar, com o número subindo até o saldo novo.
 		// Só vale a Expedição que acabou e do mesmo Perfil: nunca mostra moedas que a criança não ganhou ali.
 		if (coinsAtStart is { } start && current is not null && start.Profile == current.Id && progress.Coins(current.Id) is var coinsNow && coinsNow > start.Coins)

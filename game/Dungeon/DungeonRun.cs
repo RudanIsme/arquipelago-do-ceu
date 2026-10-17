@@ -183,7 +183,7 @@ public partial class DungeonRun : Node
 		// O Atalho não descobre Andares: quem erra joga o Nível normalmente, do Andar mais fundo que já conhecia.
 		if (ctx.Shortcut) BuildMap();
 		else DiscoverFloor();
-		EnterRoom(expedition.CurrentRoom, -1);
+		EnterRoom(-1);
 		Say(ctx.Free
 			? $"Expedição livre na {ctx.TowerName}! Os Andares não têm fim: volte ao Lobby quando quiser."
 			: $"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
@@ -245,7 +245,7 @@ public partial class DungeonRun : Node
 	// --- Salas
 
 	// `lead` abre a fala de quem acabou de mudar de Andar.
-	void EnterRoom(int room, int from, string? lead = null)
+	void EnterRoom(int from, string? lead = null)
 	{
 		combat.EndFight();
 		RefreshRoom();
@@ -264,13 +264,13 @@ public partial class DungeonRun : Node
 			_ => null,
 		};
 		var spoken = string.Join(" ", new[] { lead, text, CheckFloorComplete() }.Where(t => t is not null));
-		if (spoken != "") Say(spoken);
+		if (spoken.Length != 0) Say(spoken);
 	}
 
 	// A tentativa do Atalho é gravada ao começar: sair no meio também a gasta, e cada Nível tem uma só.
 	bool BeginShortcut()
 	{
-		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, new Pcg32((ulong)Time.GetTicksUsec()));
+		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, new Pcg32(Time.GetTicksUsec()));
 		if (!setups.IsOk)
 		{
 			// Sem Desafios para sortear, a criança nem chega a tentar: a tentativa não é gasta.
@@ -331,7 +331,7 @@ public partial class DungeonRun : Node
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
 		if (!InShortcut) fightSetup = (expedition.Floor.Number, setup.Value!);
-		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()), ctx.Free ? history : null);
+		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32(Time.GetTicksUsec()), ctx.Free ? history : null);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
@@ -495,7 +495,7 @@ public partial class DungeonRun : Node
 		if (id == "rest") return "Descansar [E]";
 		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
 		if (id == "stairs-down") return $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
-		var room = int.Parse(id["door:".Length..]);
+		var room = int.Parse(id["door:".Length..], System.Globalization.CultureInfo.InvariantCulture);
 		return expedition.Visited.Contains(room) ? $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
 	}
 
@@ -519,12 +519,12 @@ public partial class DungeonRun : Node
 		if (target == "stairs") { ChangeFloor(expedition.Ascend); return; }
 		if (target == "stairs-down") { ChangeFloor(expedition.Descend); return; }
 
-		var room = int.Parse(target["door:".Length..]);
+		var room = int.Parse(target["door:".Length..], System.Globalization.CultureInfo.InvariantCulture);
 		var from = expedition.CurrentRoom;
 		switch (expedition.MoveTo(room))
 		{
 			case Passage.Open:
-				EnterRoom(room, from);
+				EnterRoom(from);
 				break;
 			case Passage.MustClearRoom:
 				Say("Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.");
@@ -558,7 +558,7 @@ public partial class DungeonRun : Node
 	{
 		if (!move()) return;
 		DiscoverFloor();
-		EnterRoom(expedition.CurrentRoom, -1, $"Andar {expedition.Floor.Number}! {ProgressSpeech()}");
+		EnterRoom(-1, $"Andar {expedition.Floor.Number}! {ProgressSpeech()}");
 	}
 
 	// O que a criança explorou fica no save a cada passo: ver o mapa sumir ao zerar a Energia seria punição.

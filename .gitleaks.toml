@@ -1,0 +1,3 @@
+# Regras padrão do gitleaks; nada além delas é liberado.
+[extend]
+useDefault = true

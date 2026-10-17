@@ -12,9 +12,8 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// A Área de treino e as lutas das Salas da Dungeon: liga a criatura, o Personagem, as telas de montagem e a voz à sessão de combate de core/.
-// O treino tem Energia própria, o Boneco lança bolhas avisadas e faz travessuras nos erros; zerar a Energia só tira
-// a criança da Área de treino. Nada aqui grava no save: o treino não conta para o progresso.
+// A Área de treino e as lutas das Salas: liga criatura, Personagem, telas e voz à sessão de combate do core.
+// Nada aqui grava no save: o treino não conta para o progresso.
 public partial class TrainingArea : Node
 {
 	const float DummyPickRadius = 1.3f;
@@ -213,7 +212,7 @@ public partial class TrainingArea : Node
 	string? TryStart(TrainingSetup setup)
 	{
 		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
-		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, new Pcg32(Time.GetTicksUsec()));
 		if (!started.IsOk) return started.Error;
 
 		RoleChosen?.Invoke(setup.Discipline);
@@ -548,7 +547,7 @@ public partial class TrainingArea : Node
 		dummy.Idle();
 		time.End();
 		Engine.TimeScale = time.Scale;
-		if (message == "") return;
+		if (message.Length == 0) return;
 		notify(message);
 		dummy.Say("Fim do treino por hoje.", good: false);
 	}

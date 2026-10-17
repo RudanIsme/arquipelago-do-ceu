@@ -3,8 +3,7 @@ using ArquipelagoDoCeu.Rules;
 
 namespace ArquipelagoDoCeu.Combat;
 
-// A bolsa de números do Matemático, como um baralho: a mão tem poucas peças, as usadas vão para o
-// descarte e, quando a pilha acaba, o descarte é embaralhado de volta. A ordem vem só da seed.
+// A bolsa de números do Matemático, como um baralho: mão pequena, descarte que volta embaralhado, ordem só pela seed.
 // Slot vazio (null) é peça que está no cajado e ainda pode ser desfeita.
 public sealed class MathBag
 {
@@ -95,9 +94,8 @@ public sealed class MathBag
 	}
 }
 
-// O cajado: a calculadora onde a criança monta a conta antes de confirmar, número, sinal, número...
-// Montar e desfazer não são resposta; só Confirm gasta as peças e devolve a avaliação. Quem soma é a
-// criança: o cajado nunca expõe o total antes da confirmação.
+// O cajado: onde a criança monta a conta antes de confirmar. Só Confirm gasta as peças e avalia.
+// Quem soma é a criança: o total nunca aparece antes da confirmação.
 public sealed class Staff
 {
 	readonly MathBag bag;
@@ -142,7 +140,8 @@ public sealed class Staff
 
 	public void Cancel()
 	{
-		while (Undo()) { }
+		var more = true;
+		while (more) more = Undo();
 	}
 
 	public Result<ExpressionResult> Confirm(int shield)

@@ -121,7 +121,7 @@ public sealed class VoiceServiceTests : IDisposable
 		if (Directory.Exists(pasta)) Directory.Delete(pasta, true);
 	}
 
-	record Fala(string Text, string VoiceId, float Rate, bool Interrupt);
+	sealed record Fala(string Text, string VoiceId, float Rate, bool Interrupt);
 
 	sealed class FakeEngine : ISpeechEngine
 	{

@@ -25,6 +25,61 @@ jobs:
       - name: Rodar os testes
         run: dotnet test game.tests
 
+  qualidade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Formatação
+        run: |
+          for projeto in core/ArquipelagoDoCeu.Core.csproj game.tests/ArquipelagoDoCeu.Tests.csproj game/ArquipelagoDoCeu.csproj; do
+            dotnet format whitespace "$projeto" --verify-no-changes
+          done
+      - name: Análise estática e auditoria de dependências (aviso vira erro)
+        run: |
+          dotnet build game/ArquipelagoDoCeu.sln --no-incremental
+          dotnet build game.tests/ArquipelagoDoCeu.Tests.csproj --no-incremental
+      - name: Testes e cobertura do core (mínimo de 90% das linhas)
+        run: dotnet test game.tests -p:CollectCoverage=true "-p:Include=[ArquipelagoDoCeu.Core]*" -p:Threshold=90 -p:ThresholdType=line
+      - name: Comentários de no máximo 2 linhas
+        run: node tools/check_comments.mjs
+      - name: Commits convencionais
+        if: github.event_name == 'pull_request'
+        run: node tools/check_commits.mjs "origin/${{ github.base_ref }}"
+
+  segredos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  arquivos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-dirs: game/.godot,game/assets
+          exit-code: '1'
+
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 30

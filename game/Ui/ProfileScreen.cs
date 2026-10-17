@@ -98,10 +98,7 @@ public partial class ProfileScreen : Control
 
 	static void FocusFirstButton(Node box)
 	{
-		foreach (var node in box.FindChildren("*", "Button", true, false))
-		{
-			((Control)node).CallDeferred(Control.MethodName.GrabFocus);
-			return;
-		}
+		var first = System.Linq.Enumerable.FirstOrDefault(box.FindChildren("*", "Button", true, false));
+		first?.CallDeferred(Control.MethodName.GrabFocus);
 	}
 }

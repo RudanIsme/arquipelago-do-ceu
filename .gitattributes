@@ -1,3 +1,13 @@
 # O Godot grava estes arquivos sempre com LF; sem isso, o autocrlf do Windows os mostra como modificados.
 *.import text eol=lf
 *.uid text eol=lf
+# Fonte sempre com LF, para a checagem de formatação ser igual no Windows e no Linux.
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.sln text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.tscn text eol=lf
+*.editorconfig text eol=lf

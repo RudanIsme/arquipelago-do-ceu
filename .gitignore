@@ -38,3 +38,5 @@ node_modules/
 
 # Cópia de content/ feita pelo build (ver game/ArquipelagoDoCeu.csproj)
 game/content/
+game.tests/coverage.json
+game.tests/coverage.*.xml

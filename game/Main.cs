@@ -93,7 +93,7 @@ public partial class Main : Node3D
 			GD.PushWarning(missing);
 		}
 		DevDriver.AttachIfRequested(this);
-        CallDeferred(nameof(InstallPullTest));
+		CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
 	}
@@ -393,15 +393,15 @@ public partial class Main : Node3D
 		GetTree().Quit(code);
 	}
 
-	// O encerramento do TTS do sistema às vezes não termina, e a janela já fechada deixaria um processo preso e invisível.
-	// Se o jogo não sair em poucos segundos, o vigia o encerra, com o mesmo código de saída. Nada fica pendente nessa hora:
-	// o save é gravado de uma vez, a cada mudança.
+	// O encerramento do TTS do sistema às vezes não termina e deixaria um processo preso e invisível.
+	// Se o jogo não sair em poucos segundos, o vigia o encerra: nada fica pendente, o save é gravado a cada mudança.
 	static void WatchExit(int code) =>
 		new System.Threading.Thread(() =>
 		{
 			System.Threading.Thread.Sleep(8000);
 			System.Environment.Exit(code);
-		}) { IsBackground = true, Name = "Vigia da saída" }.Start();
+		})
+		{ IsBackground = true, Name = "Vigia da saída" }.Start();
 
 	bool quitting;
 

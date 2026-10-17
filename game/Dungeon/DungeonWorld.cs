@@ -98,9 +98,8 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		barrier.Visible = fight && puzzle;
 	}
 
-	// Reconstrói a Sala: chão pela função, portas para as Salas ligadas e o letreiro do centro.
-	// `describe` diz, para cada Sala vizinha, o texto da porta, se ela está trancada e se a criança já conhece a Sala: a porta
-	// de uma Sala nova não revela o que há do outro lado.
+	// Reconstrói a Sala: chão pela função, portas para as vizinhas e o letreiro do centro.
+	// `describe` dá o texto da porta, se está trancada e se a Sala já é conhecida: a porta de uma Sala nova não a revela.
 	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false)
 	{
 		foreach (var child in room.GetChildren()) child.QueueFree();

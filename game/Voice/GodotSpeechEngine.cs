@@ -5,12 +5,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Voz do sistema pelo TTS embutido do Godot. Sem suporte a TTS no aparelho (ou em modo headless),
-// a lista de vozes vem vazia e o jogo segue só com texto.
-//
-// O jogo nunca interrompe uma fala do sistema: parar ou trocar uma fala em andamento (TtsStop, ou `interrupt` do Godot)
-// travou ou derrubou o jogo no Windows, de vez em quando, mesmo numa thread à parte. Em vez disso o jogo guarda o que
-// ainda não foi dito, joga fora o que ficou velho quando chega um aviso novo e só manda falar quando a fala anterior acaba.
+// Voz do sistema pelo TTS do Godot; sem TTS (ou headless) a lista vem vazia e o jogo segue só com texto.
+// Nunca interrompe uma fala: parar ou trocar travou o jogo no Windows, então ele guarda a fila e fala quando a anterior acaba.
 public sealed class GodotSpeechEngine : ISpeechEngine
 {
 	const ulong EmptyRetryMilliseconds = 60_000;
@@ -25,9 +21,8 @@ public sealed class GodotSpeechEngine : ISpeechEngine
 	ulong waitingSince;
 	bool ticking;
 
-	// Listar as vozes consulta o sistema operacional, o que é lento (cerca de 200 ms) e, repetido a cada fala,
-	// pesa à toa. A lista com vozes fica guardada; a vazia vale por um minuto, para uma voz instalada com o jogo
-	// aberto ainda ser encontrada.
+	// Listar as vozes consulta o sistema (cerca de 200 ms), então a lista com vozes fica guardada;
+	// a vazia vale por um minuto, para uma voz instalada com o jogo aberto ser encontrada.
 	public IReadOnlyList<SystemVoice> Voices()
 	{
 		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--sem-voz")) return [];

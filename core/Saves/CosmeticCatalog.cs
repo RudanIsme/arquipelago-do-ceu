@@ -37,7 +37,7 @@ public sealed class CosmeticCatalog
 		if (dto?.Cosmetics is not { Count: > 0 }) return Result<CosmeticCatalog>.Fail("O catálogo de Cosméticos não traz nenhum Cosmético.");
 
 		var items = dto.Cosmetics.Select(c => new Cosmetic(c.Id ?? "", c.Name ?? "", c.Description ?? "", c.Discipline ?? "", c.Level, c.Floor)).ToList();
-		if (items.Any(c => c.Id == "" || c.Name == "" || c.Discipline == "" || c.Floor < 1 || c.Level < 1))
+		if (items.Any(c => c.Id.Length == 0 || c.Name.Length == 0 || c.Discipline.Length == 0 || c.Floor < 1 || c.Level < 1))
 			return Result<CosmeticCatalog>.Fail("Um Cosmético do catálogo não tem id, nome, torre, Nível ou Andar.");
 		if (items.Select(c => c.Id).Distinct().Count() != items.Count)
 			return Result<CosmeticCatalog>.Fail("O catálogo de Cosméticos repete um id.");

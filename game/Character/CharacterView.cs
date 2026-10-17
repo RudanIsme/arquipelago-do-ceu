@@ -44,7 +44,13 @@ public partial class CharacterView : Node3D
 
 	public override void _Ready()
 	{
-		if (UseSpectrumTest) { spectrum = new SpectrumCharacter(); AddChild(spectrum); if (pendingEquipment is not null) spectrum.ApplyEquipment(pendingEquipment); return; }
+		if (UseSpectrumTest)
+		{
+			spectrum = new SpectrumCharacter();
+			AddChild(spectrum);
+			if (pendingEquipment is not null) spectrum.ApplyEquipment(pendingEquipment);
+			return;
+		}
 		var scene = GD.Load<PackedScene>(ModelPath);
 		if (scene is null)
 		{

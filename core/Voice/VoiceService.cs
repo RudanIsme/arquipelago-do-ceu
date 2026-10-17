@@ -40,7 +40,7 @@ public sealed class VoiceService
 	public SystemVoice? Chosen()
 	{
 		var voices = PortugueseVoices();
-		return voices.FirstOrDefault(v => v.Id == settings.Current.VoiceId) ?? voices.FirstOrDefault();
+		return voices.FirstOrDefault(v => v.Id == settings.Current.VoiceId) ?? (voices.Count > 0 ? voices[0] : null);
 	}
 
 	// Só há aviso quando a criança quer voz e o aparelho não tem nenhuma pt-BR.

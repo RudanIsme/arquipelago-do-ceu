@@ -137,7 +137,6 @@ public class FloorValidatorTests
 		new(1, rooms.Select((r, i) => new Room(i, r.Kind, r.Item)).ToList(), links.Select(l => new Link(l.Item1, l.Item2)).ToList(), 0, exit ?? rooms.Length - 1);
 
 	static readonly FloorPlan WithMarco = new(1, false, true, false);
-	static readonly FloorPlan Plain = new(1, false, false, false);
 
 	// Entrada(0) - Combate(1) - Fast travel(2); Descanso(3) na entrada; Marco(4) depois do combate; saída(5).
 	static (RoomKind, bool)[] GoodRooms => [(RoomKind.Entrance, false), (RoomKind.Combat, false), (RoomKind.FastTravel, false), (RoomKind.Rest, false), (RoomKind.Marco, false), (RoomKind.Exit, false)];

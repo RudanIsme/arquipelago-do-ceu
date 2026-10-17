@@ -7,10 +7,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Desenha o grafo de um Andar: a entrada em cima e as Salas mais longe dela mais abaixo.
-// Cada função tem forma e letra próprias, para a cor nunca ser a única informação. Com uma Expedição ligada, só aparece o
-// que a criança explorou: as Salas visitadas, as vizinhas sob névoa (um "?", sem dizer o que são) e o cadeado nas que ainda
-// pedem uma vitória; as outras nem aparecem.
+// Desenha o grafo de um Andar, entrada em cima. Cada função tem forma e letra, para a cor nunca ser a única informação.
+// Com uma Expedição ligada só aparece o explorado: Salas visitadas, vizinhas sob névoa ("?") e o cadeado.
 public partial class FloorMap : Control
 {
 	const float Radius = 17f;

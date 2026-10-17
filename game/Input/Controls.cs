@@ -36,9 +36,8 @@ public static class Controls
 
 	}
 
-	// x para a direita, y para cima, tamanho no máximo 1.
-	// Com a criança escrevendo letras no teclado, W A S D são letras e só as setas andam; o resto do jogo (mouse, toque) segue igual.
-	// Um contador, não um sinalizador: se um painel novo abre no mesmo quadro em que o velho sai, o aviso não se perde.
+	// Um contador, não um sinalizador: se um painel novo abre no quadro em que o velho sai, o aviso não se perde.
+	// Com a criança escrevendo letras, W A S D são letras e só as setas andam.
 	public static int TypingPanels { get; set; }
 
 	static bool TypingLetters => TypingPanels > 0;

@@ -5,9 +5,8 @@ namespace ArquipelagoDoCeu.Combat;
 
 public enum WordResult { Incomplete, Freed, Mistaken }
 
-// A luta do Escriba do 2º ano: a criança escreve a palavra inteira, com o teclado físico ou com as letras na tela.
-// A grafia tem que ser exata (maiúscula e minúscula valem igual; acento e cedilha não). A palavra vem de uma Missão
-// e o jogo só a confere. Escrever o que falta ainda não é erro; só conferir uma palavra completa e errada é.
+// A luta do Escriba do 2º ano: a criança escreve a palavra inteira; o jogo só a confere (acento e cedilha contam).
+// Escrever o que falta não é erro; só conferir uma palavra completa e errada é.
 public sealed class WordBattle
 {
 	const int DefaultDistractors = 4;

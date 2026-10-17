@@ -9,9 +9,8 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// Cenários do piloto para as torres. Eles percorrem a Expedição como uma criança faria (anda até a porta, entra,
-// escolhe a criatura, segue até a escada); a luta em si é encerrada pelo gancho de depuração, e o combate real tem
-// os próprios testes e cenários. Use `--seed-do-mundo=N` para repetir sempre o mesmo Plano.
+// Cenários do piloto para as torres: percorrem a Expedição como uma criança; a luta é encerrada pelo gancho de depuração.
+// Use `--seed-do-mundo=N` para repetir o mesmo Plano.
 static class DungeonScenarios
 {
 	public static async Task Walkthrough(DevDriver d)
@@ -135,13 +134,12 @@ static class DungeonScenarios
 		await d.Shot("05-marco-aberto");
 	}
 
-	// Teste de ponta a ponta do Nível 1, para a CI (use --seed-do-mundo=1 e --save=<arquivo>, sem janela): o Atalho de Nível numa
-	// torre, a outra jogada inteira (Descanso, Puzzle, Fast travel, Item e Marco, épico) e o Desafio mestre. Depois o `e2e-4`,
-	// num segundo processo, reabre o jogo e confere que tudo continua no save.
+	// Ponta a ponta do Nível 1 para a CI (--seed-do-mundo=1 e --save=<arquivo>, sem janela): Atalho, a outra torre e o Desafio mestre.
+	// O `e2e-4` reabre o jogo e confere que tudo continua no save.
 	public static async Task E2eLevelFirst(DevDriver d)
 	{
 		var save = d.Arg("save");
-		d.Expect(save != "", "o roteiro recebeu --save=<arquivo>");
+		d.Expect(save.Length != 0, "o roteiro recebeu --save=<arquivo>");
 		await EnsureProfile(d);
 		var main = d.GetParent<Main>();
 		var profile = main.DevProfileId;
@@ -205,7 +203,7 @@ static class DungeonScenarios
 		for (var i = 0; i < 4; i++) { main.DevMaster.DevWinRound(); await d.Wait(0.3); }
 		d.Expect(main.DevLevel == 2, "vencer o Desafio mestre liberou o Nível 2");
 
-		if (save != "") File.WriteAllBytes(save + ".snapshot", File.ReadAllBytes(save));
+		if (save.Length != 0) File.WriteAllBytes(save + ".snapshot", File.ReadAllBytes(save));
 	}
 
 	public static async Task E2eLevelReopen(DevDriver d)
@@ -652,7 +650,7 @@ static class DungeonScenarios
 		var here = run.Expedition.CurrentRoom;
 		d.Expect(run.RoomSpeech(here).Contains("Você está aqui") && run.RoomSpeech(here).Contains("vencida"), "a voz descreve a Sala atual e diz que está vencida");
 		var fog = run.Expedition.Floor.Rooms.First(r => run.Expedition.SightOf(r.Id) == ArquipelagoDoCeu.Dungeon.Sight.Fog);
-		d.Expect(run.RoomSpeech(fog.Id).Contains("névoa") && !run.RoomSpeech(fog.Id).Contains(FloorMap.NameOf(fog.Kind).ToLowerInvariant()), "a voz não revela o que há sob a névoa");
+		d.Expect(run.RoomSpeech(fog.Id).Contains("névoa", StringComparison.Ordinal) && !run.RoomSpeech(fog.Id).Contains(FloorMap.NameOf(fog.Kind).ToLowerInvariant(), StringComparison.Ordinal), "a voz não revela o que há sob a névoa");
 		run.Leave("");
 		await d.Wait(0.5);
 		d.Expect(d.HasVisible("De volta ao Lobby") && d.HasVisible("+1"), "ao voltar aparece o total com o +X");

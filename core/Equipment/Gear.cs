@@ -91,7 +91,7 @@ public sealed class GearCatalog
 		if (dto?.Limits is not { } limits || dto.Items is not { Count: > 0 }) return Result<GearCatalog>.Fail("O catálogo de equipamentos precisa de limites e de ao menos um item.");
 
 		var items = dto.Items.Select(i => new GearItem(i.Id ?? "", i.Name ?? "", i.Description ?? "", i.Slot, i.Attribute, i.Value, i.MinMastery)).ToList();
-		if (items.Any(i => i.Id == "" || i.Name == "" || i.MinMastery < 0 || i.Value < 0)) return Result<GearCatalog>.Fail("Um equipamento do catálogo está sem id, nome ou com valor inválido.");
+		if (items.Any(i => i.Id.Length == 0 || i.Name.Length == 0 || i.MinMastery < 0 || i.Value < 0)) return Result<GearCatalog>.Fail("Um equipamento do catálogo está sem id, nome ou com valor inválido.");
 		if (items.Select(i => i.Id).Distinct().Count() != items.Count) return Result<GearCatalog>.Fail("O catálogo de equipamentos repete um id.");
 
 		var limit = new GearLimits(limits.Energy, limits.Speed, limits.Reach);

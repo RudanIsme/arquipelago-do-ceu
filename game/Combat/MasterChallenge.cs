@@ -10,9 +10,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Desafio mestre, no Lobby: uma sequência de Desafios de Matemática e de Português do Nível, contra o Guardião do Nível
-// (o Boneco), com a Energia de uma Expedição. Vencer todos sobe o Nível liberado nas duas torres. Perder não pune: a criança
-// volta a andar pelo Lobby e tenta de novo quando quiser.
+// O Desafio mestre, no Lobby: Desafios de Matemática e Português do Nível contra o Guardião, com Energia de Expedição.
+// Vencer sobe o Nível nas duas torres; perder não pune.
 public partial class MasterChallenge : Node
 {
 	readonly GameRules rules;
@@ -54,7 +53,7 @@ public partial class MasterChallenge : Node
 	public string? Start(string profile, int masterLevel)
 	{
 		if (Active) return "O Desafio mestre já está em andamento.";
-		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, new Pcg32((ulong)Time.GetTicksUsec()));
+		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, new Pcg32(Time.GetTicksUsec()));
 		if (!setups.IsOk) return setups.Error;
 
 		training.End();
@@ -75,7 +74,7 @@ public partial class MasterChallenge : Node
 	void BeginRound()
 	{
 		var setup = rounds[round];
-		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, new Pcg32(Time.GetTicksUsec()));
 		if (!fight.IsOk)
 		{
 			Finish($"Não foi possível montar o Desafio mestre: {fight.Error}");

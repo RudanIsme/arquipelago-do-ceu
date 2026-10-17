@@ -556,6 +556,8 @@ public class TrainingBattleTests
 {
 	static readonly CombatRules Rules = GameRules.Parse(TestJson.Rules).Value!.Combat;
 
+	static readonly System.Text.Json.JsonSerializerOptions MissionJson = new() { PropertyNameCaseInsensitive = true };
+
 	static Mission MissionWith(string id, int target, string mechanic = "compor_numero")
 	{
 		var json = $$"""
@@ -563,7 +565,7 @@ public class TrainingBattleTests
 			  "difficulty": 1, "mechanic": "{{mechanic}}", "params": { "target": {{target}}, "pieces": [1, 2, 3], "maxPieces": 2 },
 			  "prompt": "p", "hints": ["h"], "explanation": "e", "accessibility": { "timerAllowed": false }, "review": { "status": "pending" } }
 			""";
-		return System.Text.Json.JsonSerializer.Deserialize<Mission>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+		return System.Text.Json.JsonSerializer.Deserialize<Mission>(json, MissionJson)!;
 	}
 
 	static void Build(TrainingBattle battle)

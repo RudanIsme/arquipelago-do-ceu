@@ -45,13 +45,13 @@ public partial class CoinsArrivalScreen : OverlayScreen
 
 		if (reduceMotion || gained <= 0)
 		{
-			total.Text = after.ToString();
+			total.Text = after.ToString(System.Globalization.CultureInfo.InvariantCulture);
 			return;
 		}
-		total.Text = before.ToString();
+		total.Text = before.ToString(System.Globalization.CultureInfo.InvariantCulture);
 		counting = true;
 		tween = CreateTween();
-		tween.TweenMethod(Callable.From<float>(value => total.Text = Mathf.RoundToInt(value).ToString()), (float)before, (float)after, Mathf.Min(2f, 0.4f + gained * 0.05f));
+		tween.TweenMethod(Callable.From<float>(value => total.Text = Mathf.RoundToInt(value).ToString(System.Globalization.CultureInfo.InvariantCulture)), (float)before, (float)after, Mathf.Min(2f, 0.4f + gained * 0.05f));
 		tween.Finished += () => counting = false;
 	}
 
@@ -59,7 +59,7 @@ public partial class CoinsArrivalScreen : OverlayScreen
 	{
 		tween?.Kill();
 		counting = false;
-		total.Text = after.ToString();
+		total.Text = after.ToString(System.Globalization.CultureInfo.InvariantCulture);
 	}
 
 	public override void _GuiInput(InputEvent @event)

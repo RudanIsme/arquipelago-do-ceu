@@ -9,3 +9,80 @@ end_of_line = lf
 
 [*.cs]
 indent_style = tab
+indent_size = 4
+
+# Portões de qualidade: os analisadores CA e Sonar avisam (e o build trata aviso como erro). Cada regra desligada tem o motivo na linha de cima.
+
+# Nullable já está ligado; a checagem manual de parâmetro nulo só duplicaria o compilador.
+dotnet_diagnostic.CA1062.severity = none
+# Registros e DTOs lidos por JSON são "nunca instanciados" para o analisador.
+dotnet_diagnostic.CA1812.severity = none
+# O contexto do Godot não precisa de ConfigureAwait, e o motor libera os nós sozinho.
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA2213.severity = none
+# Caminhos res:// e textos da interface em pt-BR são constantes de propósito.
+dotnet_diagnostic.S1075.severity = none
+# Ordem de comparação e cultura: o jogo é só pt-BR e usa ordinal onde importa.
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1310.severity = none
+# Sugestões de desempenho em código que roda uma vez por clique.
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1849.severity = none
+# Os nós do Godot expõem campos e eventos simples; a convenção de eventos da BCL não ajuda.
+dotnet_diagnostic.CA1003.severity = none
+dotnet_diagnostic.CA1051.severity = none
+dotnet_diagnostic.S1104.severity = none
+dotnet_diagnostic.S2325.severity = none
+# Exists e Any dão o mesmo resultado; a escolha é de estilo.
+dotnet_diagnostic.S6605.severity = none
+# "todo" e código comentado: os comentários são prosa em português ("todo", "tudo"), o que dá falso positivo.
+dotnet_diagnostic.S1135.severity = none
+dotnet_diagnostic.S125.severity = none
+# Texto de exibição, não normalização para comparar.
+dotnet_diagnostic.CA1308.severity = none
+# Os nomes do GLOSSARY e as matrizes do traçado de letras são de propósito.
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1724.severity = none
+dotnet_diagnostic.CA1814.severity = none
+dotnet_diagnostic.S2368.severity = none
+# Na borda do sistema, qualquer exceção vira Result: o jogo nunca trava a criança (ADR 0001).
+dotnet_diagnostic.CA1031.severity = none
+# Result<T>.Ok e Fail são a fábrica do tipo; evento e propriedade adicional não se aplicam.
+dotnet_diagnostic.CA1000.severity = none
+dotnet_diagnostic.CA1030.severity = none
+dotnet_diagnostic.CA1034.severity = none
+dotnet_diagnostic.CA2227.severity = none
+# Escolhas de estilo do Sonar que não mudam o resultado (ternário aninhado curto, igualdade exata com 0, Find/FirstOrDefault).
+dotnet_diagnostic.S3358.severity = none
+dotnet_diagnostic.S1244.severity = none
+dotnet_diagnostic.S2757.severity = none
+dotnet_diagnostic.S6602.severity = none
+dotnet_diagnostic.S6603.severity = none
+dotnet_diagnostic.S3267.severity = none
+dotnet_diagnostic.S2365.severity = none
+# Métodos públicos de instância mantêm a API por objeto; torná-los estáticos não traz ganho.
+dotnet_diagnostic.CA1822.severity = none
+# Manipuladores de sinal do Godot são "async void" por contrato do motor.
+dotnet_diagnostic.S3168.severity = none
+# Busca em largura com "found is null" e nomes de parâmetro iguais aos dos argumentos são falsos positivos.
+dotnet_diagnostic.S2589.severity = none
+dotnet_diagnostic.S2234.severity = none
+# O piloto de desenvolvimento lê e grava arquivos de captura de forma síncrona, de propósito.
+dotnet_diagnostic.S6966.severity = none
+
+# Legado do experimento do #97, com várias instruções por linha: sai ou é reescrito no #172.
+[{game/Dev/PullTest/**.cs,game/Main.PullTest.cs,game/Ui/JourneyHud.cs,game/Ui/JourneyStyle.cs,game/Ui/EquipmentWorkshop.cs,game/Ui/EquipmentPreview.cs}]
+dotnet_analyzer_diagnostic.severity = suggestion
+dotnet_diagnostic.CA1002.severity = none
+dotnet_diagnostic.CA1725.severity = none
+dotnet_diagnostic.CA2201.severity = none
+dotnet_diagnostic.CA1820.severity = none
+
+[game.tests/**.cs]
+# Os nomes dos testes são frases em português com sublinhado, como exemplos de comportamento.
+dotnet_diagnostic.CA1707.severity = none
+# Testes de tabela repetem a mesma checagem com dados diferentes.
+dotnet_diagnostic.S4144.severity = none
