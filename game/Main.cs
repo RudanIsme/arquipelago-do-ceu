@@ -64,7 +64,7 @@ public partial class Main : Node3D
 		var save = OpenSave(store);
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
-		progress = new ProgressService(session);
+		progress = ProgressServices.Create(session);
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));

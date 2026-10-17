@@ -99,7 +99,7 @@ public sealed class GearCatalog
 	sealed record ItemDto(string? Id, string? Name, string? Description, GearSlot Slot, GearAttribute Attribute, double Value, int MinMastery);
 }
 
-// Lê e grava o equipamento de cada Papel (a torre) no Perfil. A Maestria necessária vem de quem chama (ProgressService.Mastery).
+// Lê e grava o equipamento de cada Papel (a torre) no Perfil. A Maestria necessária vem de quem chama (MasteryService.Of).
 public sealed class GearService(SaveSession session, GearCatalog catalog)
 {
 	public Gear Get(string profileId, string role) =>

@@ -21,7 +21,7 @@ public sealed class FloorProgressTests : IDisposable
 		if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
 	}
 
-	ProgressService NewProgress(SaveStore store) => new(new SaveSession(store, Example));
+	ProgressServices NewProgress(SaveStore store) => ProgressServices.Create(new SaveSession(store, Example));
 
 	[Fact]
 	public void A_exploracao_do_Andar_sobrevive_a_gravar_e_reabrir()
@@ -29,18 +29,18 @@ public sealed class FloorProgressTests : IDisposable
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
 
-		Assert.Null(progress.Exploration("p", "matematica", 1, 1));
-		Assert.True(progress.SaveExploration("p", "matematica", 1, 1, new FloorExploration([0, 1, 3], [1])).IsOk);
-		Assert.True(progress.SaveExploration("p", "matematica", 1, 2, new FloorExploration([0], [])).IsOk);
-		Assert.True(progress.SaveExploration("p", "matematica", 1, 1, new FloorExploration([0, 1, 3, 4], [1, 4])).IsOk);
+		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 1)));
+		Assert.True(progress.Explored.Save("p", new FloorKey("matematica", 1, 1), new FloorExploration([0, 1, 3], [1])).IsOk);
+		Assert.True(progress.Explored.Save("p", new FloorKey("matematica", 1, 2), new FloorExploration([0], [])).IsOk);
+		Assert.True(progress.Explored.Save("p", new FloorKey("matematica", 1, 1), new FloorExploration([0, 1, 3, 4], [1, 4])).IsOk);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		var floor1 = reopened.Exploration("p", "matematica", 1, 1)!;
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		var floor1 = reopened.Explored.Get("p", new FloorKey("matematica", 1, 1))!;
 		Assert.Equal(new[] { 0, 1, 3, 4 }, floor1.Visited.ToArray());
 		Assert.Equal(new[] { 1, 4 }, floor1.Cleared.ToArray());
-		Assert.Equal(new[] { 0 }, reopened.Exploration("p", "matematica", 1, 2)!.Visited.ToArray());
-		Assert.Null(reopened.Exploration("p", "portugues", 1, 1));
-		Assert.Null(reopened.Exploration("q", "matematica", 1, 1));
+		Assert.Equal(new[] { 0 }, reopened.Explored.Get("p", new FloorKey("matematica", 1, 2))!.Visited.ToArray());
+		Assert.Null(reopened.Explored.Get("p", new FloorKey("portugues", 1, 1)));
+		Assert.Null(reopened.Explored.Get("q", new FloorKey("matematica", 1, 1)));
 	}
 
 	[Fact]
@@ -50,12 +50,12 @@ public sealed class FloorProgressTests : IDisposable
 		const string json = """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"progress":{"fastTravels":["matematica:1:2"]}}]}""";
 		File.WriteAllText(PathName, json);
 		var store = new SaveStore(PathName);
-		var progress = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
+		var progress = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
 
-		Assert.Null(progress.Exploration("p", "matematica", 1, 2));
-		Assert.False(progress.FloorDone("p", "matematica", 1, 2));
-		Assert.Empty(progress.Cosmetics("p"));
-		Assert.Equal(new FastTravelPoint("matematica", 1, 2), progress.LastFastTravel("p", "matematica", 1));
+		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 2)));
+		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
+		Assert.Empty(progress.Rewards.Cosmetics("p"));
+		Assert.Equal(new FloorKey("matematica", 1, 2), progress.Levels.LastFastTravel("p", new LevelKey("matematica", 1)));
 		Assert.Equal(json, File.ReadAllText(PathName));
 	}
 
@@ -63,16 +63,16 @@ public sealed class FloorProgressTests : IDisposable
 	public void O_ultimo_Fast_travel_achado_vale_em_qualquer_Andar_e_so_do_mesmo_Nivel_e_torre()
 	{
 		var progress = NewProgress(new SaveStore(PathName));
-		Assert.Null(progress.LastFastTravel("p", "matematica", 1));
+		Assert.Null(progress.Levels.LastFastTravel("p", new LevelKey("matematica", 1)));
 
-		progress.FindFastTravel("p", "matematica", 1, 3);
-		progress.FindFastTravel("p", "matematica", 1, 1);
-		progress.FindFastTravel("p", "portugues", 1, 4);
-		progress.FindFastTravel("p", "matematica", 2, 4);
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 1, 3));
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 1, 1));
+		progress.Levels.FindFastTravel("p", new FloorKey("portugues", 1, 4));
+		progress.Levels.FindFastTravel("p", new FloorKey("matematica", 2, 4));
 
-		Assert.Equal(new FastTravelPoint("matematica", 1, 1), progress.LastFastTravel("p", "matematica", 1));
-		Assert.Equal(new FastTravelPoint("portugues", 1, 4), progress.LastFastTravel("p", "portugues", 1));
-		Assert.Null(progress.LastFastTravel("q", "matematica", 1));
+		Assert.Equal(new FloorKey("matematica", 1, 1), progress.Levels.LastFastTravel("p", new LevelKey("matematica", 1)));
+		Assert.Equal(new FloorKey("portugues", 1, 4), progress.Levels.LastFastTravel("p", new LevelKey("portugues", 1)));
+		Assert.Null(progress.Levels.LastFastTravel("q", new LevelKey("matematica", 1)));
 	}
 
 	[Fact]
@@ -81,19 +81,19 @@ public sealed class FloorProgressTests : IDisposable
 		var store = new SaveStore(PathName);
 		var progress = NewProgress(store);
 
-		var first = progress.CompleteFloor("p", "matematica", 1, 1, Catalog);
-		var again = progress.CompleteFloor("p", "matematica", 1, 1, Catalog);
+		var first = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog);
+		var again = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog);
 
 		Assert.True(first.IsOk && first.Value!.NewlyDone);
 		Assert.Equal("m11", first.Value.Cosmetic!.Id);
 		Assert.True(again.IsOk && !again.Value!.NewlyDone);
 		Assert.Null(again.Value.Cosmetic);
 
-		var reopened = new ProgressService(new SaveSession(store, store.Load().Value!.Data));
-		Assert.True(reopened.FloorDone("p", "matematica", 1, 1));
-		Assert.False(reopened.FloorDone("p", "matematica", 1, 2));
-		Assert.Equal(new[] { "m11" }, reopened.Cosmetics("p").ToArray());
-		Assert.Empty(reopened.Cosmetics("q"));
+		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
+		Assert.True(reopened.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.False(reopened.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
+		Assert.Equal(new[] { "m11" }, reopened.Rewards.Cosmetics("p").ToArray());
+		Assert.Empty(reopened.Rewards.Cosmetics("q"));
 	}
 
 	[Fact]
@@ -101,11 +101,11 @@ public sealed class FloorProgressTests : IDisposable
 	{
 		var progress = NewProgress(new SaveStore(PathName));
 
-		var done = progress.CompleteFloor("p", "portugues", 3, 4, Catalog);
+		var done = progress.Rewards.CompleteFloor("p", new FloorKey("portugues", 3, 4), Catalog);
 
 		Assert.True(done.Value!.NewlyDone);
 		Assert.Null(done.Value.Cosmetic);
-		Assert.Empty(progress.Cosmetics("p"));
+		Assert.Empty(progress.Rewards.Cosmetics("p"));
 	}
 
 	[Fact]
@@ -114,11 +114,11 @@ public sealed class FloorProgressTests : IDisposable
 		var blocker = Path.Combine(folder, "arquivo");
 		Directory.CreateDirectory(folder);
 		File.WriteAllText(blocker, "x");
-		var progress = new ProgressService(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
+		var progress = ProgressServices.Create(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
 
-		Assert.False(progress.CompleteFloor("p", "matematica", 1, 1, Catalog).IsOk);
-		Assert.False(progress.FloorDone("p", "matematica", 1, 1));
-		Assert.Empty(progress.Cosmetics("p"));
+		Assert.False(progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog).IsOk);
+		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.Empty(progress.Rewards.Cosmetics("p"));
 	}
 
 	[Fact]
@@ -156,20 +156,20 @@ public sealed class FloorProgressTests : IDisposable
 	{
 		var progress = NewProgress(new SaveStore(PathName));
 
-		var done = progress.CompleteFloor("p", "matematica", 1, 1, CosmeticCatalog.Empty);
+		var done = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), CosmeticCatalog.Empty);
 
 		Assert.False(done.Value!.NewlyDone);
-		Assert.False(progress.FloorDone("p", "matematica", 1, 1));
+		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
 	}
 
 	[Fact]
 	public void Exploracao_de_outra_versao_do_gerador_e_ignorada()
 	{
 		var progress = NewProgress(new SaveStore(PathName));
-		progress.SaveExploration("p", "matematica", 1, 1, new FloorExploration([0, 1], [1]), version: 1);
+		progress.Explored.Save("p", new FloorKey("matematica", 1, 1), new FloorExploration([0, 1], [1]), version: 1);
 
-		Assert.NotNull(progress.Exploration("p", "matematica", 1, 1, version: 1));
-		Assert.Null(progress.Exploration("p", "matematica", 1, 1, version: 2));
+		Assert.NotNull(progress.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 1));
+		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 2));
 	}
 
 	// O treino no Lobby não conta progresso nem dá Cosmético: só a Expedição registra Andares completos.

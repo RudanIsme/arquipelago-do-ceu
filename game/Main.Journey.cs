@@ -31,7 +31,7 @@ public partial class Main
 	string RoleName(string papel) => papel == ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics ? rules.Roles.Mathematics : rules.Roles.Portuguese;
 
 	// O card do canto mostra a Maestria do Papel de agora.
-	void RefreshCard() => journeyHud?.SetCard(current?.Nickname ?? "Viajante", RoleName(role), current is null ? 0 : progress.Mastery(current.Id, role));
+	void RefreshCard() => journeyHud?.SetCard(current?.Nickname ?? "Viajante", RoleName(role), current is null ? 0 : progress.Mastery.Of(current.Id, role));
 
 	// Sempre reaplica: o equipamento do Papel pode ter mudado desde a última vez.
 	void ChooseRole(string papel)
@@ -160,7 +160,7 @@ public partial class Main
 	// Veste a armadura e o capacete escolhidos no Papel de agora; devolve o motivo se algum não puder, sem gravar nada.
 	string? TryWear(EquipmentLoadout value)
 	{
-		var mastery = progress.Mastery(current!.Id, role);
+		var mastery = progress.Mastery.Of(current!.Id, role);
 		var now = gear.Get(current.Id, role);
 		var armor = value.Armor == "original" ? Result<Gear>.Ok(LoadGear().Unequip(now, GearSlot.Armor)) : LoadGear().Equip(now, value.Armor, mastery);
 		if (!armor.IsOk) return armor.Error;

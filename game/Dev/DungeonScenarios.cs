@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ArquipelagoDoCeu.Generation;
+using ArquipelagoDoCeu.Saves;
 using Godot;
 using Vector2 = System.Numerics.Vector2;
 
@@ -106,7 +107,7 @@ static class DungeonScenarios
 		if (letters is null) return;
 		await GoTo(d, letters, r => r.Kind == RoomKind.Marco);
 		d.Expect(letters.Expedition.Current.Kind == RoomKind.Marco, "chegou ao Marco da Torre das Letras");
-		d.Expect(!letters.Progress.HasItem(letters.ProfileId, "matematica", 1), "ainda não há Item de troca da Torre dos Números");
+		d.Expect(!letters.Progress.Levels.HasItem(letters.ProfileId, new LevelKey("matematica", 1)), "ainda não há Item de troca da Torre dos Números");
 		var beyond = letters.Expedition.Floor.Neighbors(letters.Expedition.CurrentRoom).First(n => !letters.Expedition.Visited.Contains(n));
 		await d.Shot("01-marco-sem-item");
 		d.Expect(!await Step(d, letters, beyond), "o Marco barra quem não tem o Item de troca");
@@ -121,7 +122,7 @@ static class DungeonScenarios
 		await d.Shot("03-sala-do-item");
 		math.DevWinRoom();
 		await d.Wait(0.4);
-		d.Expect(math.Progress.HasItem(math.ProfileId, "matematica", 1), "vencer a Sala do Item deu o Item de troca");
+		d.Expect(math.Progress.Levels.HasItem(math.ProfileId, new LevelKey("matematica", 1)), "vencer a Sala do Item deu o Item de troca");
 		await d.Shot("04-item-ganho");
 		math.Leave("");
 		await d.Wait(0.5);
@@ -150,7 +151,7 @@ static class DungeonScenarios
 		if (letters is null) return;
 		d.Expect(letters.Expedition.Current.Kind == RoomKind.Epic, "o Atalho começa direto no Desafio épico");
 		for (var i = 0; i < 3; i++) { letters.DevWinRoom(); await d.Wait(0.4); }
-		d.Expect(progress.EpicDone(profile, "portugues", 1) && progress.HasItem(profile, "portugues", 1), "o Atalho concluiu a Torre das Letras e deu o Item");
+		d.Expect(progress.Levels.EpicDone(profile, new LevelKey("portugues", 1)) && progress.Levels.HasItem(profile, new LevelKey("portugues", 1)), "o Atalho concluiu a Torre das Letras e deu o Item");
 		await d.Press("Voltar ao Lobby");
 		await d.Wait(0.5);
 		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
@@ -175,11 +176,11 @@ static class DungeonScenarios
 		d.Expect(expedition.IsCleared(expedition.CurrentRoom), "o Puzzle abriu");
 
 		await GoTo(d, math, RoomKind.FastTravel);
-		d.Expect(progress.FastTravels(profile).Any(p => p.Discipline == "matematica"), "o Fast travel foi salvo");
+		d.Expect(progress.Levels.FastTravels(profile).Any(p => p.Discipline == "matematica"), "o Fast travel foi salvo");
 
 		await GoTo(d, math, r => r.HoldsItem);
-		if (!progress.HasItem(profile, "matematica", 1)) { math.DevWinRoom(); await d.Wait(0.3); }
-		d.Expect(progress.HasItem(profile, "matematica", 1), "a Sala do Item deu o Item de troca");
+		if (!progress.Levels.HasItem(profile, new LevelKey("matematica", 1))) { math.DevWinRoom(); await d.Wait(0.3); }
+		d.Expect(progress.Levels.HasItem(profile, new LevelKey("matematica", 1)), "a Sala do Item deu o Item de troca");
 
 		await GoTo(d, math, r => r.Kind == RoomKind.Marco);
 		var beyond = expedition.Floor.Neighbors(expedition.CurrentRoom).First(n => !expedition.Visited.Contains(n));
@@ -189,13 +190,13 @@ static class DungeonScenarios
 		d.Expect(expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
 		math.DevWinRoom();
 		await d.Wait(0.5);
-		d.Expect(progress.EpicDone(profile, "matematica", 1), "o épico concluiu a Torre dos Números");
+		d.Expect(progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)), "o épico concluiu a Torre dos Números");
 		await d.Press("Voltar ao Lobby");
 		await d.Wait(0.5);
 		d.Expect(Runs(d).Count == 0, "voltou ao Lobby");
 
 		// 3. Os dois épicos concluídos abrem o Desafio mestre; vencê-lo libera o Nível 2.
-		d.Expect(progress.MasterOpen(profile, 1), "o Desafio mestre está aberto");
+		d.Expect(progress.Levels.MasterOpen(profile, 1), "o Desafio mestre está aberto");
 		await WalkTo(d, 4, -4);
 		await d.Tap(Controls.Interact);
 		await d.Press("Começar o Desafio mestre");
@@ -214,11 +215,11 @@ static class DungeonScenarios
 		var progress = main.DevProgress;
 		d.Expect(d.Player is { Enabled: true }, "o Perfil abriu sozinho ao reabrir o jogo");
 		d.Expect(main.DevLevel == 2, "o Nível liberado continua 2");
-		d.Expect(progress.EpicDone(profile, "matematica", 1) && progress.EpicDone(profile, "portugues", 1), "os dois épicos continuam concluídos");
-		d.Expect(progress.HasItem(profile, "matematica", 1) && progress.HasItem(profile, "portugues", 1), "os dois Itens de troca continuam com a criança");
-		d.Expect(progress.ShortcutTried(profile, "portugues", 1), "o Atalho de Nível continua gasto");
-		d.Expect(progress.FastTravels(profile).Count > 0, "o Fast travel continua guardado");
-		d.Expect(!progress.MasterOpen(profile, 2), "no Nível 2 o Desafio mestre volta a pedir os épicos");
+		d.Expect(progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)) && progress.Levels.EpicDone(profile, new LevelKey("portugues", 1)), "os dois épicos continuam concluídos");
+		d.Expect(progress.Levels.HasItem(profile, new LevelKey("matematica", 1)) && progress.Levels.HasItem(profile, new LevelKey("portugues", 1)), "os dois Itens de troca continuam com a criança");
+		d.Expect(progress.Levels.ShortcutTried(profile, new LevelKey("portugues", 1)), "o Atalho de Nível continua gasto");
+		d.Expect(progress.Levels.FastTravels(profile).Count > 0, "o Fast travel continua guardado");
+		d.Expect(!progress.Levels.MasterOpen(profile, 2), "no Nível 2 o Desafio mestre volta a pedir os épicos");
 	}
 
 	// O Desafio mestre: o portal avisa o que falta, abre com os dois épicos, perder não pune e vencer sobe o Nível.
@@ -234,8 +235,8 @@ static class DungeonScenarios
 		await d.Shot("01-portal-fechado");
 		await d.PressKey(Key.Escape);
 
-		main.DevProgress.MarkEpicDone(profile, "matematica", 1);
-		main.DevProgress.MarkEpicDone(profile, "portugues", 1);
+		main.DevProgress.Levels.MarkEpicDone(profile, new LevelKey("matematica", 1));
+		main.DevProgress.Levels.MarkEpicDone(profile, new LevelKey("portugues", 1));
 		await d.Tap(Controls.Interact);
 		d.Expect(d.Button("Começar o Desafio mestre") is not null, "com os dois épicos o portal deixa começar");
 		await d.Shot("02-portal-aberto");
@@ -245,7 +246,7 @@ static class DungeonScenarios
 		main.DevMaster.DevLose();
 		await d.Wait(0.3);
 		d.Expect(!main.DevMaster.Active && main.DevLevel == 1, "perder encerra o desafio sem punir: o Nível continua o mesmo");
-		d.Expect(main.DevProgress.EpicDone(profile, "matematica", 1) && main.DevProgress.EpicDone(profile, "portugues", 1), "os épicos continuam concluídos");
+		d.Expect(main.DevProgress.Levels.EpicDone(profile, new LevelKey("matematica", 1)) && main.DevProgress.Levels.EpicDone(profile, new LevelKey("portugues", 1)), "os épicos continuam concluídos");
 
 		await d.Tap(Controls.Interact);
 		await d.Press("Começar o Desafio mestre");
@@ -274,13 +275,13 @@ static class DungeonScenarios
 		var run = await Enter(d);
 		if (run is null) return;
 		// O Marco desta torre pede o Item da outra: o piloto o entrega para chegar ao épico.
-		run.Progress.GiveItem(run.ProfileId, "portugues", 1);
+		run.Progress.Levels.GiveItem(run.ProfileId, new LevelKey("portugues", 1));
 		await GoTo(d, run, RoomKind.Epic);
 		d.Expect(run.Expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
-		d.Expect(!run.Progress.EpicDone(run.ProfileId, "matematica", 1), "o Nível ainda não está concluído");
+		d.Expect(!run.Progress.Levels.EpicDone(run.ProfileId, new LevelKey("matematica", 1)), "o Nível ainda não está concluído");
 		run.DevWinRoom();
 		await d.Wait(0.5);
-		d.Expect(run.Progress.EpicDone(run.ProfileId, "matematica", 1), "vencer o épico concluiu o Nível");
+		d.Expect(run.Progress.Levels.EpicDone(run.ProfileId, new LevelKey("matematica", 1)), "vencer o épico concluiu o Nível");
 		d.Expect(d.HasVisible("Nível concluído!"), "a criança vê a escolha de continuar ou voltar");
 		await d.Shot("01-nivel-concluido");
 		await d.Press("Continuar explorando");
@@ -297,7 +298,7 @@ static class DungeonScenarios
 		if (run is null) return;
 		var expedition = run.Expedition;
 		d.Expect(expedition.Current.Kind == RoomKind.Epic && expedition.Floor.Number == expedition.Plan.Floors.Count, "o Atalho começa direto no Desafio épico");
-		d.Expect(run.Progress.ShortcutTried(run.ProfileId, "matematica", 1), "a tentativa do Atalho foi gravada ao começar");
+		d.Expect(run.Progress.Levels.ShortcutTried(run.ProfileId, new LevelKey("matematica", 1)), "a tentativa do Atalho foi gravada ao começar");
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);
 		await d.Tap(Controls.Target);
@@ -311,8 +312,8 @@ static class DungeonScenarios
 			await d.Wait(1.0);
 			d.Expect(Runs(d).Count == 0, "errar encerrou o Atalho");
 			d.Expect(expedition.Energy.Current == energy, "errar no Atalho não tirou Energia da Expedição");
-			d.Expect(!run.Progress.EpicDone(run.ProfileId, "matematica", 1) && !run.Progress.HasItem(run.ProfileId, "matematica", 1), "o Nível não foi concluído");
-			d.Expect(run.Progress.HighestFloor(run.ProfileId, "matematica", 1) == 1, "o Atalho não descobriu Andares: a torre normal recomeça do Andar 1");
+			d.Expect(!run.Progress.Levels.EpicDone(run.ProfileId, new LevelKey("matematica", 1)) && !run.Progress.Levels.HasItem(run.ProfileId, new LevelKey("matematica", 1)), "o Nível não foi concluído");
+			d.Expect(run.Progress.Levels.HighestFloor(run.ProfileId, new LevelKey("matematica", 1)) == 1, "o Atalho não descobriu Andares: a torre normal recomeça do Andar 1");
 			await d.Shot("02-de-volta-ao-lobby");
 			var again = await Enter(d);
 			d.Expect(again is not null && d.Button("Tentar o Atalho") is null, "não há segunda tentativa: a porta entra direto");
@@ -325,8 +326,8 @@ static class DungeonScenarios
 			run.DevWinRoom();
 			await d.Wait(0.5);
 		}
-		d.Expect(run.Progress.EpicDone(run.ProfileId, "matematica", 1), "acertar o Atalho concluiu o Nível");
-		d.Expect(run.Progress.HasItem(run.ProfileId, "matematica", 1), "e entregou o Item de troca");
+		d.Expect(run.Progress.Levels.EpicDone(run.ProfileId, new LevelKey("matematica", 1)), "acertar o Atalho concluiu o Nível");
+		d.Expect(run.Progress.Levels.HasItem(run.ProfileId, new LevelKey("matematica", 1)), "e entregou o Item de troca");
 		await d.Shot("03-atalho-vencido");
 		await d.Press("Voltar ao Lobby");
 		await d.Wait(0.5);
@@ -348,8 +349,8 @@ static class DungeonScenarios
 		var expedition = run.Expedition;
 		await GoTo(d, run, RoomKind.FastTravel);
 		d.Expect(expedition.Current.Kind == RoomKind.FastTravel, "chegou ao Fast travel");
-		var point = new ArquipelagoDoCeu.Saves.FastTravelPoint("matematica", 1, expedition.Floor.Number);
-		d.Expect(run.Progress.FastTravels(run.ProfileId).Contains(point), "chegar ao Fast travel salvou o ponto");
+		var point = new ArquipelagoDoCeu.Saves.FloorKey("matematica", 1, expedition.Floor.Number);
+		d.Expect(run.Progress.Levels.FastTravels(run.ProfileId).Contains(point), "chegar ao Fast travel salvou o ponto");
 		await d.Shot("01-fast-travel");
 		var floor = expedition.Floor.Number;
 		run.Leave("");
@@ -456,7 +457,7 @@ static class DungeonScenarios
 
 		d.Expect(run.World.Doors.All(door => door.Label.StartsWith("Sala nova")), "a porta de uma Sala nova não diz o que há do outro lado");
 		d.Expect(floor.Rooms.Any(r => expedition.SightOf(r.Id) == ArquipelagoDoCeu.Dungeon.Sight.Hidden), "as Salas distantes nem aparecem no mapa");
-		d.Expect(progress.Cosmetics(profile).Count == 0, "o Perfil novo não tem Cosmético");
+		d.Expect(progress.Rewards.Cosmetics(profile).Count == 0, "o Perfil novo não tem Cosmético");
 		await d.Shot("01-nevoa");
 
 		await GoTo(d, run, RoomKind.Combat);
@@ -477,14 +478,14 @@ static class DungeonScenarios
 			}
 			if (i == content.Count / 2 - 1)
 			{
-				d.Expect(!progress.FloorDone(profile, "matematica", 1, 1), "no meio do Andar ele ainda não está completo");
+				d.Expect(!progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "no meio do Andar ele ainda não está completo");
 				await d.Shot("03-barra-parcial");
 			}
 		}
 		var total = expedition.ProgressOf(floor.Number);
 		d.Expect(total.Resolved == total.Total, "todas as Salas do Andar foram resolvidas");
-		d.Expect(progress.FloorDone(profile, "matematica", 1, 1), "o Andar completo foi registrado");
-		d.Expect(progress.Cosmetics(profile).Contains("matematica-1-1"), "completar o Andar deu o Cosmético dele");
+		d.Expect(progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "o Andar completo foi registrado");
+		d.Expect(progress.Rewards.Cosmetics(profile).Contains("matematica-1-1"), "completar o Andar deu o Cosmético dele");
 		await d.Shot("04-selo-andar-completo");
 
 		await GoTo(d, run, RoomKind.Exit);
@@ -497,7 +498,7 @@ static class DungeonScenarios
 		await d.Tap(Controls.Interact);
 		d.Expect(expedition.Floor.Number == 1 && expedition.Current.Kind == RoomKind.Exit, "a escada para baixo leva à saída do Andar 1");
 		d.Expect(wonBefore.All(expedition.Cleared.Contains), "as Salas vencidas continuam vencidas depois de subir e descer");
-		d.Expect(progress.Cosmetics(profile).Count == 1, "voltar ao Andar não repete o Cosmético");
+		d.Expect(progress.Rewards.Cosmetics(profile).Count == 1, "voltar ao Andar não repete o Cosmético");
 		await d.Shot("06-voltou-ao-andar-1");
 		run.Leave("");
 		await d.Wait(0.5);
@@ -572,7 +573,7 @@ static class DungeonScenarios
 		var progress = run.Progress;
 		var profile = run.ProfileId;
 		d.Expect(expedition.Plan.Endless, "a Expedição livre tem Plano sem fim");
-		d.Expect(progress.Coins(profile) == 0, "o Perfil novo não tem moedas");
+		d.Expect(progress.Wallet.Balance(profile) == 0, "o Perfil novo não tem moedas");
 
 		// Exploração: placa, mapa e nada de bolsa nem pedido.
 		d.Expect(d.HasVisible("Livre") && d.HasVisible("Matemática:"), "a placa diz o modo e o objetivo (o Conceito do Andar)");
@@ -590,8 +591,8 @@ static class DungeonScenarios
 		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "sair do combate fecha a bolsa");
 		run.DevWinRoom();
 		await d.Wait(0.3);
-		d.Expect(progress.Solves(profile, "matematica", concept) >= 1, "vencer o Desafio conta uma vitória no Conceito");
-		d.Expect(progress.Coins(profile) >= 1, "acalmar a criatura rendeu moedas");
+		d.Expect(progress.Mastery.Solves(profile, new ConceptKey("matematica", concept)) >= 1, "vencer o Desafio conta uma vitória no Conceito");
+		d.Expect(progress.Wallet.Balance(profile) >= 1, "acalmar a criatura rendeu moedas");
 
 		for (var floor = 1; floor <= 5; floor++)
 		{
@@ -609,14 +610,14 @@ static class DungeonScenarios
 		d.Expect(expedition.Floor.Number == 6 && !expedition.Finished, "a Livre passa do fim de qualquer Plano e não termina");
 		var seen = run.History.Seen;
 		d.Expect(seen.Count > 1 && Enumerable.Range(1, seen.Count - 1).All(i => seen[i] != seen[i - 1]), "dois problemas seguidos nunca se repetem");
-		d.Expect(progress.Coins(profile) > 1, "os Andares seguintes renderam mais moedas");
-		d.Expect(!progress.FloorDiscovered(profile, "matematica", 1, 2) && !progress.EpicDone(profile, "matematica", 1) && !progress.HasItem(profile, "matematica", 1),
+		d.Expect(progress.Wallet.Balance(profile) > 1, "os Andares seguintes renderam mais moedas");
+		d.Expect(!progress.Levels.FloorDiscovered(profile, new FloorKey("matematica", 1, 2)) && !progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)) && !progress.Levels.HasItem(profile, new LevelKey("matematica", 1)),
 			"a Livre não avança o Plano do Nível, o Item nem o épico");
-		d.Expect(progress.Exploration(profile, "matematica", 1, 1, 1) is null && !progress.FloorDone(profile, "matematica", 1, 1), "a Livre não guarda exploração nem Andar completo");
+		d.Expect(progress.Explored.Get(profile, new FloorKey("matematica", 1, 1), 1) is null && !progress.Explored.IsFloorDone(profile, new FloorKey("matematica", 1, 1)), "a Livre não guarda exploração nem Andar completo");
 		await d.Shot("04-andar-6");
 		run.Leave("");
 		await d.Wait(0.5);
-		d.Expect(progress.Coins(profile) > 1, "as moedas continuam depois de voltar ao Lobby");
+		d.Expect(progress.Wallet.Balance(profile) > 1, "as moedas continuam depois de voltar ao Lobby");
 		await DismissCoins(d);
 	}
 
@@ -629,7 +630,7 @@ static class DungeonScenarios
 		d.Expect(d.HasVisible("Maestria 0") && d.Button("Editar") is not null, "no Lobby o card mostra a Maestria e o lápis de Editar");
 		await d.Shot("01-card-no-lobby");
 
-		var mastery = main.DevProgress.Mastery(profile, "matematica");
+		var mastery = main.DevProgress.Mastery.Of(profile, "matematica");
 		d.Expect(!main.DevGear.Equip(profile, "matematica", "guardian", mastery).IsOk, "sem a Maestria necessária o equipamento não veste");
 		d.Expect(main.DevGear.Equip(profile, "matematica", "open", 1).IsOk, "com a Maestria o Elmo aberto veste");
 		d.Expect(!main.DevGear.Get(profile, "portugues").Equals(main.DevGear.Get(profile, "matematica")), "o equipamento é de cada Papel");

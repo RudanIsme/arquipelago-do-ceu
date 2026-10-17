@@ -18,7 +18,7 @@ public partial class MasterChallenge : Node
 	readonly IRandomSource random;
 	readonly TrainingArea training;
 	readonly Control uiRoot;
-	readonly ProgressService progress;
+	readonly ProgressServices progress;
 	readonly IReadOnlyList<Mission> missions = MissionSource.Load().Missions;
 	readonly Func<int> extraEnergy;
 	readonly Action<string> notify;
@@ -30,7 +30,7 @@ public partial class MasterChallenge : Node
 	int level;
 	int round;
 
-	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressService progress, Func<int> extraEnergy,
+	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressServices progress, Func<int> extraEnergy,
 		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random)
 	{
 		this.random = random;
@@ -95,7 +95,7 @@ public partial class MasterChallenge : Node
 			return;
 		}
 
-		var raised = progress.RaiseLevel(profileId, TrainingSetup.LastLevel);
+		var raised = progress.Levels.RaiseLevel(profileId, TrainingSetup.LastLevel);
 		var message = !raised.IsOk
 			? "Você venceu o Desafio mestre, mas não foi possível guardar o novo Nível agora. Tente de novo."
 			: raised.Value!.Level > level
