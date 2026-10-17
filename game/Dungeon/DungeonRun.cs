@@ -6,6 +6,7 @@ using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Rules;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Settings;
 using ArquipelagoDoCeu.Voice;
@@ -27,9 +28,11 @@ public sealed record DungeonContext(
 	Control UiRoot,
 	ProgressServices Progress,
 	FallbackFloors Fallback,
-	CosmeticCatalog Catalog,
+	RewardCatalog Rewards,
+	RewardService Granter,
 	string Nickname,
 	string RoleName,
+	TowerCatalog Towers,
 	int ExtraEnergy,
 	float ExtraReach,
 	Action<Player> ConfigurePlayer,
@@ -115,14 +118,14 @@ public partial class DungeonRun : Node
 	const int GeneratorVersion = 1;
 
 
-	public static string TowerName(string discipline) => discipline == TrainingSetup.Mathematics ? "Torre dos Números" : "Torre das Letras";
+	string TowerName(string discipline) => ctx.Towers.Find(discipline)?.Name ?? discipline;
 
 	// A outra torre: é dela o Item de troca que abre o Marco desta.
 	// O Atalho vale até o Desafio épico ser vencido; depois a criança explora a torre como quiser.
 	bool InShortcut => ctx.Shortcut && !expedition.Finished;
 
-	string Other => ctx.Discipline == TrainingSetup.Mathematics ? TrainingSetup.Portuguese : TrainingSetup.Mathematics;
-
+	Tower Tower => ctx.Towers.Find(ctx.Discipline)!;
+	string Other => ctx.Towers.Exchange(Tower)?.Id ?? ctx.Discipline;
 	bool HasTradeItem() => ctx.Progress.Levels.HasItem(ctx.ProfileId, new LevelKey(Other, ctx.Level));
 
 	public TrainingArea Combat => combat;
@@ -162,7 +165,7 @@ public partial class DungeonRun : Node
 
 		world.ReduceMotion = player.ReduceMotion;
 		combat = new TrainingArea(ctx.Rules, world, player, world.Creature, ctx.Voice, ctx.Settings, ctx.UiRoot,
-			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random);
+			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random, ctx.Towers);
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
 		combat.EnergyTop = EnergyTop;
@@ -373,7 +376,7 @@ public partial class DungeonRun : Node
 		world.ShowTarget(false, false);
 		RefreshRoom();
 		SaveExploration();
-		var coins = paying ? PayCoins((room.Kind is RoomKind.Combat or RoomKind.Epic ? ctx.Rules.Dungeon.CoinsCreature : 0) + (room.HoldsItem ? ctx.Rules.Dungeon.CoinsItem : 0)) : null;
+		var coins = paying ? Join(room.Kind is RoomKind.Combat or RoomKind.Epic ? Reward("creature-calmed") : null, room.HoldsItem ? Reward("item-room", expedition.Floor.Number) : null) : null;
 		var mastery = masteryNote;
 		masteryNote = null;
 		var completed = CheckFloorComplete();
@@ -394,7 +397,7 @@ public partial class DungeonRun : Node
 		Say(Join(won, coins, mastery, ProgressSpeech(), completed)!);
 	}
 
-	static string? Join(params string?[] parts) => parts.Any(p => p is not null) ? string.Join(" ", parts.Where(p => p is not null)) : null;
+	static string? Join(params string?[] parts) => parts.Any(p => !string.IsNullOrEmpty(p)) ? string.Join(" ", parts.Where(p => !string.IsNullOrEmpty(p))) : null;
 
 	// A vitória num Conceito conta para a Maestria do Papel (Dungeon, nunca treino); o aviso sai junto com o resto da Sala.
 	void OnSolved(Mission mission)
@@ -409,22 +412,27 @@ public partial class DungeonRun : Node
 		}
 		if (!update.Value!.NewlyMastered) return;
 		var name = (ctx.Concepts ?? ConceptNames.Empty).NameOf(mission.Concept);
-		masteryNote = $"Você dominou \"{name}\"! Maestria {update.Value.Mastery}.";
+		masteryNote = Join($"Você dominou \"{name}\"! Maestria {update.Value.Mastery}.", Reward("concept-mastered", concept: mission.Concept));
 	}
 
-	// Moeda é só do jogo, ganha por aprendizado e exploração; falha de gravação não trava a criança.
-	string? PayCoins(int amount)
+	// Pede as recompensas do gatilho (os dados dizem o que cada um paga) e devolve o que a criança ganhou, em texto.
+	// Devolve null quando o acontecimento já tinha sido pago; falha de gravação não trava a criança.
+	string? Reward(string trigger, int? floor = null, string? concept = null)
 	{
-		if (amount <= 0) return null;
-		var paid = ctx.Progress.Wallet.Add(ctx.ProfileId, amount);
-		if (!paid.IsOk)
+		var granted = ctx.Granter.Grant(ctx.ProfileId, new RewardContext(trigger, ctx.Discipline, ctx.Level, floor, concept), ctx.Rewards);
+		if (!granted.IsOk)
 		{
-			GD.PushWarning(paid.Error!);
+			GD.PushWarning(granted.Error!);
 			return null;
 		}
-		ShowCoinToast($"+{(amount == 1 ? "1 moeda" : $"{amount} moedas")}");
-		return $"Você ganhou {(amount == 1 ? "1 moeda" : $"{amount} moedas")}.";
+		var outcome = granted.Value!;
+		if (!outcome.Fired) return null;
+		if (outcome.Coins > 0) ShowCoinToast($"+{Coins(outcome.Coins)}");
+		var prizes = outcome.Cosmetics.Select(c => $"Você ganhou um Cosmético: {c.Name}.");
+		return string.Join(" ", prizes.Append(outcome.Coins > 0 ? $"Você ganhou {Coins(outcome.Coins)}." : "").Where(t => t.Length > 0));
 	}
+
+	static string Coins(int amount) => amount == 1 ? "1 moeda" : $"{amount} moedas";
 
 	// Só para o piloto de desenvolvimento: vence a Sala sem resolver o Desafio, pela mesma saída da vitória de verdade.
 	public void DevWinRoom()
@@ -463,7 +471,7 @@ public partial class DungeonRun : Node
 			Say("Não foi possível guardar o Item agora. Vamos tentar de novo.");
 			return false;
 		}
-		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(Other)} para abrir o Marco de lá.");
+		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(ctx.Towers.Beneficiary(Tower)?.Id ?? Other)} para abrir o Marco de lá.");
 		return true;
 	}
 
@@ -581,18 +589,10 @@ public partial class DungeonRun : Node
 	{
 		var number = expedition.Floor.Number;
 		if (ctx.Shortcut || !expedition.IsFloorComplete(number)) return null;
-		// A Livre paga as moedas do Andar uma vez só, mas não registra Andar completo nem Cosmético: isso é do Plano do Nível.
-		if (ctx.Free) return paidFloors.Add(number) ? Join($"Andar {number} completo!", PayCoins(ctx.Rules.Dungeon.CoinsFloor)) : null;
-		if (ctx.Progress.Rewards.IsFloorDone(ctx.ProfileId, FloorOf(number))) return null;
-		var done = ctx.Progress.Rewards.CompleteFloor(ctx.ProfileId, FloorOf(number), ctx.Catalog);
-		if (!done.IsOk)
-		{
-			GD.PushWarning(done.Error!);
-			return null;
-		}
-		if (!done.Value!.NewlyDone) return null;
-		var coins = PayCoins(ctx.Rules.Dungeon.CoinsFloor);
-		return done.Value.Cosmetic is { } prize ? Join($"Andar {number} completo! Você ganhou um Cosmético: {prize.Name}.", coins) : Join($"Andar {number} completo!", coins);
+		// A Livre paga o Andar uma vez só por Expedição e não registra Andar completo nem Cosmético: isso é do Plano do Nível.
+		if (ctx.Free && !paidFloors.Add(number)) return null;
+		var rewards = Reward(ctx.Free ? "free-floor-complete" : "floor-complete", number);
+		return rewards is null && !ctx.Free ? null : Join($"Andar {number} completo!", rewards);
 	}
 
 	string ProgressSpeech()
@@ -625,7 +625,7 @@ public partial class DungeonRun : Node
 		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
 	}
 
-	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.Rewards.IsFloorDone(ctx.ProfileId, FloorOf(expedition.Floor.Number))));
+	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.Explored.IsFloorDone(ctx.ProfileId, FloorOf(expedition.Floor.Number))));
 
 	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
@@ -656,7 +656,7 @@ public partial class DungeonRun : Node
 		var setup = fightSetup is { } fight && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
-		var subject = ctx.Discipline == TrainingSetup.Mathematics ? "Matemática" : "Português";
+		var subject = Tower.Subject;
 		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";
 	}
 

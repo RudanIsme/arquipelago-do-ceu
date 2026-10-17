@@ -1,52 +1,131 @@
-using ArquipelagoDoCeu.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ArquipelagoDoCeu.Data;
 using ArquipelagoDoCeu.Saves;
 
 namespace ArquipelagoDoCeu.Equipment;
 
-public enum GearSlot { Helmet, Armor, Accessory }
+// Um espaço do Personagem (Capacete, Armadura, Acessório...), declarado em dados.
+public sealed record GearSlot(string Id, string Name);
 
-public enum GearAttribute { Energy, Speed, Reach }
+// Um equipamento: ocupa um espaço, dá um efeito e pede uma Maestria mínima do Papel. Não evolui: um substitui o outro.
+public sealed record GearItem(string Id, string Name, string Description, string Slot, string Effect, double Value, int MinMastery);
 
-// Um equipamento: ocupa um espaço, dá um atributo e pede uma Maestria mínima do Papel. Não evolui: um substitui o outro.
-public sealed record GearItem(string Id, string Name, string Description, GearSlot Slot, GearAttribute Attribute, double Value, int MinMastery);
-
-// O máximo que o conjunto inteiro pode somar, igual ao do experimento do PR #97.
-public sealed record GearLimits(int Energy, double Speed, double Reach);
-
-// O que um Papel veste: um item por espaço (ou nada). Os ids vêm do catálogo em dados.
-public sealed record Gear(string? Helmet = null, string? Armor = null, string? Accessory = null)
+// O que um efeito muda no Personagem. Um efeito novo é uma classe registrada em GearEffects, sem tocar no cálculo dos bônus.
+public interface IGearEffect
 {
-	public string? In(GearSlot slot) => slot switch { GearSlot.Helmet => Helmet, GearSlot.Armor => Armor, _ => Accessory };
+	string Id { get; }
 
-	public Gear With(GearSlot slot, string? id) => slot switch
-	{
-		GearSlot.Helmet => this with { Helmet = id },
-		GearSlot.Armor => this with { Armor = id },
-		_ => this with { Accessory = id },
-	};
+	// Soma o total do efeito (já dentro do limite) aos bônus e devolve os bônus novos.
+	EquipmentBonuses Apply(EquipmentBonuses bonuses, double total);
+
+	string Describe(double total);
 }
 
-// Os equipamentos do jogo, em dados (game/data/equipamentos.json), e as regras de vestir e de somar os atributos.
-// Quem não tem a Maestria do Papel não equipa. Os atributos vêm do conjunto de agora e nunca acumulam.
+sealed class EnergyEffect : IGearEffect
+{
+	public string Id => "energy";
+
+	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { ExtraEnergy = (int)Math.Round(total) };
+
+	public string Describe(double total) => $"Energia máxima +{(int)Math.Round(total)}";
+}
+
+sealed class SpeedEffect : IGearEffect
+{
+	public string Id => "speed";
+
+	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { SpeedMultiplier = (float)(1 + total) };
+
+	public string Describe(double total) => $"Velocidade +{Math.Round(total * 100)}%";
+}
+
+sealed class ReachEffect : IGearEffect
+{
+	public string Id => "reach";
+
+	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { InteractionReachBonus = (float)total };
+
+	public string Describe(double total) => $"Alcance +{total.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))}";
+}
+
+// Os efeitos que o jogo sabe aplicar, por id.
+public sealed class GearEffects
+{
+	readonly IReadOnlyDictionary<string, IGearEffect> byId;
+
+	GearEffects(IReadOnlyDictionary<string, IGearEffect> byId) => this.byId = byId;
+
+	public static GearEffects Default { get; } = new(new IGearEffect[] { new EnergyEffect(), new SpeedEffect(), new ReachEffect() }.ToDictionary(e => e.Id));
+
+	public IGearEffect? Find(string id) => byId.GetValueOrDefault(id);
+
+	public GearEffects With(IGearEffect effect) => new(new Dictionary<string, IGearEffect>(byId) { [effect.Id] = effect });
+}
+
+// O que um Papel veste: uma peça por espaço (ou nada). No save é um objeto simples de espaço para peça.
+[JsonConverter(typeof(GearJsonConverter))]
+public sealed class Gear : IEquatable<Gear>
+{
+	readonly IReadOnlyDictionary<string, string> items;
+
+	public Gear(IReadOnlyDictionary<string, string>? items = null) => this.items = new Dictionary<string, string>(items ?? new Dictionary<string, string>());
+
+	public IReadOnlyDictionary<string, string> Items => items;
+
+	public string? In(string slot) => items.GetValueOrDefault(slot);
+
+	public Gear With(string slot, string? item)
+	{
+		var next = new Dictionary<string, string>(items);
+		if (item is null) next.Remove(slot);
+		else next[slot] = item;
+		return new Gear(next);
+	}
+
+	public bool Equals(Gear? other) => other is not null && items.Count == other.items.Count && items.All(p => other.items.GetValueOrDefault(p.Key) == p.Value);
+
+	public override bool Equals(object? obj) => obj is Gear other && Equals(other);
+
+	public override int GetHashCode() => items.Aggregate(items.Count, (hash, p) => hash ^ HashCode.Combine(p.Key, p.Value));
+}
+
+sealed class GearJsonConverter : JsonConverter<Gear>
+{
+	public override Gear Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	{
+		var read = JsonSerializer.Deserialize<Dictionary<string, string?>>(ref reader, options) ?? [];
+		return new Gear(read.Where(p => p.Value is not null).ToDictionary(p => p.Key, p => p.Value!));
+	}
+
+	public override void Write(Utf8JsonWriter writer, Gear value, JsonSerializerOptions options) =>
+		JsonSerializer.Serialize(writer, value.Items.OrderBy(p => p.Key, StringComparer.Ordinal).ToDictionary(p => p.Key, p => p.Value), options);
+}
+
+// Os equipamentos do jogo, em dados (game/data/equipamentos.json), e as regras de vestir e de somar os efeitos.
+// Quem não tem a Maestria do Papel não equipa. Os efeitos vêm do conjunto de agora e nunca acumulam.
 public sealed class GearCatalog
 {
-	GearCatalog(IReadOnlyList<GearItem> items, GearLimits limits)
+	readonly GearEffects effects;
+	readonly IReadOnlyList<(string Id, double Limit)> limits;
+
+	GearCatalog(IReadOnlyList<GearSlot> slots, IReadOnlyList<GearItem> items, IReadOnlyList<(string Id, double Limit)> limits, GearEffects effects)
 	{
+		Slots = slots;
 		Items = items;
-		Limits = limits;
+		this.limits = limits;
+		this.effects = effects;
 	}
+
+	public IReadOnlyList<GearSlot> Slots { get; }
 
 	public IReadOnlyList<GearItem> Items { get; }
 
-	public GearLimits Limits { get; }
-
-	public static GearCatalog Empty => new([], new GearLimits(0, 0, 0));
+	public static GearCatalog Empty => new([], [], [], GearEffects.Default);
 
 	public GearItem? Find(string? id) => id is null ? null : Items.FirstOrDefault(i => i.Id == id);
 
-	public IEnumerable<GearItem> For(GearSlot slot) => Items.Where(i => i.Slot == slot);
+	public IEnumerable<GearItem> For(string slot) => Items.Where(i => i.Slot == slot);
 
 	public Result<Gear> Equip(Gear current, string itemId, int mastery)
 	{
@@ -55,48 +134,67 @@ public sealed class GearCatalog
 		return Result<Gear>.Ok(current.With(item.Slot, item.Id));
 	}
 
-	public Gear Unequip(Gear current, GearSlot slot) => current.With(slot, null);
+	public Gear Unequip(Gear current, string slot) => current.With(slot, null);
 
-	// Soma os atributos do que está vestido, até o limite. Item que saiu do catálogo é ignorado em vez de quebrar.
+	// Soma os efeitos do que está vestido, até o limite de cada um. Item que saiu do catálogo é ignorado em vez de quebrar.
 	public EquipmentBonuses Bonuses(Gear gear)
 	{
-		var worn = new[] { GearSlot.Helmet, GearSlot.Armor, GearSlot.Accessory }.Select(s => Find(gear.In(s))).OfType<GearItem>().ToList();
-		double Sum(GearAttribute attribute) => worn.Where(i => i.Attribute == attribute).Sum(i => i.Value);
-		return new EquipmentBonuses(
-			(float)(1 + Math.Min(Limits.Speed, Sum(GearAttribute.Speed))),
-			(int)Math.Min(Limits.Energy, Math.Round(Sum(GearAttribute.Energy))),
-			(float)Math.Min(Limits.Reach, Sum(GearAttribute.Reach)));
+		var worn = Slots.Select(s => Find(gear.In(s.Id))).OfType<GearItem>().ToList();
+		var bonuses = new EquipmentBonuses();
+		foreach (var (id, limit) in limits)
+		{
+			var total = Math.Min(limit, worn.Where(i => i.Effect == id).Sum(i => i.Value));
+			if (effects.Find(id) is { } effect) bonuses = effect.Apply(bonuses, total);
+		}
+		return bonuses;
 	}
 
-	// O texto dos atributos de um conjunto, na mesma conta que vale em jogo.
+	// O texto dos efeitos de um conjunto, na mesma conta que vale em jogo.
 	public string Summary(Gear gear)
 	{
-		var bonus = Bonuses(gear);
-		var pt = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
-		return $"Velocidade +{Math.Round((bonus.SpeedMultiplier - 1) * 100)}% · Energia máxima +{bonus.ExtraEnergy} · Alcance +{bonus.InteractionReachBonus.ToString("0.##", pt)}";
+		var worn = Slots.Select(s => Find(gear.In(s.Id))).OfType<GearItem>().ToList();
+		return string.Join(" · ", limits.Select(l => effects.Find(l.Id)?.Describe(Math.Min(l.Limit, worn.Where(i => i.Effect == l.Id).Sum(i => i.Value)))).OfType<string>());
 	}
 
-	public static Result<GearCatalog> Parse(string json)
+	public static Result<GearCatalog> Parse(string json, GearEffects effects)
 	{
 		var read = CatalogJson.Deserialize<FileDto>(json, "O catálogo de equipamentos");
 		if (!read.IsOk) return Result<GearCatalog>.Fail(read.Error!);
 		var dto = read.Value!;
-		if (dto.Limits is not { } limits || dto.Items is not { Count: > 0 }) return Result<GearCatalog>.Fail("O catálogo de equipamentos precisa de limites e de ao menos um item.");
+		if (dto.Slots is not { Count: > 0 } || dto.Effects is not { Count: > 0 } || dto.Items is not { Count: > 0 })
+			return Result<GearCatalog>.Fail("O catálogo de equipamentos precisa de espaços, efeitos e ao menos um item.");
 
-		var items = dto.Items.Select(i => new GearItem(i.Id ?? "", i.Name ?? "", i.Description ?? "", i.Slot, i.Attribute, i.Value, i.MinMastery)).ToList();
+		var slots = dto.Slots.Select(s => new GearSlot(s.Id ?? "", s.Name ?? "")).ToList();
+		if (slots.Any(s => s.Id.Length == 0 || s.Name.Length == 0)) return Result<GearCatalog>.Fail("Um espaço do catálogo de equipamentos está sem id ou nome.");
+		if (CatalogJson.Duplicate(slots, s => s.Id) is { } repeatedSlot) return Result<GearCatalog>.Fail($"O catálogo de equipamentos repete o espaço {repeatedSlot}.");
+
+		var limits = dto.Effects.Select(e => (Id: e.Id ?? "", e.Limit)).ToList();
+		var withoutClass = limits.Where(l => effects.Find(l.Id) is null).Select(l => l.Id).FirstOrDefault();
+		if (withoutClass is not null) return Result<GearCatalog>.Fail($"O efeito {withoutClass} do catálogo de equipamentos não tem uma classe registrada.");
+
+		var items = dto.Items.Select(i => new GearItem(i.Id ?? "", i.Name ?? "", i.Description ?? "", i.Slot ?? "", i.Effect ?? "", i.Value, i.MinMastery)).ToList();
 		if (items.Any(i => i.Id.Length == 0 || i.Name.Length == 0 || i.MinMastery < 0 || i.Value < 0)) return Result<GearCatalog>.Fail("Um equipamento do catálogo está sem id, nome ou com valor inválido.");
 		if (CatalogJson.Duplicate(items, i => i.Id) is { } repeated) return Result<GearCatalog>.Fail($"O catálogo de equipamentos repete o id {repeated}.");
 
-		var limit = new GearLimits(limits.Energy, limits.Speed, limits.Reach);
-		var over = items.FirstOrDefault(i => i.Value > (i.Attribute switch { GearAttribute.Energy => limit.Energy, GearAttribute.Speed => limit.Speed, _ => limit.Reach }));
-		return over is null ? Result<GearCatalog>.Ok(new GearCatalog(items, limit)) : Result<GearCatalog>.Fail($"O equipamento {over.Id} passa do limite do conjunto.");
+		var problem = items.Select(i => ItemProblem(i, slots, limits)).FirstOrDefault(p => p is not null);
+		return problem is null ? Result<GearCatalog>.Ok(new GearCatalog(slots, items, limits, effects)) : Result<GearCatalog>.Fail(problem);
 	}
 
-	sealed record FileDto(LimitsDto? Limits, List<ItemDto>? Items);
+	static string? ItemProblem(GearItem item, IReadOnlyList<GearSlot> slots, IReadOnlyList<(string Id, double Limit)> limits)
+	{
+		if (slots.All(s => s.Id != item.Slot)) return $"O equipamento {item.Id} usa o espaço {item.Slot}, que não existe.";
+		var limit = limits.Where(l => l.Id == item.Effect).Select(l => (double?)l.Limit).FirstOrDefault();
+		if (limit is null) return $"O equipamento {item.Id} usa o efeito {item.Effect}, que não existe.";
+		return item.Value > limit ? $"O equipamento {item.Id} passa do limite do efeito {item.Effect}." : null;
+	}
 
-	sealed record LimitsDto(int Energy, double Speed, double Reach);
+	sealed record FileDto(List<SlotDto>? Slots, List<EffectDto>? Effects, List<ItemDto>? Items);
 
-	sealed record ItemDto(string? Id, string? Name, string? Description, GearSlot Slot, GearAttribute Attribute, double Value, int MinMastery);
+	sealed record SlotDto(string? Id, string? Name);
+
+	sealed record EffectDto(string? Id, double Limit);
+
+	sealed record ItemDto(string? Id, string? Name, string? Description, string? Slot, string? Effect, double Value, int MinMastery);
 }
 
 // Lê e grava o equipamento de cada Papel (a torre) no Perfil. A Maestria necessária vem de quem chama (MasteryService.Of).
@@ -113,7 +211,7 @@ public sealed class GearService(SaveSession session, GearCatalog catalog)
 		return equipped.IsOk ? Save(profileId, role, equipped.Value!) : equipped;
 	}
 
-	public Result<Gear> Unequip(string profileId, string role, GearSlot slot) => Save(profileId, role, catalog.Unequip(Get(profileId, role), slot));
+	public Result<Gear> Unequip(string profileId, string role, string slot) => Save(profileId, role, catalog.Unequip(Get(profileId, role), slot));
 
 	// Grava o conjunto inteiro de uma vez (a oficina troca armadura e capacete juntos).
 	public Result<Gear> Set(string profileId, string role, Gear gear) => Save(profileId, role, gear);

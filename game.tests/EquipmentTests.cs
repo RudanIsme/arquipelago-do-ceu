@@ -52,37 +52,29 @@ public sealed class EquipmentTests : IDisposable
 	}
 
 	[Fact]
-	public void Dez_trocas_de_interface_A_D_A_preservam_conjunto_e_bonus()
+	public void Dez_trocas_de_interface_A_D_A_preservam_a_aparencia_do_conjunto()
 	{
 		var service = new JourneyService(new SaveSession(new SaveStore(PathName), Example));
 		var equipment = EquipmentCatalog.Preset("adventure");
 		Assert.True(service.Set("p", new("minimal", equipment)).IsOk);
-		var bonus = EquipmentCatalog.Bonuses(equipment);
 		for (var i = 0; i < 10; i++)
 		{
 			foreach (var variant in new[] { "minimal", "book", "adventure", "crystal", "minimal" })
 			{
 				Assert.True(service.Set("p", service.Get("p") with { Variant = variant }).IsOk);
 				Assert.Equal(equipment, service.Get("p").Equipment);
-				Assert.Equal(bonus, EquipmentCatalog.Bonuses(service.Get("p").Equipment));
 			}
 		}
 	}
 
 	[Fact]
-	public void Todos_conjuntos_respeitam_limites_e_original_nao_tem_bonus()
+	public void Os_presets_sao_diferentes_e_so_usam_aparencias_com_modelo()
 	{
-		foreach (var (armor, helmet) in EquipmentCatalog.Armors.SelectMany(a => EquipmentCatalog.Helmets.Select(h => (a, h))))
-		{
-			var bonus = EquipmentCatalog.Bonuses(new(armor.Id, helmet.Id));
-			Assert.InRange(bonus.SpeedMultiplier, 1, 1.12f);
-			Assert.InRange(bonus.ExtraEnergy, 0, 2);
-			Assert.InRange(bonus.InteractionReachBonus, 0, .5f);
-		}
-		Assert.Equal(new EquipmentBonuses(), EquipmentCatalog.Bonuses(EquipmentCatalog.Preset("base")));
-		Assert.Equal(4, new[] { "minimal", "book", "adventure", "crystal" }.Select(EquipmentCatalog.Preset).Distinct().Count());
-		Assert.Equal(2, EquipmentCatalog.Bonuses(new("guardian", "open")).ExtraEnergy);
-		Assert.Equal(.5f, EquipmentCatalog.Bonuses(new("scholar", "crystal")).InteractionReachBonus);
+		var presets = new[] { "minimal", "book", "adventure", "crystal" }.Select(EquipmentCatalog.Preset).ToList();
+
+		Assert.Equal(4, presets.Distinct().Count());
+		Assert.All(presets, p => Assert.Equal(p, EquipmentCatalog.Normalize(p)));
+		Assert.Equal(new EquipmentLoadout(), EquipmentCatalog.Preset("base"));
 	}
 
 	[Fact]

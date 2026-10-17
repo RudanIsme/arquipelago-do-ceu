@@ -7,13 +7,10 @@ namespace ArquipelagoDoCeu.Combat;
 // O que a criança escolhe antes de treinar: o Papel (pela disciplina das Missões), o Nível (ano) e a dificuldade.
 public sealed record TrainingSetup(string Discipline, int Year, int Difficulty)
 {
-	public const string Mathematics = "matematica";
-	public const string Portuguese = "portugues";
-	public const int LastLevel = 3;
 	public const int LastDifficulty = 5;
 
-	// Só os Níveis a que o Perfil já tem acesso: o treino nunca libera um Nível.
-	public static IReadOnlyList<int> Levels(int unlockedLevel) => Enumerable.Range(1, Math.Clamp(unlockedLevel, 1, LastLevel)).ToList();
+	// Só os Níveis a que o Perfil já tem acesso, até o último do jogo: o treino nunca libera um Nível.
+	public static IReadOnlyList<int> Levels(int unlockedLevel, int maxLevel) => Enumerable.Range(1, Math.Clamp(unlockedLevel, 1, Math.Max(1, maxLevel))).ToList();
 }
 
 // O que um erro causou. `Empty` é Energia zerada: a criança sai da Área de treino.
@@ -77,8 +74,9 @@ public sealed class CombatSession
 		if (pool.Count == 0)
 			return Result<CombatSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
 
-		// Escrever a palavra só serve o treino se não houver Missão de nome, sílabas ou frase no mesmo ano e dificuldade.
-		if (setup.Discipline == TrainingSetup.Portuguese && pool.Any(m => m.Mechanic == "escrever_palavra") && !pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic)))
+		// A luta vem da Mecânica das Missões. Escrever a palavra só serve se não houver Missão de nome, sílabas ou frase.
+		var hasName = pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic));
+		if (!hasName && pool.Any(m => m.Mechanic == "escrever_palavra"))
 		{
 			var word = WordBattle.Start(pool, rng, history);
 			return word.IsOk
@@ -86,7 +84,7 @@ public sealed class CombatSession
 				: Result<CombatSession>.Fail(word.Error!);
 		}
 
-		if (setup.Discipline == TrainingSetup.Portuguese)
+		if (hasName)
 		{
 			var name = NameBattle.Start(pool, rng, history);
 			return name.IsOk

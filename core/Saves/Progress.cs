@@ -1,7 +1,7 @@
 namespace ArquipelagoDoCeu.Saves;
 
 // Chaves de texto ("matematica:1:2") e ausente valendo vazio, para saves antigos abrirem; o Nível liberado é o `Level` do Perfil.
-// `Solved` conta vitórias por Conceito, `Mastered` os dominados (a Maestria) e `Coins` o saldo; o treino nunca escreve aqui.
+// `Solved` conta vitórias por Conceito, `Mastered` os dominados (a Maestria), `Coins` o saldo e `Occurrences` as recompensas já pagas; o treino nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,
@@ -13,19 +13,20 @@ public sealed record ProgressSave(
 	IReadOnlyList<string>? Cosmetics = null,
 	IReadOnlyDictionary<string, int>? Solved = null,
 	IReadOnlyList<string>? Mastered = null,
-	int? Coins = null);
+	int? Coins = null,
+	IReadOnlyList<string>? Occurrences = null);
 
 // As Salas visitadas e vencidas de um Andar, pela chave "matematica:1:2".
 // `Version` é a do gerador que desenhou o Andar: com outra versão os números das Salas não valem mais.
 public sealed record ExploredFloor(string Key, IReadOnlyList<int> Visited, IReadOnlyList<int> Cleared, int Version = 0);
 
 // Os serviços do progresso, cada um com uma responsabilidade, sobre o mesmo save.
-public sealed record ProgressServices(LevelProgress Levels, ExplorationService Explored, RewardService Rewards, MasteryService Mastery, WalletService Wallet)
+public sealed record ProgressServices(LevelProgress Levels, ExplorationService Explored, MasteryService Mastery, WalletService Wallet)
 {
 	public static ProgressServices Create(SaveSession session)
 	{
 		var store = new ProgressStore(session);
-		return new(new LevelProgress(store), new ExplorationService(store), new RewardService(store), new MasteryService(store), new WalletService(store));
+		return new(new LevelProgress(store), new ExplorationService(store), new MasteryService(store), new WalletService(store));
 	}
 }
 
@@ -75,9 +76,9 @@ public sealed class LevelProgress(ProgressStore store)
 	public Result<ProfileSave> GiveItem(string profileId, LevelKey level) =>
 		store.Add(profileId, level.ToString(), p => p.Items, (p, list) => p with { Items = list });
 
-	// O Desafio mestre abre quando os dois Desafios épicos do Nível estão concluídos, pelo jogo ou pelo Atalho de Nível.
-	public bool MasterOpen(string profileId, int level) =>
-		EpicDone(profileId, new LevelKey("matematica", level)) && EpicDone(profileId, new LevelKey("portugues", level));
+	// O Desafio mestre abre quando o Desafio épico do Nível está concluído em todas as torres, pelo jogo ou pelo Atalho de Nível.
+	public bool MasterOpen(string profileId, int level, IEnumerable<string> disciplines) =>
+		disciplines.All(d => EpicDone(profileId, new LevelKey(d, level)));
 
 	// Vencer o Desafio mestre sobe o Nível liberado em 1, até `maxLevel`; no último Nível ele fica onde está.
 	public Result<ProfileSave> RaiseLevel(string profileId, int maxLevel) =>

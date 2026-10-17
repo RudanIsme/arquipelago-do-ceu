@@ -17,7 +17,7 @@ static class FloorShots
 		if (!rules.IsOk) { GD.PushError($"Piloto: {rules.Error}"); return; }
 
 		var world = ulong.TryParse(d.Arg("mundo"), out var w) ? w : 1UL;
-		var discipline = d.Arg("dungeon") is { Length: > 0 } name ? name : ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics;
+		var discipline = d.Arg("dungeon") is { Length: > 0 } name ? name : "matematica";
 		var level = int.TryParse(d.Arg("nivel"), out var n) ? n : 1;
 		var plan = LevelPlan.Create(rules.Value!.Dungeon, world, discipline, level, 1);
 

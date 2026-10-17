@@ -102,7 +102,7 @@ public class WordBattleTests
 	[Fact]
 	public void A_letra_sugerida_e_a_proxima_ou_a_que_deve_ser_apagada_e_nao_custa_Energia()
 	{
-		var session = TrainingFixtures.Start(TrainingSetup.Portuguese, [WordFixtures.Word("a", "casa")], level: 2, year: 2).Value!;
+		var session = TrainingFixtures.Start("portugues", [WordFixtures.Word("a", "casa")], level: 2, year: 2).Value!;
 		var battle = session.Word!;
 
 		Assert.Equal(('c', false), battle.Suggest());
@@ -143,7 +143,7 @@ public class WordBattleTests
 	[Fact]
 	public void Outra_palavra_depois_do_erro_e_a_conta_zera()
 	{
-		var session = TrainingFixtures.Start(TrainingSetup.Portuguese, [WordFixtures.Word("a", "casa"), WordFixtures.Word("b", "copo")], level: 2, year: 2).Value!;
+		var session = TrainingFixtures.Start("portugues", [WordFixtures.Word("a", "casa"), WordFixtures.Word("b", "copo")], level: 2, year: 2).Value!;
 		var first = session.Word!.Word;
 		TypeAll(session.Word, "ca");
 
@@ -230,8 +230,8 @@ public class SentenceBattleTests
 			WordFixtures.Sentence("s", ["O", "gato", "dorme"], year: 3),
 		};
 
-		var year2 = TrainingFixtures.Start(TrainingSetup.Portuguese, missions, level: 3, year: 2).Value!;
-		var year3 = TrainingFixtures.Start(TrainingSetup.Portuguese, missions, level: 3, year: 3).Value!;
+		var year2 = TrainingFixtures.Start("portugues", missions, level: 3, year: 2).Value!;
+		var year3 = TrainingFixtures.Start("portugues", missions, level: 3, year: 3).Value!;
 
 		Assert.NotNull(year2.Word);
 		Assert.Null(year2.Name);
@@ -436,7 +436,7 @@ public class WordBattleHiddenKeyTests
 	{
 		var missions = new[] { WordFixtures.Word("w", "casa", year: 3), WordFixtures.Sentence("s", ["O", "gato", "dorme"], year: 3) };
 
-		var session = TrainingFixtures.Start(TrainingSetup.Portuguese, missions, level: 3, year: 3).Value!;
+		var session = TrainingFixtures.Start("portugues", missions, level: 3, year: 3).Value!;
 
 		Assert.NotNull(session.Name);
 	}

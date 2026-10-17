@@ -14,8 +14,6 @@ public class GameRulesTests
 
 		Assert.True(resultado.IsOk, resultado.Error);
 		Assert.Equal("Arquipélago do Céu", resultado.Value!.GameName);
-		Assert.Equal("Matemático", resultado.Value.Roles.Mathematics);
-		Assert.Equal("Escriba", resultado.Value.Roles.Portuguese);
 	}
 
 	[Fact]
@@ -58,7 +56,6 @@ public class GameRulesTests
 	[InlineData("\"masterChallenges\": 4", "\"masterChallenges\": 13", "dungeon.masterChallenges")]
 	[InlineData("\"shortcutChallenges\": 3", "\"shortcutChallenges\": 10", "dungeon.shortcutChallenges")]
 	[InlineData("\"conceptSolves\": 3", "\"conceptSolves\": 0", "dungeon.conceptSolves")]
-	[InlineData("\"coinsFloor\": 5", "\"coinsFloor\": -1", "dungeon.coinsFloor")]
 	public void Valor_fora_do_intervalo_e_recusado_dizendo_qual_campo(string original, string novo, string campo)
 	{
 		var resultado = GameRules.Parse(Valido.Replace(original, novo));
@@ -97,8 +94,6 @@ public class GameRulesTests
 	[Theory]
 	[InlineData("\"gameName\": \"Arquipélago do Céu\"", "\"gameName\": \"  \"", "gameName")]
 	[InlineData("\"gameName\": \"Arquipélago do Céu\",", "", "gameName")]
-	[InlineData("\"mathematics\": \"Matemático\",", "", "roles.mathematics")]
-	[InlineData("\"portuguese\": \"Escriba\"", "\"portuguese\": \"\"", "roles.portuguese")]
 	public void Nome_ausente_ou_vazio_diz_qual_campo(string original, string novo, string campo)
 	{
 		var resultado = GameRules.Parse(Valido.Replace(original, novo));
@@ -174,6 +169,6 @@ public class DungeonRulesTests
 	{
 		var dungeon = GameRules.Parse(TestJson.Rules).Value!.Dungeon;
 
-		Assert.Equal(new DungeonRules(3, 4, 6, 9, 2, 3, 4, 3, 1, 3, 5), dungeon);
+		Assert.Equal(new DungeonRules(3, 4, 6, 9, 2, 3, 4, 3), dungeon);
 	}
 }

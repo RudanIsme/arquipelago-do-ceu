@@ -42,9 +42,9 @@ static class TrainingFixtures
 	public static Result<CombatSession> Start(string discipline, IEnumerable<Mission> missions, int level = 1, int year = 1, int difficulty = 1, ulong seed = 1) =>
 		CombatSession.Start(Rules, Game.MaxEnergy, level, new TrainingSetup(discipline, year, difficulty), missions, new Pcg32(seed));
 
-	public static CombatSession Math(params Mission[] missions) => Start(TrainingSetup.Mathematics, missions).Value!;
+	public static CombatSession Math(params Mission[] missions) => Start("matematica", missions).Value!;
 
-	public static CombatSession Name(params Mission[] missions) => Start(TrainingSetup.Portuguese, missions).Value!;
+	public static CombatSession Name(params Mission[] missions) => Start("portugues", missions).Value!;
 }
 
 public class EnergyTests
@@ -133,19 +133,19 @@ public class TrainingChoiceTests
 		var path = Path.Combine(Path.GetTempPath(), "arquipelago-treino-" + Guid.NewGuid().ToString("N"), "save.json");
 		var profile = new ProfileService(new SaveSession(new SaveStore(path), SaveData.Empty), TrainingFixtures.Game, () => "id-1").Create("Luna").Value!;
 
-		Assert.Equal([1], TrainingSetup.Levels(profile.Level));
+		Assert.Equal([1], TrainingSetup.Levels(profile.Level, 3));
 	}
 
 	[Theory]
 	[InlineData(2, new[] { 1, 2 })]
 	[InlineData(3, new[] { 1, 2, 3 })]
 	[InlineData(9, new[] { 1, 2, 3 })]
-	public void Mostra_so_os_Niveis_liberados(int unlocked, int[] expected) => Assert.Equal(expected, TrainingSetup.Levels(unlocked));
+	public void Mostra_so_os_Niveis_liberados(int unlocked, int[] expected) => Assert.Equal(expected, TrainingSetup.Levels(unlocked, 3));
 
 	[Fact]
 	public void Nivel_nao_liberado_e_recusado()
 	{
-		var result = TrainingFixtures.Start(TrainingSetup.Mathematics, All, level: 1, year: 2);
+		var result = TrainingFixtures.Start("matematica", All, level: 1, year: 2);
 
 		Assert.False(result.IsOk);
 		Assert.Contains("liberado", result.Error);
@@ -154,8 +154,8 @@ public class TrainingChoiceTests
 	[Fact]
 	public void Escolher_o_Papel_muda_a_Mecanica_e_as_Missoes()
 	{
-		var math = TrainingFixtures.Start(TrainingSetup.Mathematics, All).Value!;
-		var name = TrainingFixtures.Start(TrainingSetup.Portuguese, All).Value!;
+		var math = TrainingFixtures.Start("matematica", All).Value!;
+		var name = TrainingFixtures.Start("portugues", All).Value!;
 
 		Assert.NotNull(math.Math);
 		Assert.Null(math.Name);
@@ -170,7 +170,7 @@ public class TrainingChoiceTests
 	{
 		for (ulong seed = 1; seed <= 20; seed++)
 		{
-			var session = TrainingFixtures.Start(TrainingSetup.Mathematics, All, difficulty: 2, seed: seed).Value!;
+			var session = TrainingFixtures.Start("matematica", All, difficulty: 2, seed: seed).Value!;
 			Assert.Equal("m1b", session.Mission.Id);
 			session.NextChallenge();
 			Assert.Equal("m1b", session.Mission.Id);
@@ -180,7 +180,7 @@ public class TrainingChoiceTests
 	[Fact]
 	public void Sem_Missao_para_a_dificuldade_o_jogo_avisa_em_vez_de_falhar()
 	{
-		var result = TrainingFixtures.Start(TrainingSetup.Mathematics, All, difficulty: 5);
+		var result = TrainingFixtures.Start("matematica", All, difficulty: 5);
 
 		Assert.False(result.IsOk);
 		Assert.Contains("dificuldade", result.Error);
@@ -193,7 +193,7 @@ public class TrainingChoiceTests
 
 		List<string> Draw(ulong seed)
 		{
-			var session = TrainingFixtures.Start(TrainingSetup.Mathematics, many, seed: seed).Value!;
+			var session = TrainingFixtures.Start("matematica", many, seed: seed).Value!;
 			var ids = new List<string> { session.Mission.Id };
 			for (var i = 0; i < 6; i++)
 			{
@@ -366,7 +366,7 @@ public class PrankTests
 	{
 		for (ulong seed = 1; seed <= 30; seed++)
 		{
-			var session = TrainingFixtures.Start(TrainingSetup.Portuguese, [TrainingFixtures.NameMission("a", ["pa", "to"], distractors: 3)], seed: seed).Value!;
+			var session = TrainingFixtures.Start("portugues", [TrainingFixtures.NameMission("a", ["pa", "to"], distractors: 3)], seed: seed).Value!;
 			var name = session.Name!;
 			var before = name.Pieces.OrderBy(p => p).ToList();
 
@@ -668,8 +668,8 @@ public sealed class TrainingProgressTests : IDisposable
 		var dataBefore = session.Data;
 		var fileBefore = File.ReadAllBytes(path);
 
-		PlayCompleteTraining(TrainingSetup.Mathematics);
-		PlayCompleteTraining(TrainingSetup.Portuguese);
+		PlayCompleteTraining("matematica");
+		PlayCompleteTraining("portugues");
 
 		Assert.Same(dataBefore, session.Data);
 		Assert.Equal(fileBefore, File.ReadAllBytes(path));
@@ -825,7 +825,7 @@ public class Year2MathTests
 	{
 		var missions = new[] { TrainingFixtures.MathMission("a", 30, year: 2) };
 
-		var year2 = TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 2, year: 2).Value!;
+		var year2 = TrainingFixtures.Start("matematica", missions, level: 2, year: 2).Value!;
 
 		Assert.Contains(20, year2.Rules.BagNumbers);
 		Assert.Contains("-", year2.Rules.Operators);
@@ -838,8 +838,8 @@ public class Year2MathTests
 	{
 		var missions = new[] { TrainingFixtures.MathMission("a", 30, year: 2) };
 
-		Assert.False(TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 1, year: 2).IsOk);
-		Assert.True(TrainingFixtures.Start(TrainingSetup.Mathematics, missions, level: 2, year: 2).IsOk);
+		Assert.False(TrainingFixtures.Start("matematica", missions, level: 1, year: 2).IsOk);
+		Assert.True(TrainingFixtures.Start("matematica", missions, level: 2, year: 2).IsOk);
 	}
 
 	[Theory]

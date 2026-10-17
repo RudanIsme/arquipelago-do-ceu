@@ -134,7 +134,7 @@ public sealed class MasteryAndCoinsTests : IDisposable
 			.Where(f => File.ReadAllText(f).Contains(call))
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 
-		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".Wallet.Add(").ToArray());
+		Assert.Empty(Callers(".Wallet.Add("));
 		Assert.Equal(new[] { "DungeonRun.cs" }, Callers(".Mastery.Record(").ToArray());
 	}
 }

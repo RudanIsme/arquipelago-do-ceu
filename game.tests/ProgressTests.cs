@@ -111,16 +111,16 @@ public sealed class ProgressTests : IDisposable
 	public void O_Desafio_mestre_so_abre_com_os_dois_epicos_do_Nivel_concluidos()
 	{
 		var progress = ProgressServices.Create(new SaveSession(new SaveStore(PathName), Example));
-		Assert.False(progress.Levels.MasterOpen("p", 1));
+		Assert.False(progress.Levels.MasterOpen("p", 1, ["matematica", "portugues"]));
 
 		progress.Levels.MarkEpicDone("p", new LevelKey("matematica", 1));
-		Assert.False(progress.Levels.MasterOpen("p", 1));
+		Assert.False(progress.Levels.MasterOpen("p", 1, ["matematica", "portugues"]));
 		progress.Levels.MarkEpicDone("p", new LevelKey("portugues", 2));
-		Assert.False(progress.Levels.MasterOpen("p", 1), "o épico de outro Nível não vale");
+		Assert.False(progress.Levels.MasterOpen("p", 1, ["matematica", "portugues"]), "o épico de outro Nível não vale");
 
 		progress.Levels.MarkEpicDone("p", new LevelKey("portugues", 1));
-		Assert.True(progress.Levels.MasterOpen("p", 1));
-		Assert.False(progress.Levels.MasterOpen("q", 1));
+		Assert.True(progress.Levels.MasterOpen("p", 1, ["matematica", "portugues"]));
+		Assert.False(progress.Levels.MasterOpen("q", 1, ["matematica", "portugues"]));
 	}
 
 	[Fact]

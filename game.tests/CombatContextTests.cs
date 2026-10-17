@@ -6,7 +6,7 @@ namespace ArquipelagoDoCeu.Tests;
 
 public class CombatContextTests
 {
-	static readonly TrainingSetup Math1 = new(TrainingSetup.Mathematics, 1, 1);
+	static readonly TrainingSetup Math1 = new("matematica", 1, 1);
 	static readonly IReadOnlyList<ArquipelagoDoCeu.Missions.Mission> Missions =
 		[TrainingFixtures.MathMission("a", 9), TrainingFixtures.MathMission("b", 8)];
 

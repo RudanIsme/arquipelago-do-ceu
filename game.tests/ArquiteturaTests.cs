@@ -101,11 +101,12 @@ public class ArquiteturaTests
 	{
 		["Combat"] = ["Generation", "Missions", "Rules"],
 		["Data"] = [],
-		["Dungeon"] = ["Combat", "Generation", "Missions"],
+		["Dungeon"] = ["Combat", "Data", "Generation", "Missions"],
 		["Equipment"] = ["Data", "Saves"],
 		["Generation"] = ["Data", "Rules"],
 		["Missions"] = ["Data"],
 		["Profiles"] = ["Rules", "Saves"],
+		["Rewards"] = ["Data", "Saves"],
 		["Rules"] = ["Data"],
 		["Saves"] = ["Data", "Dungeon", "Equipment"],
 		["Settings"] = ["Rules", "Saves"],

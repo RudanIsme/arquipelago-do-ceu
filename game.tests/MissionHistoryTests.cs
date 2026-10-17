@@ -47,7 +47,7 @@ public class MissionHistoryTests
 		var pool = Pool(6);
 		var history = new MissionHistory();
 		var rules = TrainingFixtures.Rules;
-		var fight = CombatSession.Start(rules, new Energy(5), 1, new TrainingSetup(TrainingSetup.Mathematics, 1, 1), pool, new Pcg32(7), history).Value!;
+		var fight = CombatSession.Start(rules, new Energy(5), 1, new TrainingSetup("matematica", 1, 1), pool, new Pcg32(7), history).Value!;
 
 		var seen = new List<string> { fight.Mission.Id };
 		for (var i = 0; i < 5; i++)
@@ -64,7 +64,7 @@ public class MissionHistoryTests
 	{
 		var pool = Pool(4);
 		var history = new MissionHistory();
-		var setup = new TrainingSetup(TrainingSetup.Mathematics, 1, 1);
+		var setup = new TrainingSetup("matematica", 1, 1);
 
 		var ids = new List<string>();
 		for (var i = 0; i < 4; i++)
@@ -78,7 +78,7 @@ public class MissionHistoryTests
 	{
 		var pool = Pool(5);
 		var history = new MissionHistory(avoidRecent: 2);
-		var setup = new TrainingSetup(TrainingSetup.Mathematics, 1, 1);
+		var setup = new TrainingSetup("matematica", 1, 1);
 
 		var ids = new List<string>();
 		for (var i = 0; i < 10; i++)
@@ -91,7 +91,7 @@ public class MissionHistoryTests
 	[Fact]
 	public void Sem_historico_o_treino_segue_como_sempre()
 	{
-		var fight = CombatSession.Start(TrainingFixtures.Rules, new Energy(5), 1, new TrainingSetup(TrainingSetup.Mathematics, 1, 1), Pool(3), new Pcg32(3)).Value!;
+		var fight = CombatSession.Start(TrainingFixtures.Rules, new Energy(5), 1, new TrainingSetup("matematica", 1, 1), Pool(3), new Pcg32(3)).Value!;
 
 		Assert.NotNull(fight.Mission);
 	}

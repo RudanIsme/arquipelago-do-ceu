@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using Godot;
 
@@ -14,11 +16,13 @@ public partial class Main
 {
 
 	ProgressServices progress = null!;
+	RewardService rewardService = null!;
+	TowerCatalog towers = TowerCatalog.Empty;
 	DungeonRun? dungeon;
 	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
 
-	static string TowerName(string discipline) => DungeonRun.TowerName(discipline);
+	string TowerName(string discipline) => towers.Find(discipline)?.Name ?? discipline;
 
 	// O portal do Lobby: um destino por Fast travel encontrado.
 	PortalScreen BuildPortal()
@@ -39,7 +43,7 @@ public partial class Main
 	{
 		if (current is null) return;
 		var level = UnlockedLevel();
-		ShowOverlay(new MasterScreen(level, progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Mathematics, level)), progress.Levels.EpicDone(current.Id, new LevelKey(TrainingSetup.Portuguese, level)),
+		ShowOverlay(new MasterScreen(level, towers.All.Select(t => (t.Name, progress.Levels.EpicDone(current.Id, new LevelKey(t.Id, level)))).ToList(),
 			() =>
 			{
 				if (master.Start(current.Id, level) is { } problem) Notify(problem);
@@ -48,6 +52,7 @@ public partial class Main
 
 	// Ganchos só do piloto de desenvolvimento.
 	public ProgressServices DevProgress => progress;
+	public RewardService DevRewards => rewardService;
 	public string DevProfileId => current?.Id ?? "";
 	public int DevLevel => UnlockedLevel();
 	public MasterChallenge DevMaster => master;
@@ -94,7 +99,7 @@ public partial class Main
 		training.End();
 		var tower = TowerName(discipline);
 		ChooseRole(discipline);
-		var towerLevel = level ?? UnlockedLevel();
+		var towerLevel = TowerCatalog.LevelFor(towers.Find(discipline)!, level ?? UnlockedLevel());
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
 		if (startFloor == 0 && !shortcut && !free && progress.Levels.LastFastTravel(current.Id, new LevelKey(discipline, towerLevel)) is { } last)
@@ -105,7 +110,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -153,6 +158,9 @@ public partial class Main
 	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
 	CosmeticCatalog LoadCosmetics() => catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
+	// Sem as recompensas o jogo segue, só sem moedas nem Cosméticos: elas são um extra.
+	RewardCatalog LoadRewards() => catalogs.Optional("recompensas.json", json => RewardCatalog.Parse(json, RewardTriggers.Default, LoadCosmetics()), RewardCatalog.Empty);
+
 	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
 	ConceptNames LoadConcepts() => catalogs.Optional("conceitos.json", ConceptNames.Parse, ConceptNames.Empty);
 
@@ -160,7 +168,7 @@ public partial class Main
 	IReadOnlyList<Cosmetic> OwnedCosmetics()
 	{
 		var catalog = LoadCosmetics();
-		return current is null ? [] : progress.Rewards.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
+		return current is null ? [] : rewardService.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
 	}
 
 	// Sem os Andares de reserva a torre não abre: o validador precisa deles como último recurso.

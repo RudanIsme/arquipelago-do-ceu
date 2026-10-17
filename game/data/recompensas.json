@@ -1,0 +1,264 @@
+{
+  "rewards": [
+    {
+      "id": "moedas-criatura",
+      "trigger": "creature-calmed",
+      "coins": 1
+    },
+    {
+      "id": "moedas-sala-do-item",
+      "trigger": "item-room",
+      "coins": 3
+    },
+    {
+      "id": "moedas-andar-completo",
+      "trigger": "floor-complete",
+      "coins": 5
+    },
+    {
+      "id": "moedas-andar-livre",
+      "trigger": "free-floor-complete",
+      "coins": 5
+    },
+    {
+      "id": "cosmetico-matematica-1-1",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-1-1",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-matematica-1-2",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-1-2",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-matematica-1-3",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-1-3",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-matematica-1-4",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-1-4",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 4
+      }
+    },
+    {
+      "id": "cosmetico-matematica-2-1",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-2-1",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-matematica-2-2",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-2-2",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-matematica-2-3",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-2-3",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-matematica-2-4",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-2-4",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 4
+      }
+    },
+    {
+      "id": "cosmetico-matematica-3-1",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-3-1",
+      "when": {
+        "discipline": "matematica",
+        "level": 3,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-matematica-3-2",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-3-2",
+      "when": {
+        "discipline": "matematica",
+        "level": 3,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-matematica-3-3",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-3-3",
+      "when": {
+        "discipline": "matematica",
+        "level": 3,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-matematica-3-4",
+      "trigger": "floor-complete",
+      "cosmetic": "matematica-3-4",
+      "when": {
+        "discipline": "matematica",
+        "level": 3,
+        "floor": 4
+      }
+    },
+    {
+      "id": "cosmetico-portugues-1-1",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-1-1",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-portugues-1-2",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-1-2",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-portugues-1-3",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-1-3",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-portugues-1-4",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-1-4",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 4
+      }
+    },
+    {
+      "id": "cosmetico-portugues-2-1",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-2-1",
+      "when": {
+        "discipline": "portugues",
+        "level": 2,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-portugues-2-2",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-2-2",
+      "when": {
+        "discipline": "portugues",
+        "level": 2,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-portugues-2-3",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-2-3",
+      "when": {
+        "discipline": "portugues",
+        "level": 2,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-portugues-2-4",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-2-4",
+      "when": {
+        "discipline": "portugues",
+        "level": 2,
+        "floor": 4
+      }
+    },
+    {
+      "id": "cosmetico-portugues-3-1",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-3-1",
+      "when": {
+        "discipline": "portugues",
+        "level": 3,
+        "floor": 1
+      }
+    },
+    {
+      "id": "cosmetico-portugues-3-2",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-3-2",
+      "when": {
+        "discipline": "portugues",
+        "level": 3,
+        "floor": 2
+      }
+    },
+    {
+      "id": "cosmetico-portugues-3-3",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-3-3",
+      "when": {
+        "discipline": "portugues",
+        "level": 3,
+        "floor": 3
+      }
+    },
+    {
+      "id": "cosmetico-portugues-3-4",
+      "trigger": "floor-complete",
+      "cosmetic": "portugues-3-4",
+      "when": {
+        "discipline": "portugues",
+        "level": 3,
+        "floor": 4
+      }
+    }
+  ]
+}

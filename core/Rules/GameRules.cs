@@ -3,15 +3,12 @@ using System.Text.Json;
 
 namespace ArquipelagoDoCeu.Rules;
 
-public sealed record RoleNames(string Mathematics, string Portuguese);
-
 // Quantos acertos seguidos sobem a dificuldade e quantos erros ou dicas a descem.
 public sealed record AdaptiveRules(int StreakToLevelUp, int MistakesToLevelDown, int HintsToLevelDown);
 
 // Todo valor de regra vem de dados (docs/tecnico), nunca fica fixo no código.
 public sealed record GameRules(
 	string GameName,
-	RoleNames Roles,
 	int MaxEnergy,
 	AdaptiveRules Adaptive,
 	IReadOnlyList<int> LeitnerIntervalsDays,
@@ -52,7 +49,6 @@ public sealed record GameRules(
 
 		return Result<GameRules>.Ok(new GameRules(
 			dto.GameName!,
-			new RoleNames(dto.Roles!.Mathematics!, dto.Roles.Portuguese!),
 			dto.MaxEnergy!.Value,
 			new AdaptiveRules(
 				dto.Adaptive!.StreakToLevelUp!.Value,
@@ -70,9 +66,6 @@ public sealed record GameRules(
 	static string? CheckNames(Dto dto)
 	{
 		if (Blank(dto.GameName)) return Required("gameName");
-		if (dto.Roles is null) return Required("roles");
-		if (Blank(dto.Roles.Mathematics)) return Required("roles.mathematics");
-		if (Blank(dto.Roles.Portuguese)) return Required("roles.portuguese");
 		return null;
 	}
 
@@ -121,7 +114,6 @@ public sealed record GameRules(
 
 	sealed record Dto(
 		string? GameName,
-		RolesDto? Roles,
 		int? MaxEnergy,
 		AdaptiveDto? Adaptive,
 		int[]? LeitnerIntervalsDays,
@@ -133,8 +125,6 @@ public sealed record GameRules(
 		LobbyDto? Lobby);
 
 	sealed record ProfileDto(int? MaxNicknameLength, int? MaxProfiles);
-
-	sealed record RolesDto(string? Mathematics, string? Portuguese);
 
 	sealed record AdaptiveDto(int? StreakToLevelUp, int? MistakesToLevelDown, int? HintsToLevelDown);
 }
