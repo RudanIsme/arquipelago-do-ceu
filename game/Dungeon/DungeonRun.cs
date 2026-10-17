@@ -33,6 +33,7 @@ public sealed record DungeonContext(
 	int ExtraEnergy,
 	float ExtraReach,
 	Action<Player> ConfigurePlayer,
+	IRandomSource Random,
 	int StartFloor = 1,
 	bool AtFastTravel = false,
 	Action<OverlayScreen>? ShowOverlay = null,
@@ -159,7 +160,7 @@ public partial class DungeonRun : Node
 
 		world.ReduceMotion = player.ReduceMotion;
 		combat = new TrainingArea(ctx.Rules, world, player, world.Creature, ctx.Voice, ctx.Settings, ctx.UiRoot,
-			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say);
+			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random);
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
 		combat.EnergyTop = EnergyTop;
@@ -270,7 +271,7 @@ public partial class DungeonRun : Node
 	// A tentativa do Atalho é gravada ao começar: sair no meio também a gasta, e cada Nível tem uma só.
 	bool BeginShortcut()
 	{
-		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, new Pcg32(Time.GetTicksUsec()));
+		var setups = DungeonCombat.ShortcutSetups(missions, ctx.Discipline, ctx.Level, ctx.Rules.Dungeon.ShortcutChallenges, ctx.Random.NewStream());
 		if (!setups.IsOk)
 		{
 			// Sem Desafios para sortear, a criança nem chega a tentar: a tentativa não é gasta.
@@ -331,7 +332,7 @@ public partial class DungeonRun : Node
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
 		if (!InShortcut) fightSetup = (expedition.Floor.Number, setup.Value!);
-		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32(Time.GetTicksUsec()), ctx.Free ? history : null);
+		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), ctx.Free ? history : null);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);

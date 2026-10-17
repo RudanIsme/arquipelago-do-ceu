@@ -61,6 +61,101 @@ public class ArquiteturaTests
 		Assert.DoesNotContain("game" + Path.DirectorySeparatorChar + "ArquipelagoDoCeu.csproj", projeto.Replace('/', Path.DirectorySeparatorChar));
 	}
 
+	// Relógio e sorteio do sistema só entram por adaptadores; as regras recebem uma fonte por parâmetro (IRandomSource).
+	static readonly Regex RelogioOuSorteio = new(@"\bTime\.GetTicks|\bDateTime\.(Now|UtcNow)|\bnew\s+Random\s*\(|\bRandom\.Shared|\bStopwatch\b|Environment\.TickCount|\.Rand(f|i)(Range)?\(|GD\.Rand");
+
+	// Adaptadores e telas que medem tempo real do motor ou sorteiam só para efeito visual; o piloto (game/Dev) também.
+	static readonly string[] UsamRelogio =
+	[
+		"game/GodotRandomSource.cs", "game/Voice/GodotSpeechEngine.cs", "game/Lobby/CameraController.cs", "game/Lobby/GuideIdle.cs",
+		"game/Lobby/LobbyAmbience.cs", "game/Character/DynamicCape.cs", "game/Main.cs", "game/Main.PullTest.cs", "game/Dev/",
+	];
+
+	[Fact]
+	public void Core_nao_le_o_relogio_nem_sorteia_por_conta_propria()
+	{
+		var raiz = RaizDoRepositorio();
+
+		var violacoes = ArquivosDeCodigo(Path.Combine(raiz, "core")).Where(f => RelogioOuSorteio.IsMatch(File.ReadAllText(f)));
+
+		Assert.Empty(violacoes);
+	}
+
+	[Fact]
+	public void No_game_so_os_adaptadores_conhecidos_leem_o_relogio_ou_sorteiam()
+	{
+		var raiz = RaizDoRepositorio();
+
+		var violacoes = ArquivosDeCodigo(Path.Combine(raiz, "game"))
+			.Where(f => f.EndsWith(".cs") && !f.Contains($"{Path.DirectorySeparatorChar}.godot{Path.DirectorySeparatorChar}"))
+			.Select(f => Path.GetRelativePath(raiz, f).Replace(Path.DirectorySeparatorChar, '/'))
+			.Where(f => !UsamRelogio.Any(a => f.StartsWith(a, StringComparison.Ordinal)))
+			.Where(f => RelogioOuSorteio.IsMatch(File.ReadAllText(Path.Combine(raiz, f))))
+			.ToList();
+
+		Assert.Empty(violacoes);
+	}
+
+	// Cada pasta de core/ só depende das pastas listadas aqui. Dependência nova tem de ser decidida e entrar na lista.
+	static readonly Dictionary<string, string[]> DependenciasPermitidas = new()
+	{
+		["Combat"] = ["Generation", "Missions", "Rules"],
+		["Data"] = [],
+		["Dungeon"] = ["Combat", "Generation", "Missions"],
+		["Equipment"] = ["Data", "Saves"],
+		["Generation"] = ["Data", "Rules"],
+		["Missions"] = ["Data"],
+		["Profiles"] = ["Rules", "Saves"],
+		["Rules"] = ["Data"],
+		["Saves"] = ["Data", "Dungeon", "Equipment"],
+		["Settings"] = ["Rules", "Saves"],
+		["Voice"] = ["Settings"],
+		["World"] = ["Rules"],
+	};
+
+	[Fact]
+	public void As_pastas_do_core_so_dependem_das_pastas_permitidas()
+	{
+		var atuais = DependenciasDoCore();
+
+		var novas = atuais.SelectMany(p => p.Value.Where(d => !DependenciasPermitidas.GetValueOrDefault(p.Key, []).Contains(d)).Select(d => $"{p.Key} -> {d}"));
+
+		Assert.Empty(novas);
+	}
+
+	// Equipment e Saves se enxergam hoje (o Perfil guarda o equipamento); é a única volta permitida, e sai no #169.
+	[Fact]
+	public void As_pastas_do_core_nao_formam_novas_voltas()
+	{
+		var grafo = DependenciasDoCore();
+		bool Alcanca(string de, string para, HashSet<string> visitadas) =>
+			grafo.GetValueOrDefault(de, []).Any(d => d == para || (visitadas.Add(d) && Alcanca(d, para, visitadas)));
+
+		var voltas = grafo.Keys.Where(p => Alcanca(p, p, [])).Order().ToList();
+
+		Assert.Equal(new[] { "Equipment", "Saves" }, voltas.ToArray());
+	}
+
+	static Dictionary<string, HashSet<string>> DependenciasDoCore()
+	{
+		var core = Path.Combine(RaizDoRepositorio(), "core");
+		var usos = new Regex(@"using ArquipelagoDoCeu\.(\w+);|(?<!namespace )(?<!using )ArquipelagoDoCeu\.(\w+)\.[A-Z]");
+		var grafo = new Dictionary<string, HashSet<string>>();
+		foreach (var arquivo in ArquivosDeCodigo(core).Where(f => f.EndsWith(".cs")))
+		{
+			var pasta = Path.GetFileName(Path.GetDirectoryName(arquivo))!;
+			if (Path.GetDirectoryName(arquivo) == core) continue;
+			if (!grafo.ContainsKey(pasta)) grafo[pasta] = [];
+			var dependencias = grafo[pasta];
+			foreach (Match uso in usos.Matches(File.ReadAllText(arquivo)))
+			{
+				var alvo = uso.Groups[1].Success ? uso.Groups[1].Value : uso.Groups[2].Value;
+				if (alvo != pasta) dependencias.Add(alvo);
+			}
+		}
+		return grafo;
+	}
+
 	// bin/ e obj/ trazem arquivos gerados que não são código nosso.
 	static IEnumerable<string> ArquivosDeCodigo(string pasta) =>
 		!Directory.Exists(pasta)

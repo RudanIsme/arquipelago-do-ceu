@@ -15,6 +15,7 @@ namespace ArquipelagoDoCeu;
 public partial class MasterChallenge : Node
 {
 	readonly GameRules rules;
+	readonly IRandomSource random;
 	readonly TrainingArea training;
 	readonly Control uiRoot;
 	readonly ProgressService progress;
@@ -30,8 +31,9 @@ public partial class MasterChallenge : Node
 	int round;
 
 	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressService progress, Func<int> extraEnergy,
-		Action<string> notify, Action<ProfileSave> levelRaised)
+		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random)
 	{
+		this.random = random;
 		this.rules = rules;
 		this.training = training;
 		this.uiRoot = uiRoot;
@@ -53,7 +55,7 @@ public partial class MasterChallenge : Node
 	public string? Start(string profile, int masterLevel)
 	{
 		if (Active) return "O Desafio mestre já está em andamento.";
-		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, new Pcg32(Time.GetTicksUsec()));
+		var setups = DungeonCombat.MasterSetups(missions, masterLevel, rules.Dungeon.MasterChallenges, random.NewStream());
 		if (!setups.IsOk) return setups.Error;
 
 		training.End();
@@ -74,7 +76,7 @@ public partial class MasterChallenge : Node
 	void BeginRound()
 	{
 		var setup = rounds[round];
-		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, new Pcg32(Time.GetTicksUsec()));
+		var fight = CombatSession.Start(rules.Combat, energy!, level, setup, missions, random.NewStream());
 		if (!fight.IsOk)
 		{
 			Finish($"Não foi possível montar o Desafio mestre: {fight.Error}");

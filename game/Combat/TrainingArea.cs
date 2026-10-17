@@ -33,6 +33,7 @@ public partial class TrainingArea : Node
 	readonly CombatTime time;
 	readonly BubbleAttack bubble;
 	readonly IReadOnlyList<Mission> missions;
+	readonly IRandomSource random;
 	CombatSession? session;
 	OverlayScreen? panel;
 	EnergyView? energyView;
@@ -53,8 +54,9 @@ public partial class TrainingArea : Node
 	}
 
 	public TrainingArea(GameRules rules, ICombatStage stage, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
-		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify)
+		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify, IRandomSource random)
 	{
+		this.random = random;
 		this.rules = rules;
 		this.stage = stage;
 		this.player = player;
@@ -212,7 +214,7 @@ public partial class TrainingArea : Node
 	string? TryStart(TrainingSetup setup)
 	{
 		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
-		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, new Pcg32(Time.GetTicksUsec()));
+		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, random.NewStream());
 		if (!started.IsOk) return started.Error;
 
 		RoleChosen?.Invoke(setup.Discipline);

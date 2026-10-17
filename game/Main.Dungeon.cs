@@ -105,7 +105,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
 		coinsAtStart = (current.Id, progress.Coins(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;

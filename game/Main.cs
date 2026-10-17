@@ -46,6 +46,7 @@ public partial class Main : Node3D
 	float uiScale = 1f;
 	TrainingDummy dummy = null!;
 
+	readonly IRandomSource random = new GodotRandomSource();
 	readonly CatalogLoader catalogs = new(new GodotDataSource(), message => GD.PushWarning(message));
 
 	public override void _Ready()
@@ -343,11 +344,11 @@ public partial class Main : Node3D
 		dummy = new TrainingDummy();
 		lobby.AddChild(dummy);
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
-			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
+			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify, random);
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
 		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
-		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random);
 		AddChild(master);
 	}
 
