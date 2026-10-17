@@ -27,7 +27,7 @@ static partial class DungeonScenarios
 		// 1. Torre das Letras pelo Atalho de Nível: os Desafios sorteados, o épico, o Nível concluído e o Item.
 		var letters = await Enter(d, letters: true, shortcut: true);
 		if (letters is null) return;
-		d.Expect(letters.Expedition.Current.Kind == RoomKind.Epic, "o Atalho começa direto no Desafio épico");
+		d.Expect(letters.Expedition.Current.Kind == RoomTypes.Epic, "o Atalho começa direto no Desafio épico");
 		for (var i = 0; i < 3; i++) { PilotPort.WinRoom(letters); await d.Wait(0.4); }
 		d.Expect(progress.Levels.EpicDone(profile, new LevelKey("portugues", 1)) && progress.Levels.HasItem(profile, new LevelKey("portugues", 1)), "o Atalho concluiu a Torre das Letras e deu o Item");
 		await d.Press("Voltar ao Lobby");
@@ -38,8 +38,8 @@ static partial class DungeonScenarios
 		var math = await Enter(d);
 		if (math is null) return;
 		var expedition = math.Expedition;
-		await GoTo(d, math, RoomKind.Rest);
-		d.Expect(expedition.Current.Kind == RoomKind.Rest, "chegou ao Descanso");
+		await GoTo(d, math, RoomTypes.Rest);
+		d.Expect(expedition.Current.Kind == RoomTypes.Rest, "chegou ao Descanso");
 		expedition.Energy.Lose(3);
 		var before = expedition.Energy.Current;
 		math.Player.PlaceAt(DungeonWorld.FountainSpot + new Vector2(0.5f, 0.5f));
@@ -47,25 +47,25 @@ static partial class DungeonScenarios
 		await d.Tap(Controls.Interact);
 		d.Expect(expedition.Energy.Current == before + 2, "o Descanso devolveu Energia");
 
-		await GoTo(d, math, RoomKind.Puzzle);
-		d.Expect(expedition.Current.Kind == RoomKind.Puzzle, "chegou a um Puzzle");
+		await GoTo(d, math, RoomTypes.Puzzle);
+		d.Expect(expedition.Current.Kind == RoomTypes.Puzzle, "chegou a um Puzzle");
 		PilotPort.WinRoom(math);
 		await d.Wait(0.3);
 		d.Expect(expedition.IsCleared(expedition.CurrentRoom), "o Puzzle abriu");
 
-		await GoTo(d, math, RoomKind.FastTravel);
+		await GoTo(d, math, RoomTypes.FastTravel);
 		d.Expect(progress.Levels.FastTravels(profile).Any(p => p.Discipline == "matematica"), "o Fast travel foi salvo");
 
 		await GoTo(d, math, r => r.HoldsItem);
 		if (!progress.Levels.HasItem(profile, new LevelKey("matematica", 1))) { PilotPort.WinRoom(math); await d.Wait(0.3); }
 		d.Expect(progress.Levels.HasItem(profile, new LevelKey("matematica", 1)), "a Sala do Item deu o Item de troca");
 
-		await GoTo(d, math, r => r.Kind == RoomKind.Marco);
+		await GoTo(d, math, r => r.Kind == RoomTypes.Marco);
 		var beyond = expedition.Floor.Neighbors(expedition.CurrentRoom).First(n => !expedition.Visited.Contains(n));
 		d.Expect(await Step(d, math, beyond), "o Item da outra torre abriu o Marco");
 
-		await GoTo(d, math, RoomKind.Epic);
-		d.Expect(expedition.Current.Kind == RoomKind.Epic, "chegou ao Desafio épico");
+		await GoTo(d, math, RoomTypes.Epic);
+		d.Expect(expedition.Current.Kind == RoomTypes.Epic, "chegou ao Desafio épico");
 		PilotPort.WinRoom(math);
 		await d.Wait(0.5);
 		d.Expect(progress.Levels.EpicDone(profile, new LevelKey("matematica", 1)), "o épico concluiu a Torre dos Números");
@@ -158,8 +158,8 @@ static partial class DungeonScenarios
 		var run = await Enter(d);
 		if (run is null) return;
 		var expedition = run.Expedition;
-		await GoTo(d, run, RoomKind.FastTravel);
-		d.Expect(expedition.Current.Kind == RoomKind.FastTravel, "chegou ao Fast travel");
+		await GoTo(d, run, RoomTypes.FastTravel);
+		d.Expect(expedition.Current.Kind == RoomTypes.FastTravel, "chegou ao Fast travel");
 		var point = new ArquipelagoDoCeu.Saves.FloorKey("matematica", 1, expedition.Floor.Number);
 		d.Expect(run.Progress.Levels.FastTravels(run.ProfileId).Contains(point), "chegar ao Fast travel salvou o ponto");
 		await d.Shot("01-fast-travel");
@@ -173,7 +173,7 @@ static partial class DungeonScenarios
 		await d.Press($"Torre dos Números · Nível 1 · Andar {floor}");
 		await d.Wait(0.5);
 		var resumed = Runs(d).FirstOrDefault();
-		d.Expect(resumed is not null && resumed.Expedition.Current.Kind == RoomKind.FastTravel && resumed.Expedition.Floor.Number == floor, "o portal retomou no Fast travel do Andar");
+		d.Expect(resumed is not null && resumed.Expedition.Current.Kind == RoomTypes.FastTravel && resumed.Expedition.Floor.Number == floor, "o portal retomou no Fast travel do Andar");
 		if (resumed is null) return;
 		d.Expect(resumed.Expedition.Visited.Contains(resumed.Expedition.Floor.Entrance), "o caminho até o ponto conta como percorrido");
 		await d.Shot("03-retomou");

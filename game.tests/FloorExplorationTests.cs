@@ -28,7 +28,7 @@ public class FloorExplorationTests
 		Assert.True(e.Descend());
 
 		Assert.Equal(1, e.Floor.Number);
-		Assert.Equal(RoomKind.Exit, e.Current.Kind);
+		Assert.Equal(RoomTypes.Exit, e.Current.Kind);
 	}
 
 	[Fact]
@@ -222,7 +222,7 @@ public class FloorExplorationTests
 	{
 		var e = ExpeditionFixtures.Start(startFloor: 1, atFastTravel: true);
 
-		Assert.Equal(RoomKind.FastTravel, e.Current.Kind);
+		Assert.Equal(RoomTypes.FastTravel, e.Current.Kind);
 		Assert.Equal(new[] { 0, 1, 2 }, e.Visited.Order().ToArray());
 		Assert.Equal(new[] { 1 }, e.Cleared.Order().ToArray());
 		Assert.Equal(Sight.Fog, e.SightOf(4));
@@ -236,7 +236,7 @@ public class FloorExplorationTests
 
 		Assert.True(e.Descend());
 
-		Assert.Equal(RoomKind.Exit, e.Current.Kind);
+		Assert.Equal(RoomTypes.Exit, e.Current.Kind);
 		Assert.Equal(new[] { 0, 1, 4, 5 }, e.Visited.Order().ToArray());
 		Assert.Equal(new[] { 1, 4 }, e.Cleared.Order().ToArray());
 	}

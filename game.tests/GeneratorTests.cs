@@ -99,14 +99,14 @@ public class FloorGeneratorTests
 
 				Assert.InRange(floor.Rooms.Count, Rules.RoomsMin, Rules.RoomsMax);
 				Assert.Equal(Enumerable.Range(0, floor.Rooms.Count), floor.Rooms.Select(r => r.Id));
-				Assert.Equal(RoomKind.Entrance, floor.Rooms[floor.Entrance].Kind);
-				Assert.Single(floor.Rooms, r => r.Kind == RoomKind.Entrance);
-				Assert.Single(floor.Rooms, r => r.Kind == RoomKind.FastTravel);
-				Assert.Single(floor.Rooms, r => r.Kind == RoomKind.Rest);
-				Assert.Equal(floorPlan.HasMarco ? 1 : 0, floor.Rooms.Count(r => r.Kind == RoomKind.Marco));
+				Assert.Equal(RoomTypes.Entrance, floor.Rooms[floor.Entrance].Kind);
+				Assert.Single(floor.Rooms, r => r.Kind == RoomTypes.Entrance);
+				Assert.Single(floor.Rooms, r => r.Kind == RoomTypes.FastTravel);
+				Assert.Single(floor.Rooms, r => r.Kind == RoomTypes.Rest);
+				Assert.Equal(floorPlan.HasMarco ? 1 : 0, floor.Rooms.Count(r => r.Kind == RoomTypes.Marco));
 				Assert.Equal(floorPlan.HoldsItem ? 1 : 0, floor.Rooms.Count(r => r.HoldsItem));
-				Assert.Equal(floorPlan.HasEpic ? RoomKind.Epic : RoomKind.Exit, floor.Rooms[floor.Exit].Kind);
-				Assert.True(floor.Rooms.Where(r => r.HoldsItem).All(r => r.Kind is RoomKind.Combat or RoomKind.Puzzle), where);
+				Assert.Equal(floorPlan.HasEpic ? RoomTypes.Epic : RoomTypes.Exit, floor.Rooms[floor.Exit].Kind);
+				Assert.True(floor.Rooms.Where(r => r.HoldsItem).All(r => r.Kind.Free), where);
 				Assert.All(floor.Links, l => Assert.True(l.A != l.B && l.A >= 0 && l.B >= 0 && l.A < floor.Rooms.Count && l.B < floor.Rooms.Count, where));
 				Assert.Equal(floor.Links.Count, floor.Links.Select(l => (Math.Min(l.A, l.B), Math.Max(l.A, l.B))).Distinct().Count());
 				Assert.Equal(floor.Rooms.Count, Reachable(floor).Count);
@@ -133,13 +133,13 @@ public class FloorValidatorTests
 	static readonly DungeonRules Rules = GameRules.Parse(TestJson.Rules).Value!.Dungeon;
 
 	// Monta um Andar à mão para provar que o validador recusa cada regra quebrada.
-	static Floor Hand((RoomKind Kind, bool Item)[] rooms, (int, int)[] links, int? exit = null) =>
+	static Floor Hand((RoomType Kind, bool Item)[] rooms, (int, int)[] links, int? exit = null) =>
 		new(1, rooms.Select((r, i) => new Room(i, r.Kind, r.Item)).ToList(), links.Select(l => new Link(l.Item1, l.Item2)).ToList(), 0, exit ?? rooms.Length - 1);
 
 	static readonly FloorPlan WithMarco = new(1, false, true, false);
 
 	// Entrada(0) - Combate(1) - Fast travel(2); Descanso(3) na entrada; Marco(4) depois do combate; saída(5).
-	static (RoomKind, bool)[] GoodRooms => [(RoomKind.Entrance, false), (RoomKind.Combat, false), (RoomKind.FastTravel, false), (RoomKind.Rest, false), (RoomKind.Marco, false), (RoomKind.Exit, false)];
+	static (RoomType, bool)[] GoodRooms => [(RoomTypes.Entrance, false), (RoomTypes.Combat, false), (RoomTypes.FastTravel, false), (RoomTypes.Rest, false), (RoomTypes.Marco, false), (RoomTypes.Exit, false)];
 	static (int, int)[] GoodLinks => [(0, 1), (1, 2), (0, 3), (1, 4), (4, 5)];
 
 	[Fact]
@@ -177,7 +177,7 @@ public class FloorValidatorTests
 	[Fact]
 	public void Recusa_Fast_travel_que_so_se_alcanca_passando_pelo_Marco()
 	{
-		var rooms = new[] { (RoomKind.Entrance, false), (RoomKind.Combat, false), (RoomKind.Rest, false), (RoomKind.Marco, false), (RoomKind.FastTravel, false), (RoomKind.Exit, false) };
+		var rooms = new[] { (RoomTypes.Entrance, false), (RoomTypes.Combat, false), (RoomTypes.Rest, false), (RoomTypes.Marco, false), (RoomTypes.FastTravel, false), (RoomTypes.Exit, false) };
 
 		var result = FloorValidator.Validate(Hand(rooms, [(0, 1), (0, 2), (1, 3), (3, 4), (3, 5)]), WithMarco);
 
@@ -188,7 +188,7 @@ public class FloorValidatorTests
 	[Fact]
 	public void Recusa_Puzzle_que_so_se_alcanca_passando_pelo_Marco()
 	{
-		var rooms = new[] { (RoomKind.Entrance, false), (RoomKind.FastTravel, false), (RoomKind.Rest, false), (RoomKind.Marco, false), (RoomKind.Puzzle, false), (RoomKind.Exit, false) };
+		var rooms = new[] { (RoomTypes.Entrance, false), (RoomTypes.FastTravel, false), (RoomTypes.Rest, false), (RoomTypes.Marco, false), (RoomTypes.Puzzle, false), (RoomTypes.Exit, false) };
 
 		var result = FloorValidator.Validate(Hand(rooms, [(0, 1), (0, 2), (0, 3), (3, 4), (3, 5)]), WithMarco);
 
@@ -208,7 +208,7 @@ public class FloorValidatorTests
 	[Fact]
 	public void Recusa_Andar_sem_o_Marco_ou_sem_a_Sala_do_Item_que_o_Plano_manda()
 	{
-		var noMarco = FloorValidator.Validate(Hand(GoodRooms.Where(r => r.Item1 != RoomKind.Marco).ToArray(), [(0, 1), (1, 2), (0, 3), (1, 4)]), WithMarco);
+		var noMarco = FloorValidator.Validate(Hand(GoodRooms.Where(r => r.Item1 != RoomTypes.Marco).ToArray(), [(0, 1), (1, 2), (0, 3), (1, 4)]), WithMarco);
 		var noItem = FloorValidator.Validate(Hand(GoodRooms, GoodLinks), new FloorPlan(1, true, true, false));
 
 		Assert.False(noMarco.IsOk);
@@ -282,7 +282,7 @@ public class FallbackFloorTests
 	public void O_provedor_usa_o_Andar_de_reserva_quando_o_gerador_erra_e_nunca_lanca_excecao()
 	{
 		GenerateFloor broken = (_, _, _, _, p, _) =>
-			new Floor(p.Number, [new Room(0, RoomKind.Entrance)], [], 0, 0);
+			new Floor(p.Number, [new Room(0, RoomTypes.Entrance)], [], 0, 0);
 		var provider = new FloorProvider(Rules, Fallback(), broken);
 		var plan = LevelPlan.Create(Rules, 3, "matematica", 1, 1).Floors[0];
 

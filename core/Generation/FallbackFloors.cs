@@ -28,11 +28,11 @@ public sealed class FallbackFloors
 		var templates = new List<Template>();
 		foreach (var f in dto.Floors)
 		{
-			var kinds = (f.Rooms ?? []).Select(r => Enum.TryParse<RoomKind>(r.Kind, ignoreCase: true, out var k) ? (RoomKind?)k : null).ToList();
+			var kinds = (f.Rooms ?? []).Select(r => RoomTypes.Default.Find(r.Kind ?? "")).ToList();
 			if (kinds.Count == 0 || kinds.Contains(null))
 				return Result<FallbackFloors>.Fail("Um Andar de reserva tem uma Sala com função desconhecida ou nenhuma Sala.");
 
-			var rooms = kinds.Select((k, i) => new Room(i, k!.Value, f.Rooms![i].Item)).ToList();
+			var rooms = kinds.Select((k, i) => new Room(i, k!, f.Rooms![i].Item)).ToList();
 			var links = (f.Links ?? []).Where(l => l.Length == 2).Select(l => new Link(l[0], l[1])).ToList();
 			var plan = new FloorPlan(1, f.Item, f.Marco, f.Epic);
 			var template = new Template(f.Item, f.Marco, f.Epic, rooms, links);
@@ -64,9 +64,9 @@ public sealed class FallbackFloors
 // O gerador é injetável para o teste poder provar a troca com um Andar quebrado.
 public delegate Floor GenerateFloor(DungeonRules rules, ulong world, string discipline, int level, FloorPlan plan, int version);
 
-public sealed class FloorProvider(DungeonRules rules, FallbackFloors fallback, GenerateFloor? generate = null)
+public sealed class FloorProvider(DungeonRules rules, FallbackFloors fallback, GenerateFloor? generate = null, RoomTypes? types = null)
 {
-	readonly GenerateFloor generator = generate ?? FloorGenerator.Generate;
+	readonly GenerateFloor generator = generate ?? ((r, w, d, l, p, v) => FloorGenerator.Generate(r, w, d, l, p, v, types));
 
 	public Floor Get(ulong world, string discipline, int level, FloorPlan plan, int version)
 	{

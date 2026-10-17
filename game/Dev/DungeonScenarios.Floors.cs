@@ -21,8 +21,8 @@ static partial class DungeonScenarios
 		var expedition = run.Expedition;
 		d.Expect(expedition.Plan.Discipline == "portugues", "a Expedição é de Português");
 
-		await GoTo(d, run, RoomKind.Combat);
-		d.Expect(expedition.Current.Kind == RoomKind.Combat, "há uma luta no caminho");
+		await GoTo(d, run, RoomTypes.Combat);
+		d.Expect(expedition.Current.Kind == RoomTypes.Combat, "há uma luta no caminho");
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);
 		await d.Tap(Controls.Target);
@@ -35,7 +35,7 @@ static partial class DungeonScenarios
 		PilotPort.WinRoom(run);
 		await d.Wait(0.3);
 		d.Expect(expedition.IsCleared(expedition.CurrentRoom), "vencer a Sala a libera");
-		await GoTo(d, run, RoomKind.Exit);
+		await GoTo(d, run, RoomTypes.Exit);
 		await d.Shot("02-saida");
 	}
 
@@ -55,12 +55,12 @@ static partial class DungeonScenarios
 		d.Expect(rewards.Cosmetics(profile).Count == 0, "o Perfil novo não tem Cosmético");
 		await d.Shot("01-nevoa");
 
-		await GoTo(d, run, RoomKind.Combat);
+		await GoTo(d, run, RoomTypes.Combat);
 		var unvisited = floor.Neighbors(expedition.CurrentRoom).Where(n => !expedition.Visited.Contains(n)).ToList();
 		d.Expect(unvisited.Count == 0 || unvisited.Any(expedition.IsLocked), "a Sala de combate por vencer põe cadeado nas Salas novas ao lado");
 		await d.Shot("02-cadeado");
 
-		var content = floor.Rooms.Where(r => r.Kind is not (RoomKind.Entrance or RoomKind.Exit)).Select(r => r.Id).ToList();
+		var content = floor.Rooms.Where(r => r.Kind.Counts != RoomCounting.None).Select(r => r.Id).ToList();
 		for (var i = 0; i < content.Count; i++)
 		{
 			var id = content[i];
@@ -83,7 +83,7 @@ static partial class DungeonScenarios
 		d.Expect(rewards.Cosmetics(profile).Contains("matematica-1-1"), "completar o Andar deu o Cosmético dele");
 		await d.Shot("04-selo-andar-completo");
 
-		await GoTo(d, run, RoomKind.Exit);
+		await GoTo(d, run, RoomTypes.Exit);
 		var wonBefore = expedition.Cleared.ToList();
 		await Ascend(d, run);
 		d.Expect(expedition.Floor.Number == 2 && expedition.Visited.Count == 1, "o Andar 2 começa pela entrada, em névoa");
@@ -91,7 +91,7 @@ static partial class DungeonScenarios
 		run.Player.PlaceAt(DungeonWorld.StairsSpot + new Vector2(0.3f, 0.3f));
 		await d.Wait(0.3);
 		await d.Tap(Controls.Interact);
-		d.Expect(expedition.Floor.Number == 1 && expedition.Current.Kind == RoomKind.Exit, "a escada para baixo leva à saída do Andar 1");
+		d.Expect(expedition.Floor.Number == 1 && expedition.Current.Kind == RoomTypes.Exit, "a escada para baixo leva à saída do Andar 1");
 		d.Expect(wonBefore.All(expedition.Cleared.Contains), "as Salas vencidas continuam vencidas depois de subir e descer");
 		d.Expect(rewards.Cosmetics(profile).Count == 1, "voltar ao Andar não repete o Cosmético");
 		await d.Shot("06-voltou-ao-andar-1");
@@ -113,7 +113,7 @@ static partial class DungeonScenarios
 		if (run is null) return;
 		var expedition = run.Expedition;
 
-		await GoTo(d, run, RoomKind.Rest);
+		await GoTo(d, run, RoomTypes.Rest);
 		var rest = expedition.CurrentRoom;
 		expedition.Energy.Lose(2);
 		run.Player.PlaceAt(DungeonWorld.FountainSpot + new Vector2(0.5f, 0.5f));
@@ -121,10 +121,10 @@ static partial class DungeonScenarios
 		await d.Tap(Controls.Interact);
 		d.Expect(expedition.Rested(rest), "o Descanso foi usado");
 
-		await GoTo(d, run, r => r.Kind is RoomKind.Combat or RoomKind.Puzzle);
+		await GoTo(d, run, r => r.Kind.Free);
 		PilotPort.WinRoom(run);
 		await d.Wait(0.3);
-		await GoTo(d, run, r => r.Kind is RoomKind.Combat or RoomKind.Puzzle && !expedition.IsCleared(r.Id));
+		await GoTo(d, run, r => r.Kind.Free && !expedition.IsCleared(r.Id));
 		d.Expect(NeedsFight(expedition), "há mais uma luta por vencer");
 		var visited = expedition.Visited.Order().ToList();
 		var cleared = expedition.Cleared.Order().ToList();
@@ -139,20 +139,20 @@ static partial class DungeonScenarios
 
 		var again = await Enter(d);
 		if (again is null) return;
-		d.Expect(again.Expedition.Floor.Number == floor && again.Expedition.Current.Kind == RoomKind.Entrance, "sem Fast travel a criança recomeça na entrada do Andar");
+		d.Expect(again.Expedition.Floor.Number == floor && again.Expedition.Current.Kind == RoomTypes.Entrance, "sem Fast travel a criança recomeça na entrada do Andar");
 		d.Expect(again.Expedition.Visited.Order().SequenceEqual(visited), "as Salas visitadas voltaram");
 		d.Expect(again.Expedition.Cleared.Order().SequenceEqual(cleared), "as Salas vencidas voltaram");
 		d.Expect(!again.Expedition.Rested(rest), "o Descanso volta a valer numa Expedição nova");
 		await d.Shot("01-mapa-explorado");
 
-		await GoTo(d, again, RoomKind.FastTravel);
-		d.Expect(again.Expedition.Current.Kind == RoomKind.FastTravel, "chegou ao Fast travel");
+		await GoTo(d, again, RoomTypes.FastTravel);
+		d.Expect(again.Expedition.Current.Kind == RoomTypes.FastTravel, "chegou ao Fast travel");
 		again.Leave("");
 		await d.Wait(0.5);
 
 		var last = await Enter(d);
 		if (last is null) return;
-		d.Expect(last.Expedition.Current.Kind == RoomKind.FastTravel, "pela porta da torre a criança recomeça no último Fast travel achado");
+		d.Expect(last.Expedition.Current.Kind == RoomTypes.FastTravel, "pela porta da torre a criança recomeça no último Fast travel achado");
 		d.Expect(visited.All(last.Expedition.Visited.Contains), "o mapa explorado continua lá");
 		await d.Shot("02-recomeco-no-fast-travel");
 		last.Leave("");
@@ -175,7 +175,7 @@ static partial class DungeonScenarios
 		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "em exploração não há bolsa de números");
 		await d.Shot("01-exploracao");
 
-		await GoTo(d, run, RoomKind.Combat);
+		await GoTo(d, run, RoomTypes.Combat);
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);
 		await d.Tap(Controls.Target);
@@ -191,14 +191,14 @@ static partial class DungeonScenarios
 
 		for (var floor = 1; floor <= 5; floor++)
 		{
-			await GoTo(d, run, RoomKind.Combat);
+			await GoTo(d, run, RoomTypes.Combat);
 			if (NeedsFight(expedition))
 			{
 				PilotPort.WinRoom(run);
 				await d.Wait(0.3);
 			}
-			await GoTo(d, run, RoomKind.Exit);
-			d.Expect(expedition.Current.Kind == RoomKind.Exit, $"chegou à saída do Andar {floor}");
+			await GoTo(d, run, RoomTypes.Exit);
+			d.Expect(expedition.Current.Kind == RoomTypes.Exit, $"chegou à saída do Andar {floor}");
 			if (floor == 1) await d.Shot("03-andar-1-saida");
 			await Ascend(d, run);
 		}
@@ -237,7 +237,7 @@ static partial class DungeonScenarios
 		d.Expect(run.CoinToast == "Moedas: 0", "ao ir para a Expedição aparece o total de moedas");
 		await d.Shot("02-card-na-dungeon");
 
-		await GoTo(d, run, RoomKind.Combat);
+		await GoTo(d, run, RoomTypes.Combat);
 		d.Expect(!run.Expedition.IsCleared(run.Expedition.CurrentRoom), "chegou a uma luta por vencer");
 		PilotPort.WinRoom(run);
 		await d.Wait(0.3);
@@ -246,7 +246,7 @@ static partial class DungeonScenarios
 		var here = run.Expedition.CurrentRoom;
 		d.Expect(run.RoomSpeech(here).Contains("Você está aqui") && run.RoomSpeech(here).Contains("vencida"), "a voz descreve a Sala atual e diz que está vencida");
 		var fog = run.Expedition.Floor.Rooms.First(r => run.Expedition.SightOf(r.Id) == ArquipelagoDoCeu.Dungeon.Sight.Fog);
-		d.Expect(run.RoomSpeech(fog.Id).Contains("névoa", StringComparison.Ordinal) && !run.RoomSpeech(fog.Id).Contains(FloorMap.NameOf(fog.Kind).ToLowerInvariant(), StringComparison.Ordinal), "a voz não revela o que há sob a névoa");
+		d.Expect(run.RoomSpeech(fog.Id).Contains("névoa", StringComparison.Ordinal) && !run.RoomSpeech(fog.Id).Contains(fog.Kind.Name.ToLowerInvariant(), StringComparison.Ordinal), "a voz não revela o que há sob a névoa");
 		run.Leave("");
 		await d.Wait(0.5);
 		d.Expect(d.HasVisible("De volta ao Lobby") && d.HasVisible("+1"), "ao voltar aparece o total com o +X");
@@ -264,8 +264,8 @@ static partial class DungeonScenarios
 		if (run is null) return;
 		var expedition = run.Expedition;
 
-		await GoTo(d, run, RoomKind.Combat);
-		d.Expect(expedition.Current.Kind == RoomKind.Combat, "há uma luta no caminho");
+		await GoTo(d, run, RoomTypes.Combat);
+		d.Expect(expedition.Current.Kind == RoomTypes.Combat, "há uma luta no caminho");
 
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);

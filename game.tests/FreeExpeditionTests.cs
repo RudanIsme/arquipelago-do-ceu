@@ -62,7 +62,7 @@ public class FreeExpeditionTests
 		for (var floor = 1; floor <= 12; floor++)
 		{
 			Assert.Equal(floor, e.Floor.Number);
-			Assert.DoesNotContain(e.Floor.Rooms, r => r.Kind is RoomKind.Marco or RoomKind.Epic || r.HoldsItem);
+			Assert.DoesNotContain(e.Floor.Rooms, r => r.Kind.OpensWithItem || r.Kind.EndsExpedition || r.HoldsItem);
 			ClimbOneFloor(e);
 		}
 
