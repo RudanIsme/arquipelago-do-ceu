@@ -1,0 +1,29 @@
+{
+  "forms": [
+    { "id": "pequena", "name": "Sala pequena", "parts": [{ "a": 2, "b": 2, "c": 2 }] },
+    { "id": "media", "name": "Sala média", "parts": [{ "a": 3, "b": 3, "c": 3 }] },
+    { "id": "grande", "name": "Sala grande", "parts": [{ "a": 4, "b": 4, "c": 4 }] },
+    { "id": "alongada", "name": "Sala alongada", "parts": [{ "a": 2, "b": 5, "c": 5 }] },
+    {
+      "id": "em-l",
+      "name": "Sala em L",
+      "parts": [{ "a": 1, "b": 4, "c": 4 }, { "a": 4, "b": 1, "c": 4, "q": 3, "r": 2 }]
+    },
+    {
+      "id": "anel",
+      "name": "Sala em anel",
+      "parts": [{ "a": 4, "b": 4, "c": 4 }],
+      "holes": [{ "a": 1, "b": 1, "c": 1 }],
+      "center": [0, 3]
+    },
+    {
+      "id": "desnivel",
+      "name": "Sala com desnível",
+      "parts": [{ "a": 3, "b": 3, "c": 3 }],
+      "heights": [
+        { "a": 2, "b": 2, "c": 2, "height": 0.2 },
+        { "a": 1, "b": 1, "c": 1, "height": 0.4 }
+      ]
+    }
+  ]
+}

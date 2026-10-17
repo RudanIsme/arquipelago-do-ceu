@@ -86,7 +86,7 @@ public class ArquiteturaTests
 		["Data"] = [],
 		["Dungeon"] = ["Combat", "Data", "Generation", "Missions"],
 		["Equipment"] = ["Data", "Saves"],
-		["Generation"] = ["Data", "Rules"],
+		["Generation"] = ["Data", "Rules", "World"],
 		["Missions"] = ["Data"],
 		["Profiles"] = ["Rules", "Saves"],
 		["Rewards"] = ["Data", "Equipment", "Saves"],

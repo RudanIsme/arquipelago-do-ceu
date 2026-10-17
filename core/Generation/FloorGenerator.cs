@@ -7,7 +7,7 @@ public sealed record Room(int Id, RoomType Kind, bool HoldsItem = false);
 public sealed record Link(int A, int B);
 
 // Um Andar: grafo de Salas ligadas entre si. Combate, Puzzle, Marco e épico se vencem para seguir adiante.
-public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<Link> Links, int Entrance, int Exit, bool Deep = false)
+public sealed record Floor(int Number, IReadOnlyList<Room> Rooms, IReadOnlyList<Link> Links, int Entrance, int Exit, bool Deep = false, FloorLayout? Layout = null)
 {
 	public IEnumerable<int> Neighbors(int room) =>
 		Links.Where(l => l.A == room || l.B == room).Select(l => l.A == room ? l.B : l.A);
@@ -21,9 +21,12 @@ public static class FloorGenerator
 	const int DeepSeedBase = 1000;
 	const int Fixed = 3; // entrada, saída e Fast travel; o Descanso entra junto das Salas livres
 
+	public static ulong SeedOf(ulong world, string discipline, int level, FloorPlan plan, int generatorVersion) =>
+		Seed.Mix(world, discipline, level, plan.Deep ? DeepSeedBase + plan.Number : plan.Number, generatorVersion);
+
 	public static Floor Generate(DungeonRules rules, ulong world, string discipline, int level, FloorPlan plan, int generatorVersion, RoomTypes? types = null)
 	{
-		var rng = new Pcg32(Seed.Mix(world, discipline, level, plan.Deep ? DeepSeedBase + plan.Number : plan.Number, generatorVersion));
+		var rng = new Pcg32(SeedOf(world, discipline, level, plan, generatorVersion));
 		var total = rules.RoomsMin + rng.NextInt(rules.RoomsMax - rules.RoomsMin + 1);
 
 		var loose = FreeRooms(plan, total, rng, types ?? RoomTypes.Default);
