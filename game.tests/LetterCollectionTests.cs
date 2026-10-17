@@ -1,6 +1,7 @@
 using ArquipelagoDoCeu.Combat;
 using Xunit;
 namespace ArquipelagoDoCeu.Tests;
+
 public class LetterCollectionTests
 {
 	[Fact] public void OrderedLettersComplete() { var c = new LetterCollection(); Assert.True(c.Place(1)); Assert.True(c.Place(2)); Assert.True(c.Place(0)); Assert.True(c.Complete); Assert.False(c.Place(3)); }

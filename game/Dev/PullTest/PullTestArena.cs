@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using ArquipelagoDoCeu.Combat;
 
 namespace ArquipelagoDoCeu;
+
 public partial class PullTestArena : Node3D
 {
 	PullTestStage lobby = null!; Node3D hero = null!; Skeleton3D skeleton = null!; AnimationPlayer anim = null!;

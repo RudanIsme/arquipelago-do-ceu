@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 namespace ArquipelagoDoCeu.Combat;
+
 public sealed class LetterCollection
 {
 	readonly List<int> chosen = new();

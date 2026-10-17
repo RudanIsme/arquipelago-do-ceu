@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Godot;
 namespace ArquipelagoDoCeu;
+
 public partial class GuideIdle : Node
 {
 	readonly Node3D model;

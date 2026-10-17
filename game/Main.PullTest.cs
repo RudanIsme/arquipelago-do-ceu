@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 namespace ArquipelagoDoCeu;
+
 public partial class Main
 {
 	public NamePanel CreatePullQaPanel(NameBattle b) { var p = new NamePanel(b, rules.Combat.Tracing, voice); uiRoot.AddChild(p); return p; }

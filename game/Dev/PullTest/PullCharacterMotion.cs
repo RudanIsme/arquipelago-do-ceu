@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 namespace ArquipelagoDoCeu;
+
 public sealed class PullCharacterMotion
 {
 	readonly Skeleton3D rig; readonly AnimationPlayer anim; readonly Node3D model;
