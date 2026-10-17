@@ -14,6 +14,9 @@ public partial class EquipmentWorkshop : Control
  EquipmentPreview? preview; Label? errorLabel; string saveError="";
  PanelContainer? shell; Control? body; Label? summary; string category="armor";
  public EquipmentWorkshop() : this("minimal", new EquipmentLoadout()) {}
+ // O texto dos bônus vem de quem conhece o catálogo em dados; sem ele, o do experimento.
+ public Func<EquipmentLoadout,string>? Summarize { get; set; }
+ string Describe(EquipmentLoadout value) => (Summarize ?? EquipmentCatalog.Summary)(value);
  public void SetVariant(string value) {variant=Array.IndexOf(JourneyStyle.Ids,value)>=0?value:"minimal";if(IsInsideTree())Build();}
  public EquipmentWorkshop(string variant,EquipmentLoadout current, bool comparisonOnly = false)
  { this.comparisonOnly=comparisonOnly;this.variant=variant;draft=EquipmentCatalog.Normalize(current);Name="EquipmentWorkshop"; MouseFilter=MouseFilterEnum.Stop;SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);Resized+=()=>{settleFrames=12;Arrange();}; }
@@ -58,7 +61,7 @@ public partial class EquipmentWorkshop : Control
   {var list=new VBoxContainer {SizeFlagsHorizontal=SizeFlags.ExpandFill};list.AddThemeConstantOverride("separation",6);if(variant=="adventure"||category=="armor")AddArmor(list);if(variant=="adventure"||category=="helmet")AddHelmet(list);if(variant=="adventure"||category=="colors")AddColors(list);body=list;}
   if(compactLayout){contents.AddChild(body);scroll.AddChild(contents);}else scroll.AddChild(body);stack.AddChild(scroll);
   errorLabel=JourneyStyle.Text(variant,saveError,16);errorLabel.Name="EquipmentSaveError";errorLabel.Visible=!string.IsNullOrWhiteSpace(saveError);stack.AddChild(errorLabel);
-  summary=JourneyStyle.Text(variant,(comparisonOnly ? "Bônus abaixo desativados no jogo.\n" : "")+EquipmentCatalog.Summary(draft),16);summary.Name="BonusSummary";stack.AddChild(summary);
+  summary=JourneyStyle.Text(variant,(comparisonOnly ? "Bônus abaixo desativados no jogo.\n" : "")+Describe(draft),16);summary.Name="BonusSummary";stack.AddChild(summary);
   var actions=new HBoxContainer(); var cancel=JourneyStyle.Button(variant,"Cancelar",()=>Cancelled?.Invoke(),"CancelEquipment");cancel.SizeFlagsHorizontal=SizeFlags.ExpandFill;actions.AddChild(cancel);
   var apply=JourneyStyle.Button(variant,comparisonOnly ? "Guardar comparação" : "Aplicar e salvar",()=>{ShowError("");Applied?.Invoke(EquipmentCatalog.Normalize(draft));},"ApplyEquipment");apply.SizeFlagsHorizontal=SizeFlags.ExpandFill;actions.AddChild(apply);stack.AddChild(actions);
   shell=JourneyStyle.Panel(variant,stack);shell.Name="WorkshopPanel";AddChild(shell);Arrange();
@@ -76,7 +79,7 @@ public partial class EquipmentWorkshop : Control
  void ColorRow(VBoxContainer list,string label,string color,Func<string,EquipmentLoadout> mutate,string name)
  {
   list.AddChild(JourneyStyle.Text(variant,label,18));var row=new HBoxContainer();
-  var picker=new ColorPickerButton {Color=Color.FromHtml(color),EditAlpha=false,CustomMinimumSize=new Vector2(64,44),SizeFlagsHorizontal=SizeFlags.ExpandFill,Name=name,TooltipText="Escolher cor de "+label};picker.ColorChanged+=c=>{draft=EquipmentCatalog.Normalize(mutate("#"+c.ToHtml(false)));if(summary!=null)summary.Text=(comparisonOnly ? "Bônus abaixo desativados no jogo.\n" : "")+EquipmentCatalog.Summary(draft);preview?.Apply(draft);PreviewChanged?.Invoke(draft);};row.AddChild(picker);list.AddChild(row);
+  var picker=new ColorPickerButton {Color=Color.FromHtml(color),EditAlpha=false,CustomMinimumSize=new Vector2(64,44),SizeFlagsHorizontal=SizeFlags.ExpandFill,Name=name,TooltipText="Escolher cor de "+label};picker.ColorChanged+=c=>{draft=EquipmentCatalog.Normalize(mutate("#"+c.ToHtml(false)));if(summary!=null)summary.Text=(comparisonOnly ? "Bônus abaixo desativados no jogo.\n" : "")+Describe(draft);preview?.Apply(draft);PreviewChanged?.Invoke(draft);};row.AddChild(picker);list.AddChild(row);
  }
  void Change(EquipmentLoadout value) {draft=EquipmentCatalog.Normalize(value);preview?.Apply(draft);PreviewChanged?.Invoke(draft);Build();}
  void Arrange()
@@ -92,5 +95,5 @@ public partial class EquipmentWorkshop : Control
  public void ShowError(string message) {saveError=message;if(errorLabel!=null){errorLabel.Text=message;errorLabel.Visible=!string.IsNullOrWhiteSpace(message);}settleFrames=12;}
  public override void _UnhandledKeyInput(InputEvent @event)
  {if(@event is InputEventKey k && k.Pressed&&!k.Echo&&k.Keycode==Key.Escape){Cancelled?.Invoke();GetViewport().SetInputAsHandled();}}
- public Godot.Collections.Dictionary LayoutDiagnostics()=>new(){{"variant",variant},{"draft",EquipmentCatalog.Summary(draft)},{"panel",shell==null?new Rect2():new Rect2(shell.Position,shell.Size)}};
+ public Godot.Collections.Dictionary LayoutDiagnostics()=>new(){{"variant",variant},{"draft",Describe(draft)},{"panel",shell==null?new Rect2():new Rect2(shell.Position,shell.Size)}};
 }

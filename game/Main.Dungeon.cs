@@ -21,6 +21,7 @@ public partial class Main
 	CosmeticCatalog? cosmetics;
 	ConceptNames? concepts;
 	DungeonRun? dungeon;
+	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
 
 	static string TowerName(string discipline) => DungeonRun.TowerName(discipline);
@@ -56,6 +57,7 @@ public partial class Main
 	public string DevProfileId => current?.Id ?? "";
 	public int DevLevel => UnlockedLevel();
 	public MasterChallenge DevMaster => master;
+	public ArquipelagoDoCeu.Equipment.GearService DevGear => gear;
 
 	void DropTarget()
 	{
@@ -97,6 +99,7 @@ public partial class Main
 
 		training.End();
 		var tower = TowerName(discipline);
+		ChooseRole(discipline);
 		var towerLevel = level ?? UnlockedLevel();
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
@@ -106,8 +109,9 @@ public partial class Main
 			atFastTravel = true;
 		}
 		var floor = startFloor > 0 ? startFloor : progress.HighestFloor(current.Id, discipline, towerLevel);
+		coinsAtStart = (current.Id, progress.Coins(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), equipmentBonuses.ExtraEnergy, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -133,7 +137,13 @@ public partial class Main
 		player.Visible = true;
 		UpdatePlayerControl();
 		interactTarget = null;
+		RefreshCard();
 		if (reason != "") Notify(reason);
+		// O que a criança ganhou na Expedição aparece ao voltar, com o número subindo até o saldo novo.
+		// Só vale a Expedição que acabou e do mesmo Perfil: nunca mostra moedas que a criança não ganhou ali.
+		if (coinsAtStart is { } start && current is not null && start.Profile == current.Id && progress.Coins(current.Id) is var coinsNow && coinsNow > start.Coins)
+			ShowOverlay(new CoinsArrivalScreen(start.Coins, coinsNow, player.ReduceMotion, text => voice.Say(text, interrupt: true)));
+		coinsAtStart = null;
 		GD.Print("De volta ao Lobby.");
 	}
 

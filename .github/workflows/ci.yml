@@ -124,7 +124,7 @@ jobs:
           }
       - name: Teste de ponta a ponta dos Andares (escada nos dois sentidos, Andar completo e Cosmético, mapa explorado depois de zerar a Energia)
         run: |
-          foreach ($etapa in "torre-andares", "torre-explorado", "torre-livre") {
+          foreach ($etapa in "torre-andares", "torre-explorado", "torre-livre", "torre-equipamento") {
             Write-Host "== $etapa"
             $save = Join-Path $PWD "e2e-$etapa-save.json"
             Remove-Item $save, "$save.snapshot" -ErrorAction SilentlyContinue

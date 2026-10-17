@@ -1,0 +1,81 @@
+{
+  "limits": {
+    "energy": 2,
+    "speed": 0.12,
+    "reach": 0.5
+  },
+  "items": [
+    {
+      "id": "open",
+      "name": "Elmo aberto",
+      "description": "Proteção: +1 de Energia máxima, até +2 no conjunto.",
+      "slot": "helmet",
+      "attribute": "energy",
+      "value": 1,
+      "minMastery": 1
+    },
+    {
+      "id": "crystal",
+      "name": "Diadema de cristal",
+      "description": "Alcance: +0,15 unidade para interagir.",
+      "slot": "helmet",
+      "attribute": "reach",
+      "value": 0.15,
+      "minMastery": 2
+    },
+    {
+      "id": "scout",
+      "name": "Explorador",
+      "description": "Passos leves: +12% de velocidade.",
+      "slot": "armor",
+      "attribute": "speed",
+      "value": 0.12,
+      "minMastery": 1
+    },
+    {
+      "id": "scholar",
+      "name": "Estudioso",
+      "description": "Alcance: +0,35 unidade para interagir.",
+      "slot": "armor",
+      "attribute": "reach",
+      "value": 0.35,
+      "minMastery": 2
+    },
+    {
+      "id": "guardian",
+      "name": "Guardião",
+      "description": "Proteção: +2 de Energia máxima. Equipar não recupera Energia.",
+      "slot": "armor",
+      "attribute": "energy",
+      "value": 2,
+      "minMastery": 3
+    },
+    {
+      "id": "wings",
+      "name": "Asinhas de papel",
+      "description": "Leveza: +4% de velocidade.",
+      "slot": "accessory",
+      "attribute": "speed",
+      "value": 0.04,
+      "minMastery": 1
+    },
+    {
+      "id": "lantern",
+      "name": "Lanterninha",
+      "description": "Alcance: +0,1 unidade para interagir.",
+      "slot": "accessory",
+      "attribute": "reach",
+      "value": 0.1,
+      "minMastery": 1
+    },
+    {
+      "id": "amulet",
+      "name": "Amuleto da calma",
+      "description": "Proteção: +1 de Energia máxima.",
+      "slot": "accessory",
+      "attribute": "energy",
+      "value": 1,
+      "minMastery": 2
+    }
+  ]
+}

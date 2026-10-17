@@ -204,11 +204,19 @@ public partial class TrainingArea : Node
 		else OpenPanel();
 	}
 
+	// O treino é de um Papel; o equipamento dele é o que vale na luta.
+	public event Action<string>? RoleChosen;
+
+	// A Energia extra do equipamento do Papel escolhido, antes de ele valer para o resto do jogo.
+	public Func<string, int>? EnergyBonusFor { get; set; }
+
 	string? TryStart(TrainingSetup setup)
 	{
-		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + extraEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
+		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
+		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + bonus, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!started.IsOk) return started.Error;
 
+		RoleChosen?.Invoke(setup.Discipline);
 		session = started.Value;
 		bubble.Reset();
 		energyView = new EnergyView();

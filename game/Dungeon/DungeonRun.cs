@@ -28,7 +28,10 @@ public sealed record DungeonContext(
 	ProgressService Progress,
 	FallbackFloors Fallback,
 	CosmeticCatalog Catalog,
+	string Nickname,
+	string RoleName,
 	int ExtraEnergy,
+	float ExtraReach,
 	Action<Player> ConfigurePlayer,
 	int StartFloor = 1,
 	bool AtFastTravel = false,
@@ -42,6 +45,8 @@ public sealed record DungeonContext(
 public partial class DungeonRun : Node
 {
 	const float MessageSeconds = 4f;
+	// A Energia fica logo abaixo do card do avatar.
+	const int EnergyTop = 104;
 	const float EndSeconds = 4f;
 
 	readonly DungeonContext ctx;
@@ -58,10 +63,11 @@ public partial class DungeonRun : Node
 	readonly Label header = new();
 	readonly Label message = new() { HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly VBoxContainer mapBox = new();
-	readonly Label mapLegend = new();
+	AvatarCard card = null!;
+	readonly Label coinToast = new() { Name = "AvisoDeMoedas", MouseFilter = Control.MouseFilterEnum.Ignore, HorizontalAlignment = HorizontalAlignment.Center };
+	int toastEpoch;
 	readonly Label floorLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly ProgressBar floorBar = new() { ShowPercentage = false, CustomMinimumSize = new Godot.Vector2(0, 14) };
-	readonly Label itemsLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly EnergyView energyView = new("Voltar ao Lobby");
 	Button interactButton = null!;
 	FloorMap? map;
@@ -124,6 +130,9 @@ public partial class DungeonRun : Node
 
 	public MissionHistory History => history;
 
+	// O último aviso de moedas (fica guardado mesmo depois de sumir da tela), para o piloto conferir.
+	public string CoinToast => coinToast.Text;
+
 	public ProgressService Progress => ctx.Progress;
 
 	public string ProfileId => ctx.ProfileId;
@@ -153,16 +162,21 @@ public partial class DungeonRun : Node
 			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say);
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
-		combat.EnergyTop = 12;
+		combat.EnergyTop = EnergyTop;
 		combat.ChallengeSolved += OnSolved;
 		AddChild(combat);
 
 		BuildHud();
 		ctx.UiRoot.AddChild(hud);
+		// O card (avatar, apelido e Maestria) fica no canto; a Energia, em raios, logo abaixo.
+		card = new AvatarCard(text => ctx.Voice.Say(text, interrupt: true), canEdit: false);
+		hud.AddChild(card);
+		BuildCoinToast();
+		ShowCoinToast($"Moedas: {ctx.Progress.Coins(ctx.ProfileId)}");
 		ctx.UiRoot.AddChild(energyView);
 		energyView.LeaveRequested += () => Leave("");
 		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
-		energyView.OffsetTop = 12;
+		energyView.OffsetTop = EnergyTop;
 
 		player.Enabled = enabled;
 		if (ctx.Shortcut && !BeginShortcut()) return;
@@ -190,18 +204,10 @@ public partial class DungeonRun : Node
 		panel.OffsetRight = -12;
 		panel.OffsetTop = 12;
 		mapBox.AddThemeConstantOverride("separation", 4);
-		mapLegend.Text = FloorMap.Legend + "\n★ Item de troca";
-		mapLegend.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-		mapLegend.AddThemeFontSizeOverride("font_size", 13);
-		mapLegend.AddThemeColorOverride("font_color", UiKit.TextColor);
 		floorLabel.AddThemeFontSizeOverride("font_size", 15);
 		floorLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
 		mapBox.AddChild(floorBar);
 		mapBox.AddChild(floorLabel);
-		mapBox.AddChild(mapLegend);
-		itemsLabel.AddThemeFontSizeOverride("font_size", 15);
-		itemsLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
-		mapBox.AddChild(itemsLabel);
 		mapBox.AddChild(UiKit.BigButton("Ouvir o mapa", () => Say(MapSpeech()), 200));
 		panel.AddChild(mapBox);
 		hud.AddChild(panel);
@@ -413,6 +419,7 @@ public partial class DungeonRun : Node
 			GD.PushWarning(paid.Error!);
 			return null;
 		}
+		ShowCoinToast($"+{(amount == 1 ? "1 moeda" : $"{amount} moedas")}");
 		return $"Você ganhou {(amount == 1 ? "1 moeda" : $"{amount} moedas")}.";
 	}
 
@@ -467,7 +474,7 @@ public partial class DungeonRun : Node
 		world.Creature.SetCaptionContext(UiKit.Compact, enabled && combat.InTargetRange());
 		combat.CheckRange();
 		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
-		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, Interactables(), ctx.Rules.Lobby.InteractionReach) : null;
+		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, Interactables(), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
 		if (near?.Id == target) return;
 		target = near?.Id;
 		interactButton.Visible = target is not null;
@@ -591,6 +598,19 @@ public partial class DungeonRun : Node
 		return $"{progress.Resolved} de {progress.Total} Salas resolvidas.";
 	}
 
+	// O que a voz diz de uma Sala do mapa: o que é (se já visitada), se está vencida, se tem cadeado. Sala sob névoa não revela o tipo.
+	public string RoomSpeech(int room)
+	{
+		var kind = expedition.Floor.Rooms[room];
+		var where = expedition.CurrentRoom == room ? " Você está aqui." : "";
+		return expedition.SightOf(room) switch
+		{
+			Sight.Seen => $"Sala de {FloorMap.NameOf(kind.Kind).ToLowerInvariant()}{(expedition.IsCleared(room) ? ", vencida" : "")}.{where}",
+			Sight.Fog => expedition.IsLocked(room) ? "Sala nova sob névoa, com cadeado: falta vencer uma Sala." : "Sala nova sob névoa.",
+			_ => "Ainda não se vê nada aqui.",
+		};
+	}
+
 	// O mapa dito em voz alta, para quem não lê a névoa e o cadeado.
 	string MapSpeech()
 	{
@@ -598,7 +618,8 @@ public partial class DungeonRun : Node
 		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
 		var locked = rooms.Count(expedition.IsLocked);
 		var done = IsFloorDone() ? " Este Andar está completo." : "";
-		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
+		var item = ctx.Free ? "" : $" Item de troca da {TowerName(Other)}: {(HasTradeItem() ? "você tem" : "ainda não")}.";
+		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
 	}
 
 	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number)));
@@ -618,8 +639,9 @@ public partial class DungeonRun : Node
 	{
 		map?.QueueFree();
 		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 250)) { Source = expedition };
+		map.RoomPointed += room => Say(RoomSpeech(room));
 		mapBox.AddChild(map);
-		mapBox.MoveChild(map, 3);
+		mapBox.MoveChild(map, 0);
 	}
 
 	string OfTotal() => ctx.Free ? "" : $" de {expedition.Plan.Floors.Count}";
@@ -638,9 +660,7 @@ public partial class DungeonRun : Node
 	void RefreshHud()
 	{
 		header.Text = $"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{OfTotal()}\n{Objective()}";
-		itemsLabel.Visible = !ctx.Free;
-		itemsLabel.Text = "Itens de troca\n" + string.Join("\n", new[] { TrainingSetup.Mathematics, TrainingSetup.Portuguese }
-			.Select(d => $"{TowerName(d)}: {(ctx.Progress.HasItem(ctx.ProfileId, d, ctx.Level) ? "★ tenho" : "ainda não")}"));
+		card.Set(ctx.Nickname, ctx.RoleName, ctx.Progress.Mastery(ctx.ProfileId, ctx.Discipline));
 		var progress = expedition.ProgressOf(expedition.Floor.Number);
 		var complete = IsFloorDone();
 		floorBar.MaxValue = progress.Total;
@@ -651,6 +671,31 @@ public partial class DungeonRun : Node
 		map.Cleared = new HashSet<int>(expedition.Cleared);
 		map.Complete = complete;
 		map.Refresh();
+	}
+
+	// Aviso curto das moedas ("+3 moedas"): some sozinho e nunca bloqueia o jogo nem o combate.
+	void BuildCoinToast()
+	{
+		coinToast.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
+		coinToast.OffsetLeft = -150;
+		coinToast.OffsetRight = 150;
+		coinToast.OffsetTop = 96;
+		coinToast.Visible = false;
+		coinToast.AddThemeFontSizeOverride("font_size", 26);
+		coinToast.AddThemeColorOverride("font_color", Color.FromHtml("#FFD54F"));
+		UiKit.Outline(coinToast);
+		hud.AddChild(coinToast);
+	}
+
+	void ShowCoinToast(string text)
+	{
+		coinToast.Text = text;
+		coinToast.Visible = true;
+		var mine = ++toastEpoch;
+		GetTree().CreateTimer(4f, true, false, true).Timeout += () =>
+		{
+			if (mine == toastEpoch && IsInstanceValid(coinToast)) coinToast.Visible = false;
+		};
 	}
 
 	// Texto na tela e na voz; some sozinho, e um recado novo nunca é apagado pelo temporizador de um antigo.

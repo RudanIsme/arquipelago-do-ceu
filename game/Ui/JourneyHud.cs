@@ -5,7 +5,10 @@ namespace ArquipelagoDoCeu;
 public partial class JourneyHud : Control
 {
  public event Action<string>? VariantRequested;
- public event Action? EquipmentRequested, RestoreBaseRequested, ProfilesRequested, SettingsRequested, InteractRequested;
+ public event Action? EquipmentRequested, RestoreBaseRequested, ProfilesRequested, SettingsRequested, InteractRequested, EditRequested;
+ public Action<string> Speak { get; set; } = _ => { };
+ string role="", cardNickname=""; int mastery;
+ AvatarCard? card;
  string variant="book", nickname="Viajante", bonus="", notice="Explore a ilha e converse com o Guia.";
  string? interactionText;
  Control? selector, identity, navigation, context;
@@ -20,8 +23,7 @@ public partial class JourneyHud : Control
   var selection=new HBoxContainer(); selection.AddThemeConstantOverride("separation",4);
   for(int i=0;i<4;i++) { var id=JourneyStyle.Ids[i]; if(!comparisonUi && id!="book")continue; var b=JourneyStyle.Button(variant,(id==variant?"• ":"")+JourneyStyle.Names[i],()=>{comparisonUi=false;VariantRequested?.Invoke(id);},"Variant_"+id); b.SizeFlagsHorizontal=SizeFlags.ExpandFill; selection.AddChild(b); }
   if(comparisonUi) selection.AddChild(JourneyStyle.Button(variant,"Base",()=>RestoreBaseRequested?.Invoke(),"RestoreBase")); else selection.AddChild(JourneyStyle.Button(variant,"Comparar UIs",()=>{comparisonUi=true;Build();},"CompareInterfaces")); selector=selection; AddChild(selector);
-  var title=new VBoxContainer(); title.AddChild(JourneyStyle.Text(variant,variant=="book"?"Diário de "+nickname:variant=="crystal"?"◇ "+nickname:nickname,20));
-  var subtitle=JourneyStyle.Text(variant,variant switch {"book"=>"Capítulo I · A ilha das descobertas","adventure"=>"ACAMPAMENTO · ARQUIPÉLAGO","crystal"=>"NÚCLEO DA ILHA",_=>"Arquipélago do Céu"},16); title.AddChild(subtitle); identity=JourneyStyle.Panel(variant,title); AddChild(identity);
+  card=new AvatarCard(text=>Speak(text),canEdit:true); card.SetAnchorsPreset(LayoutPreset.TopLeft); card.EditRequested+=()=>EditRequested?.Invoke(); card.Set(cardNickname==""?nickname:cardNickname,role,mastery); identity=card; AddChild(identity);
   BoxContainer nav=(variant=="adventure"||variant=="book")?new VBoxContainer():new HBoxContainer(); nav.AddThemeConstantOverride("separation",4);
   nav.AddChild(JourneyStyle.Button(variant,"Comparar",()=>EquipmentRequested?.Invoke(),"Equipment"));
   nav.AddChild(JourneyStyle.Button(variant,"Perfil",()=>ProfilesRequested?.Invoke(),"Profiles"));
@@ -37,7 +39,7 @@ public partial class JourneyHud : Control
   float w=Size.X,h=Size.Y; if(w<=0||h<=0)return; const float m=12;
   JourneyStyle.Place(selector,Math.Max(m,w-492),m,Math.Min(480,w-24),44);
   float infoY=w<1100?64:12;
-  JourneyStyle.Place(identity,m,infoY,Math.Min(325,w-24),76);
+  JourneyStyle.Place(identity,m,infoY,Math.Min(325,w-24),Math.Max(84,identity.GetCombinedMinimumSize().Y));
   if(variant=="adventure") { JourneyStyle.Place(navigation,m,infoY+84,106,192); JourneyStyle.Place(context,130,h-112,Math.Min(410,w-272),100); }
   else if(variant=="book") { JourneyStyle.Place(navigation,w-130,h-266,118,192); JourneyStyle.Place(context,m,h-124,Math.Min(420,w-164),104); }
   else if(variant=="crystal") { JourneyStyle.Place(navigation,(w-370)/2,h-58,370,44); JourneyStyle.Place(context,(w-390)/2,h-170,390,104); }
@@ -46,6 +48,9 @@ public partial class JourneyHud : Control
  public void SetInteraction(string? text) { interactionText=text; if(interact==null)return; interact.Visible=!string.IsNullOrWhiteSpace(text);interact.Text=text??""; UpdateContext(); }
  public void SetNotice(string text) { notice=text;if(noticeLabel!=null)noticeLabel.Text=text; UpdateContext(); }
  void UpdateContext() {if(context!=null)context.Visible=!string.IsNullOrWhiteSpace(notice)||!string.IsNullOrWhiteSpace(interactionText);}
+ // O card mostra o Papel de agora e a Maestria dele.
+ public void SetCard(string nickname,string roleName,int masteryValue) { cardNickname=nickname; role=roleName; mastery=masteryValue; card?.Set(nickname,roleName,masteryValue); }
+ public AvatarCard? Card => card;
  public void SetPlayState(bool enabled) { Visible=enabled; }
  public Godot.Collections.Dictionary LayoutDiagnostics() { var result=new Godot.Collections.Dictionary(); foreach(Node n in GetChildren()) if(n is Control c)result[n.Name]=new Rect2(c.Position,c.Size); return result; }
 }
