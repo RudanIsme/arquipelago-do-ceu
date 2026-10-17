@@ -11,6 +11,9 @@ public sealed record YearBag(int Year, IReadOnlyList<int> BagNumbers, IReadOnlyL
 // `BagNumbers` e `Operators` são os do 1º ano; `Years` traz os dos anos seguintes.
 public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing, int MistakesForHint, float PrankSeconds, EnergyRules Energy, BubbleRules Bubble, IReadOnlyList<YearBag> Years)
 {
+	// A Energia máxima de uma batalha quando ninguém de fora (equipamento, Expedição) diz outra; vem de `maxEnergy` nos dados.
+	public int DefaultMaxEnergy { get; init; } = 5;
+
 	// As regras do ano pedido: o último ano definido que não passa dele (o 3º usa os do 2º até existir multiplicação).
 	public CombatRules ForYear(int year)
 	{

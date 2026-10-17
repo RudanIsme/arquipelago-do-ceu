@@ -12,7 +12,7 @@ public sealed record NameVerdict(IReadOnlyList<bool> Correct, int NewStrikes, bo
 
 // A luta do Escriba: a criatura esqueceu o nome. A criança monta as sílabas da bolsa; cada sílaba certa é um
 // golpe e o nome completo liberta a criatura. O nome vem de uma Missão de formar palavras; o jogo só o confere.
-public sealed class NameBattle
+public sealed class NameBattle : IBattle
 {
 	public static readonly IReadOnlyList<string> Mechanics = ["formar_palavras", "ordenar_frases", "completar_frase"];
 

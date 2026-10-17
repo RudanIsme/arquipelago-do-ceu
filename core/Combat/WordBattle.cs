@@ -7,7 +7,7 @@ public enum WordResult { Incomplete, Freed, Mistaken }
 
 // A luta do Escriba do 2º ano: a criança escreve a palavra inteira; o jogo só a confere (acento e cedilha contam).
 // Escrever o que falta não é erro; só conferir uma palavra completa e errada é.
-public sealed class WordBattle
+public sealed class WordBattle : IBattle
 {
 	const int DefaultDistractors = 4;
 	const string Alphabet = "abcdefghijklmnopqrstuvwxyz";

@@ -9,7 +9,7 @@ public sealed record AttackResult(ExpressionResult Expression, HitOutcome Outcom
 
 // A luta com o Boneco de treino. O escudo é o alvo de uma Missão de compor número; a mão e o cajado
 // são os mesmos das Dungeons. Nada aqui toca em save: o treino não conta para o progresso.
-public sealed class TrainingBattle
+public sealed class TrainingBattle : IBattle
 {
 	readonly IReadOnlyList<Mission> missions;
 	readonly Pcg32 rng;
@@ -44,6 +44,10 @@ public sealed class TrainingBattle
 			? Result<TrainingBattle>.Fail("Não há Missão de compor número para o Boneco.")
 			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng, history));
 	}
+
+	public void Reveal() => Bag.Reveal();
+
+	public Prank PlayPrank() => Bag.PlayPrank();
 
 	// Novo escudo, de outra Missão quando houver mais de uma.
 	public void Next()

@@ -142,6 +142,9 @@ public partial class TrainingArea : Node
 
 	public event Action? FightAborted;
 
+	// Toda batalha, do Treino ou da Dungeon, termina com um resultado. O Treino o emite mas nada o conta.
+	public event Action<BattleResult>? BattleEnded;
+
 	// A Missão que acabou de ser vencida numa luta de Sala, antes de a Sala valer como vencida. O treino não dispara isto.
 	public event Action<Mission>? ChallengeSolved;
 
@@ -302,6 +305,7 @@ public partial class TrainingArea : Node
 	// Num treino vem logo o próximo Desafio; numa Sala, vencer o Desafio vence a Sala.
 	internal void Won()
 	{
+		if (session is not null) BattleEnded?.Invoke(session.Conclude(calmed: true));
 		if (fightWon is null) { NextChallengeSoon(); return; }
 		reacting = true;
 		bubbles.Clear();
@@ -355,6 +359,7 @@ public partial class TrainingArea : Node
 	// Energia zerada, "Sair do treino" ou troca de Perfil: a criança só sai da Área de treino, sem perder nada.
 	void Finish(string message)
 	{
+		if (session is { IsOver: true }) BattleEnded?.Invoke(session.Conclude(calmed: false));
 		if (fightLost is not null)
 		{
 			var lost = fightLost;

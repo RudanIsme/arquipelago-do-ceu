@@ -26,28 +26,32 @@ public sealed class CombatSession
 	public CombatRules Rules => rules;
 	int hintIndex;
 
-	CombatSession(CombatRules rules, Energy energy, TrainingSetup setup, TrainingBattle? math, NameBattle? name, WordBattle? word)
+	CombatSession(CombatRules rules, Energy energy, TrainingSetup setup, IBattle battle)
 	{
 		this.rules = rules;
 		Energy = energy;
 		Setup = setup;
-		Math = math;
-		Name = name;
-		Word = word;
+		Battle = battle;
 	}
 
 	public Energy Energy { get; }
 
 	public TrainingSetup Setup { get; }
 
-	// Só um dos dois existe, conforme o Papel escolhido.
-	public TrainingBattle? Math { get; }
+	// A luta da Mecânica que reconheceu os Desafios; os atalhos abaixo servem a quem desenha cada Mecânica.
+	public IBattle Battle { get; }
 
-	public NameBattle? Name { get; }
+	public TrainingBattle? Math => Battle as TrainingBattle;
 
-	public WordBattle? Word { get; }
+	public NameBattle? Name => Battle as NameBattle;
 
-	public Mission Mission => Math?.Mission ?? Name?.Mission ?? Word!.Mission;
+	public WordBattle? Word => Battle as WordBattle;
+
+	public Mission Mission => Battle.Mission;
+
+	// Os acertos e erros do Desafio de agora, para o resultado da batalha.
+	int hits;
+	int mistakes;
 
 	public int MistakeStreak { get; private set; }
 
@@ -59,10 +63,13 @@ public sealed class CombatSession
 	public static Result<CombatSession> Start(CombatRules baseRules, int maxEnergy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng) =>
 		Start(baseRules, new Energy(maxEnergy), unlockedLevel, setup, available, rng);
 
+	// Sem Energia de fora, a máxima é a dos dados.
+	public static Result<CombatSession> Start(CombatRules baseRules, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng) =>
+		Start(baseRules, new Energy(baseRules.DefaultMaxEnergy), unlockedLevel, setup, available, rng);
 
 	// Com `history` (a Expedição livre) a luta evita os problemas que já apareceram.
 	public static Result<CombatSession> Start(CombatRules baseRules, Energy energy, int unlockedLevel, TrainingSetup setup, IEnumerable<Mission> available, Pcg32 rng,
-		MissionHistory? history = null)
+		MissionHistory? history = null, BattleMechanics? mechanics = null)
 	{
 		var rules = baseRules.ForYear(setup.Year);
 		if (setup.Year < 1 || setup.Year > unlockedLevel)
@@ -74,28 +81,13 @@ public sealed class CombatSession
 		if (pool.Count == 0)
 			return Result<CombatSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
 
-		// A luta vem da Mecânica das Missões. Escrever a palavra só serve se não houver Missão de nome, sílabas ou frase.
-		var hasName = pool.Any(m => NameBattle.Mechanics.Contains(m.Mechanic));
-		if (!hasName && pool.Any(m => m.Mechanic == "escrever_palavra"))
-		{
-			var word = WordBattle.Start(pool, rng, history);
-			return word.IsOk
-				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, null, word.Value))
-				: Result<CombatSession>.Fail(word.Error!);
-		}
+		var mechanic = (mechanics ?? BattleMechanics.Default).For(pool);
+		if (mechanic is null) return Result<CombatSession>.Fail("Ainda não há Desafios para essa dificuldade. Escolha outra.");
 
-		if (hasName)
-		{
-			var name = NameBattle.Start(pool, rng, history);
-			return name.IsOk
-				? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, null, name.Value, null))
-				: Result<CombatSession>.Fail(name.Error!);
-		}
-
-		var math = TrainingBattle.Start(rules, pool, rng, history);
-		return math.IsOk
-			? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, math.Value, null, null))
-			: Result<CombatSession>.Fail(math.Error!);
+		var battle = mechanic.Start(rules, pool, rng, history);
+		return battle.IsOk
+			? Result<CombatSession>.Ok(new CombatSession(rules, energy, setup, battle.Value!))
+			: Result<CombatSession>.Fail(battle.Error!);
 	}
 
 	// Acerto recupera Energia; golpe perfeito recupera mais.
@@ -103,6 +95,7 @@ public sealed class CombatSession
 	{
 		Energy.Recover(perfect ? rules.Energy.Perfect : rules.Energy.Hit);
 		MistakeStreak = 0;
+		hits++;
 	}
 
 	// Erro tira Energia, o Desafio recomeça com outros números ou outro nome e o Boneco faz uma travessura.
@@ -111,13 +104,12 @@ public sealed class CombatSession
 	{
 		Energy.Lose(rules.Energy.Mistake);
 		MistakeStreak++;
+		mistakes++;
 		if (Energy.IsEmpty) return new MistakeOutcome(true, false, null);
 
-		Math?.Next();
-		Name?.Next();
-		Word?.Next();
+		Battle.Next();
 		hintIndex = 0;
-		var prank = Math?.Bag.PlayPrank() ?? Name?.PlayPrank() ?? Word!.PlayPrank();
+		var prank = Battle.PlayPrank();
 		return new MistakeOutcome(false, HintOffered, prank);
 	}
 
@@ -139,17 +131,24 @@ public sealed class CombatSession
 	// A peça escondida volta sozinha.
 	public void RevealHidden()
 	{
-		Math?.Bag.Reveal();
-		Name?.Reveal();
-		Word?.Reveal();
+		Battle.Reveal();
 	}
 
 	// Depois de dissolver o escudo ou libertar a criatura, vem o próximo Desafio.
 	public void NextChallenge()
 	{
-		Math?.Next();
-		Name?.Next();
-		Word?.Next();
+		Battle.Next();
 		hintIndex = 0;
+		hits = 0;
+		mistakes = 0;
+	}
+
+	// Fecha a batalha do Desafio de agora e diz como foi; o próximo Desafio começa a contar do zero.
+	public BattleResult Conclude(bool calmed)
+	{
+		var result = new BattleResult(Mission.Concept, hits, mistakes, calmed);
+		hits = 0;
+		mistakes = 0;
+		return result;
 	}
 }
