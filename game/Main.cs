@@ -319,7 +319,7 @@ public partial class Main : Node3D
 		if (target is null || !player.Enabled) return;
 		switch (target)
 		{
-			case "album": ShowOverlay(new AlbumScreen()); break;
+			case "album": ShowOverlay(new AlbumScreen(OwnedCosmetics())); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
 			case "mestre": ShowMaster(); break;
 			case "torre-matematica": EnterTower(TrainingSetup.Mathematics); break;

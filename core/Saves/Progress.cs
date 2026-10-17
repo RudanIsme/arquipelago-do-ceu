@@ -1,14 +1,27 @@
+using ArquipelagoDoCeu.Dungeon;
+
 namespace ArquipelagoDoCeu.Saves;
 
 // O que a criança conquistou nas Dungeons. Cada lista guarda chaves de texto ("matematica:1" para um Nível,
 // "matematica:1:2" para um Andar), e ausente vale vazio; por isso saves antigos continuam válidos na mesma versão.
+// `Explored` guarda as Salas visitadas e vencidas de cada Andar, `FloorsDone` os Andares completos e `Cosmetics` os ids ganhos.
 // O Nível liberado continua sendo o `Level` do Perfil. O treino no Lobby nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,
 	IReadOnlyList<string>? Floors = null,
 	IReadOnlyList<string>? FastTravels = null,
-	IReadOnlyList<string>? ShortcutsTried = null);
+	IReadOnlyList<string>? ShortcutsTried = null,
+	IReadOnlyList<ExploredFloor>? Explored = null,
+	IReadOnlyList<string>? FloorsDone = null,
+	IReadOnlyList<string>? Cosmetics = null);
+
+// As Salas visitadas e vencidas de um Andar, pela chave "matematica:1:2".
+// `Version` é a do gerador que desenhou o Andar: com outra versão os números das Salas não valem mais.
+public sealed record ExploredFloor(string Key, IReadOnlyList<int> Visited, IReadOnlyList<int> Cleared, int Version = 0);
+
+// O que aconteceu ao registrar um Andar completo: se foi a primeira vez e qual Cosmético a criança ganhou.
+public sealed record FloorCompletion(bool NewlyDone, Cosmetic? Cosmetic);
 
 // Um Fast travel que a criança já encontrou: a torre, o Nível e o Andar.
 public sealed record FastTravelPoint(string Discipline, int Level, int Floor);
@@ -54,6 +67,11 @@ public sealed class ProgressService(SaveSession session)
 	public Result<ProfileSave> FindFastTravel(string profileId, string discipline, int level, int floor) =>
 		Add(profileId, $"{Level(discipline, level)}:{floor}", p => p.FastTravels, (p, list) => p with { FastTravels = list });
 
+	// O último Fast travel que a criança achou nesta torre e Nível, em qualquer Andar: é onde ela recomeça.
+	public FastTravelPoint? LastFastTravel(string profileId, string discipline, int level) =>
+		(Find(profileId)?.Progress?.FastTravels ?? []).Select(ParsePoint).OfType<FastTravelPoint>()
+			.LastOrDefault(p => p.Discipline == discipline && p.Level == level);
+
 	public IReadOnlyList<FastTravelPoint> FastTravels(string profileId) =>
 		(Find(profileId)?.Progress?.FastTravels ?? [])
 			.Select(ParsePoint).OfType<FastTravelPoint>()
@@ -75,6 +93,42 @@ public sealed class ProgressService(SaveSession session)
 	public Result<ProfileSave> DiscoverFloor(string profileId, string discipline, int level, int floor) =>
 		Add(profileId, $"{Level(discipline, level)}:{floor}", p => p.Floors, (p, list) => p with { Floors = list });
 
+	public FloorExploration? Exploration(string profileId, string discipline, int level, int floor, int version = 0) =>
+		Find(profileId)?.Progress?.Explored?.FirstOrDefault(e => e.Key == $"{Level(discipline, level)}:{floor}" && e.Version == version) is { } saved
+			? new FloorExploration(saved.Visited, saved.Cleared)
+			: null;
+
+	// Guarda o que foi explorado no Andar, no lugar do que havia. Ver o mapa sumir seria punição, então isto é gravado a cada passo.
+	public Result<ProfileSave> SaveExploration(string profileId, string discipline, int level, int floor, FloorExploration exploration, int version = 0)
+	{
+		var key = $"{Level(discipline, level)}:{floor}";
+		var entry = new ExploredFloor(key, exploration.Visited.ToList(), exploration.Cleared.ToList(), version);
+		return Update(profileId, p => p with { Explored = [.. (p.Explored ?? []).Where(e => e.Key != key), entry] });
+	}
+
+	public bool FloorDone(string profileId, string discipline, int level, int floor) =>
+		Has(profileId, p => p.FloorsDone, $"{Level(discipline, level)}:{floor}");
+
+	public IReadOnlyList<string> Cosmetics(string profileId) => Find(profileId)?.Progress?.Cosmetics ?? [];
+
+	// Registra o Andar completo e dá o Cosmético dele, juntos num só salvamento e só na primeira vez: voltar ao Andar ou
+	// recomeçar a Expedição não repete o prêmio. Se o save falha, nada vale e a criança completa de novo no próximo passo.
+	public Result<FloorCompletion> CompleteFloor(string profileId, string discipline, int level, int floor, CosmeticCatalog catalog)
+	{
+		if (FloorDone(profileId, discipline, level, floor)) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));
+
+		// Sem catálogo (o arquivo não abriu) o Andar fica por registrar, para o Cosmético não se perder para sempre.
+		if (catalog.All.Count == 0) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));
+		var reward = catalog.For(discipline, level, floor);
+		var key = $"{Level(discipline, level)}:{floor}";
+		var saved = Update(profileId, p => p with
+		{
+			FloorsDone = [.. p.FloorsDone ?? [], key],
+			Cosmetics = reward is null || (p.Cosmetics ?? []).Contains(reward.Id) ? p.Cosmetics : [.. p.Cosmetics ?? [], reward.Id],
+		});
+		return saved.IsOk ? Result<FloorCompletion>.Ok(new FloorCompletion(true, reward)) : Result<FloorCompletion>.Fail(saved.Error!);
+	}
+
 	static string Level(string discipline, int level) => $"{discipline}:{level}";
 
 	ProfileSave? Find(string profileId) => session.Data.Profiles.FirstOrDefault(p => p.Id == profileId);
@@ -85,14 +139,16 @@ public sealed class ProgressService(SaveSession session)
 	Result<ProfileSave> Add(string profileId, string key, Func<ProgressSave, IReadOnlyList<string>?> list,
 		Func<ProgressSave, IReadOnlyList<string>, ProgressSave> set)
 	{
+		if (Has(profileId, list, key)) return Result<ProfileSave>.Ok(Find(profileId)!);
+		return Update(profileId, p => set(p, [.. list(p) ?? [], key]));
+	}
+
+	Result<ProfileSave> Update(string profileId, Func<ProgressSave, ProgressSave> change)
+	{
 		var current = Find(profileId);
 		if (current is null) return Result<ProfileSave>.Fail("Perfil não encontrado.");
 
-		var progress = current.Progress ?? new ProgressSave();
-		var existing = list(progress) ?? [];
-		if (existing.Contains(key)) return Result<ProfileSave>.Ok(current);
-
-		var updated = current with { Progress = set(progress, [.. existing, key]) };
+		var updated = current with { Progress = change(current.Progress ?? new ProgressSave()) };
 		var saved = session.Commit(data => data with { Profiles = data.Profiles.Select(p => p.Id == profileId ? updated : p).ToList() });
 		return saved.IsOk ? Result<ProfileSave>.Ok(updated) : Result<ProfileSave>.Fail(saved.Error!);
 	}

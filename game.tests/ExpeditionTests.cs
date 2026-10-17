@@ -19,8 +19,8 @@ static class ExpeditionFixtures
 	// Dois Andares: o 1º comum e o 2º com Marco e épico.
 	public static readonly LevelPlan Plan = new("matematica", 1, [new(1, false, false, false), new(2, false, true, true)]);
 
-	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null, int startFloor = 1, bool atFastTravel = false, bool atEpic = false) =>
-		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem, startFloor, atFastTravel, atEpic);
+	public static Expedition Start(Energy? energy = null, Func<bool>? hasItem = null, int startFloor = 1, bool atFastTravel = false, bool atEpic = false, Func<int, FloorExploration?>? explored = null) =>
+		Expedition.Start(new FloorProvider(Rules, Fallback, (_, _, _, _, p, _) => Fallback.For(p)), Plan, 1, 1, energy ?? new Energy(5), hasItem, startFloor, atFastTravel, atEpic, explored);
 
 	// Vence a Sala e vai para a próxima.
 	public static void ClearAndGo(Expedition e, int room)

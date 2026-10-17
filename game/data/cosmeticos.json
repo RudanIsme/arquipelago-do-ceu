@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "cosmetics": [
+    {
+      "id": "matematica-1-1",
+      "name": "Lacinho dos Números",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 1 do Nível 1. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 1,
+      "floor": 1
+    },
+    {
+      "id": "matematica-1-2",
+      "name": "Mochila de Contar",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 2 do Nível 1. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 1,
+      "floor": 2
+    },
+    {
+      "id": "matematica-1-3",
+      "name": "Chapéu dos Dados",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 3 do Nível 1. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 1,
+      "floor": 3
+    },
+    {
+      "id": "matematica-1-4",
+      "name": "Capa das Estrelas",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 4 do Nível 1. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 1,
+      "floor": 4
+    },
+    {
+      "id": "matematica-2-1",
+      "name": "Fita da Soma",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 1 do Nível 2. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 2,
+      "floor": 1
+    },
+    {
+      "id": "matematica-2-2",
+      "name": "Cachecol da Subtração",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 2 do Nível 2. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 2,
+      "floor": 2
+    },
+    {
+      "id": "matematica-2-3",
+      "name": "Boné dos Pares",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 3 do Nível 2. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 2,
+      "floor": 3
+    },
+    {
+      "id": "matematica-2-4",
+      "name": "Capa dos Dobros",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 4 do Nível 2. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 2,
+      "floor": 4
+    },
+    {
+      "id": "matematica-3-1",
+      "name": "Gravata da Tabuada",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 1 do Nível 3. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 3,
+      "floor": 1
+    },
+    {
+      "id": "matematica-3-2",
+      "name": "Asas das Contas",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 2 do Nível 3. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 3,
+      "floor": 2
+    },
+    {
+      "id": "matematica-3-3",
+      "name": "Chapéu do Inventor",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 3 do Nível 3. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 3,
+      "floor": 3
+    },
+    {
+      "id": "matematica-3-4",
+      "name": "Capa do Infinito",
+      "description": "Um enfeite para o Personagem, que a Torre dos Números dá a quem completa o Andar 4 do Nível 3. Só muda a aparência.",
+      "discipline": "matematica",
+      "level": 3,
+      "floor": 4
+    },
+    {
+      "id": "portugues-1-1",
+      "name": "Lacinho das Letras",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 1 do Nível 1. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 1,
+      "floor": 1
+    },
+    {
+      "id": "portugues-1-2",
+      "name": "Mochila de Histórias",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 2 do Nível 1. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 1,
+      "floor": 2
+    },
+    {
+      "id": "portugues-1-3",
+      "name": "Chapéu das Sílabas",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 3 do Nível 1. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 1,
+      "floor": 3
+    },
+    {
+      "id": "portugues-1-4",
+      "name": "Capa do Alfabeto",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 4 do Nível 1. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 1,
+      "floor": 4
+    },
+    {
+      "id": "portugues-2-1",
+      "name": "Fita das Palavras",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 1 do Nível 2. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 2,
+      "floor": 1
+    },
+    {
+      "id": "portugues-2-2",
+      "name": "Cachecol das Rimas",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 2 do Nível 2. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 2,
+      "floor": 2
+    },
+    {
+      "id": "portugues-2-3",
+      "name": "Boné do Dicionário",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 3 do Nível 2. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 2,
+      "floor": 3
+    },
+    {
+      "id": "portugues-2-4",
+      "name": "Capa dos Contos",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 4 do Nível 2. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 2,
+      "floor": 4
+    },
+    {
+      "id": "portugues-3-1",
+      "name": "Gravata das Frases",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 1 do Nível 3. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 3,
+      "floor": 1
+    },
+    {
+      "id": "portugues-3-2",
+      "name": "Asas das Fábulas",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 2 do Nível 3. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 3,
+      "floor": 2
+    },
+    {
+      "id": "portugues-3-3",
+      "name": "Chapéu do Escritor",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 3 do Nível 3. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 3,
+      "floor": 3
+    },
+    {
+      "id": "portugues-3-4",
+      "name": "Capa da Biblioteca",
+      "description": "Um enfeite para o Personagem, que a Torre das Letras dá a quem completa o Andar 4 do Nível 3. Só muda a aparência.",
+      "discipline": "portugues",
+      "level": 3,
+      "floor": 4
+    }
+  ]
+}

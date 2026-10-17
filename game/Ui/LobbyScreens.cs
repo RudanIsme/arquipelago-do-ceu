@@ -1,15 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Voice;
 using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Álbum: criaturas e Cosméticos. Ainda não há nada para guardar, então as duas abas só mostram
-// uma mensagem amigável.
+// Álbum: criaturas e Cosméticos. Ainda não há criaturas para guardar; os Cosméticos são os que o Perfil ganhou
+// completando Andares, e sem nenhum a aba mostra uma mensagem amigável.
 public partial class AlbumScreen : OverlayScreen
 {
+	readonly IReadOnlyList<Cosmetic> cosmetics;
 	string tab = "criaturas";
+
+	public AlbumScreen(IReadOnlyList<Cosmetic>? cosmetics = null) => this.cosmetics = cosmetics ?? [];
 
 	public override void _Ready()
 	{
@@ -37,9 +42,13 @@ public partial class AlbumScreen : OverlayScreen
 		}
 		box.AddChild(tabs);
 
-		box.AddChild(UiKit.Hint(current == "criaturas"
-			? "Você ainda não encontrou nenhuma criatura. Explore as torres para descobrir!"
-			: "Você ainda não ganhou nenhum Cosmético. Aprender e explorar rendem novidades!"));
+		if (current == "criaturas")
+			box.AddChild(UiKit.Hint("Você ainda não encontrou nenhuma criatura. Explore as torres para descobrir!"));
+		else if (cosmetics.Count == 0)
+			box.AddChild(UiKit.Hint("Você ainda não ganhou nenhum Cosmético. Aprender e explorar rendem novidades!"));
+		else
+			foreach (var cosmetic in cosmetics)
+				box.AddChild(UiKit.Hint($"★ {cosmetic.Name} — {cosmetic.Description}"));
 		box.AddChild(UiKit.BigButton("Fechar", Close));
 		UiKit.RestoreFocus(this, focus);
 	}
