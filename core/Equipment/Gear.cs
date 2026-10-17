@@ -11,6 +11,9 @@ public sealed record GearSlot(string Id, string Name);
 // Um equipamento: ocupa um espaço, dá um efeito e pede uma Maestria mínima do Papel. Não evolui: um substitui o outro.
 public sealed record GearItem(string Id, string Name, string Description, string Slot, string Effect, double Value, int MinMastery);
 
+// O quanto um efeito soma no conjunto vestido.
+public sealed record GearTotal(string Effect, IGearEffect Definition, double Value);
+
 // O que um efeito muda no Personagem. Um efeito novo é uma classe registrada em GearEffects, sem tocar no cálculo dos bônus.
 public interface IGearEffect
 {
@@ -20,6 +23,11 @@ public interface IGearEffect
 	EquipmentBonuses Apply(EquipmentBonuses bonuses, double total);
 
 	string Describe(double total);
+
+	// O nome curto do atributo ("Energia") e o valor com unidade ("12%"), para a comparação do Inventário e a voz.
+	string Label => Id;
+
+	string Format(double value) => value.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
 }
 
 sealed class EnergyEffect : IGearEffect
@@ -29,6 +37,8 @@ sealed class EnergyEffect : IGearEffect
 	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { ExtraEnergy = (int)Math.Round(total) };
 
 	public string Describe(double total) => $"Energia máxima +{(int)Math.Round(total)}";
+
+	public string Label => "Energia";
 }
 
 sealed class SpeedEffect : IGearEffect
@@ -38,6 +48,10 @@ sealed class SpeedEffect : IGearEffect
 	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { SpeedMultiplier = (float)(1 + total) };
 
 	public string Describe(double total) => $"Velocidade +{Math.Round(total * 100)}%";
+
+	public string Label => "Velocidade";
+
+	public string Format(double value) => $"{Math.Round(value * 100)}%";
 }
 
 sealed class ReachEffect : IGearEffect
@@ -47,6 +61,8 @@ sealed class ReachEffect : IGearEffect
 	public EquipmentBonuses Apply(EquipmentBonuses bonuses, double total) => bonuses with { InteractionReachBonus = (float)total };
 
 	public string Describe(double total) => $"Alcance +{total.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))}";
+
+	public string Label => "Alcance";
 }
 
 // Os efeitos que o jogo sabe aplicar, por id.
@@ -147,6 +163,14 @@ public sealed class GearCatalog
 			if (effects.Find(id) is { } effect) bonuses = effect.Apply(bonuses, total);
 		}
 		return bonuses;
+	}
+
+	// O total de cada efeito do conjunto (já dentro do limite), na ordem do catálogo: a mesma conta de Bonuses.
+	public IReadOnlyList<GearTotal> Totals(Gear gear)
+	{
+		var worn = Slots.Select(s => Find(gear.In(s.Id))).OfType<GearItem>().ToList();
+		return limits.Where(l => effects.Find(l.Id) is not null)
+			.Select(l => new GearTotal(l.Id, effects.Find(l.Id)!, Math.Min(l.Limit, worn.Where(i => i.Effect == l.Id).Sum(i => i.Value)))).ToList();
 	}
 
 	// O texto dos efeitos de um conjunto, na mesma conta que vale em jogo.
