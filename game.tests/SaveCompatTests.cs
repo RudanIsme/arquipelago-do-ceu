@@ -1,4 +1,5 @@
 using ArquipelagoDoCeu.Equipment;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using Xunit;
 
@@ -27,6 +28,8 @@ public sealed class SaveCompatTests : IDisposable
 
 	const string Gear = """{"version":1,"profiles":[{"id":"p","nickname":"Luna","level":1,"gear":{"matematica":{"armor":"scout","helmet":"open"}}}]}""";
 
+	RewardService rewards = null!;
+
 	ProgressServices Open(string json, out GearService gear, out string untouched)
 	{
 		Directory.CreateDirectory(folder);
@@ -38,6 +41,7 @@ public sealed class SaveCompatTests : IDisposable
 		var session = new SaveSession(store, loaded.Value.Data);
 		gear = new GearService(session, GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!);
 		untouched = json;
+		rewards = new RewardService(new ProgressStore(session));
 		return ProgressServices.Create(session);
 	}
 
@@ -74,7 +78,7 @@ public sealed class SaveCompatTests : IDisposable
 		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 1)));
 		Assert.Equal(0, progress.Mastery.Of("p", "matematica"));
 		Assert.Equal(0, progress.Wallet.Balance("p"));
-		Assert.Empty(progress.Rewards.Cosmetics("p"));
+		Assert.Empty(rewards.Cosmetics("p"));
 		Assert.Equal(new Equipment.Gear(), gear.Get("p", "matematica"));
 	}
 
@@ -95,8 +99,8 @@ public sealed class SaveCompatTests : IDisposable
 	{
 		var explored = Open(Exploration, out _, out _);
 		Assert.Equal(new[] { 0, 1 }, explored.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 1)!.Visited.ToArray());
-		Assert.True(explored.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
-		Assert.Equal(new[] { "matematica-1-1" }, explored.Rewards.Cosmetics("p").ToArray());
+		Assert.True(explored.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
+		Assert.Equal(new[] { "matematica-1-1" }, rewards.Cosmetics("p").ToArray());
 
 		var grown = Open(Growth, out _, out _);
 		Assert.Equal(1, grown.Mastery.Of("p", "matematica"));

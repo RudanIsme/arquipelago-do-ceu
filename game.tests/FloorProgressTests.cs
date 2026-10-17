@@ -10,12 +10,6 @@ public sealed class FloorProgressTests : IDisposable
 	string PathName => Path.Combine(folder, "save.json");
 	SaveData Example => new(1, [new ProfileSave("p", "Luna", 1), new ProfileSave("q", "Davi", 1)], new SettingsSave(Voice: false));
 
-	static readonly CosmeticCatalog Catalog = CosmeticCatalog.Parse("""
-		{"cosmetics":[
-			{"id":"m11","name":"Lacinho dos Números","description":"Enfeite","discipline":"matematica","level":1,"floor":1},
-			{"id":"m12","name":"Mochila de Contar","description":"Enfeite","discipline":"matematica","level":1,"floor":2}]}
-		""").Value!;
-
 	public void Dispose()
 	{
 		if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
@@ -53,8 +47,7 @@ public sealed class FloorProgressTests : IDisposable
 		var progress = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
 
 		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 2)));
-		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
-		Assert.Empty(progress.Rewards.Cosmetics("p"));
+		Assert.False(progress.Explored.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
 		Assert.Equal(new FloorKey("matematica", 1, 2), progress.Levels.LastFastTravel("p", new LevelKey("matematica", 1)));
 		Assert.Equal(json, File.ReadAllText(PathName));
 	}
@@ -76,93 +69,6 @@ public sealed class FloorProgressTests : IDisposable
 	}
 
 	[Fact]
-	public void Andar_completo_e_registrado_uma_unica_vez_e_rende_o_Cosmetico_do_catalogo()
-	{
-		var store = new SaveStore(PathName);
-		var progress = NewProgress(store);
-
-		var first = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog);
-		var again = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog);
-
-		Assert.True(first.IsOk && first.Value!.NewlyDone);
-		Assert.Equal("m11", first.Value.Cosmetic!.Id);
-		Assert.True(again.IsOk && !again.Value!.NewlyDone);
-		Assert.Null(again.Value.Cosmetic);
-
-		var reopened = ProgressServices.Create(new SaveSession(store, store.Load().Value!.Data));
-		Assert.True(reopened.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
-		Assert.False(reopened.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 2)));
-		Assert.Equal(new[] { "m11" }, reopened.Rewards.Cosmetics("p").ToArray());
-		Assert.Empty(reopened.Rewards.Cosmetics("q"));
-	}
-
-	[Fact]
-	public void Andar_sem_Cosmetico_no_catalogo_completa_sem_ganhar_nada()
-	{
-		var progress = NewProgress(new SaveStore(PathName));
-
-		var done = progress.Rewards.CompleteFloor("p", new FloorKey("portugues", 3, 4), Catalog);
-
-		Assert.True(done.Value!.NewlyDone);
-		Assert.Null(done.Value.Cosmetic);
-		Assert.Empty(progress.Rewards.Cosmetics("p"));
-	}
-
-	[Fact]
-	public void Se_o_save_falha_o_Andar_nao_vale_como_completo()
-	{
-		var blocker = Path.Combine(folder, "arquivo");
-		Directory.CreateDirectory(folder);
-		File.WriteAllText(blocker, "x");
-		var progress = ProgressServices.Create(new SaveSession(new SaveStore(Path.Combine(blocker, "save.json")), Example));
-
-		Assert.False(progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), Catalog).IsOk);
-		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
-		Assert.Empty(progress.Rewards.Cosmetics("p"));
-	}
-
-	[Fact]
-	public void Catalogo_recusa_json_quebrado_ou_ligacao_repetida()
-	{
-		Assert.False(CosmeticCatalog.Parse("{").IsOk);
-		Assert.False(CosmeticCatalog.Parse("""{"cosmetics":[]}""").IsOk);
-		Assert.False(CosmeticCatalog.Parse("""
-			{"cosmetics":[
-				{"id":"a","name":"A","description":"","discipline":"matematica","level":1,"floor":1},
-				{"id":"b","name":"B","description":"","discipline":"matematica","level":1,"floor":1}]}
-			""").IsOk);
-		Assert.False(CosmeticCatalog.Parse("""
-			{"cosmetics":[
-				{"id":"a","name":"A","description":"","discipline":"matematica","level":1,"floor":1},
-				{"id":"a","name":"B","description":"","discipline":"matematica","level":1,"floor":2}]}
-			""").IsOk);
-	}
-
-	[Fact]
-	public void O_catalogo_do_jogo_cobre_toda_torre_nivel_e_Andar_possiveis()
-	{
-		var path = Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "cosmeticos.json");
-		var catalog = CosmeticCatalog.Parse(File.ReadAllText(path)).Value!;
-		var rules = ExpeditionFixtures.Rules;
-
-		foreach (var discipline in new[] { "matematica", "portugues" })
-			foreach (var level in new[] { 1, 2, 3 })
-				for (var floor = 1; floor <= rules.FloorsMax; floor++)
-					Assert.NotNull(catalog.For(discipline, level, floor));
-	}
-
-	[Fact]
-	public void Sem_catalogo_o_Andar_nao_e_registrado_para_nao_perder_o_Cosmetico()
-	{
-		var progress = NewProgress(new SaveStore(PathName));
-
-		var done = progress.Rewards.CompleteFloor("p", new FloorKey("matematica", 1, 1), CosmeticCatalog.Empty);
-
-		Assert.False(done.Value!.NewlyDone);
-		Assert.False(progress.Rewards.IsFloorDone("p", new FloorKey("matematica", 1, 1)));
-	}
-
-	[Fact]
 	public void Exploracao_de_outra_versao_do_gerador_e_ignorada()
 	{
 		var progress = NewProgress(new SaveStore(PathName));
@@ -170,19 +76,5 @@ public sealed class FloorProgressTests : IDisposable
 
 		Assert.NotNull(progress.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 1));
 		Assert.Null(progress.Explored.Get("p", new FloorKey("matematica", 1, 1), version: 2));
-	}
-
-	// O treino no Lobby não conta progresso nem dá Cosmético: só a Expedição registra Andares completos.
-	[Fact]
-	public void So_a_Dungeon_registra_Andar_completo_e_concede_Cosmetico()
-	{
-		var game = Path.Combine(MissionFiles.RepositoryRoot(), "game");
-		var callers = Directory.EnumerateFiles(game, "*.cs", SearchOption.AllDirectories)
-			.Where(f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !f.Contains(Path.DirectorySeparatorChar + ".godot" + Path.DirectorySeparatorChar))
-			.Where(f => File.ReadAllText(f).Contains(".CompleteFloor("))
-			.Select(Path.GetFileName)
-			.ToList();
-
-		Assert.Equal(new[] { "DungeonRun.cs" }, callers.ToArray());
 	}
 }

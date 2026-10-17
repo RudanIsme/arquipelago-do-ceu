@@ -1,18 +1,18 @@
 namespace ArquipelagoDoCeu.Rules;
 
-// Tamanho do Nível e do Andar, Descanso, desafios do Atalho e do mestre, vitórias para dominar um Conceito e moedas.
+// Tamanho do Nível e do Andar, Descanso, desafios do Atalho e do mestre, vitórias para dominar um Conceito.
 // Tudo vem de dados.
 public sealed record DungeonRules(int FloorsMin, int FloorsMax, int RoomsMin, int RoomsMax, int RestEnergy, int ShortcutChallenges, int MasterChallenges,
-	int ConceptSolves, int CoinsCreature, int CoinsItem, int CoinsFloor);
+	int ConceptSolves);
 
 sealed record DungeonDto(int? FloorsMin, int? FloorsMax, int? RoomsMin, int? RoomsMax, int? RestEnergy, int? ShortcutChallenges, int? MasterChallenges,
-	int? ConceptSolves, int? CoinsCreature, int? CoinsItem, int? CoinsFloor);
+	int? ConceptSolves);
 
 static class DungeonChecks
 {
 	// Limites: 2 Andares no mínimo (o Item vem antes do Marco), 6 Salas no mínimo (fixas mais uma livre)
 	// e 18 no máximo, os hexágonos da borda da Sala onde cada porta fica.
-	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 18, RestLimit = 9, ShortcutLimit = 9, MasterFloor = 2, MasterLimit = 12, SolvesLimit = 20, CoinsLimit = 1000;
+	const int FloorsFloor = 2, FloorsLimit = 10, RoomsFloor = 6, RoomsLimit = 18, RestLimit = 9, ShortcutLimit = 9, MasterFloor = 2, MasterLimit = 12, SolvesLimit = 20;
 
 	public static string? Check(DungeonDto? dungeon)
 	{
@@ -26,15 +26,12 @@ static class DungeonChecks
 			?? Range("dungeon.restEnergy", dungeon.RestEnergy, 1, RestLimit)
 			?? Range("dungeon.shortcutChallenges", dungeon.ShortcutChallenges, 1, ShortcutLimit)
 			?? Range("dungeon.masterChallenges", dungeon.MasterChallenges, MasterFloor, MasterLimit)
-			?? Range("dungeon.conceptSolves", dungeon.ConceptSolves, 1, SolvesLimit)
-			?? Range("dungeon.coinsCreature", dungeon.CoinsCreature, 0, CoinsLimit)
-			?? Range("dungeon.coinsItem", dungeon.CoinsItem, 0, CoinsLimit)
-			?? Range("dungeon.coinsFloor", dungeon.CoinsFloor, 0, CoinsLimit);
+			?? Range("dungeon.conceptSolves", dungeon.ConceptSolves, 1, SolvesLimit);
 	}
 
 	public static DungeonRules Build(DungeonDto dungeon) =>
 		new(dungeon.FloorsMin!.Value, dungeon.FloorsMax!.Value, dungeon.RoomsMin!.Value, dungeon.RoomsMax!.Value, dungeon.RestEnergy!.Value, dungeon.ShortcutChallenges!.Value, dungeon.MasterChallenges!.Value,
-			dungeon.ConceptSolves!.Value, dungeon.CoinsCreature!.Value, dungeon.CoinsItem!.Value, dungeon.CoinsFloor!.Value);
+			dungeon.ConceptSolves!.Value);
 
 	static string? Range(string field, int? value, int min, int max)
 	{

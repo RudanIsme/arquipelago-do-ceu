@@ -5,6 +5,7 @@ using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Profiles;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
 using ArquipelagoDoCeu.Settings;
@@ -65,6 +66,7 @@ public partial class Main : Node3D
 		if (!save.IsOk) { Stop(save.Error!); return; }
 		var session = new SaveSession(store, save.Value!);
 		progress = ProgressServices.Create(session);
+		rewardService = new RewardService(new ProgressStore(session));
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
@@ -348,7 +350,7 @@ public partial class Main : Node3D
 		AddChild(training);
 		training.RoleChosen += ChooseRole;
 		training.EnergyBonusFor = papel => BonusesOf(papel).ExtraEnergy;
-		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random);
+		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved, random, rewardService, LoadRewards);
 		AddChild(master);
 	}
 

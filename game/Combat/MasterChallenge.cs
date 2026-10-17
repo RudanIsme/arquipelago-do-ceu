@@ -1,9 +1,11 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Rules;
 using ArquipelagoDoCeu.Saves;
 using Godot;
@@ -16,6 +18,8 @@ public partial class MasterChallenge : Node
 {
 	readonly GameRules rules;
 	readonly IRandomSource random;
+	readonly RewardService granter;
+	readonly Func<RewardCatalog> rewards;
 	readonly TrainingArea training;
 	readonly Control uiRoot;
 	readonly ProgressServices progress;
@@ -31,8 +35,10 @@ public partial class MasterChallenge : Node
 	int round;
 
 	public MasterChallenge(GameRules rules, TrainingArea training, Control uiRoot, ProgressServices progress, Func<int> extraEnergy,
-		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random)
+		Action<string> notify, Action<ProfileSave> levelRaised, IRandomSource random, RewardService granter, Func<RewardCatalog> rewards)
 	{
+		this.granter = granter;
+		this.rewards = rewards;
 		this.random = random;
 		this.rules = rules;
 		this.training = training;
@@ -102,7 +108,16 @@ public partial class MasterChallenge : Node
 				? $"Desafio mestre vencido! As duas torres liberaram o Nível {raised.Value.Level}."
 				: "Desafio mestre vencido! Você chegou ao último Nível do jogo. Parabéns!";
 		if (raised.IsOk) levelRaised(raised.Value!);
-		Finish(message);
+		Finish(raised.IsOk ? $"{message}{PrizeText()}" : message);
+	}
+
+	// O que o Desafio mestre rende, se os dados mandarem alguma coisa (uma vez por Nível).
+	string PrizeText()
+	{
+		var granted = granter.Grant(profileId, new RewardContext("master-challenge", "", this.level), rewards());
+		if (!granted.IsOk || granted.Value is not { Fired: true } outcome) return "";
+		var coins = outcome.Coins > 0 ? $" Você ganhou {outcome.Coins} moedas." : "";
+		return coins + string.Concat(outcome.Cosmetics.Select(c => $" Você ganhou um Cosmético: {c.Name}."));
 	}
 
 	void OnLost() => Finish("A névoa ficou forte demais desta vez. O Desafio mestre continua esperando: tente de novo quando quiser!");

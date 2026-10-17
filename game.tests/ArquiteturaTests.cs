@@ -106,6 +106,7 @@ public class ArquiteturaTests
 		["Generation"] = ["Data", "Rules"],
 		["Missions"] = ["Data"],
 		["Profiles"] = ["Rules", "Saves"],
+		["Rewards"] = ["Data", "Saves"],
 		["Rules"] = ["Data"],
 		["Saves"] = ["Data", "Dungeon", "Equipment"],
 		["Settings"] = ["Rules", "Saves"],

@@ -39,10 +39,13 @@ public sealed class WalletService(ProgressStore store)
 {
 	public int Balance(string profileId) => store.Of(profileId)?.Coins ?? 0;
 
+	// O saldo somado, sem passar do limite do número.
+	public static int Plus(int? balance, int amount) => (int)Math.Min((long)(balance ?? 0) + amount, int.MaxValue);
+
 	// Sem teto de regra (só o do próprio número, que nunca vira negativo). Valor zero ou negativo não grava nada.
 	public Result<ProfileSave> Add(string profileId, int amount)
 	{
 		if (store.Find(profileId) is not { } profile) return Result<ProfileSave>.Fail("Perfil não encontrado.");
-		return amount <= 0 ? Result<ProfileSave>.Ok(profile) : store.Update(profileId, p => p with { Coins = (int)Math.Min((long)(p.Coins ?? 0) + amount, int.MaxValue) });
+		return amount <= 0 ? Result<ProfileSave>.Ok(profile) : store.Update(profileId, p => p with { Coins = Plus(p.Coins, amount) });
 	}
 }

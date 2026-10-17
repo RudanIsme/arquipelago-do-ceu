@@ -3,6 +3,7 @@ using System.Linq;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
+using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using Godot;
 
@@ -14,6 +15,7 @@ public partial class Main
 {
 
 	ProgressServices progress = null!;
+	RewardService rewardService = null!;
 	DungeonRun? dungeon;
 	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
@@ -48,6 +50,7 @@ public partial class Main
 
 	// Ganchos só do piloto de desenvolvimento.
 	public ProgressServices DevProgress => progress;
+	public RewardService DevRewards => rewardService;
 	public string DevProfileId => current?.Id ?? "";
 	public int DevLevel => UnlockedLevel();
 	public MasterChallenge DevMaster => master;
@@ -105,7 +108,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadCosmetics(), current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
+			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts()));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -153,6 +156,9 @@ public partial class Main
 	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
 	CosmeticCatalog LoadCosmetics() => catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
+	// Sem as recompensas o jogo segue, só sem moedas nem Cosméticos: elas são um extra.
+	RewardCatalog LoadRewards() => catalogs.Optional("recompensas.json", json => RewardCatalog.Parse(json, RewardTriggers.Default, LoadCosmetics()), RewardCatalog.Empty);
+
 	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
 	ConceptNames LoadConcepts() => catalogs.Optional("conceitos.json", ConceptNames.Parse, ConceptNames.Empty);
 
@@ -160,7 +166,7 @@ public partial class Main
 	IReadOnlyList<Cosmetic> OwnedCosmetics()
 	{
 		var catalog = LoadCosmetics();
-		return current is null ? [] : progress.Rewards.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
+		return current is null ? [] : rewardService.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
 	}
 
 	// Sem os Andares de reserva a torre não abre: o validador precisa deles como último recurso.
