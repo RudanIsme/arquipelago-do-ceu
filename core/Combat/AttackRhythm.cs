@@ -36,6 +36,13 @@ public sealed class AttackRhythm
 
 	public void PlayerAnswered() => recharge = rules.Rhythm.PlayerRechargeSeconds;
 
+	// Uma luta nova começa sem recarga e sem bolha no ar.
+	public void Reset()
+	{
+		recharge = 0f;
+		Bubble.Reset();
+	}
+
 	// `realSeconds` é o tempo de relógio do quadro. Parado (Modo calmo, Puzzle), a criatura só reage a erros e a bolha no ar some.
 	public BubbleEvent Tick(float realSeconds, Vector2 from, Vector2 player, bool stopped)
 	{

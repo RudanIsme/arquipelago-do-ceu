@@ -50,7 +50,8 @@ public partial class DevDriver : Node
 		await GetParent<Main>().QuitAsync(Failures > 0 ? 1 : 0);
 	}
 
-	public async Task Wait(double seconds) => await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
+	// Em tempo de relógio: o jogo desacelera enquanto a criança monta a resposta, e o piloto não pode esperar quatro vezes mais por isso.
+	public async Task Wait(double seconds) => await ToSignal(GetTree().CreateTimer(seconds, true, false, true), SceneTreeTimer.SignalName.Timeout);
 
 	public async Task Shot(string name)
 	{
@@ -86,23 +87,7 @@ public partial class DevDriver : Node
 		await Wait(0.4);
 	}
 
-	// Aperta a primeira tecla de número habilitada da calculadora (o texto é "3" e os pontos, em duas linhas).
-	public async Task PressNumberKey()
-	{
-		var key = Buttons().FirstOrDefault(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'));
-		if (key is null) GD.PushError("Piloto: nenhuma tecla de número habilitada.");
-		else key.EmitSignal(BaseButton.SignalName.Pressed);
-		await Wait(0.3);
-	}
-
-	// Os números das teclas habilitadas, como teclas do teclado, na ordem da mão.
-	public Key[] NumberKeyDigits() =>
-		Buttons().Where(b => !b.Disabled && b.Text.Length > 2 && char.IsDigit(b.Text[0]) && b.Text.Contains('\n'))
-			.Select(b => (Key)(int)b.Text[0]).ToArray();
-
-	IEnumerable<Button> Buttons() => GetTree().Root.FindChildren("*", "Button", true, false).Cast<Button>().Where(b => b.IsVisibleInTree());
-
-	TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
+	public TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
 
 	// Passa o dedo pelo trilha, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
 	public async Task TraceGuide()
@@ -152,37 +137,6 @@ public partial class DevDriver : Node
 		await Wait(3.5);
 	}
 
-	NamePanel? Names => GetTree().Root.FindChildren("*", "", true, false).OfType<NamePanel>().FirstOrDefault();
-
-	WordPanel? Words => GetTree().Root.FindChildren("*", "", true, false).OfType<WordPanel>().FirstOrDefault();
-
-	// Escreve a palavra do Desafio no teclado, letra por letra (só letras sem acento).
-	public async Task TypeWord()
-	{
-		if (Words is not { } panel) { GD.PushError("Piloto: não há escrita de palavra na tela."); return; }
-		foreach (var letter in panel.ExpectedWord) await PressKey((Key)char.ToUpperInvariant(letter));
-	}
-
-	// Escolhe as sílabas do nome pelas teclas 1 a 9; com `wrong`, troca a última por uma que não é do nome.
-	public async Task TypeName(bool wrong = false)
-	{
-		if (Names is not { } panel) { GD.PushError("Piloto: não há montagem de nome na tela."); return; }
-		var keys = panel.ExpectedName.Select(s => panel.PieceNames.ToList().IndexOf(s)).ToList();
-		if (wrong) keys[^1] = panel.PieceNames.ToList().FindIndex(p => !panel.ExpectedName.Contains(p));
-		foreach (var index in keys) await PressKey((Key)((int)Key.Key1 + index));
-	}
-
-	// Monta uma conta com as quatro maiores peças da mão e ataca: passa do valor de qualquer escudo do 1º ano.
-	public async Task OvershootWithKeys()
-	{
-		var digits = NumberKeyDigits().OrderByDescending(k => (int)k).Take(4).ToList();
-		for (var i = 0; i < digits.Count; i++)
-		{
-			if (i > 0) await PressKey(Key.Plus);
-			await PressKey(digits[i]);
-		}
-		await PressKey(Key.Enter);
-	}
 	public Player? Player => GetTree().Root.FindChild("Player", true, false) as Player;
 
 	// Segura uma ação de movimento, como uma tecla pressionada.

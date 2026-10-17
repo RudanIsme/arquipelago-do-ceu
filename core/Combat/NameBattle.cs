@@ -68,6 +68,9 @@ public sealed class NameBattle : IBattle
 
 	public bool IsHidden(int piece) => hidden.Contains(piece);
 
+	// Com todas as peças do nome postas, a última ação confere e golpeia.
+	public bool IsComplete => chosen.Count == Name.Count;
+
 	public static Result<NameBattle> Start(IEnumerable<Mission> available, Pcg32 rng, MissionHistory? history = null)
 	{
 		var usable = available.Where(m => Mechanics.Contains(m.Mechanic)).ToList();

@@ -120,4 +120,31 @@ public class BattleExtensionTests
 	{
 		Assert.Equal(["nome", "palavra", "conta"], BattleMechanics.Default.Ids);
 	}
+
+	[Fact]
+	public void A_conta_de_ataque_e_numero_sinal_e_numero_e_o_terceiro_traco_a_completa()
+	{
+		var rules = TrainingFixtures.Rules;
+		var math = CombatSession.Start(rules, new Energy(5), 1, Math1, Missions, new Pcg32(1)).Value!.Math!;
+
+		Assert.False(math.Staff.IsComplete);
+		math.Staff.Place(0);
+		math.Staff.PlaceOperator("+");
+		Assert.False(math.Staff.IsComplete);
+		math.Staff.Place(1);
+
+		Assert.True(math.Staff.IsComplete);
+		Assert.Equal(Staff.AttackPieces, math.Staff.Tokens.Count);
+	}
+
+	[Fact]
+	public void O_nome_e_a_palavra_se_completam_na_ultima_peca()
+	{
+		var name = CombatSession.Start(TrainingFixtures.Rules, new Energy(5), 1, new TrainingSetup("portugues", 1, 1), [TrainingFixtures.NameMission("n", ["ga", "to"])], new Pcg32(2)).Value!.Name!;
+		Assert.False(name.IsComplete);
+		name.Place(0);
+		Assert.False(name.IsComplete);
+		name.Place(1);
+		Assert.True(name.IsComplete);
+	}
 }

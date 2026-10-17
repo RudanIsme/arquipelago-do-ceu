@@ -110,6 +110,11 @@ public sealed class Staff
 
 	public IReadOnlyList<Token> Tokens => placed.Select(p => p.Token).ToList();
 
+	// Um golpe é número, sinal e número: o terceiro traço dispara o ataque, sem botão de confirmar.
+	public const int AttackPieces = 3;
+
+	public bool IsComplete => placed.Count >= AttackPieces;
+
 	// Um número vem depois de um sinal (ou abre a conta); um sinal vem depois de um número.
 	public bool CanPlaceNumber => placed.Count == 0 || placed[^1].Token.IsOperator;
 

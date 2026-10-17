@@ -48,13 +48,6 @@ public partial class TrainingArea : Node
 	bool ownsEnergyView = true;
 	// Cada erro e cada fim de treino mudam a época: um temporizador antigo não faz mais nada.
 	int epoch;
-	int extraEnergy;
-	public void SetEquipmentEnergy(int bonus)
-	{
-		extraEnergy = Math.Clamp(bonus, 0, 2);
-		session?.Energy.SetMaximum(rules.MaxEnergy + extraEnergy);
-		UpdateEnergy();
-	}
 
 	public TrainingArea(GameRules rules, ICombatStage stage, Player player, TrainingDummy dummy, VoiceService voice, SettingsService settings, Control uiRoot,
 		Func<int> unlockedLevel, Func<bool> canAct, Action<OverlayScreen> showOverlay, Action<string> notify, IRandomSource random, TowerCatalog towers)
@@ -165,6 +158,7 @@ public partial class TrainingArea : Node
 		fightLost = lost;
 		reacting = false;
 		bubbles.Reset();
+		rhythm.Reset();
 		UpdateEnergy();
 		dummy.ShowChallenge(session);
 	}
@@ -202,9 +196,6 @@ public partial class TrainingArea : Node
 	// O treino é de um Papel; o equipamento dele é o que vale na luta.
 	public event Action<string>? RoleChosen;
 
-	// A Energia extra do equipamento do Papel escolhido, antes de ele valer para o resto do jogo.
-	public Func<string, int>? EnergyBonusFor { get; set; }
-
 	string? TryStart(TrainingSetup setup)
 	{
 		var bonus = Math.Clamp(EnergyBonusFor?.Invoke(setup.Discipline) ?? extraEnergy, 0, 2);
@@ -214,6 +205,7 @@ public partial class TrainingArea : Node
 		RoleChosen?.Invoke(setup.Discipline);
 		session = started.Value!;
 		bubbles.Reset();
+		rhythm.Reset();
 		energyView = new EnergyView();
 		energyView.LeaveRequested += () => Finish("Treino encerrado. Quando quiser, é só escolher o Boneco de novo.");
 		uiRoot.AddChild(energyView);
@@ -226,7 +218,7 @@ public partial class TrainingArea : Node
 	void OpenPanel()
 	{
 		if (session is null || panel is not null) return;
-		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, allowPull: !InDungeon, new PanelEvents(
+		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, () => settings.Current.ReduceMotion, new PanelEvents(
 			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, OnComposing,
 			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
 			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
@@ -350,11 +342,6 @@ public partial class TrainingArea : Node
 	{
 		var (ground, _) = stage.CreatureSpot;
 		player.Attack(new Vector2(ground.X, ground.Z));
-	}
-
-	internal void UpdateEnergy()
-	{
-		if (session is not null) energyView?.Set(session.Energy.Current, session.Energy.Max);
 	}
 
 	// Energia zerada, "Sair do treino" ou troca de Perfil: a criança só sai da Área de treino, sem perder nada.

@@ -85,6 +85,12 @@ static class Scenarios
 			case "mercador":
 				await DungeonScenarios.Merchant(d);
 				break;
+			case "combate-niveis":
+				await DungeonScenarios.CombatLevels(d);
+				break;
+			case "combate":
+				await DungeonScenarios.Combat(d);
+				break;
 			case "inventario":
 				await DungeonScenarios.Inventory(d);
 				break;
@@ -184,7 +190,7 @@ static class Scenarios
 				await d.Press("Começar");
 				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
 				await d.Shot("02-alvo-escolhido");
-				await d.PressNumberKey();
+				await d.PlayPiece(0, trace: false);
 				await d.Wait(1.0);
 				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
 				await d.Shot("03-trilha");
@@ -249,20 +255,17 @@ static class Scenarios
 				await d.Shot("01-escolha-do-treino");
 				await d.Press("Começar");
 				await d.Shot("02-montagem-do-nome");
-				await d.TypeName();
-				await d.Shot("03-nome-montado");
-				await d.Press("Conferir");
-				await d.Shot("04-nome-certo");
+				await d.PlayName();
+				await d.Shot("03-nome-certo");
 				await d.Wait(3.5);
-				await d.Shot("05-novo-nome");
+				await d.Shot("04-novo-nome");
 				break;
 			case "nome-erro":
 				await d.GoNearDummy();
 				await d.ClickCreature();
 				await d.Press("Escriba");
 				await d.Press("Começar");
-				await d.TypeName(wrong: true);
-				await d.Press("Conferir");
+				await d.PlayName(wrong: true);
 				await d.Shot("01-silaba-errada-travessura");
 				await d.Wait(5.0);
 				await d.Shot("02-peca-voltou");
@@ -282,10 +285,9 @@ static class Scenarios
 				await d.Shot("01-escolha-nivel-2");
 				await d.Press("Começar");
 				await d.Shot("02-dezenas-na-mao");
-				await d.PressKey(Key.Key1);
-				await d.PressKey(Key.Key0);
-				await d.Shot("03-dez-na-conta");
-				await d.PressKey(Key.Minus);
+				await d.PlayPiece(0);
+				await d.Shot("03-primeiro-numero-na-conta");
+				await d.PlayPiece(d.Hud!.Presenter.Pieces.Count - 1);
 				await d.Shot("04-sinal-de-menos");
 				break;
 			case "nivel2-escrita":
@@ -297,10 +299,8 @@ static class Scenarios
 				await d.Shot("01-teclado-na-tela");
 				await d.Press("Sugerir letra");
 				await d.Shot("02-letra-sugerida");
-				await d.TypeWord();
-				await d.Shot("03-palavra-escrita");
-				await d.PressKey(Key.Enter);
-				await d.Shot("04-palavra-certa");
+				await d.PlayWord();
+				await d.Shot("03-palavra-certa");
 				break;
 			case "nivel3-frase":
 				await d.GoNearDummy();
@@ -309,10 +309,8 @@ static class Scenarios
 				await d.Press("Nível 3");
 				await d.Press("Começar");
 				await d.Shot("01-frase");
-				await d.TypeName();
-				await d.Shot("02-frase-montada");
-				await d.PressKey(Key.Enter);
-				await d.Shot("03-frase-certa");
+				await d.PlayName();
+				await d.Shot("02-frase-certa");
 				break;
 			case "camera":
 				await d.Shot("01-zoom-padrao");

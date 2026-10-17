@@ -28,8 +28,7 @@ static partial class DungeonScenarios
 		await d.Tap(Controls.Target);
 		d.Expect(run.Combat.HasTarget, "escolher a criatura abriu a montagem do Escriba");
 		var level = expedition.Plan.Level;
-		var panels = d.GetTree().Root.FindChildren("*", "", true, false);
-		d.Expect(level == 2 ? panels.OfType<WordPanel>().Any() : panels.OfType<NamePanel>().Any(), $"o Escriba do {level}º ano abriu o painel certo");
+		d.Expect(level == 2 ? d.Hud?.Presenter is WordPresenter : d.Hud?.Presenter is NamePresenter, $"o Escriba do {level}º ano abriu a HUD certa");
 		await d.Shot("01-escriba");
 		await d.PressKey(Key.Escape);
 		PilotPort.WinRoom(run);
@@ -172,18 +171,18 @@ static partial class DungeonScenarios
 
 		// Exploração: placa, mapa e nada de bolsa nem pedido.
 		d.Expect(d.HasVisible("Livre") && d.HasVisible("Matemática:"), "a placa diz o modo e o objetivo (o Conceito do Andar)");
-		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "em exploração não há bolsa de números");
+		d.Expect(d.Hud is null, "em exploração não há bolsa de números");
 		await d.Shot("01-exploracao");
 
 		await GoTo(d, run, RoomTypes.Combat);
 		run.Player.PlaceAt(new Vector2(0f, 1.5f));
 		await d.Wait(0.3);
 		await d.Tap(Controls.Target);
-		d.Expect(d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "em combate a bolsa de números aparece");
+		d.Expect(d.Hud?.Presenter is MathPresenter, "em combate a bolsa de números aparece");
 		await d.Shot("02-combate");
 		var concept = run.Combat.CurrentMission!.Concept;
 		await d.PressKey(Key.Escape);
-		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "sair do combate fecha a bolsa");
+		d.Expect(d.Hud is null, "sair do combate fecha a bolsa");
 		PilotPort.WinRoom(run);
 		await d.Wait(0.3);
 		d.Expect(progress.Mastery.Solves(profile, new ConceptKey("matematica", concept)) >= 1, "vencer o Desafio conta uma vitória no Conceito");

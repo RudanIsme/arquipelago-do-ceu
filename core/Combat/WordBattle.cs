@@ -36,6 +36,9 @@ public sealed class WordBattle : IBattle
 
 	public string Typed => new(typed.ToArray());
 
+	// Com todas as letras escritas, a última ação confere e golpeia.
+	public bool IsComplete => typed.Count == Word.Length;
+
 	// As letras do teclado da tela: as da palavra, algumas a mais, embaralhadas pela seed.
 	public IReadOnlyList<char> Keys => keys;
 

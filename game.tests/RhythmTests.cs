@@ -79,6 +79,19 @@ public class RhythmTests
 	}
 
 	[Fact]
+	public void Uma_luta_nova_comeca_sem_recarga_e_sem_bolha_no_ar()
+	{
+		var (rhythm, _) = Start();
+		Run(rhythm, 9f);
+		rhythm.PlayerAnswered();
+
+		rhythm.Reset();
+
+		Assert.True(rhythm.PlayerReady);
+		Assert.Equal(BubblePhase.Waiting, rhythm.Bubble.Phase);
+	}
+
+	[Fact]
 	public void A_recarga_corre_em_tempo_real_mesmo_na_montagem()
 	{
 		var (rhythm, time) = Start();

@@ -5,7 +5,7 @@ using ArquipelagoDoCeu.Voice;
 
 namespace ArquipelagoDoCeu;
 
-// O que a criança faz no painel de resposta, para a luta reagir; cada Mecânica usa o seu evento.
+// O que a criança faz na HUD de combate, para a luta reagir; cada Mecânica usa o seu evento.
 public sealed record PanelEvents(
 	Action<AttackResult> Attacked,
 	Action<NameVerdict> NameChecked,
@@ -14,66 +14,34 @@ public sealed record PanelEvents(
 	Action Hint,
 	Action Read);
 
-// Os painéis de resposta de cada Mecânica (Matemático, Escriba, palavra inteira) atrás de uma só porta.
+// A HUD de combate de cada Mecânica (Matemático, Escriba, palavra inteira) atrás de uma só porta: a mesma HUD, um apresentador por Mecânica.
 public static class AnswerPanels
 {
-	public static OverlayScreen Create(CombatSession session, GameRules rules, VoiceService voice, Func<bool> inTargetRange, CreatureWords creature, bool allowPull, PanelEvents events)
+	public static CombatHud Create(CombatSession session, GameRules rules, VoiceService voice, Func<bool> inTargetRange, CreatureWords creature, AttackRhythm rhythm, Func<bool> reduceMotion, PanelEvents events)
 	{
-		if (session.Math is { } math)
-		{
-			var staff = new StaffPanel(math, session.Rules, voice, inTargetRange, creature);
-			staff.Attacked += events.Attacked;
-			staff.ComposingChanged += events.Composing;
-			staff.HintRequested += events.Hint;
-			staff.ReadRequested += events.Read;
-			return staff;
-		}
-		if (session.Name is { } nameBattle)
-		{
-			var name = new NamePanel(nameBattle, rules.Combat.Tracing, voice, allowPull);
-			name.Checked += events.NameChecked;
-			name.ComposingChanged += events.Composing;
-			name.HintRequested += events.Hint;
-			name.ReadRequested += events.Read;
-			return name;
-		}
-		var word = new WordPanel(session.Word!, voice);
-		word.Checked += events.WordChecked;
-		word.ComposingChanged += events.Composing;
-		word.HintRequested += events.Hint;
-		word.ReadRequested += events.Read;
-		return word;
+		var hud = new CombatHud(Presenter(session, creature, events), rules.Combat.Tracing, voice, rhythm, inTargetRange, creature, reduceMotion);
+		hud.ComposingChanged += events.Composing;
+		hud.HintRequested += events.Hint;
+		hud.ReadRequested += events.Read;
+		return hud;
 	}
 
-	// Devolve falso se não há painel aberto, para quem chama falar pela voz.
+	static ICombatPresenter Presenter(CombatSession session, CreatureWords creature, PanelEvents events)
+	{
+		if (session.Math is { } math) return new MathPresenter(math, session.Rules, creature, events.Attacked);
+		if (session.Name is { } name) return new NamePresenter(name, events.NameChecked);
+		return new WordPresenter(session.Word!, events.WordChecked);
+	}
+
+	// Devolve falso se não há HUD aberta, para quem chama falar pela voz.
 	public static bool Tell(OverlayScreen? panel, string text)
 	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Tell(text); return true;
-			case NamePanel name: name.Tell(text); return true;
-			case WordPanel word: word.Tell(text); return true;
-			default: return false;
-		}
+		if (panel is not CombatHud hud) return false;
+		hud.Tell(text);
+		return true;
 	}
 
-	public static void Refresh(OverlayScreen? panel)
-	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Refresh(); break;
-			case NamePanel name: name.Reload(); break;
-			case WordPanel word: word.Reload(); break;
-		}
-	}
+	public static void Refresh(OverlayScreen? panel) => (panel as CombatHud)?.Refresh();
 
-	public static void Abandon(OverlayScreen? panel)
-	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Abandon(); break;
-			case NamePanel name: name.Abandon(); break;
-			case WordPanel word: word.Abandon(); break;
-		}
-	}
+	public static void Abandon(OverlayScreen? panel) => (panel as CombatHud)?.Abandon();
 }
