@@ -189,6 +189,18 @@ _Avoid_: Herói, avatar
 O que a Dungeon faz o Personagem ser: roupas, ferramenta e habilidades próprias. As habilidades crescem conforme a criança aprende Conceitos.
 _Avoid_: Classe
 
+**Definição**:
+A descrição, em dados, de um tipo que o jogo reconhece pelo id (um espaço de equipamento, um tipo de Sala, uma torre). Adicionar um tipo novo é adicionar uma definição. O que tiver comportamento próprio vem junto de uma estratégia registrada com o mesmo id.
+_Avoid_: Classe de tipo, enum
+
+**Efeito**:
+O que uma peça de equipamento muda no Personagem (por exemplo Energia máxima, velocidade ou alcance de interação), somado aos atributos base até o limite do conjunto.
+_Avoid_: Bônus solto, buff
+
+**Gatilho**:
+O acontecimento do jogo que dá uma recompensa, como completar um Andar, dominar um Conceito ou acalmar uma criatura. Cada recompensa (moedas, Cosmético, equipamento) está ligada a um gatilho.
+_Avoid_: Evento (evento é do código)
+
 **Equipamento**:
 Peça que o Personagem veste num dos três espaços (Capacete, Armadura e Acessório), por Papel. Cada peça dá um atributo (Energia máxima, velocidade ou alcance de interação) e pede uma Maestria mínima do Papel; quem não tem a Maestria não a veste. O Personagem soma os atributos base com os do equipamento, até os limites do conjunto. Vale em qualquer combate, inclusive no treino. Não evolui (uma peça substitui a outra), e vestir ou trocar nunca recupera Energia. Não é Cosmético: Cosmético só muda a aparência.
 _Avoid_: Item (Item é o Item de troca), Cosmético

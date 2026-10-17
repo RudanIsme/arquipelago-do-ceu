@@ -48,6 +48,25 @@ Regras para manter o código simples:
 - **Simples de manter.** Funções curtas, sem herança profunda, composição no lugar de herança, e testes que servem de exemplo de uso.
 - **Comentário responde "por quê".** Só para uma restrição, uma decisão não óbvia ou uma armadilha. Nunca para dizer o que o código já diz.
 
+### Como adicionar uma coisa nova (ADR 0006)
+
+O que varia por tipo é uma definição registrada por id: em dados quando só descreve, em estratégia quando tem comportamento. A coluna "hoje" diz o que é verdade agora; a última, quando o pivô de arquitetura (#160) faz do caminho ideal o único.
+
+| Para adicionar | Hoje | Depois do pivô |
+|---|---|---|
+| Peça de equipamento | Uma entrada em `game/data/equipamentos.json` (espaço, atributo, valor, Maestria mínima). Sem visual 3D, a peça só dá o atributo | Igual, com a lista da oficina lida do catálogo (#164, #127) |
+| Cosmético | Uma entrada em `game/data/cosmeticos.json`, ligada a um Andar (só um por Andar) | Ligada a um gatilho, vários por gatilho (#167) |
+| Missão | Um JSON em `content/missions/`, validado pelo schema | Igual |
+| Conceito | Nome em `game/data/conceitos.json`; um teste cobra | Igual |
+| Andar de reserva | Uma entrada em `game/data/andares-reserva.json` | Igual |
+| Valor de regra | `game/data/rules.json` | Igual |
+| Espaço de equipamento | Código: `GearSlot`, `Gear`, o parser e a oficina | Só dados (#164) |
+| Efeito de equipamento | Código: `GearAttribute`, `GearCatalog.Bonuses` e os limites | Uma classe e uma linha no registro (#164) |
+| Tipo de Sala | Código: `RoomKind`, gerador, validador, progresso, `FloorMap` e `DungeonWorld` | Uma definição e o desenho dela (#165, #166) |
+| Gatilho de recompensa | Código: `DungeonRun` e `ProgressService.CompleteFloor` | Uma classe e uma linha no registro (#167) |
+| Mecânica | Código: `MissionLoader.KnownMechanics`, a luta em `core/Combat` e o painel em `game/Ui` | Igual, registrada por id |
+| Torre, Papel ou Nível | Código: constantes de disciplina e `TrainingSetup.LastLevel` | Uma definição em dados (#168) |
+
 ### Geração procedural
 
 - Primeiro se gera o Plano do Nível, a partir de `(seed do mundo, dungeon, nível, versão do gerador)`: quantos Andares (3 a 4) e em qual ficam a Sala do Item, o Marco e o Desafio épico, sempre nessa ordem. Depois cada andar é gerado inteiro, de uma vez, a partir de `(seed do mundo, dungeon, nível, número do andar, versão do gerador)` e do seu trecho do Plano. A mesma entrada sempre gera o mesmo mapa (ADR 0003).
