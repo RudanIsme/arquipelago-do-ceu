@@ -35,7 +35,7 @@ A coleção do Perfil, com as criaturas libertadas (cartas de revisão) e os Cos
 _Avoid_: Biblioteca de descobertas
 
 **Cosmético**:
-Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
+Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Ganha-se por aprendizado e exploração nas Dungeons ou comprando no Mercador com Moedas do jogo; nunca por dinheiro de verdade, sorteio ou sequência, nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
 _Avoid_: Skin
 
 **Equipamento**:

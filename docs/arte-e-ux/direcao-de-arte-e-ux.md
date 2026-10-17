@@ -55,6 +55,16 @@ O HUD tem painéis escuros com borda dourada, como nas referências, mas com fon
 | Feedback | Acerto: brilho dourado e som de sino. Erro: tremida leve e som macio. Nunca usar vermelho forte. |
 | Som | Voz em todos os pedidos e música calma com instrumentos de madeira. |
 
+### HUD enxuto, Inventário e mapa
+
+Mockup de referência: `mockups/hud-papel.html` (nomes, ícones e valores são exemplos).
+
+- **HUD enxuto:** só o que se usa agora. Na Dungeon, a placa do centro (Nível, Andar e objetivo), o mapa pequeno e o card do avatar com Maestria e Energia; no Lobby, Maestria e o lápis de Editar. A bolsa só aparece em combate e na Área de treino.
+- **Dock** (canto inferior esquerdo): botão do Inventário, com o selo "novo" sempre em texto, e o nome do Papel.
+- **Inventário:** o Personagem equipado em caixinhas (Capacete, Armadura, Acessório), a biblioteca com os vestidos primeiro, comparação só do que muda e prévia em tempo real. A aba Cosméticos não mostra atributos. Quem não tem a Maestria vê o cadeado e o número.
+- **Mapa em tela cheia:** toque no mapa pequeno ou tecla M escurece a cena, pausa o jogo e mostra o Andar com legenda em ícone e texto (Você, Vencida, Portal, Não vista) e o botão Voltar. Não abre em combate. Com "reduzir animações" a folha aparece direto.
+- **Moedas:** o HUD não mostra o saldo; o aviso "+3 moedas" é curto e some sozinho.
+
 ## Telas principais
 
 As três cenas abaixo foram renderizadas em 3D com modelos CC0 (KayKit) só para marcar o lugar. Os personagens finais entram depois.

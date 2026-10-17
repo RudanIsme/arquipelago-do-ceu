@@ -13,7 +13,7 @@ Experimento local de 14/10/2026. As quatro opções são jogáveis e selecionáv
 
 ## Bônus e persistência
 
-Este experimento autorizado introduz bônus funcionais de equipamento, além dos cosméticos previstos anteriormente. A Energia base continua definida pelos dados (5); durante o treino o conjunto pode acrescentar até 2 ao máximo. Não muda desafios, dificuldade, progresso ou conteúdo educacional.
+Este experimento virou regra em 16/10/2026 (ver `docs/adr/0007-economia-sem-dinheiro-de-verdade.md`) e introduz bônus funcionais de equipamento, além dos cosméticos previstos anteriormente. A Energia base continua definida pelos dados (5); durante o treino o conjunto pode acrescentar até 2 ao máximo. Não muda desafios, dificuldade, progresso ou conteúdo educacional.
 
 - Explorador: velocidade de caminhada e corrida ×1,12.
 - Guardião: +2 de Energia máxima; elmo aberto: +1, limitado a +2 no conjunto.
