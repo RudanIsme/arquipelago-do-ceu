@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Data;
 using System.Text.Json;
 
 namespace ArquipelagoDoCeu.Missions;
@@ -5,8 +6,6 @@ namespace ArquipelagoDoCeu.Missions;
 // Os nomes dos Conceitos para a criança ler ("adicao-ate-10" vira "Adição até 10"). Vêm de dados: o jogo nunca inventa o objetivo.
 public sealed class ConceptNames
 {
-	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
-
 	readonly IReadOnlyDictionary<string, string> names;
 
 	ConceptNames(IReadOnlyDictionary<string, string> names) => this.names = names;
@@ -25,16 +24,10 @@ public sealed class ConceptNames
 
 	public static Result<ConceptNames> Parse(string json)
 	{
-		FileDto? dto;
-		try
-		{
-			dto = JsonSerializer.Deserialize<FileDto>(json, Options);
-		}
-		catch (JsonException e)
-		{
-			return Result<ConceptNames>.Fail($"O arquivo dos nomes dos Conceitos não é um JSON válido: {e.Message}");
-		}
-		if (dto?.Concepts is not { Count: > 0 }) return Result<ConceptNames>.Fail("O arquivo dos nomes dos Conceitos não traz nenhum Conceito.");
+		var read = CatalogJson.Deserialize<FileDto>(json, "O arquivo dos nomes dos Conceitos");
+		if (!read.IsOk) return Result<ConceptNames>.Fail(read.Error!);
+		var dto = read.Value!;
+		if (dto.Concepts is not { Count: > 0 }) return Result<ConceptNames>.Fail("O arquivo dos nomes dos Conceitos não traz nenhum Conceito.");
 		if (dto.Concepts.Any(p => string.IsNullOrWhiteSpace(p.Value))) return Result<ConceptNames>.Fail("Um Conceito do arquivo de nomes está sem nome.");
 		return Result<ConceptNames>.Ok(new ConceptNames(dto.Concepts));
 	}

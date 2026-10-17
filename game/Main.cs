@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using ArquipelagoDoCeu.Data;
 using ArquipelagoDoCeu.Combat;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
@@ -16,7 +17,6 @@ namespace ArquipelagoDoCeu;
 // Raiz de composição: liga os adaptadores do Godot às regras de core/ e conduz o fluxo das telas.
 public partial class Main : Node3D
 {
-	const string RulesPath = "res://data/rules.json";
 	const string SavePath = "user://save.json";
 	// O piloto de desenvolvimento usa um save próprio e descartável, para nunca mexer no progresso nem nas configurações reais.
 	const string PilotSavePath = "user://piloto-save.json";
@@ -45,6 +45,8 @@ public partial class Main : Node3D
 	string? interactTarget;
 	float uiScale = 1f;
 	TrainingDummy dummy = null!;
+
+	readonly CatalogLoader catalogs = new(new GodotDataSource(), message => GD.PushWarning(message));
 
 	public override void _Ready()
 	{
@@ -179,14 +181,7 @@ public partial class Main : Node3D
 		return PilotSavePath;
 	}
 
-	static Result<GameRules> LoadRules()
-	{
-		using var file = FileAccess.Open(RulesPath, FileAccess.ModeFlags.Read);
-		if (file is null)
-			return Result<GameRules>.Fail($"Não foi possível abrir {RulesPath}: {FileAccess.GetOpenError()}");
-
-		return GameRules.Parse(file.GetAsText());
-	}
+	Result<GameRules> LoadRules() => catalogs.Required("rules.json", GameRules.Parse);
 
 	// Abre o save; se precisou recuperá-lo ou migrá-lo, grava o estado novo para o problema não se repetir
 	// e avisa o Responsável na tela.

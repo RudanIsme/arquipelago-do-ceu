@@ -9,7 +9,6 @@ public partial class Main
 	JourneyPreferences journey = new();
 	EquipmentBonuses equipmentBonuses = new();
 	GearService gear = null!;
-	GearCatalog? gearCatalog;
 	// O Papel de agora (a torre ou o treino mais recentes) decide qual equipamento vale no Lobby; cada Papel tem o seu.
 	string role = ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics;
 
@@ -25,14 +24,7 @@ public partial class Main
 	}
 
 	// Sem o catálogo o jogo segue sem equipamento: ele é um extra, e a criança não fica sem jogar por isso.
-	GearCatalog LoadGear()
-	{
-		if (gearCatalog is not null) return gearCatalog;
-		using var file = FileAccess.Open("res://data/equipamentos.json", FileAccess.ModeFlags.Read);
-		var parsed = file is null ? Result<GearCatalog>.Fail("Não foi possível abrir res://data/equipamentos.json: " + FileAccess.GetOpenError()) : GearCatalog.Parse(file.GetAsText());
-		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
-		return gearCatalog = parsed.IsOk ? parsed.Value! : GearCatalog.Empty;
-	}
+	GearCatalog LoadGear() => catalogs.Optional("equipamentos.json", GearCatalog.Parse, GearCatalog.Empty);
 
 	EquipmentBonuses BonusesOf(string papel) => current is null ? new() : gear.Bonuses(current.Id, papel);
 
@@ -170,9 +162,9 @@ public partial class Main
 	{
 		var mastery = progress.Mastery(current!.Id, role);
 		var now = gear.Get(current.Id, role);
-		var armor = value.Armor == "original" ? Result<Gear>.Ok(gearCatalog!.Unequip(now, GearSlot.Armor)) : gearCatalog!.Equip(now, value.Armor, mastery);
+		var armor = value.Armor == "original" ? Result<Gear>.Ok(LoadGear().Unequip(now, GearSlot.Armor)) : LoadGear().Equip(now, value.Armor, mastery);
 		if (!armor.IsOk) return armor.Error;
-		var helmet = value.Helmet == "none" ? Result<Gear>.Ok(gearCatalog.Unequip(armor.Value!, GearSlot.Helmet)) : gearCatalog.Equip(armor.Value!, value.Helmet, mastery);
+		var helmet = value.Helmet == "none" ? Result<Gear>.Ok(LoadGear().Unequip(armor.Value!, GearSlot.Helmet)) : LoadGear().Equip(armor.Value!, value.Helmet, mastery);
 		if (!helmet.IsOk) return helmet.Error;
 		var saved = gear.Set(current.Id, role, helmet.Value!);
 		return saved.IsOk ? null : "Não foi possível salvar o equipamento. Tente aplicar novamente.";

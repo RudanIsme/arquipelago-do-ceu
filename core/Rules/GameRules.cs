@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Data;
 using System.Text.Json;
 
 namespace ArquipelagoDoCeu.Rules;
@@ -33,15 +34,9 @@ public sealed record GameRules(
 		if (string.IsNullOrWhiteSpace(json))
 			return Fail("O arquivo de regras está vazio.");
 
-		Dto? dto;
-		try
-		{
-			dto = JsonSerializer.Deserialize<Dto>(json, Options);
-		}
-		catch (JsonException e)
-		{
-			return Fail($"O arquivo de regras não é um JSON válido: {e.Message}");
-		}
+		var read = CatalogJson.Deserialize<Dto>(json, "O arquivo de regras");
+		if (!read.IsOk) return Fail(read.Error!);
+		var dto = read.Value!;
 		if (dto is null)
 			return Fail("O arquivo de regras não é um JSON válido.");
 
@@ -119,8 +114,6 @@ public sealed record GameRules(
 			? $"Regras inválidas: '{field}' deve estar entre 1 e {max} (veio {value})."
 			: null;
 	}
-
-	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
 	static bool Blank(string? text) => string.IsNullOrWhiteSpace(text);
 

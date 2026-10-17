@@ -12,14 +12,8 @@ namespace ArquipelagoDoCeu;
 // durante a Expedição, e ao sair tudo volta como estava.
 public partial class Main
 {
-	const string FallbackFloorsPath = "res://data/andares-reserva.json";
-	const string CosmeticsPath = "res://data/cosmeticos.json";
-	const string ConceptsPath = "res://data/conceitos.json";
 
 	ProgressService progress = null!;
-	FallbackFloors? fallbackFloors;
-	CosmeticCatalog? cosmetics;
-	ConceptNames? concepts;
 	DungeonRun? dungeon;
 	(string Profile, int Coins)? coinsAtStart;
 	bool inDungeon;
@@ -157,24 +151,10 @@ public partial class Main
 	}
 
 	// Sem o catálogo o jogo segue, só sem Cosméticos: eles são um extra, e a criança não pode ficar sem a torre por isso.
-	CosmeticCatalog LoadCosmetics()
-	{
-		if (cosmetics is not null) return cosmetics;
-		using var file = FileAccess.Open(CosmeticsPath, FileAccess.ModeFlags.Read);
-		var parsed = file is null ? Result<CosmeticCatalog>.Fail($"Não foi possível abrir {CosmeticsPath}: {FileAccess.GetOpenError()}") : CosmeticCatalog.Parse(file.GetAsText());
-		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
-		return cosmetics = parsed.IsOk ? parsed.Value! : CosmeticCatalog.Empty;
-	}
+	CosmeticCatalog LoadCosmetics() => catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
 	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
-	ConceptNames LoadConcepts()
-	{
-		if (concepts is not null) return concepts;
-		using var file = FileAccess.Open(ConceptsPath, FileAccess.ModeFlags.Read);
-		var parsed = file is null ? Result<ConceptNames>.Fail($"Não foi possível abrir {ConceptsPath}: {FileAccess.GetOpenError()}") : ConceptNames.Parse(file.GetAsText());
-		if (!parsed.IsOk) GD.PushWarning(parsed.Error!);
-		return concepts = parsed.IsOk ? parsed.Value! : ConceptNames.Empty;
-	}
+	ConceptNames LoadConcepts() => catalogs.Optional("conceitos.json", ConceptNames.Parse, ConceptNames.Empty);
 
 	// Os Cosméticos que o Perfil já ganhou, com nome e descrição, para o Álbum.
 	IReadOnlyList<Cosmetic> OwnedCosmetics()
@@ -183,13 +163,6 @@ public partial class Main
 		return current is null ? [] : progress.Cosmetics(current.Id).Select(catalog.Find).OfType<Cosmetic>().ToList();
 	}
 
-	Result<FallbackFloors> LoadFallbackFloors()
-	{
-		if (fallbackFloors is not null) return Result<FallbackFloors>.Ok(fallbackFloors);
-		using var file = FileAccess.Open(FallbackFloorsPath, FileAccess.ModeFlags.Read);
-		if (file is null) return Result<FallbackFloors>.Fail($"Não foi possível abrir {FallbackFloorsPath}: {FileAccess.GetOpenError()}");
-		var parsed = FallbackFloors.Parse(file.GetAsText());
-		if (parsed.IsOk) fallbackFloors = parsed.Value;
-		return parsed;
-	}
+	// Sem os Andares de reserva a torre não abre: o validador precisa deles como último recurso.
+	Result<FallbackFloors> LoadFallbackFloors() => catalogs.Required("andares-reserva.json", FallbackFloors.Parse);
 }
