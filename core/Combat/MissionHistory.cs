@@ -7,14 +7,19 @@ namespace ArquipelagoDoCeu.Combat;
 public sealed class MissionHistory(int avoidRecent = 3)
 {
 	readonly List<string> seen = [];
+	readonly HashSet<string> seenIds = [];
 
 	public IReadOnlyList<string> Seen => seen;
 
-	public void Add(string missionId) => seen.Add(missionId);
+	public void Add(string missionId)
+	{
+		seen.Add(missionId);
+		seenIds.Add(missionId);
+	}
 
 	public IReadOnlyList<Mission> Fresh(IReadOnlyList<Mission> pool)
 	{
-		var unseen = pool.Where(m => !seen.Contains(m.Id)).ToList();
+		var unseen = pool.Where(m => !seenIds.Contains(m.Id)).ToList();
 		if (unseen.Count > 0) return unseen;
 
 		var recent = seen.AsEnumerable().Reverse().Distinct().Where(id => pool.Any(m => m.Id == id)).Take(Math.Min(avoidRecent, pool.Count - 1)).ToHashSet();

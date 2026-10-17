@@ -119,8 +119,6 @@ public sealed class ProgressService(SaveSession session)
 
 	public IReadOnlyList<string> Cosmetics(string profileId) => Find(profileId)?.Progress?.Cosmetics ?? [];
 
-	// Registra o Andar completo e dá o Cosmético dele, juntos num só salvamento e só na primeira vez: voltar ao Andar ou
-	// recomeçar a Expedição não repete o prêmio. Se o save falha, nada vale e a criança completa de novo no próximo passo.
 	// A Maestria do Papel (a torre) é quantos Conceitos ele já dominou. Nunca cai: o Conceito dominado fica guardado, mesmo que a
 	// regra de quantas vitórias bastam mude depois, e ficar sem jogar não tira nada.
 	public int Mastery(string profileId, string discipline) =>
@@ -150,13 +148,15 @@ public sealed class ProgressService(SaveSession session)
 
 	public int Coins(string profileId) => Find(profileId)?.Progress?.Coins ?? 0;
 
-	// Moeda é só do jogo. Só soma: gastar ou perder não existe aqui, e o saldo não tem teto.
+	// Moeda é só do jogo. Só soma: gastar ou perder não existe aqui, e o saldo não tem teto de regra (só o do próprio número, que nunca vira negativo).
 	public Result<ProfileSave> AddCoins(string profileId, int amount)
 	{
 		if (Find(profileId) is not { } profile) return Result<ProfileSave>.Fail("Perfil não encontrado.");
-		return amount <= 0 ? Result<ProfileSave>.Ok(profile) : Update(profileId, p => p with { Coins = (p.Coins ?? 0) + amount });
+		return amount <= 0 ? Result<ProfileSave>.Ok(profile) : Update(profileId, p => p with { Coins = (int)Math.Min((long)(p.Coins ?? 0) + amount, int.MaxValue) });
 	}
 
+	// Registra o Andar completo e dá o Cosmético dele, juntos num só salvamento e só na primeira vez: voltar ao Andar ou
+	// recomeçar a Expedição não repete o prêmio. Se o save falha, nada vale e a criança completa de novo no próximo passo.
 	public Result<FloorCompletion> CompleteFloor(string profileId, string discipline, int level, int floor, CosmeticCatalog catalog)
 	{
 		if (FloorDone(profileId, discipline, level, floor)) return Result<FloorCompletion>.Ok(new FloorCompletion(false, null));

@@ -52,6 +52,7 @@ public partial class DungeonRun : Node
 	readonly HashSet<int> paidFloors = [];
 	readonly PanelContainer plate = new() { Name = "Placa" };
 	string? masteryNote;
+	(int Floor, TrainingSetup Setup)? fightSetup;
 	readonly DungeonWorld world = new();
 	readonly Control hud = new() { MouseFilter = Control.MouseFilterEnum.Ignore };
 	readonly Label header = new();
@@ -323,6 +324,7 @@ public partial class DungeonRun : Node
 			: ctx.Free ? DungeonCombat.FreeSetup(missions, history, ctx.Discipline, ctx.Level, expedition.Floor.Number)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
+		if (!InShortcut) fightSetup = (expedition.Floor.Number, setup.Value!);
 		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, new Pcg32((ulong)Time.GetTicksUsec()), ctx.Free ? history : null);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
@@ -388,6 +390,8 @@ public partial class DungeonRun : Node
 	// A vitória num Conceito conta para a Maestria do Papel (Dungeon, nunca treino); o aviso sai junto com o resto da Sala.
 	void OnSolved(Mission mission)
 	{
+		// O Atalho pula o caminho: não rende moedas nem Maestria, para as duas recompensas seguirem a mesma regra.
+		if (InShortcut) return;
 		var update = ctx.Progress.RecordSolved(ctx.ProfileId, ctx.Discipline, mission.Concept, ctx.Rules.Dungeon.ConceptSolves);
 		if (!update.IsOk)
 		{
@@ -597,7 +601,7 @@ public partial class DungeonRun : Node
 		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
 	}
 
-	bool IsFloorDone() => !ctx.Shortcut && (ctx.Free || ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number) || expedition.IsFloorComplete(expedition.Floor.Number));
+	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number)));
 
 	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
@@ -623,7 +627,9 @@ public partial class DungeonRun : Node
 	// O objetivo da placa é o Conceito do Andar, lido das Missões e nomeado em dados; o jogo nunca o inventa.
 	string Objective()
 	{
-		var setup = DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
+		// Na Livre a luta pode ter procurado outra dificuldade; o objetivo mostra o da luta de verdade.
+		var setup = fightSetup is { } fight && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
+			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
 		var subject = ctx.Discipline == TrainingSetup.Mathematics ? "Matemática" : "Português";
 		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";

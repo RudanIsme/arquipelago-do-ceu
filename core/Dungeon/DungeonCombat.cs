@@ -66,7 +66,8 @@ public static class DungeonCombat
 		var year = baseSetup.Value!.Year;
 		var inYear = list.Where(m => m.Discipline == discipline && m.Year == year).ToList();
 		var wanted = baseSetup.Value.Difficulty;
-		var near = inYear.Select(m => m.Difficulty).Distinct().OrderBy(d => Math.Abs(d - wanted)).ThenBy(d => d);
+		// No máximo uma dificuldade para cima ou para baixo: a criança nunca recebe um salto grande de dificuldade.
+		var near = inYear.Select(m => m.Difficulty).Distinct().Where(d => Math.Abs(d - wanted) <= 1).OrderBy(d => Math.Abs(d - wanted)).ThenBy(d => d);
 		var fresh = near.FirstOrDefault(d => inYear.Any(m => m.Difficulty == d && !history.Seen.Contains(m.Id)));
 		return Result<TrainingSetup>.Ok(new TrainingSetup(discipline, year, fresh == 0 ? wanted : fresh));
 	}

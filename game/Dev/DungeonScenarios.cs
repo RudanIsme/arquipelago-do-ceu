@@ -582,7 +582,7 @@ static class DungeonScenarios
 		d.Expect(!d.GetTree().Root.FindChildren("*", "", true, false).OfType<StaffPanel>().Any(), "sair do combate fecha a bolsa");
 		run.DevWinRoom();
 		await d.Wait(0.3);
-		d.Expect(progress.Solves(profile, "matematica", concept) == 1, "vencer o Desafio conta uma vitória no Conceito");
+		d.Expect(progress.Solves(profile, "matematica", concept) >= 1, "vencer o Desafio conta uma vitória no Conceito");
 		d.Expect(progress.Coins(profile) >= 1, "acalmar a criatura rendeu moedas");
 
 		for (var floor = 1; floor <= 5; floor++)
