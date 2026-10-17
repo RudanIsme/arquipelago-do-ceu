@@ -12,10 +12,16 @@ public sealed class MathBag
 	readonly List<int> discard = [];
 	readonly int?[] hand;
 	readonly int?[] hidden;
+	readonly int copies;
+	readonly List<int> numbers;
+	readonly IReadOnlyList<string> operators;
 
 	public MathBag(CombatRules rules, Pcg32 rng)
 	{
 		this.rng = rng;
+		numbers = [.. rules.BagNumbers.Distinct()];
+		operators = rules.Operators;
+		copies = rules.BagCopies;
 		foreach (var number in rules.BagNumbers)
 			for (var copy = 0; copy < rules.BagCopies; copy++)
 				pile.Add(number);
@@ -27,6 +33,48 @@ public sealed class MathBag
 	}
 
 	public IReadOnlyList<int?> Hand => hand;
+
+	// Dá para formar `value` com dois números da bolsa e um dos sinais? É o que decide se o Escudo ainda tem saída.
+	public bool CanForm(int value) => FindPair(value, []) is not null;
+
+	// Sem saída: está ao alcance da bolsa, mas nenhuma conta forma o valor. Acima do alcance sempre cabe um golpe parcial.
+	public bool IsDeadEnd(int value) => value <= numbers.Max() * 2 && !CanForm(value);
+
+	// Garante que a mão forma o valor do Escudo: sem isso a criança poderia ficar numa Sala sem saída (ex.: Escudo 2 sem o 1 na mão).
+	// Troca só o mínimo de peças da mão, e as trocadas vão para o descarte.
+	public void EnsureReach(int value)
+	{
+		var present = Enumerable.Range(0, hand.Length).Where(slot => hand[slot] is not null).ToList();
+		var inHand = present.Select(slot => hand[slot]!.Value).ToList();
+		if (present.Count < 2 || FindPair(value, inHand, onlyInHand: true) is not null) return;
+
+		var pair = FindPair(value, inHand);
+		if (pair is not { } found) return;
+		var (a, b) = found;
+		var keep = present.FirstOrDefault(slot => hand[slot] == a || hand[slot] == b, -1);
+		var kept = keep >= 0 ? hand[keep]!.Value : -1;
+		var wanted = new List<int> { a, b };
+		if (kept >= 0) wanted.Remove(kept);
+		foreach (var slot in present.Where(slot => slot != keep).Take(wanted.Count).ToList())
+		{
+			discard.Add(hand[slot]!.Value);
+			hand[slot] = wanted[0];
+			wanted.RemoveAt(0);
+		}
+	}
+
+	(int A, int B)? FindPair(int value, List<int> inHand, bool onlyInHand = false)
+	{
+		var pool = onlyInHand ? inHand : numbers;
+		for (var i = 0; i < pool.Count; i++)
+			for (var j = 0; j < pool.Count; j++)
+			{
+				if (onlyInHand ? i == j : pool[i] == pool[j] && copies < 2) continue;
+				if (operators.Contains("+") && pool[i] + pool[j] == value) return (pool[i], pool[j]);
+				if (operators.Contains("-") && pool[i] - pool[j] == value) return (pool[i], pool[j]);
+			}
+		return null;
+	}
 
 	public int HiddenCount => hidden.Count(p => p is not null);
 

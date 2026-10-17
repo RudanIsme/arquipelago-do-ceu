@@ -63,6 +63,7 @@ public sealed class TrainingBattle : IBattle
 		history?.Add(Mission.Id);
 		StartingShield = Mission.Params["target"].GetInt32();
 		Shield = new Shield(StartingShield);
+		Bag.EnsureReach(StartingShield);
 	}
 
 	public Result<AttackResult> Confirm()
@@ -73,6 +74,13 @@ public sealed class TrainingBattle : IBattle
 		if (!result.IsOk) return Result<AttackResult>.Fail(result.Error!);
 
 		var outcome = Shield.Hit(result.Value!);
+		// Um resto que nenhuma conta da bolsa forma (ex.: 1 só com "+") deixaria a criança sem saída: o Escudo se dissolve.
+		if (outcome == HitOutcome.Reduced && Bag.IsDeadEnd(Shield.Remaining))
+		{
+			Shield.Dissolve();
+			outcome = HitOutcome.Dissolved;
+		}
+		if (!Shield.IsDissolved) Bag.EnsureReach(Shield.Remaining);
 		return Result<AttackResult>.Ok(new AttackResult(result.Value!, outcome, Shield.Remaining, $"{assembled} = {result.Value!.Total}"));
 	}
 }

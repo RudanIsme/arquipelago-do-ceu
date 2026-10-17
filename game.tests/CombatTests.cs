@@ -565,6 +565,34 @@ public class TrainingBattleTests
 		Assert.Equal("a", battle.Mission.Id);
 	}
 
+	[Theory]
+	[InlineData(2)]
+	[InlineData(7)]
+	[InlineData(10)]
+	public void A_mao_sempre_forma_o_escudo_e_nenhum_golpe_deixa_a_Sala_sem_saida(int target)
+	{
+		for (ulong seed = 1; seed <= 150; seed++)
+		{
+			var battle = TrainingBattle.Start(Rules, [MissionWith("a", target)], new Pcg32(seed)).Value!;
+			for (var turn = 0; turn < 6 && !battle.Shield.IsDissolved; turn++)
+			{
+				Assert.True(HandForms(battle), $"seed {seed}, escudo {battle.Shield.Remaining}");
+				var slots = Enumerable.Range(0, battle.Bag.Hand.Count).Where(i => battle.Bag.Hand[i] is not null).Take(2).ToList();
+				battle.Staff.Place(slots[0]);
+				battle.Staff.PlaceOperator("+");
+				battle.Staff.Place(slots[1]);
+				battle.Confirm();
+				battle.Staff.Cancel();
+			}
+		}
+	}
+
+	static bool HandForms(TrainingBattle battle)
+	{
+		var hand = battle.Bag.Hand.Where(p => p is not null).Select(p => p!.Value).ToList();
+		return hand.SelectMany((a, i) => hand.Where((_, j) => j != i).Select(b => a + b)).Contains(battle.Shield.Remaining);
+	}
+
 	[Fact]
 	public void Sem_Missao_de_compor_numero_nao_ha_luta()
 	{
