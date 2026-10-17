@@ -66,6 +66,7 @@ public partial class Lobby : Node3D, ICombatStage
 		AddObjects();
 		AddPlaces();
 		AddConceptWaterfall();
+		AddLamps();
 	}
 
 	// Hexágono "flat-top": vértices à esquerda e à direita, como nos mockups.
@@ -109,14 +110,15 @@ public partial class Lobby : Node3D, ICombatStage
 			GlowBloom = 0f,
 		};
 		AddChild(new WorldEnvironment { Environment = environment });
-		AddChild(new DirectionalLight3D
+		sun = new DirectionalLight3D
 		{
 			LightColor = Color.FromHtml("#FFE4BC"),
 			LightEnergy = 1.2f,
 			ShadowEnabled = true,
 			ShadowBlur = 2f,
 			RotationDegrees = new Vector3(-50f, -30f, 0f),
-		});
+		};
+		AddChild(sun);
 	}
 
 	// Desfoque leve das bordas (efeito maquete): só o que está bem longe da câmera, para os números e as criaturas ficarem nítidos.
@@ -376,6 +378,7 @@ public partial class Lobby : Node3D, ICombatStage
 	{
 		clock += delta;
 		TickLandmarks(delta);
+		TickDay();
 		var bob = ReduceMotion ? 0f : Mathf.Sin((float)clock * 4f) * 0.15f;
 		foreach (var marker in markers.Values)
 			if (marker.Visible) marker.Position = new Vector3(marker.Position.X, MarkerBaseY(marker) + bob, marker.Position.Z);

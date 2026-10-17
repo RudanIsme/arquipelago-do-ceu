@@ -141,6 +141,7 @@ public partial class Main : Node3D
 		uiRoot.Theme = font is null ? null : new Theme { DefaultFont = font };
 		lobby.SetFont(font);
 		lobby.SetEffects(s.ReduceEffects);
+		lobby.SetFixedDay(s.FixedDay);
 		dummy.SetFont(font);
 
 		player.ReduceMotion = s.ReduceMotion || (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().Contains("--reduzir-animacoes"));

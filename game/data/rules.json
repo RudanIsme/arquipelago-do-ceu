@@ -245,6 +245,7 @@
   },
   "lobby": {
     "interactionReach": 2.2,
+    "dayCycleSeconds": 480,
     "camera": {
       "size": 24,
       "minSize": 8,

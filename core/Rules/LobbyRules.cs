@@ -11,7 +11,7 @@ public sealed record LobbyObject(string Id, string Name, string Prompt, string? 
 // a suavidade do acompanhamento, a folga (a câmera só segue quando o Personagem sai dela) e até onde a câmera pode se afastar do centro.
 public sealed record CameraRules(float Size, float MinSize, float MaxSize, float ZoomStep, float FollowSharpness, float DeadZone, float MaxPan);
 
-public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera);
+public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera, float DayCycleSeconds);
 
 public sealed record TextSizeOption(string Id, string Name, float Scale);
 
@@ -23,7 +23,7 @@ public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMo
 
 public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, IReadOnlyList<VoiceSpeedOption> VoiceSpeeds, SettingsDefaults Defaults);
 
-sealed record LobbyDto(float? InteractionReach, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
+sealed record LobbyDto(float? InteractionReach, float? DayCycleSeconds, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
 
 sealed record CameraDto(float? Size, float? MinSize, float? MaxSize, float? ZoomStep, float? FollowSharpness, float? DeadZone, float? MaxPan);
 
@@ -48,6 +48,8 @@ static class LobbyChecks
 	const float MaxReach = 10f;
 	const float MinScale = 0.75f;
 	const float MaxScale = 2f;
+	const float MinDayCycle = 60f;
+	const float MaxDayCycle = 3600f;
 	const float MinRate = 0.5f;
 	const float MaxRate = 2f;
 
@@ -57,6 +59,9 @@ static class LobbyChecks
 		if (lobby.InteractionReach is null) return Required("lobby.interactionReach");
 		if (lobby.InteractionReach < MinReach || lobby.InteractionReach > MaxReach)
 			return $"Regras inválidas: '{"lobby.interactionReach"}' deve estar entre {MinReach} e {MaxReach} (veio {lobby.InteractionReach}).";
+		if (lobby.DayCycleSeconds is null) return Required("lobby.dayCycleSeconds");
+		if (lobby.DayCycleSeconds < MinDayCycle || lobby.DayCycleSeconds > MaxDayCycle)
+			return $"Regras inválidas: 'lobby.dayCycleSeconds' deve estar entre {MinDayCycle} e {MaxDayCycle} (veio {lobby.DayCycleSeconds}).";
 		if (lobby.Places is null) return Required("lobby.places");
 		if (lobby.Objects is null) return Required("lobby.objects");
 		if (CheckCamera(lobby.Camera) is { } cameraError) return cameraError;
@@ -110,7 +115,8 @@ static class LobbyChecks
 		lobby.InteractionReach!.Value,
 		lobby.Places!.Select(p => new LobbyPlace(p!.Id!, p.Name!, p.Sign!, Blank(p.Model) ? null : p.Model, p.X!.Value, p.Z!.Value)).ToList(),
 		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList(),
-		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value));
+		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value),
+		lobby.DayCycleSeconds!.Value);
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{
