@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ArquipelagoDoCeu.Dungeon;
@@ -105,7 +106,10 @@ public partial class FloorMap : Control
 		var line = Color.FromHtml("#D9A64A");
 		foreach (var link in floor.Links)
 			if (SightOf(link.A) == Sight.Seen || SightOf(link.B) == Sight.Seen)
+			{
 				DrawLine(positions[link.A], positions[link.B], line, 3f, true);
+				if (floor.Rooms[link.A].Kind == RoomKind.Puzzle || floor.Rooms[link.B].Kind == RoomKind.Puzzle) DrawDoorMark(positions[link.A], positions[link.B]);
+			}
 
 		var font = ThemeDB.FallbackFont;
 		foreach (var room in floor.Rooms)
@@ -120,14 +124,16 @@ public partial class FloorMap : Control
 
 			var (letter, _, color) = Look[room.Kind];
 			var at = positions[room.Id];
-			var dim = Cleared.Contains(room.Id) ? 0.45f : 1f;
-			var fill = new Color(color.R, color.G, color.B, dim);
-			Shape(room.Kind, at, fill);
-			if (Here == room.Id) DrawArc(at, Radius + 6, 0, Mathf.Tau, 24, Colors.White, 3f, true);
+			var done = Cleared.Contains(room.Id);
+			Shape(room.Kind, at, new Color(color.R, color.G, color.B, done ? 0.55f : 1f));
 			var width = font.GetStringSize(letter, HorizontalAlignment.Left, -1, 20).X;
 			DrawString(font, at + new Vector2(-width / 2, 7), letter, HorizontalAlignment.Left, -1, 20, Colors.Black);
 			if (room.HoldsItem)
 				DrawString(font, at + new Vector2(Radius - 4, -Radius + 6), "★", HorizontalAlignment.Left, -1, 18, Color.FromHtml("#FFEB3B"));
+			// Cada estado tem forma própria: visto (vencida), arco (Fast travel) e boneco (onde a criança está).
+			if (done) DrawCheck(at + new Vector2(-Radius + 3, -Radius + 5));
+			if (room.Kind == RoomKind.FastTravel) DrawArch(at + new Vector2(-Radius + 2, Radius - 2));
+			if (Here == room.Id) DrawPerson(at + new Vector2(Radius - 1, Radius - 3));
 		}
 
 		if (!complete) return;
@@ -137,6 +143,57 @@ public partial class FloorMap : Control
 	}
 
 	Sight SightOf(int room) => source?.SightOf(room) ?? Sight.Seen;
+
+	void DrawCheck(Vector2 at)
+	{
+		Vector2[] points = [at + new Vector2(-5, 0), at + new Vector2(-1, 4), at + new Vector2(6, -5)];
+		DrawPolyline(points, Colors.Black, 6f, true);
+		DrawPolyline(points, Color.FromHtml("#7CFC8A"), 3f, true);
+	}
+
+	void DrawArch(Vector2 at)
+	{
+		DrawArc(at + new Vector2(0, -2), 6f, Mathf.Pi, Mathf.Tau, 10, Colors.Black, 6f, true);
+		DrawLine(at + new Vector2(-6, -2), at + new Vector2(-6, 5), Colors.Black, 6f);
+		DrawLine(at + new Vector2(6, -2), at + new Vector2(6, 5), Colors.Black, 6f);
+		DrawArc(at + new Vector2(0, -2), 6f, Mathf.Pi, Mathf.Tau, 10, Colors.White, 3f, true);
+		DrawLine(at + new Vector2(-6, -2), at + new Vector2(-6, 5), Colors.White, 3f);
+		DrawLine(at + new Vector2(6, -2), at + new Vector2(6, 5), Colors.White, 3f);
+	}
+
+	void DrawPerson(Vector2 at)
+	{
+		DrawCircle(at + new Vector2(0, -6), 5f, Colors.Black);
+		DrawRect(new Rect2(at + new Vector2(-5, -1), new Vector2(10, 9)), Colors.Black);
+		DrawCircle(at + new Vector2(0, -6), 3.5f, Colors.White);
+		DrawRect(new Rect2(at + new Vector2(-3.5f, 0), new Vector2(7, 6.5f)), Colors.White);
+	}
+
+	// Um traço atravessando a linha: é a porta (o Puzzle) entre duas Salas.
+	static readonly Func<Vector2, Vector2, Vector2> Perpendicular = (a, b) => (b - a).Normalized().Orthogonal();
+
+	void DrawDoorMark(Vector2 a, Vector2 b)
+	{
+		var mid = (a + b) / 2;
+		var across = Perpendicular(a, b) * 8f;
+		DrawLine(mid - across, mid + across, Colors.Black, 6f);
+		DrawLine(mid - across, mid + across, Colors.White, 3f);
+	}
+
+	// Parar o dedo ou o mouse sobre uma Sala pede a descrição dela em voz alta.
+	public event Action<int>? RoomPointed;
+
+	int? pointed;
+
+	public override void _GuiInput(InputEvent @event)
+	{
+		if (@event is not (InputEventMouseMotion or InputEventMouseButton { Pressed: true })) return;
+		var position = ((InputEventMouse)@event).Position;
+		var near = positions.Where(p => SightOf(p.Key) != Sight.Hidden && p.Value.DistanceTo(position) <= Radius + 6).Select(p => (int?)p.Key).FirstOrDefault();
+		if (near == pointed) return;
+		pointed = near;
+		if (near is { } room) RoomPointed?.Invoke(room);
+	}
 
 	// A Sala sob névoa é um círculo cinza com "?"; o cadeado é desenhado (corpo e argola), e nunca só uma cor.
 	void DrawFog(Font font, Vector2 at, bool locked)

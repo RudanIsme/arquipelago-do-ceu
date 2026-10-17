@@ -204,8 +204,12 @@ public partial class TrainingArea : Node
 		else OpenPanel();
 	}
 
+	// O treino é de um Papel; o equipamento dele é o que vale na luta.
+	public event Action<string>? RoleChosen;
+
 	string? TryStart(TrainingSetup setup)
 	{
+		RoleChosen?.Invoke(setup.Discipline);
 		var started = CombatSession.Start(rules.Combat, rules.MaxEnergy + extraEnergy, unlockedLevel(), setup, missions, new Pcg32((ulong)Time.GetTicksUsec()));
 		if (!started.IsOk) return started.Error;
 

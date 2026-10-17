@@ -160,15 +160,22 @@ partial class EnergyDots : Control
 		QueueRedraw();
 	}
 
-	// Energia que sobrou: círculo cheio. Energia que falta: só o contorno.
+	// Energia que sobrou: raio cheio. Energia que falta: só o contorno do raio.
 	public override void _Draw()
 	{
 		var gold = UiKit.Compact?UiKit.TextColor:Color.FromHtml("#F2B632");
 		for (var i = 0; i < max; i++)
 		{
 			var center = new Vector2(Radius + i * (Radius * 2f + Gap), Size.Y / 2f);
-			if (i < current) DrawCircle(center, Radius, gold);
-			else DrawArc(center, Radius - 1.5f, 0f, Mathf.Tau, 32, gold, 3f);
+			var bolt = Bolt(center);
+			if (i < current) DrawColoredPolygon(bolt, gold);
+			else DrawPolyline([.. bolt, bolt[0]], gold, 2.5f, true);
 		}
 	}
+
+	Vector2[] Bolt(Vector2 c) =>
+	[
+		c + new Vector2(.35f, -1f) * Radius, c + new Vector2(-.7f, .15f) * Radius, c + new Vector2(-.05f, .15f) * Radius,
+		c + new Vector2(-.35f, 1f) * Radius, c + new Vector2(.7f, -.15f) * Radius, c + new Vector2(.05f, -.15f) * Radius,
+	];
 }

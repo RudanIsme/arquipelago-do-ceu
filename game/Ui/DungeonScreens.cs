@@ -3,6 +3,82 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
+// Ao voltar da Expedição: o total de moedas com o "+X" e o número subindo até o saldo novo. Enter ou um toque pulam a
+// animação (e, depois dela, fecham); com "reduzir animações" o valor aparece direto.
+public partial class CoinsArrivalScreen : OverlayScreen
+{
+	readonly int before;
+	readonly int after;
+	readonly bool reduceMotion;
+	readonly Action<string> speak;
+	readonly Label total = new() { HorizontalAlignment = HorizontalAlignment.Center, Name = "Moedas" };
+	Tween? tween;
+	bool counting;
+
+	public CoinsArrivalScreen(int before, int after, bool reduceMotion, Action<string> speak)
+	{
+		this.before = before;
+		this.after = after;
+		this.reduceMotion = reduceMotion;
+		this.speak = speak;
+	}
+
+	public static string Spoken(int gained, int now) => $"Você ganhou {(gained == 1 ? "1 moeda" : $"{gained} moedas")}, agora tem {now}.";
+
+	public string Shown => total.Text;
+
+	public override void _Ready()
+	{
+		base._Ready();
+		var gained = after - before;
+		var box = UiKit.Card(this, "De volta ao Lobby", out var footer);
+		total.AddThemeFontSizeOverride("font_size", 56);
+		total.AddThemeColorOverride("font_color", UiKit.TextColor);
+		box.AddChild(UiKit.Hint("Suas moedas"));
+		box.AddChild(total);
+		var plus = UiKit.Hint($"+{gained}");
+		plus.HorizontalAlignment = HorizontalAlignment.Center;
+		plus.AddThemeFontSizeOverride("font_size", 32);
+		box.AddChild(plus);
+		footer.AddChild(UiKit.BigButton("Continuar", Close, 300));
+		speak(Spoken(gained, after));
+
+		if (reduceMotion || gained <= 0)
+		{
+			total.Text = after.ToString();
+			return;
+		}
+		total.Text = before.ToString();
+		counting = true;
+		tween = CreateTween();
+		tween.TweenMethod(Callable.From<float>(value => total.Text = Mathf.RoundToInt(value).ToString()), (float)before, (float)after, Mathf.Min(2f, 0.4f + gained * 0.05f));
+		tween.Finished += () => counting = false;
+	}
+
+	void Skip()
+	{
+		tween?.Kill();
+		counting = false;
+		total.Text = after.ToString();
+	}
+
+	public override void _GuiInput(InputEvent @event)
+	{
+		if (@event is InputEventMouseButton { Pressed: true } && counting) Skip();
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (counting && @event.IsActionPressed("ui_accept"))
+		{
+			GetViewport().SetInputAsHandled();
+			Skip();
+			return;
+		}
+		base._UnhandledInput(@event);
+	}
+}
+
 // Ao iniciar a Expedição: seguir o Plano do Nível (Progressão) ou explorar Andares sem fim (Livre). Esc fecha sem entrar.
 public partial class ExpeditionModeScreen : OverlayScreen
 {

@@ -63,6 +63,7 @@ public partial class Main : Node3D
 		var session = new SaveSession(store, save.Value!);
 		progress = new ProgressService(session);
 		journeys = new ArquipelagoDoCeu.Equipment.JourneyService(session);
+		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
 		// Fechar a janela passa por QuitAsync, para a voz terminar antes de o jogo sair.
@@ -349,6 +350,7 @@ public partial class Main : Node3D
 		training = new TrainingArea(rules, lobby, player, dummy, voice, settings, uiRoot,
 			UnlockedLevel, () => player.Enabled, ShowOverlay, Notify);
 		AddChild(training);
+		training.RoleChosen += ChooseRole;
 		master = new MasterChallenge(rules, training, uiRoot, progress, () => equipmentBonuses.ExtraEnergy, Notify, saved => current = saved);
 		AddChild(master);
 	}

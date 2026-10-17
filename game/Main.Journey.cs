@@ -8,8 +8,46 @@ public partial class Main
  JourneyService journeys = null!;
  JourneyPreferences journey = new();
  EquipmentBonuses equipmentBonuses = new();
- bool experimentalEquipment;
- EquipmentLoadout ActiveEquipment => experimentalEquipment ? EquipmentCatalog.Normalize(journey.Equipment) : new();
+ GearService gear = null!;
+ GearCatalog? gearCatalog;
+ // O Papel de agora (a torre ou o treino mais recentes) decide qual equipamento vale no Lobby; cada Papel tem o seu.
+ string role = ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics;
+
+ // O que o Personagem veste: os itens do Papel de agora e as cores escolhidas na oficina.
+ EquipmentLoadout ActiveEquipment
+ {
+  get
+  {
+   var worn = current is null ? new Gear() : gear.Get(current.Id, role);
+   var colors = EquipmentCatalog.Normalize(journey.Equipment);
+   return EquipmentCatalog.Normalize(colors with { Armor = worn.Armor ?? "original", Helmet = worn.Helmet ?? "none" });
+  }
+ }
+
+ // Sem o catálogo o jogo segue sem equipamento: ele é um extra, e a criança não fica sem jogar por isso.
+ GearCatalog LoadGear()
+ {
+  if(gearCatalog is not null)return gearCatalog;
+  using var file = FileAccess.Open("res://data/equipamentos.json", FileAccess.ModeFlags.Read);
+  var parsed = file is null ? Result<GearCatalog>.Fail("Não foi possível abrir res://data/equipamentos.json: " + FileAccess.GetOpenError()) : GearCatalog.Parse(file.GetAsText());
+  if(!parsed.IsOk)GD.PushWarning(parsed.Error!);
+  return gearCatalog = parsed.IsOk ? parsed.Value! : GearCatalog.Empty;
+ }
+
+ EquipmentBonuses BonusesOf(string papel) => current is null ? new() : gear.Bonuses(current.Id, papel);
+
+ string RoleName(string papel) => papel == ArquipelagoDoCeu.Combat.TrainingSetup.Mathematics ? rules.Roles.Mathematics : rules.Roles.Portuguese;
+
+ // O card do canto mostra a Maestria do Papel de agora.
+ void RefreshCard() => journeyHud?.SetCard(current?.Nickname ?? "Viajante", RoleName(role), current is null ? 0 : progress.Mastery(current.Id, role));
+
+ // Sempre reaplica: o equipamento do Papel pode ter mudado desde a última vez.
+ void ChooseRole(string papel)
+ {
+  role=papel;
+  ApplyJourneyEquipment();
+  RefreshCard();
+ }
  JourneyHud? journeyHud;
  EquipmentWorkshop? workshop;
  Control? legacyHud;
@@ -26,6 +64,8 @@ public partial class Main
   journeyHud.EquipmentRequested += ShowEquipment;
 
   journeyHud.ProfilesRequested += ShowProfiles;
+  journeyHud.EditRequested += ShowEditor;
+  journeyHud.Speak = text => voice.Say(text, interrupt:true);
   journeyHud.SettingsRequested += ShowSettings;
   journeyHud.InteractRequested += () => Interact(interactTarget);
   returnJourney = new Button { Text="Voltar ao Livro", Position=new Vector2(12,130), CustomMinimumSize=new Vector2(180,44), Visible=false };
@@ -40,7 +80,6 @@ public partial class Main
   if(current is null)return;
   // Keep saved experiments intact; the approved presentation starts fresh each session.
   journey = journeys.Get(current.Id) with { Variant = "book" };
-  experimentalEquipment = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "--experimental-equipment") >= 0;
   ApplyJourneyEquipment();
   ConfigureJourney();
  }
@@ -51,6 +90,7 @@ public partial class Main
   training.RefreshPresentation();
   FitUiRoot();
   journeyHud?.Configure(journey.Variant,current?.Nickname??"Viajante",EquipmentCatalog.Summary(ActiveEquipment));
+  RefreshCard();
   conceptAmbience?.SetVariant(journey.Variant);
   lobby.SetCompactSigns(journey.Variant != "base");
   foreach(var node in GetTree().GetNodesInGroup(CameraController.LabelGroup))
@@ -78,7 +118,7 @@ public partial class Main
  void ApplyJourneyEquipment()
  {
   var loadout=ActiveEquipment;
-  equipmentBonuses=EquipmentCatalog.Bonuses(loadout);
+  equipmentBonuses=BonusesOf(role);
   player.SpeedMultiplier=equipmentBonuses.SpeedMultiplier;
   player.ApplyEquipment(loadout);
   training.SetEquipmentEnergy(equipmentBonuses.ExtraEnergy);
@@ -89,10 +129,18 @@ public partial class Main
   if(current is null || workshop is not null || overlay is not null || screen is not null || editor is not null)return;
   DropTarget();
   if(overlay is not null)return;
-  workshop=new EquipmentWorkshop(journey.Variant,EquipmentCatalog.Normalize(journey.Equipment), !experimentalEquipment);
-  if(experimentalEquipment) workshop.PreviewChanged += value => player.ApplyEquipment(value);
+  workshop=new EquipmentWorkshop(journey.Variant,ActiveEquipment, false);
+  workshop.PreviewChanged += value => player.ApplyEquipment(value);
   workshop.Cancelled += CloseEquipment;
   workshop.Applied += value => {
+   // A Maestria do Papel decide o que se veste: quem não tem a Maestria vê o motivo e nada é salvo.
+   var blocked=TryWear(value);
+   if(blocked is not null)
+   {
+    workshop?.ShowError(blocked);
+    voice.Say(blocked, interrupt:true);
+    return;
+   }
    var next=journey with { Equipment=EquipmentCatalog.Normalize(value) };
    var saved=journeys.Set(current.Id,next);
    if(!saved.IsOk)
@@ -107,10 +155,23 @@ public partial class Main
    ApplyJourneyEquipment();
    CloseEquipment();
    ConfigureJourney();
-   Notify(experimentalEquipment ? "Equipamento salvo." : "Comparação salva. Traje original mantido.");
+   Notify("Equipamento salvo.");
   };
   uiRoot.AddChild(workshop);
   UpdatePlayerControl();
+ }
+
+ // Veste a armadura e o capacete escolhidos no Papel de agora; devolve o motivo se algum não puder, sem gravar nada.
+ string? TryWear(EquipmentLoadout value)
+ {
+  var mastery=progress.Mastery(current!.Id,role);
+  var now=gear.Get(current.Id,role);
+  var armor=value.Armor=="original" ? Result<Gear>.Ok(gearCatalog!.Unequip(now,GearSlot.Armor)) : gearCatalog!.Equip(now,value.Armor,mastery);
+  if(!armor.IsOk)return armor.Error;
+  var helmet=value.Helmet=="none" ? Result<Gear>.Ok(gearCatalog.Unequip(armor.Value!,GearSlot.Helmet)) : gearCatalog.Equip(armor.Value!,value.Helmet,mastery);
+  if(!helmet.IsOk)return helmet.Error;
+  var saved=gear.Set(current.Id,role,helmet.Value!);
+  return saved.IsOk ? null : "Não foi possível salvar o equipamento. Tente aplicar novamente.";
  }
 
  void CloseEquipment()

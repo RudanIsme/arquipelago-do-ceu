@@ -372,8 +372,17 @@ static class DungeonScenarios
 	}
 
 	// O Personagem anda devagar: clica no hexágono e espera chegar de verdade.
+	// Ao voltar com moedas novas o jogo mostra o total; o piloto fecha essa tela para seguir.
+	static async Task DismissCoins(DevDriver d)
+	{
+		if (d.Button("Continuar") is null || !d.HasVisible("Suas moedas")) return;
+		await d.Press("Continuar");
+		await d.Wait(0.2);
+	}
+
 	static async Task WalkTo(DevDriver d, int q, int r)
 	{
+		await DismissCoins(d);
 		// Sem janela não há mouse: o piloto coloca o Personagem no hexágono, e o resto (interagir) usa as ações de sempre.
 		if (DisplayServer.GetName() == "headless")
 		{
@@ -401,6 +410,7 @@ static class DungeonScenarios
 
 	static async Task EnsureProfile(DevDriver d)
 	{
+		await DismissCoins(d);
 		if (d.Button("Criar") is not null)
 		{
 			await d.Press("Criar");
@@ -609,6 +619,48 @@ static class DungeonScenarios
 		run.Leave("");
 		await d.Wait(0.5);
 		d.Expect(progress.Coins(profile) > 1, "as moedas continuam depois de voltar ao Lobby");
+		await DismissCoins(d);
+	}
+
+	// O equipamento vale em combate e a Maestria decide o que se veste (#126), com o card do avatar (#122) e o aviso das moedas (#132).
+	public static async Task Equipment(DevDriver d)
+	{
+		await EnsureProfile(d);
+		var main = d.GetParent<Main>();
+		var profile = main.DevProfileId;
+		d.Expect(d.HasVisible("Maestria 0") && d.Button("Editar") is not null, "no Lobby o card mostra a Maestria e o lápis de Editar");
+		await d.Shot("01-card-no-lobby");
+
+		var mastery = main.DevProgress.Mastery(profile, "matematica");
+		d.Expect(!main.DevGear.Equip(profile, "matematica", "guardian", mastery).IsOk, "sem a Maestria necessária o equipamento não veste");
+		d.Expect(main.DevGear.Equip(profile, "matematica", "open", 1).IsOk, "com a Maestria o Elmo aberto veste");
+		d.Expect(!main.DevGear.Get(profile, "portugues").Equals(main.DevGear.Get(profile, "matematica")), "o equipamento é de cada Papel");
+
+		var run = await Enter(d);
+		if (run is null) return;
+		d.Expect(run.Expedition.Energy.Max == 6, "o Elmo aberto soma 1 de Energia máxima na Expedição");
+		d.Expect(d.HasVisible("Maestria 0") && d.Button("Editar") is null, "na Dungeon o card mostra a Maestria e não tem o lápis de Editar");
+		d.Expect(run.CoinToast == "Moedas: 0", "ao ir para a Expedição aparece o total de moedas");
+		await d.Shot("02-card-na-dungeon");
+
+		await GoTo(d, run, RoomKind.Combat);
+		d.Expect(!run.Expedition.IsCleared(run.Expedition.CurrentRoom), "chegou a uma luta por vencer");
+		run.DevWinRoom();
+		await d.Wait(0.3);
+		d.Expect(run.CoinToast == "+1 moeda" && d.HasVisible("+1 moeda"), "ganhar moedas na Dungeon mostra um aviso curto");
+		await d.Shot("03-aviso-de-moedas");
+		var here = run.Expedition.CurrentRoom;
+		d.Expect(run.RoomSpeech(here).Contains("Você está aqui") && run.RoomSpeech(here).Contains("vencida"), "a voz descreve a Sala atual e diz que está vencida");
+		var fog = run.Expedition.Floor.Rooms.First(r => run.Expedition.SightOf(r.Id) == ArquipelagoDoCeu.Dungeon.Sight.Fog);
+		d.Expect(run.RoomSpeech(fog.Id).Contains("névoa") && !run.RoomSpeech(fog.Id).Contains(FloorMap.NameOf(fog.Kind).ToLowerInvariant()), "a voz não revela o que há sob a névoa");
+		run.Leave("");
+		await d.Wait(0.5);
+		d.Expect(d.HasVisible("De volta ao Lobby") && d.HasVisible("+1"), "ao voltar aparece o total com o +X");
+		await d.Shot("04-moedas-ao-voltar");
+		await d.Tap("ui_accept");
+		await d.Wait(0.3);
+		d.Expect(d.Button("Continuar") is not null, "Enter pulou a animação e a tela continua para o jogador fechar");
+		await d.Press("Continuar");
 	}
 
 	// Energia zerada numa luta volta ao Lobby sem mensagem que culpe a criança, e a Expedição acaba.

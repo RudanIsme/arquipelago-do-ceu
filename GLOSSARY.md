@@ -189,6 +189,10 @@ _Avoid_: Herói, avatar
 O que a Dungeon faz o Personagem ser: roupas, ferramenta e habilidades próprias. As habilidades crescem conforme a criança aprende Conceitos.
 _Avoid_: Classe
 
+**Equipamento**:
+Peça que o Personagem veste num dos três espaços (Capacete, Armadura e Acessório), por Papel. Cada peça dá um atributo (Energia máxima, velocidade ou alcance de interação) e pede uma Maestria mínima do Papel; quem não tem a Maestria não a veste. O Personagem soma os atributos base com os do equipamento, até os limites do conjunto. Vale em qualquer combate, inclusive no treino. Não evolui (uma peça substitui a outra), e vestir ou trocar nunca recupera Energia. Não é Cosmético: Cosmético só muda a aparência.
+_Avoid_: Item (Item é o Item de troca), Cosmético
+
 **Maestria**:
 O número de um Papel, que sobe cada vez que a criança domina um Conceito na Dungeon daquele Papel (acumulando as vitórias que os dados pedem). Não há XP separado, não cai nunca e ficar sem jogar não tira nada. O treino do Lobby não conta, e velocidade e número de tentativas não entram.
 _Avoid_: Nível do Papel, XP
