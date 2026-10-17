@@ -12,7 +12,18 @@
   "params": {
     "task": "troco",
     "price": 1250,
-    "given": 2000
+    "given": 2000,
+    "pieces": [
+      5,
+      10,
+      25,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000
+    ]
   },
   "prompt": "O caderno custa R$ 12,50 e você deu uma nota de R$ 20,00. Monte o troco!",
   "hints": [

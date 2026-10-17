@@ -67,7 +67,7 @@ public sealed class CreatureMover
 			GiveUp();
 			return;
 		}
-		if (distance > rules.StopDistance) Step(player - Position, rules.ApproachSpeed, seconds);
+		if (distance > rules.StopDistance && !Step(player - Position, rules.ApproachSpeed, seconds) && stuck >= StuckSeconds) GiveUp();
 	}
 
 	// Desistir nunca pune ninguém: a criatura só volta para casa e fica um tempo sem se aproximar.

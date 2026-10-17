@@ -18,14 +18,17 @@ public partial class PaymentDialog : Control
 	readonly MoneyCatalog money;
 	readonly Action<string> say;
 	readonly Action paid;
+	readonly bool canPayMyself;
 	readonly List<int> table = [];
 	readonly VBoxContainer content = new() { CustomMinimumSize = new Vector2(560, 0) };
 	readonly Label message = BookStyle.Text("", 18);
 	readonly Label assembled = BookStyle.Text("", 22);
-	List<int> pieceValues = [];
+	List<int> pieceValues;
 
 	public PaymentDialog(string question, string prompt, ChangeChallenge challenge, MoneyCatalog money, Action<string> say, Action paid)
 	{
+		pieceValues = PiecesFor(challenge, money);
+		canPayMyself = challenge.Target <= ChangeChallenge.MaxCents && ChangeChallenge.CanMake(challenge.Target, pieceValues);
 		Name = "PaymentDialog";
 		this.question = question;
 		this.prompt = prompt;
@@ -59,6 +62,10 @@ public partial class PaymentDialog : Control
 		GetViewport().SetInputAsHandled();
 	}
 
+	// As peças que a mesa oferece: as do Real até o valor da nota entregue (ou do valor a montar).
+	static List<int> PiecesFor(ChangeChallenge challenge, MoneyCatalog money) =>
+		[.. money.Denominations.Where(d => d.Value <= Math.Max(challenge.Given, challenge.Target)).Select(d => d.Value)];
+
 	void Clear()
 	{
 		foreach (var child in content.GetChildren())
@@ -79,7 +86,7 @@ public partial class PaymentDialog : Control
 		row.AddThemeConstantOverride("separation", 8);
 		var no = Button("Não", () => QueueFree(), "PayNo");
 		row.AddChild(no);
-		row.AddChild(Button("Eu pago", StartPaying, "PayMyself"));
+		if (canPayMyself) row.AddChild(Button("Eu pago", StartPaying, "PayMyself"));
 		row.AddChild(Button("Pagar sozinho", Finish, "PayAlone"));
 		content.AddChild(row);
 		say(question);
@@ -89,13 +96,12 @@ public partial class PaymentDialog : Control
 	void StartPaying()
 	{
 		Clear();
-		pieceValues = [.. money.Denominations.Where(d => d.Value <= Math.Max(challenge.Given, challenge.Target)).Select(d => d.Value)];
 		table.Clear();
 		var heading = BookStyle.Text(prompt, 22);
 		heading.CustomMinimumSize = new Vector2(0, 70);
 		content.AddChild(heading);
 		content.AddChild(BuildPieces());
-		assembled.Text = "Toque nas moedas e notas para montar o valor.";
+		assembled.Text = TableText();
 		content.AddChild(assembled);
 		message.Text = "";
 		content.AddChild(message);
@@ -130,10 +136,13 @@ public partial class PaymentDialog : Control
 		return row;
 	}
 
+	string TableText() =>
+		table.Count == 0 ? "Toque nas moedas e notas para montar o valor." : string.Join(" + ", table.Select(v => money.Denominations.First(d => d.Value == v).Name));
+
 	void Add(Denomination piece)
 	{
 		table.Add(piece.Value);
-		Show(string.Join(" + ", table.Select(v => money.Denominations.First(d => d.Value == v).Name)), "");
+		Show(TableText(), "");
 		say(piece.Name);
 	}
 
@@ -141,14 +150,14 @@ public partial class PaymentDialog : Control
 	{
 		if (table.Count == 0) return;
 		table.RemoveAt(table.Count - 1);
-		Show(table.Count == 0 ? "Toque nas moedas e notas para montar o valor." : string.Join(" + ", table.Select(v => money.Denominations.First(d => d.Value == v).Name)), "");
+		Show(TableText(), "");
 	}
 
 	// A dica nunca custa nada: destaca a próxima peça em texto, ou manda desfazer se já passou do valor.
 	void Suggest()
 	{
 		var (piece, undo) = challenge.Suggest(table, pieceValues);
-		var text = undo || piece is null ? "Passou do valor. Desfaça a última peça com o botão Apagar." : $"Tente {money.Denominations.First(d => d.Value == pieceValues[piece.Value]).Name}.";
+		var text = undo || piece is null ? "Desfaça a última peça com o botão Apagar." : $"Tente {money.Denominations.First(d => d.Value == pieceValues[piece.Value]).Name}.";
 		Show(assembled.Text, text);
 		say(text);
 	}

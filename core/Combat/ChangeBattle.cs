@@ -12,6 +12,9 @@ public sealed record ChangeResult(bool Correct, int Total, int Target);
 // Um desafio de dinheiro: pagar um preço ou dar o troco de uma nota. Quem calcula o valor certo é o jogo, nunca a IA nem o JSON.
 public sealed record ChangeChallenge(MoneyTask Task, int Price, int Given)
 {
+	// O teto de um valor, em centavos: mais que isso é erro de digitação nos dados e faria a conta ficar enorme.
+	public const int MaxCents = 200_000;
+
 	// O valor que a criança monta: o preço, ou o que sobra da nota entregue.
 	public int Target => Task == MoneyTask.Pay ? Price : Given - Price;
 
@@ -55,6 +58,9 @@ public sealed record ChangeChallenge(MoneyTask Task, int Price, int Given)
 public sealed class ChangeBattle : IBattle
 {
 	public const string Mechanic = "pagar_troco";
+
+	// O teclado escolhe a peça pelos números de 1 a 9.
+	const int MaxPieces = 9;
 
 	readonly IReadOnlyList<Mission> missions;
 	readonly MoneyCatalog money;
@@ -186,13 +192,15 @@ public sealed class ChangeBattle : IBattle
 			var price = p["price"].GetInt32();
 			var given = p.TryGetValue("given", out var g) ? g.GetInt32() : price;
 			var problem = task is null ? "a tarefa precisa ser 'pagar' ou 'troco'"
+				: price > ChangeChallenge.MaxCents || given > ChangeChallenge.MaxCents ? $"o valor passa do teto de {MoneyCatalog.Format(ChangeChallenge.MaxCents)}"
 				: price < money.Smallest || price % money.Smallest != 0 ? $"o preço precisa ser múltiplo da menor moeda ({MoneyCatalog.Format(money.Smallest)})"
 				: task == MoneyTask.Change && given <= price ? "a nota entregue precisa ser maior que o preço"
 				: task == MoneyTask.Change && given % money.Smallest != 0 ? "a nota entregue precisa ser múltiplo da menor moeda"
 				: null;
 			if (problem is not null) return Result<(ChangeChallenge, List<Denomination>)>.Fail($"{mission.Id}: {problem}.");
 
-			var available = Available(p);
+			var available = Available(p, Math.Max(price, given));
+			if (available.Count > MaxPieces) return Result<(ChangeChallenge, List<Denomination>)>.Fail($"{mission.Id}: no máximo {MaxPieces} peças de dinheiro por desafio (o teclado vai de 1 a {MaxPieces}).");
 			var challenge = new ChangeChallenge(task!.Value, price, task == MoneyTask.Change ? given : price);
 			return available.Count == 0 || !ChangeChallenge.CanMake(challenge.Target, [.. available.Select(d => d.Value)])
 				? Result<(ChangeChallenge, List<Denomination>)>.Fail($"{mission.Id}: as peças de dinheiro não montam o valor pedido.")
@@ -204,9 +212,9 @@ public sealed class ChangeBattle : IBattle
 		}
 	}
 
-	List<Denomination> Available(IReadOnlyDictionary<string, System.Text.Json.JsonElement> p)
+	List<Denomination> Available(IReadOnlyDictionary<string, System.Text.Json.JsonElement> p, int bound)
 	{
-		if (!p.TryGetValue("pieces", out var list)) return [.. money.Denominations];
+		if (!p.TryGetValue("pieces", out var list)) return [.. money.Denominations.Where(d => d.Value <= bound).Take(MaxPieces)];
 		var wanted = list.EnumerateArray().Select(v => v.GetInt32()).ToList();
 		var chosen = money.Denominations.Where(d => wanted.Contains(d.Value)).ToList();
 		// Uma peça pedida que não existe no Real deixa a Missão inválida, em vez de sumir sem avisar.

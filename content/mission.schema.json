@@ -117,8 +117,8 @@
             "required": ["task", "price"],
             "properties": {
               "task": { "enum": ["pagar", "troco"] },
-              "price": { "type": "integer", "minimum": 5 },
-              "given": { "type": "integer", "minimum": 10 },
+              "price": { "type": "integer", "minimum": 5, "maximum": 200000 },
+              "given": { "type": "integer", "minimum": 10, "maximum": 200000 },
               "pieces": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "integer", "minimum": 5 } }
             }
           }

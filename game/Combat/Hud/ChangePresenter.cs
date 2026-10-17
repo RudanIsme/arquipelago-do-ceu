@@ -10,7 +10,7 @@ namespace ArquipelagoDoCeu;
 // entra direto, e o número de peças é livre, então a conferência é um botão. O troco é calculado pelo jogo, e a dica nunca custa.
 sealed class ChangePresenter(ChangeBattle battle, CreatureWords creature, Action<ChangeResult> checkedChange) : ICombatPresenter
 {
-	string suggestion = "";
+	int? suggested;
 
 	public string Heading => battle.Task == MoneyTask.Pay
 		? $"{creature.Title} · Preço: {MoneyCatalog.Format(battle.Price)}"
@@ -22,7 +22,7 @@ sealed class ChangePresenter(ChangeBattle battle, CreatureWords creature, Action
 	public string Assembled => battle.Table.Count == 0 ? "Toque nas moedas e notas para montar o valor." : string.Join(" + ", battle.Table.Select(d => d.Name));
 
 	public IReadOnlyList<HudPiece> Pieces =>
-		[.. battle.Pieces.Select((piece, i) => new HudPiece(Label(piece), piece.Name, !battle.Remaining.Equals(0), Highlighted: suggestion == piece.Name))];
+		[.. battle.Pieces.Select((piece, i) => new HudPiece(Label(piece), piece.Name, battle.Remaining != 0, Highlighted: suggested == i))];
 
 	public bool Composing => battle.Table.Count > 0;
 
@@ -50,26 +50,26 @@ sealed class ChangePresenter(ChangeBattle battle, CreatureWords creature, Action
 
 	public void Place(int piece)
 	{
-		suggestion = "";
+		suggested = null;
 		battle.Add(piece);
 	}
 
 	public bool Undo()
 	{
-		suggestion = "";
+		suggested = null;
 		return battle.Undo();
 	}
 
 	public void Cancel()
 	{
-		suggestion = "";
+		suggested = null;
 		battle.Clear();
 	}
 
 	public bool Attack(out string? error)
 	{
 		error = null;
-		suggestion = "";
+		suggested = null;
 		checkedChange(battle.Confirm());
 		return true;
 	}
@@ -84,7 +84,7 @@ sealed class ChangePresenter(ChangeBattle battle, CreatureWords creature, Action
 	public string? Extra()
 	{
 		var (piece, undo) = battle.Suggest();
-		suggestion = piece is { } i ? battle.Pieces[i].Name : "";
+		suggested = piece;
 		return undo ? "Passou do valor. Desfaça a última peça com o botão Apagar." : $"Tente {battle.Pieces[piece!.Value].Name}.";
 	}
 

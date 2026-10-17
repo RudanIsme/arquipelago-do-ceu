@@ -94,7 +94,7 @@ public class MoneyTests
 	[Fact]
 	public void Valor_a_menos_ou_a_mais_nao_vale_e_diz_o_quanto_passou_ou_faltou()
 	{
-		var battle = Start(MoneyMission("p", "pagar", 350));
+		var battle = Start(MoneyMission("p", "pagar", 350, pieces: [50, 100, 500]));
 		battle.Add(PieceOf(battle, 100));
 		var short_ = battle.Confirm();
 		battle.Clear();
@@ -145,7 +145,7 @@ public class MoneyTests
 	[Fact]
 	public void A_sugestao_depois_de_passar_do_valor_manda_desfazer()
 	{
-		var battle = Start(MoneyMission("p", "pagar", 100));
+		var battle = Start(MoneyMission("p", "pagar", 100, pieces: [100, 200]));
 		battle.Add(PieceOf(battle, 200));
 
 		var (_, undo) = battle.Suggest();
@@ -249,5 +249,37 @@ public class MoneyTests
 		Assert.True(ChangeChallenge.CanMake(75, [25, 50]));
 		Assert.False(ChangeChallenge.CanMake(10, []));
 		Assert.False(ChangeBattle.Start([MoneyMission("a", "pagar", 30, pieces: [25, 50])], Money, new Pcg32(1)).IsOk);
+	}
+
+	[Fact]
+	public void No_maximo_9_pecas_por_desafio_e_valor_com_teto_para_o_teclado_e_a_memoria()
+	{
+		var tooMany = MoneyMission("a", "pagar", 350, pieces: [5, 10, 25, 50, 100, 200, 500, 1000, 2000, 5000]);
+		var tooBig = MoneyMission("b", "pagar", 2_000_000_000);
+
+		Assert.False(ChangeBattle.Start([tooMany], Money, new Pcg32(1)).IsOk);
+		Assert.False(ChangeBattle.Start([tooBig], Money, new Pcg32(1)).IsOk);
+	}
+
+	[Fact]
+	public void Nenhuma_dificuldade_mistura_Missoes_de_dinheiro_com_outras_Mecanicas()
+	{
+		var loaded = MissionLoader.Create(File.ReadAllText(MissionFiles.SchemaPath)).Value!.Load(MissionFiles.All());
+
+		var mixed = loaded.Missions.GroupBy(m => (m.Discipline, m.Year, m.Difficulty))
+			.Where(g => g.Any(m => m.Mechanic == ChangeBattle.Mechanic) && g.Any(m => m.Mechanic != ChangeBattle.Mechanic));
+
+		Assert.Empty(mixed);
+	}
+
+	[Fact]
+	public void Toda_Missao_de_dinheiro_do_jogo_vale_e_cabe_no_teclado()
+	{
+		var loaded = MissionLoader.Create(File.ReadAllText(MissionFiles.SchemaPath)).Value!.Load(MissionFiles.All());
+		var all = loaded.Missions.Where(m => m.Mechanic == ChangeBattle.Mechanic).ToList();
+
+		Assert.Equal(12, all.Count);
+		Assert.All(all, m => Assert.True(ChangeBattle.Start([m], Money, new Pcg32(1)).IsOk, m.Id));
+		Assert.Empty(loaded.Rejected);
 	}
 }

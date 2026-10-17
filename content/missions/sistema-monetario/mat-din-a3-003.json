@@ -12,7 +12,18 @@
   "params": {
     "task": "troco",
     "price": 3590,
-    "given": 5000
+    "given": 5000,
+    "pieces": [
+      5,
+      10,
+      25,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000
+    ]
   },
   "prompt": "O picolé custa R$ 35,90 e você deu uma nota de R$ 50,00. Monte o troco!",
   "hints": [

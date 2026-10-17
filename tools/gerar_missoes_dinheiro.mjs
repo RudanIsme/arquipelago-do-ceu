@@ -7,7 +7,7 @@ const real = (cents) => `R$ ${Math.floor(cents / 100)},${String(cents % 100).pad
 const years = [
 	{ year: 1, bncc: 'EF01MA19', pieces: [50, 100, 200, 500], tasks: [['pagar', 100], ['pagar', 150], ['pagar', 250], ['pagar', 300]] },
 	{ year: 2, bncc: 'EF02MA20', pieces: [5, 10, 25, 50, 100, 200], tasks: [['pagar', 175], ['pagar', 350], ['troco', 350, 500], ['troco', 480, 500]] },
-	{ year: 3, bncc: 'EF03MA24', pieces: null, tasks: [['troco', 750, 1000], ['troco', 1250, 2000], ['troco', 3590, 5000], ['pagar', 2450]] },
+	{ year: 3, bncc: 'EF03MA24', pieces: [5, 10, 25, 50, 100, 200, 500, 1000, 2000], tasks: [['troco', 750, 1000], ['troco', 1250, 2000], ['troco', 3590, 5000], ['pagar', 2450]] },
 ];
 
 const things = ['fruta', 'caderno', 'picolé', 'livro'];

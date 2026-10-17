@@ -43,7 +43,7 @@ public sealed class MerchantCatalog
 		if (!read.IsOk) return Result<MerchantCatalog>.Fail(read.Error!);
 		var dto = read.Value!;
 		if (dto.StockSize < 1) return Result<MerchantCatalog>.Fail("O Mercador precisa mostrar ao menos 1 Cosmético por vez.");
-		if (dto.CentsPerCoin < 5 || dto.CentsPerCoin % 5 != 0) return Result<MerchantCatalog>.Fail("O Mercador precisa de 'centsPerCoin' múltiplo de 5 centavos.");
+		if (dto.CentsPerCoin is < 5 or > 1000 || dto.CentsPerCoin % 5 != 0) return Result<MerchantCatalog>.Fail("O Mercador precisa de 'centsPerCoin' entre 5 e 1000, múltiplo de 5 centavos.");
 
 		var sold = (dto.Cosmetics ?? []).Select(o => new MerchantOffer(o.Id ?? "", o.Price)).ToList();
 		var bought = (dto.Gear ?? []).Select(o => new MerchantOffer(o.Id ?? "", o.Price)).ToList();

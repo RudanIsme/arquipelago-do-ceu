@@ -30,6 +30,8 @@ public partial class TracePad : VBoxContainer
 	string label = "";
 	int current;
 	bool done;
+	// Entre uma letra e a próxima o traço e a tinta ficam parados: nada conta duas vezes.
+	bool between;
 	bool guided;
 	int version;
 
@@ -71,6 +73,7 @@ public partial class TracePad : VBoxContainer
 		typed = "";
 		this.label = label;
 		done = false;
+		between = false;
 		guided = false;
 		version++;
 		var usable = GlyphsOf(text).Where(g => trails.Find(g) is not null).ToList();
@@ -118,7 +121,7 @@ public partial class TracePad : VBoxContainer
 
 	void OnStrokeEnded(bool passed)
 	{
-		if (done) return;
+		if (done || between) return;
 		if (passed) GlyphDone();
 		else message.Text = "Continue pela trilha. Se quiser, apague e tente de novo.";
 	}
@@ -131,11 +134,14 @@ public partial class TracePad : VBoxContainer
 			return;
 		}
 		current++;
+		between = true;
 		message.Text = "Muito bem! Agora a próxima.";
 		var mine = version;
 		GetTree().CreateTimer(GlyphPauseSeconds, true, false, true).Timeout += () =>
 		{
-			if (mine == version && !done) ShowGlyph();
+			if (mine != version || done) return;
+			between = false;
+			ShowGlyph();
 		};
 	}
 
@@ -155,7 +161,7 @@ public partial class TracePad : VBoxContainer
 	// "Completar sozinho" (botão) ou Enter segurado: a tinta anda sozinha pela trilha.
 	public override void _Process(double delta)
 	{
-		if (!IsVisibleInTree() || done || glyphs.Count == 0) return;
+		if (!IsVisibleInTree() || done || between || glyphs.Count == 0) return;
 		var holding = Input.IsKeyPressed(Key.Enter) || Input.IsKeyPressed(Key.KpEnter);
 		if (!guided && !holding) return;
 		if (canvas.AutoFill((float)delta)) GlyphDone();
