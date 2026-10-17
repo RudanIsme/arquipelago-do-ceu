@@ -354,6 +354,8 @@ public partial class Lobby : Node3D, ICombatStage
 	// No Lobby a criatura é o Boneco de treino.
 	public (Vector3 Ground, float Top) CreatureSpot => footprints["boneco"];
 
+	public bool CanStand(System.Numerics.Vector2 ground) => Grid.IsFree(ground, 0.35f);
+
 	// Mostra o indicador só no objeto ao alcance (ou em nenhum, com null).
 	public void Highlight(string? objectId)
 	{

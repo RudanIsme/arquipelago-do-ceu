@@ -11,7 +11,7 @@ namespace ArquipelagoDoCeu;
 // MovementController (regras em core/) e põe o resultado na cena.
 public partial class Player : Node3D
 {
-	const float Speed = 1.1f;
+	const float Speed = ArquipelagoDoCeu.Rules.ChildSpeed.Walk;
 	const float RunSpeed = 3.3f;
 	float currentSpeed;
 	public float SpeedMultiplier { get; set; } = 1f;

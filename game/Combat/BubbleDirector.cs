@@ -16,16 +16,16 @@ public sealed class BubbleDirector
 
 	readonly AttackRhythm rhythm;
 	readonly BubbleRules rules;
-	readonly ICombatStage stage;
+	readonly Func<Vector2> creatureGround;
 	readonly TrainingDummy dummy;
 	readonly Player player;
 	readonly VoiceService voice;
 
-	public BubbleDirector(BubbleRules rules, AttackRhythm rhythm, ICombatStage stage, TrainingDummy dummy, Player player, VoiceService voice)
+	public BubbleDirector(BubbleRules rules, AttackRhythm rhythm, Func<Vector2> creatureGround, TrainingDummy dummy, Player player, VoiceService voice)
 	{
 		this.rules = rules;
 		this.rhythm = rhythm;
-		this.stage = stage;
+		this.creatureGround = creatureGround;
 		this.dummy = dummy;
 		this.player = player;
 		this.voice = voice;
@@ -55,8 +55,7 @@ public sealed class BubbleDirector
 			return false;
 		}
 
-		var (ground, _) = stage.CreatureSpot;
-		var origin = new Vector2(ground.X, ground.Z);
+		var origin = creatureGround();
 		var radius = rules.Radius;
 		switch (rhythm.Tick(realSeconds, origin, player.GroundPosition, stopped: false))
 		{

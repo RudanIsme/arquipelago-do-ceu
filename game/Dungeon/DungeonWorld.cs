@@ -14,6 +14,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 	const float TileGap = 0.98f;
 	const float TileThickness = 0.5f;
 	const float CreatureHeight = 1.7f;
+	const float CreatureRadius = 0.35f;
 	const float PillarHeight = 1.8f;
 
 	public sealed record Door(int Target, Vector3 Ground, string Label, bool Locked);
@@ -53,6 +54,8 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	// A criatura fica no centro da Sala.
 	public (Vector3 Ground, float Top) CreatureSpot => (Vector3.Zero, CreatureHeight);
+
+	public bool CanStand(System.Numerics.Vector2 ground) => Grid.IsFree(ground, CreatureRadius);
 
 	public bool ReduceMotion { get; set; }
 

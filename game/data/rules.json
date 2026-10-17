@@ -204,6 +204,16 @@
         { "kind": "guardian", "intervalSeconds": 6, "warningSeconds": 1.6 }
       ]
     },
+    "movement": {
+      "patrolSpeed": 0.35,
+      "approachSpeed": 0.8,
+      "patrolRadius": 1.8,
+      "approachRadius": 6,
+      "stopDistance": 2.2,
+      "giveUpSeconds": 10,
+      "pauseSeconds": 2,
+      "cooldownSeconds": 8
+    },
     "years": [
       {
         "year": 2,

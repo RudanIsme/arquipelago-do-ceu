@@ -32,6 +32,7 @@ public partial class TrainingArea : Node
 	readonly Action<string> notify;
 	readonly CombatTime time;
 	readonly AttackRhythm rhythm;
+	readonly CreatureMotion motion;
 	readonly BubbleDirector bubbles;
 	readonly AnswerReactions reactions;
 	readonly IReadOnlyList<Mission> missions;
@@ -67,13 +68,15 @@ public partial class TrainingArea : Node
 		this.notify = notify;
 		time = new CombatTime(rules.Combat);
 		rhythm = new AttackRhythm(rules.Combat, time);
-		bubbles = new BubbleDirector(rules.Combat.Bubble, rhythm, stage, dummy, player, voice);
+		bubbles = new BubbleDirector(rules.Combat.Bubble, rhythm, () => motion!.Ground, dummy, player, voice);
 		reactions = new AnswerReactions(this, dummy, player);
 		missions = MissionSource.Load().Missions;
 
 		var (ground, top) = stage.CreatureSpot;
 		dummy.Place(ground, top);
 		dummy.Idle();
+		var stream = random.NewStream();
+		motion = new CreatureMotion(rules.Combat.Movement, stage, dummy, () => stream.NextInt(10_000) / 10_000.0);
 	}
 
 	// Dentro de uma Dungeon só se luta com a criatura da Sala; não há escolha de treino.
@@ -99,8 +102,7 @@ public partial class TrainingArea : Node
 
 	public bool InTargetRange()
 	{
-		var (ground, _) = stage.CreatureSpot;
-		return Vector2.Distance(player.GroundPosition, new Vector2(ground.X, ground.Z)) <= rules.Combat.TargetRange;
+		return Vector2.Distance(player.GroundPosition, motion.Ground) <= rules.Combat.TargetRange;
 	}
 
 	public void ToggleTarget()
@@ -340,8 +342,7 @@ public partial class TrainingArea : Node
 
 	internal void AttackAnimation()
 	{
-		var (ground, _) = stage.CreatureSpot;
-		player.Attack(new Vector2(ground.X, ground.Z));
+		player.Attack(motion.Ground);
 	}
 
 	// Energia zerada, "Sair do treino" ou troca de Perfil: a criança só sai da Área de treino, sem perder nada.
@@ -374,6 +375,7 @@ public partial class TrainingArea : Node
 
 	public override void _Process(double delta)
 	{
+		if (canAct()) motion.Tick((float)delta, player.GroundPosition, Creature.Moves, panel is not null, settings.Current.CalmMode);
 		if (session is null || reacting || !canAct()) return;
 		rhythm.UseCreature(Creature.Kind);
 		// Modo calmo e Puzzle: o Boneco não lança bolhas e só reage a erros.
