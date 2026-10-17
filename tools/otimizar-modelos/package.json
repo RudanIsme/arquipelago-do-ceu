@@ -1,1 +1,1 @@
-{"name":"otimizar","private":true,"type":"module","dependencies":{"@gltf-transform/core":"^4.1.1","@gltf-transform/functions":"^4.1.1","sharp":"^0.33.5"}}
+{"name":"otimizar","private":true,"type":"module","dependencies":{"@gltf-transform/core":"^4.1.1","@gltf-transform/functions":"^4.1.1","sharp":"^0.35.5"}}
