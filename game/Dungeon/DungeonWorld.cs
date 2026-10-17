@@ -99,8 +99,9 @@ public partial class DungeonWorld : Node3D, ICombatStage
 	}
 
 	// Reconstrói a Sala: chão pela função, portas para as Salas ligadas e o letreiro do centro.
-	// `describe` diz, para cada Sala vizinha, o texto da porta e se ela está trancada.
-	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked)> describe, string? note = null)
+	// `describe` diz, para cada Sala vizinha, o texto da porta, se ela está trancada e se a criança já conhece a Sala: a porta
+	// de uma Sala nova não revela o que há do outro lado.
+	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false)
 	{
 		foreach (var child in room.GetChildren()) child.QueueFree();
 		doors.Clear();
@@ -114,15 +115,15 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		{
 			var cell = Ring[(i * Ring.Length / neighbors.Count + Ring.Length / (2 * neighbors.Count)) % Ring.Length];
 			var ground = Lobby.HexToWorld(cell.Q, cell.R);
-			var (label, locked) = describe(neighbors[i]);
+			var (label, locked, known) = describe(neighbors[i]);
 			var door = new Door(neighbors[i], ground, label, locked);
 			doors.Add(door);
-			AddDoor(door, FloorMap.ColorOf(floor.Rooms[neighbors[i]].Kind));
+			AddDoor(door, known ? FloorMap.ColorOf(floor.Rooms[neighbors[i]].Kind) : Color.FromHtml("#8A8399"));
 		}
 
 		AddSign($"{FloorMap.NameOf(kind)}", new Vector3(0f, kind is RoomKind.Combat or RoomKind.Epic or RoomKind.Puzzle ? 5.6f : 2.4f, 0f), 56);
 		if (note is not null) AddSign(note, new Vector3(0f, 3.4f, 0f), 34);
-		if (kind == RoomKind.Exit) AddStairs();
+		if (kind == RoomKind.Exit || stairsDown) AddStairs(stairsDown);
 		if (kind == RoomKind.Rest) AddFountain(cleared.Contains(roomId));
 	}
 
@@ -134,7 +135,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	public static System.Numerics.Vector2 Center => System.Numerics.Vector2.Zero;
 
-	// A escada do Andar fica no meio da Sala de saída.
+	// A escada do Andar fica no meio da Sala de saída (para subir) ou da entrada (para descer).
 	public static System.Numerics.Vector2 StairsSpot => new(0f, 0f);
 
 	void AddFloor(Color baseColor, bool cleared)
@@ -199,9 +200,10 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	public static System.Numerics.Vector2 FountainSpot => System.Numerics.Vector2.Zero;
 
-	void AddStairs()
+	void AddStairs(bool down)
 	{
 		var material = new StandardMaterial3D { AlbedoColor = FloorMap.ColorOf(RoomKind.Exit), Roughness = 0.8f };
+		if (down) AddSign("Escada para baixo", new Vector3(0f, 3.4f, 0f), 40);
 		for (var step = 0; step < 4; step++)
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.8f - step * 0.3f, 0.25f, 1.8f - step * 0.3f) }, MaterialOverride = material, Position = new Vector3(0f, 0.15f + step * 0.25f, 0f) });
 	}

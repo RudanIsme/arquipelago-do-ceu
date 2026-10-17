@@ -27,6 +27,7 @@ public sealed record DungeonContext(
 	Control UiRoot,
 	ProgressService Progress,
 	FallbackFloors Fallback,
+	CosmeticCatalog Catalog,
 	int ExtraEnergy,
 	Action<Player> ConfigurePlayer,
 	int StartFloor = 1,
@@ -50,6 +51,8 @@ public partial class DungeonRun : Node
 	readonly Label message = new() { HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly VBoxContainer mapBox = new();
 	readonly Label mapLegend = new();
+	readonly Label floorLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
+	readonly ProgressBar floorBar = new() { ShowPercentage = false, CustomMinimumSize = new Godot.Vector2(0, 14) };
 	readonly Label itemsLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 	readonly EnergyView energyView = new("Voltar ao Lobby");
 	Button interactButton = null!;
@@ -64,6 +67,7 @@ public partial class DungeonRun : Node
 	// O Atalho de Nível: os Desafios sorteados, na ordem, e qual está em jogo.
 	IReadOnlyList<TrainingSetup> shortcut = [];
 	int shortcutIndex;
+	(int Floor, int Visited, int Cleared) lastSaved;
 
 	public event Action<string>? Left;
 
@@ -74,8 +78,12 @@ public partial class DungeonRun : Node
 		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
 		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), HasTradeItem,
-			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut);
+			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut, Explored);
 	}
+
+	// O Atalho não carrega nem guarda exploração: ele pula o caminho, e as Salas do caminho não foram jogadas.
+	FloorExploration? Explored(int floor) =>
+		ctx.Shortcut ? null : ctx.Progress.Exploration(ctx.ProfileId, ctx.Discipline, ctx.Level, floor, GeneratorVersion);
 
 	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
 	static ulong WorldSeed(string profileId) =>
@@ -170,11 +178,16 @@ public partial class DungeonRun : Node
 		mapLegend.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		mapLegend.AddThemeFontSizeOverride("font_size", 13);
 		mapLegend.AddThemeColorOverride("font_color", UiKit.TextColor);
+		floorLabel.AddThemeFontSizeOverride("font_size", 15);
+		floorLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
 		mapBox.AddChild(header);
+		mapBox.AddChild(floorBar);
+		mapBox.AddChild(floorLabel);
 		mapBox.AddChild(mapLegend);
 		itemsLabel.AddThemeFontSizeOverride("font_size", 15);
 		itemsLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
 		mapBox.AddChild(itemsLabel);
+		mapBox.AddChild(UiKit.BigButton("Ouvir o mapa", () => Say(MapSpeech()), 200));
 		panel.AddChild(mapBox);
 		hud.AddChild(panel);
 
@@ -199,7 +212,8 @@ public partial class DungeonRun : Node
 
 	// --- Salas
 
-	void EnterRoom(int room, int from)
+	// `lead` abre a fala de quem acabou de mudar de Andar.
+	void EnterRoom(int room, int from, string? lead = null)
 	{
 		combat.EndFight();
 		RefreshRoom();
@@ -207,12 +221,18 @@ public partial class DungeonRun : Node
 		player.PlaceAt(back is null ? DungeonWorld.Center : DungeonWorld.InsideOf(back));
 		StartFight();
 		RefreshHud();
+		SaveExploration();
 		var kind = expedition.Current.Kind;
-		if (kind == RoomKind.Marco)
-			Say(HasTradeItem() ? "O Marco brilhou! O Item de troca abriu o caminho." : $"Este é o Marco. Ele só abre com o Item de troca da {TowerName(Other)}.");
-		else if (kind == RoomKind.FastTravel) FindFastTravel();
-		else if (kind is RoomKind.Rest or RoomKind.Exit)
-			Say($"Sala de {FloorMap.NameOf(kind).ToLowerInvariant()}. {(kind == RoomKind.Exit ? "A escada leva ao próximo Andar." : "Descanse um pouco, se quiser.")}");
+		var text = kind switch
+		{
+			RoomKind.Marco => HasTradeItem() ? "O Marco brilhou! O Item de troca abriu o caminho." : $"Este é o Marco. Ele só abre com o Item de troca da {TowerName(Other)}.",
+			RoomKind.FastTravel => FindFastTravel(),
+			RoomKind.Rest => "Sala de descanso. Descanse um pouco, se quiser.",
+			RoomKind.Exit => "Sala de saída. A escada leva ao próximo Andar.",
+			_ => null,
+		};
+		var spoken = string.Join(" ", new[] { lead, text, CheckFloorComplete() }.Where(t => t is not null));
+		if (spoken != "") Say(spoken);
 	}
 
 	// A tentativa do Atalho é gravada ao começar: sair no meio também a gasta, e cada Nível tem uma só.
@@ -233,7 +253,7 @@ public partial class DungeonRun : Node
 	}
 
 	void RefreshRoom() =>
-		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe, RoomNote());
+		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe, RoomNote(), expedition.CanDescend);
 
 	// O que a criança precisa saber desta Sala sobre o Item de troca, em texto e com a estrela.
 	string? RoomNote()
@@ -244,14 +264,16 @@ public partial class DungeonRun : Node
 		return current.HoldsItem && !expedition.IsCleared(expedition.CurrentRoom) ? "★ Vença esta Sala para ganhar o Item de troca" : null;
 	}
 
-	(string Label, bool Locked) Describe(int room)
+	// A porta de uma Sala que a criança ainda não visitou não diz o que há lá dentro.
+	(string Label, bool Locked, bool Known) Describe(int room)
 	{
-		var name = FloorMap.NameOf(expedition.Floor.Rooms[room].Kind);
+		var known = expedition.Visited.Contains(room);
+		var name = known ? FloorMap.NameOf(expedition.Floor.Rooms[room].Kind) : "Sala nova";
 		return expedition.CanMoveTo(room) switch
 		{
-			Passage.MustClearRoom => ($"{name}\n(vença esta Sala)", true),
-			Passage.NeedsItem => ($"{name}\n(precisa do Item)", true),
-			_ => (name, false),
+			Passage.MustClearRoom => ($"{name}\n(vença esta Sala)", true, known),
+			Passage.NeedsItem => ($"{name}\n(precisa do Item)", true, known),
+			_ => (name, false, known),
 		};
 	}
 
@@ -311,14 +333,22 @@ public partial class DungeonRun : Node
 		expedition.ClearCurrent();
 		world.ShowTarget(false, false);
 		RefreshRoom();
+		SaveExploration();
+		var completed = CheckFloorComplete();
 		RefreshHud();
 		if (room.Kind == RoomKind.Epic)
 		{
-			ConcludeLevel();
+			ConcludeLevel(completed);
 			return;
 		}
-		if (room.HoldsItem) return;
-		Say(expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.");
+		if (room.HoldsItem)
+		{
+			// O recado do Item já está na tela; o Andar completo vem junto, sem apagá-lo.
+			if (completed is not null) Say($"{message.Text} {completed}");
+			return;
+		}
+		var won = expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.";
+		Say(string.Join(" ", new[] { won, ProgressSpeech(), completed }.Where(t => t is not null)));
 	}
 
 	// Só para o piloto de desenvolvimento: vence a Sala sem resolver o Desafio, pela mesma saída da vitória de verdade.
@@ -330,13 +360,13 @@ public partial class DungeonRun : Node
 	}
 
 	// O Desafio épico vencido conclui o Nível nesta torre (também pelo Atalho, que ainda entrega o Item); a criança escolhe seguir.
-	void ConcludeLevel()
+	void ConcludeLevel(string? completed = null)
 	{
 		var marked = ctx.Progress.MarkEpicDone(ctx.ProfileId, ctx.Discipline, ctx.Level);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		var item = ctx.Shortcut && !ctx.Progress.HasItem(ctx.ProfileId, ctx.Discipline, ctx.Level) && GiveItem();
 		RefreshHud();
-		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}.";
+		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}." + (completed is null ? "" : " " + completed);
 		Say(text);
 		var screen = new LevelDoneScreen(TowerName(ctx.Discipline), ctx.Level, item, () => Leave(""));
 		levelDone = screen;
@@ -381,6 +411,7 @@ public partial class DungeonRun : Node
 	{
 		var list = world.Doors.Select(d => new Interactable($"door:{d.Target}", new Vector2(d.Ground.X, d.Ground.Z))).ToList();
 		if (expedition.CanAscend) list.Add(new Interactable("stairs", DungeonWorld.StairsSpot));
+		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", DungeonWorld.StairsSpot));
 		if (expedition.Current.Kind == RoomKind.Rest) list.Add(new Interactable("rest", DungeonWorld.FountainSpot));
 		return list;
 	}
@@ -389,8 +420,9 @@ public partial class DungeonRun : Node
 	{
 		if (id == "rest") return "Descansar [E]";
 		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
+		if (id == "stairs-down") return $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
 		var room = int.Parse(id["door:".Length..]);
-		return $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]";
+		return expedition.Visited.Contains(room) ? $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -402,7 +434,6 @@ public partial class DungeonRun : Node
 	void Activate()
 	{
 		if (left || !enabled || target is null) return;
-		if (target == "stairs") { Ascend(); return; }
 		if (target == "rest") { Rest(); return; }
 
 		if (InShortcut)
@@ -410,6 +441,9 @@ public partial class DungeonRun : Node
 			Say("Termine o Atalho ou volte ao Lobby.");
 			return;
 		}
+
+		if (target == "stairs") { ChangeFloor(expedition.Ascend); return; }
+		if (target == "stairs-down") { ChangeFloor(expedition.Descend); return; }
 
 		var room = int.Parse(target["door:".Length..]);
 		var from = expedition.CurrentRoom;
@@ -428,11 +462,11 @@ public partial class DungeonRun : Node
 	}
 
 	// Chegar ao Fast travel salva o ponto: é por ele que a criança retoma pelo portal do Lobby.
-	void FindFastTravel()
+	string FindFastTravel()
 	{
 		var saved = ctx.Progress.FindFastTravel(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!saved.IsOk) GD.PushWarning(saved.Error!);
-		Say("Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.");
+		return "Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.";
 	}
 
 	void Rest()
@@ -443,14 +477,57 @@ public partial class DungeonRun : Node
 		Say(rested.IsOk ? $"Você descansou e recuperou {rested.Value} de Energia." : rested.Error!);
 	}
 
-	void Ascend()
+	// Sobe ou desce a escada; o Andar de chegada volta como a criança o deixou.
+	void ChangeFloor(Func<bool> move)
 	{
-		if (!expedition.Ascend()) return;
+		if (!move()) return;
 		DiscoverFloor();
-		BuildMap();
-		EnterRoom(expedition.CurrentRoom, -1);
-		Say($"Andar {expedition.Floor.Number}!");
+		EnterRoom(expedition.CurrentRoom, -1, $"Andar {expedition.Floor.Number}! {ProgressSpeech()}");
 	}
+
+	// O que a criança explorou fica no save a cada passo: ver o mapa sumir ao zerar a Energia seria punição.
+	void SaveExploration()
+	{
+		if (ctx.Shortcut) return;
+		// Só grava quando algo mudou: voltar a uma Sala já visitada não precisa reescrever o save.
+		var stamp = (expedition.Floor.Number, expedition.Visited.Count, expedition.Cleared.Count);
+		if (stamp == lastSaved) return;
+		var saved = ctx.Progress.SaveExploration(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number, expedition.Exploration(), GeneratorVersion);
+		if (saved.IsOk) lastSaved = stamp;
+		else GD.PushWarning(saved.Error!);
+	}
+
+	// Registra o Andar completo uma única vez e diz o que a criança ganhou; falha de gravação não trava ninguém.
+	string? CheckFloorComplete()
+	{
+		var number = expedition.Floor.Number;
+		if (ctx.Shortcut || !expedition.IsFloorComplete(number) || ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, number)) return null;
+		var done = ctx.Progress.CompleteFloor(ctx.ProfileId, ctx.Discipline, ctx.Level, number, ctx.Catalog);
+		if (!done.IsOk)
+		{
+			GD.PushWarning(done.Error!);
+			return null;
+		}
+		return done.Value!.Cosmetic is { } prize ? $"Andar {number} completo! Você ganhou um Cosmético: {prize.Name}." : $"Andar {number} completo!";
+	}
+
+	string ProgressSpeech()
+	{
+		var progress = expedition.ProgressOf(expedition.Floor.Number);
+		return $"{progress.Resolved} de {progress.Total} Salas resolvidas.";
+	}
+
+	// O mapa dito em voz alta, para quem não lê a névoa e o cadeado.
+	string MapSpeech()
+	{
+		var rooms = expedition.Floor.Rooms.Select(r => r.Id).ToList();
+		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
+		var locked = rooms.Count(expedition.IsLocked);
+		var done = IsFloorDone() ? " Este Andar está completo." : "";
+		return $"Andar {expedition.Floor.Number} de {expedition.Plan.Floors.Count}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{done}";
+	}
+
+	bool IsFloorDone() => !ctx.Shortcut && (ctx.Progress.FloorDone(ctx.ProfileId, ctx.Discipline, ctx.Level, expedition.Floor.Number) || expedition.IsFloorComplete(expedition.Floor.Number));
 
 	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
@@ -463,9 +540,9 @@ public partial class DungeonRun : Node
 	void BuildMap()
 	{
 		map?.QueueFree();
-		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 300));
+		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 250)) { Source = expedition };
 		mapBox.AddChild(map);
-		mapBox.MoveChild(map, 1);
+		mapBox.MoveChild(map, 3);
 	}
 
 	void RefreshHud()
@@ -473,9 +550,16 @@ public partial class DungeonRun : Node
 		header.Text = $"{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number} de {expedition.Plan.Floors.Count}";
 		itemsLabel.Text = "Itens de troca\n" + string.Join("\n", new[] { TrainingSetup.Mathematics, TrainingSetup.Portuguese }
 			.Select(d => $"{TowerName(d)}: {(ctx.Progress.HasItem(ctx.ProfileId, d, ctx.Level) ? "★ tenho" : "ainda não")}"));
+		var progress = expedition.ProgressOf(expedition.Floor.Number);
+		var complete = IsFloorDone();
+		floorBar.MaxValue = progress.Total;
+		floorBar.Value = progress.Resolved;
+		floorLabel.Text = $"{progress.Resolved} de {progress.Total} Salas resolvidas" + (complete ? "  ★ Andar completo" : "");
 		if (map is null) return;
 		map.Here = expedition.CurrentRoom;
 		map.Cleared = new HashSet<int>(expedition.Cleared);
+		map.Complete = complete;
+		map.Refresh();
 	}
 
 	// Texto na tela e na voz; some sozinho, e um recado novo nunca é apagado pelo temporizador de um antigo.

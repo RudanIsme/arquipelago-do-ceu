@@ -1,0 +1,356 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUD de Papel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: quatro palcos 1280x720 escalados (combate, exploração, cards do avatar, inventário). Tema "Livro" do jogo (JourneyStyle.cs). */
+:root{
+  --desk:#262a35; --desk-ink:#eceae4; --desk-dim:#a9adbb; --desk-line:#3b4050;
+  --fill:#EEDDB8; --fill2:#E1CA9A; --fill-hi:#FFF6DC; --edge:#946239; --ink:#3D2C25; --sky:#A9CDF3;
+  --f:"Noto Sans","Segoe UI",system-ui,sans-serif;
+}
+body{background:var(--desk);color:var(--desk-ink);font-family:var(--f);padding-inline:16px;padding-block:32px 64px;margin:0}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1{font-size:2rem;margin:0 0 6px;text-wrap:balance}
+h2{margin:0;font-size:1.25rem}
+p,li{line-height:1.5}
+.lead,.sub{margin:0;color:var(--desk-dim);max-width:68ch}
+.block{display:flex;flex-direction:column;gap:12px}
+.notes{border:1px solid var(--desk-line);border-radius:6px;padding:16px 20px;color:var(--desk-dim)}
+.notes ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.fit{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:6px}
+.stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;background:var(--sky);font-family:var(--f);color:var(--ink)}
+.stage>*{position:absolute}
+.floor{left:260px;top:380px;width:760px;height:300px;border-radius:50%;background:radial-gradient(closest-side,#9bc2ea,#a9cdf3 90%)}
+.enemy{left:530px;top:240px;width:220px;height:220px;filter:drop-shadow(0 14px 8px rgba(40,60,100,.25))}
+.hero{left:590px;top:330px;width:100px;height:100px}
+.dim{inset:0;background:rgba(30,35,60,.45);z-index:5}
+
+.panel{background:var(--fill);border:1px solid var(--edge);border-radius:3px;box-sizing:border-box}
+.btn{display:flex;align-items:center;justify-content:center;font:700 22px/1 var(--f);color:var(--ink);cursor:pointer;gap:8px}
+.btn svg{width:30px;height:30px;flex:none}
+.btn:hover{border:2px solid var(--ink)}
+.badge{position:absolute;right:-8px;top:-8px;min-width:28px;height:28px;border-radius:14px;background:var(--fill-hi);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;gap:1px;font:800 16px/1 var(--f);padding:0 5px;box-sizing:border-box}
+.badge svg{width:15px;height:15px}
+
+/* card do avatar */
+.card{display:flex;align-items:center;gap:12px;padding:8px 14px 8px 8px;height:76px;width:max-content;min-width:0}
+.avatar{width:58px;height:58px;border:1px solid var(--edge);border-radius:3px;overflow:hidden;flex:none;background:#bfe3ff}
+.avatar svg{width:100%;height:100%;display:block}
+.nm{display:flex;align-items:center;gap:8px;font:800 24px/1 var(--f)}
+.mast{position:relative;width:34px;height:34px;flex:none}
+.mast svg{width:100%;height:100%}
+.mast b{position:absolute;inset:0;display:grid;place-items:center;font:800 15px/1 var(--f);padding-top:2px}
+.bolts{display:flex;gap:3px;margin-top:5px}
+.bolts svg{width:24px;height:24px;overflow:visible}
+.card .edit{width:44px;height:44px;margin-left:6px}
+.card .edit svg{width:24px;height:24px}
+.stage .card{left:15px;top:15px}
+
+.plaque{left:470px;top:15px;width:340px;height:70px;padding:8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.plaque small{font:600 17px/1 var(--f)}
+.plaque strong{font:800 25px/1.1 var(--f)}
+.top2{right:15px;top:15px;display:flex;gap:8px}
+.top2 .btn{width:56px;height:56px}
+.map{right:15px;top:86px;width:224px;padding:8px}
+.map svg{display:block;width:100%;height:auto}
+
+.bubble{left:545px;top:136px;width:190px;height:78px;display:flex;align-items:center;justify-content:center;gap:12px;font:800 52px/1 var(--f)}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-9px;width:16px;height:16px;background:var(--fill);border-right:1px solid var(--edge);border-bottom:1px solid var(--edge);transform:translateX(-50%) rotate(45deg)}
+.say{width:44px;height:44px;border:1px solid var(--edge);border-radius:3px;background:var(--fill2);display:grid;place-items:center}
+.say svg{width:26px;height:26px}
+
+.dock{left:15px;bottom:15px;display:flex;gap:10px;align-items:center}
+.dock .inv{position:relative;width:76px;height:76px}
+.dock .inv svg{width:44px;height:44px}
+.dock .role{height:76px;padding:0 16px;font-size:22px;font-weight:800}
+.bag{left:340px;right:15px;bottom:15px;height:104px;display:flex;align-items:center;justify-content:center;gap:12px}
+.tok{width:78px;height:78px;display:grid;place-items:center;font:800 40px/1 var(--f);background:var(--fill-hi);border:1px solid var(--edge);border-radius:3px;box-sizing:border-box}
+.tok.op{background:var(--fill2);border:2px solid var(--edge);font-size:46px}
+.tok.sel{border:3px solid var(--ink);transform:translateY(-8px)}
+
+/* inventário */
+.modal{left:200px;top:70px;width:880px;height:580px;z-index:6;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.mh{display:flex;align-items:center;justify-content:space-between;font:800 30px/1 var(--f)}
+.mh .btn{width:52px;height:52px;font-size:30px}
+.tabs{display:flex;gap:8px}
+.tab{flex:0 0 190px;height:52px;font:700 22px/1 var(--f)}
+.tab.on{background:var(--fill-hi);border:3px solid var(--ink)}
+.role-chip{margin-left:auto;height:52px;padding:0 14px;font:800 20px/1 var(--f)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.slot{padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--fill-hi);position:relative;font:600 18px/1.2 var(--f);text-align:center}
+.slot .pic{width:92px;height:92px;border:1px solid var(--edge);border-radius:3px;background:var(--fill);display:grid;place-items:center}
+.slot .pic svg{width:64px;height:64px}
+.slot b{font:800 22px/1.1 var(--f)}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--edge);border-radius:3px;background:var(--fill);padding:4px 10px;font:700 19px/1 var(--f)}
+.chip svg{width:24px;height:24px}
+.evo{width:100%;height:50px;font-size:20px}
+.evo.off{opacity:.5;cursor:default}
+.evo svg{width:26px;height:26px}
+.total{display:flex;gap:10px;align-items:center;font:700 20px/1 var(--f)}
+.guide{position:absolute;right:22px;bottom:22px;width:360px;padding:14px;background:var(--fill-hi);border:3px solid var(--ink);border-radius:3px;display:flex;flex-direction:column;gap:10px;font:600 20px/1.3 var(--f);box-shadow:0 0 0 9999px rgba(0,0,0,0)}
+.guide .gh{display:flex;justify-content:space-between;align-items:center;font:800 22px/1 var(--f)}
+.guide .gh span{font:600 17px/1 var(--f)}
+.gbtns{display:flex;gap:8px}.gbtns .btn{flex:1;height:46px;font-size:19px}
+
+/* mapa em tela cheia: o Papel abre a folha e a segura pelos cantos */
+.sheet{left:150px;top:40px;width:780px;height:590px;z-index:6;padding:18px 28px;box-sizing:border-box;background:var(--fill) repeating-linear-gradient(0deg,transparent 0 39px,rgba(148,98,57,.12) 39px 40px),repeating-linear-gradient(90deg,transparent 0 39px,rgba(148,98,57,.12) 39px 40px);border:2px solid var(--edge);border-radius:3px;box-shadow:0 18px 30px rgba(20,25,50,.4);transform-origin:50% 100%}
+.sheet .sh{display:flex;justify-content:space-between;align-items:baseline;font:800 34px/1 var(--f)}
+.sheet .sh small{font:600 22px/1 var(--f)}
+.sheet svg.g{display:block;width:100%;height:auto;margin-top:18px}
+.arm{top:552px;width:150px;height:168px;z-index:7}
+.arm.l{left:118px}.arm.r{left:962px;transform:scaleX(-1)}
+.leg{right:40px;top:150px;width:290px;padding:16px 18px;z-index:6;display:flex;flex-direction:column;gap:10px;font:700 24px/1 var(--f)}
+.leg .lh{font:800 26px/1 var(--f);margin-bottom:2px}
+.leg div.row{display:flex;align-items:center;gap:12px}
+.leg svg{width:44px;height:44px;flex:none;background:var(--fill-hi);border:1px solid var(--edge);border-radius:3px;box-sizing:border-box}
+.back{left:15px;top:15px;width:170px;height:64px;z-index:8;font-size:24px}
+.replay{align-self:flex-start;height:44px;padding:0 16px;font:700 1rem var(--f);background:var(--desk-line);color:var(--desk-ink);border:1px solid #555b70;border-radius:6px;cursor:pointer}
+@keyframes rise{from{transform:translateY(560px) rotate(-4deg)}to{transform:none}}
+@keyframes armup{from{transform:translateY(200px)}to{transform:none}}
+@keyframes armupr{from{transform:scaleX(-1) translateY(200px)}to{transform:scaleX(-1)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.stage.play .sheet{animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+.stage.play .arm.l{animation:armup .9s cubic-bezier(.2,.8,.2,1) both}
+.stage.play .arm.r{animation:armupr .9s cubic-bezier(.2,.8,.2,1) both}
+.stage.play .leg{animation:fadein .5s .7s both}
+@media (prefers-reduced-motion:reduce){.stage.play .sheet,.stage.play .arm,.stage.play .leg{animation:none}}
+
+/* inventário novo: Personagem equipado + biblioteca + comparação */
+.inv2{left:80px;top:34px;width:1120px;height:652px;z-index:6;padding:16px 20px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.inv2 .tabs .tab{flex:0 0 220px}
+.inv2 .body{display:grid;grid-template-columns:340px 1fr 340px;gap:16px;flex:1;min-height:0}
+.doll{position:relative;background:var(--fill-hi);border:1px solid var(--edge);border-radius:3px}
+.doll .me{position:absolute;left:95px;top:130px;width:150px;height:150px}
+.doll .tag{position:absolute;left:50%;top:10px;transform:translateX(-50%);font:700 17px/1 var(--f);background:var(--fill2);border:1px solid var(--edge);border-radius:3px;padding:5px 10px;white-space:nowrap}
+.sl{position:absolute;width:88px;display:flex;flex-direction:column;align-items:center;gap:3px;font:700 17px/1 var(--f)}
+.sl .bx{position:relative;width:84px;height:84px;display:grid;place-items:center;background:var(--fill);border:1px solid var(--edge);border-radius:3px;box-sizing:border-box}
+.sl .bx svg{width:50px;height:50px}
+.sl .bx.try{border:3px solid var(--ink);background:var(--fill-hi)}
+.sl .bx small{position:absolute;right:4px;bottom:2px;font:800 16px/1 var(--f)}
+.lib{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lib .lh{display:flex;justify-content:space-between;font:800 22px/1 var(--f)}
+.lib .lh span{font:600 18px/1 var(--f)}
+.grid{display:grid;grid-template-columns:repeat(4,78px);gap:10px;justify-content:start}
+.it{position:relative;width:78px;height:78px;background:var(--fill-hi);border:1px solid var(--edge);border-radius:3px;display:grid;place-items:center;box-sizing:border-box}
+.it svg{width:46px;height:46px}
+.it small{position:absolute;right:4px;bottom:2px;font:800 16px/1 var(--f)}
+.it.hov{border:3px solid var(--ink);transform:translateY(-3px)}
+.it .on{position:absolute;left:3px;top:3px;font:800 17px/1 var(--f);background:var(--fill);border:1px solid var(--edge);border-radius:3px;padding:1px 4px}
+.hint{font:600 18px/1.3 var(--f);margin-top:2px}
+.it .on.lk{display:flex;align-items:center;gap:2px;padding:1px 3px}.it .on.lk svg{width:16px;height:16px}
+.cmp{padding:14px;background:var(--fill-hi);display:flex;flex-direction:column;gap:10px;font:600 19px/1.25 var(--f)}
+.cmp h4{margin:0;font:800 24px/1.1 var(--f)}
+.cmp .sub2{font:600 18px/1.2 var(--f)}
+.cmp .row2{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--edge);padding-top:8px}
+.cmp .row2 span:first-child{display:flex;align-items:center;gap:6px}
+.cmp .row2 svg{width:26px;height:26px}
+.delta{font:800 20px/1 var(--f);white-space:nowrap}
+.cmp .cb{display:flex;gap:8px;margin-top:auto}
+.cmp .cb .btn{flex:1;height:52px;font-size:20px}
+
+/* cards lado a lado */
+.cards{display:flex;flex-wrap:wrap;gap:24px 40px;align-items:flex-start}
+.cards figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.cards figcaption{color:var(--desk-dim);font-size:.9rem;max-width:36ch;line-height:1.4}
+.cards .card{color:var(--ink);position:static}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13.5 1.5 4 13.5h6.5L9 22.5l11-13h-7z" fill="#E9A400" stroke="#3D2C25" stroke-width="1.600" stroke-linejoin="round"/></symbol>
+  <symbol id="boltOff" viewBox="0 0 24 24"><path d="M13.5 1.5 4 13.5h6.5L9 22.5l11-13h-7z" fill="none" stroke="#3D2C25" stroke-width="1.600" stroke-linejoin="round" stroke-dasharray="3 2"/></symbol>
+  <symbol id="swap" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3" fill="none" stroke="#3D2C25" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 0 1 8 0v1" fill="none" stroke="#3D2C25" stroke-width="2"/><path d="M5 8h14l1.500 12.500H3.500z" fill="#E1CA9A" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/><path d="M9 13h6" stroke="#3D2C25" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="gear" viewBox="0 0 24 24"><path fill="#3D2C25" fill-rule="evenodd" d="M10.200 2.500h3.600l.5 2.600 1.700.7 2.200-1.500 2.500 2.500-1.500 2.200.7 1.700 2.600.5v3.600l-2.600.5-.7 1.700 1.500 2.200-2.500 2.500-2.200-1.500-1.700.7-.5 2.600h-3.600l-.5-2.600-1.700-.7-2.200 1.500-2.500-2.500 1.500-2.200-.7-1.700-2.600-.5v-3.600l2.600-.5.7-1.700-1.500-2.200 2.500-2.500 2.200 1.500 1.700-.7zM12 8.500a3.500 3.500 0 1 0 0 7 3.500 3.500 0 0 0 0-7z"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.200" fill="#3D2C25"/><path d="M4 21c0-5 3.500-7.500 8-7.500s8 2.500 8 7.500z" fill="#3D2C25"/></symbol>
+  <symbol id="edit" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z" fill="#FFF6DC" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/><path d="M14 6l4 4" stroke="#3D2C25" stroke-width="2"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="M12 4l8 9h-5v7H9v-7H4z" fill="#7FBF6A" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path d="M12 2.500l2.900 6 6.600.8-4.900 4.500 1.300 6.500L12 17l-5.900 3.300 1.300-6.500L2.500 9.300l6.600-.8z" fill="#F2C14E" stroke="#3D2C25" stroke-width="1.600" stroke-linejoin="round"/></symbol>
+  <symbol id="helmet" viewBox="0 0 24 24"><path d="M4 16v-4a8 8 0 0 1 16 0v4z" fill="#C9B1E8" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/><path d="M3 16h18v3H3z" fill="#946239" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="armor" viewBox="0 0 24 24"><path d="M3 7l5-3 4 2 4-2 5 3-2 4-3-1v11H8V10l-3 1z" fill="#B9E6E6" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="ring" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6.500" fill="none" stroke="#3D2C25" stroke-width="3"/><path d="M9 6l3-3 3 3-3 3z" fill="#F2C14E" stroke="#3D2C25" stroke-width="1.800" stroke-linejoin="round"/></symbol>
+  <symbol id="boot" viewBox="0 0 24 24"><path d="M6 4h7v8l6 3c1 .5 1.500 1.200 1.500 2.500V19H5.500z" fill="#FFF6DC" stroke="#3D2C25" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="hand" viewBox="0 0 24 24"><path d="M8 21l-3-6c-.6-1.200.8-2.200 1.800-1.200L8 15V5.500a1.500 1.500 0 0 1 3 0V11V4.500a1.500 1.500 0 0 1 3 0V11V6a1.500 1.500 0 0 1 3 0v6l.5-2a1.500 1.500 0 0 1 3 .6L19.500 17c-.5 2-1.500 4-3 4z" fill="#FFF6DC" stroke="#3D2C25" stroke-width="1.700" stroke-linejoin="round"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="#3D2C25" stroke-width="2.400"/><rect x="4.500" y="11" width="15" height="10" rx="2" fill="#E1CA9A" stroke="#3D2C25" stroke-width="2"/></symbol>
+  <symbol id="key"viewBox="0 0 24 24"><circle cx="8" cy="12" r="5" fill="#F2C14E" stroke="#3D2C25" stroke-width="2"/><path d="M13 12h9M18 12v4M21 12v3" stroke="#3D2C25" stroke-width="2.400" stroke-linecap="round"/></symbol>
+  <symbol id="back"viewBox="0 0 24 24"><path d="M10 5l-7 7 7 7M3 12h18" fill="none" stroke="#3D2C25" stroke-width="2.600" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="spk"viewBox="0 0 24 24"><path fill="#3D2C25" d="M3 9v6h4l5 4V5L7 9zm13.500 3a4.500 4.500 0 0 0-2.500-4v8a4.500 4.500 0 0 0 2.500-4zM14 3.200v2.100a7 7 0 0 1 0 13.400v2.100a9 9 0 0 0 0-17.600z"/></symbol>
+  <symbol id="face" viewBox="0 0 100 100"><rect width="100" height="100" fill="#bfe3ff"/><circle cx="50" cy="56" r="30" fill="#ffd9b0"/><path d="M20 50c0-26 16-34 30-34s30 8 30 34c-8-10-16-14-30-14S28 40 20 50z" fill="#6b4a2f"/><circle cx="40" cy="58" r="4" fill="#3a2a22"/><circle cx="60" cy="58" r="4" fill="#3a2a22"/><path d="M42 70q8 7 16 0" stroke="#3a2a22" stroke-width="3" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="bot" viewBox="0 0 200 200">
+    <ellipse cx="100" cy="186" rx="52" ry="9" fill="rgba(30,40,80,.25)"/>
+    <path d="M70 60 60 30M130 60l10-30" stroke="#6d7690" stroke-width="6" stroke-linecap="round"/><circle cx="60" cy="28" r="8" fill="#ffd24a"/><circle cx="140" cy="28" r="8" fill="#ffd24a"/>
+    <ellipse cx="100" cy="112" rx="64" ry="66" fill="#dfe4f1" stroke="#8e97b4" stroke-width="4"/>
+    <circle cx="76" cy="92" r="17" fill="#fff" stroke="#6d7690" stroke-width="3"/><circle cx="124" cy="92" r="17" fill="#fff" stroke="#6d7690" stroke-width="3"/>
+    <circle cx="79" cy="95" r="8" fill="#2c2250"/><circle cx="121" cy="95" r="8" fill="#2c2250"/><circle cx="82" cy="91" r="3" fill="#fff"/><circle cx="124" cy="91" r="3" fill="#fff"/>
+    <path d="M82 128q18 14 36 0" stroke="#6d7690" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <rect x="62" y="136" width="76" height="40" rx="14" fill="#b49be0" stroke="#6b4fa0" stroke-width="4"/>
+  </symbol>
+  <symbol id="hero" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="30" ry="8" fill="rgba(40,60,100,.28)"/><ellipse cx="50" cy="86" rx="32" ry="9" fill="none" stroke="#F2C14E" stroke-width="4"/><rect x="32" y="52" width="36" height="32" rx="12" fill="#6b4fa0"/><circle cx="50" cy="38" r="24" fill="#ffd9b0"/><path d="M26 36c0-18 12-24 24-24s24 6 24 24c-6-8-12-10-24-10S32 28 26 36z" fill="#6b4a2f"/><circle cx="42" cy="40" r="3.500" fill="#3a2a22"/><circle cx="58" cy="40" r="3.500" fill="#3a2a22"/></symbol>
+  <symbol id="i-here" viewBox="0 0 40 40"><circle cx="20" cy="12" r="6.500" fill="#3D2C25"/><path d="M8 33c0-9 5-13 12-13s12 4 12 13z" fill="#3D2C25"/></symbol>
+  <symbol id="i-done" viewBox="0 0 40 40"><path d="M10 21l7 7 13-15" fill="none" stroke="#3D2C25" stroke-width="4.500" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-portal" viewBox="0 0 40 40"><path d="M10 33V18a10 10 0 0 1 20 0v15z" fill="#B9E6E6" stroke="#3D2C25" stroke-width="3"/><path d="M16 33V19a4 4 0 0 1 8 0v14" fill="none" stroke="#3D2C25" stroke-width="2.500"/></symbol>
+  <symbol id="i-q" viewBox="0 0 40 40"><text x="20" y="30" text-anchor="middle" font-family="Noto Sans,Segoe UI,sans-serif" font-weight="800" font-size="28" fill="#3D2C25">?</text></symbol>
+</svg>
+
+<main>
+  <header>
+    <h1>HUD de Papel</h1>
+    <p class="lead">Versão enxuta. Durante a Dungeon a tela mostra só o que a criança usa agora: Energia, o objetivo, o mapa e, em combate, o pedido e a bolsa. Atributos, equipamentos e guias foram para o modal do Inventário.</p>
+  </header>
+
+  <section class="block">
+    <h2>1. Combate</h2>
+    <p class="sub">A bolsa e o balão do pedido só existem aqui e na Área de treino.</p>
+    <div class="fit"><div class="stage" data-mode="combat"></div></div>
+  </section>
+
+  <section class="block">
+    <h2>2. Exploração</h2>
+    <p class="sub">Sem criatura por perto: a bolsa e o pedido somem e sobra a Sala e o mapa.</p>
+    <div class="fit"><div class="stage" data-mode="explore"></div></div>
+  </section>
+
+  <section class="block">
+    <h2>3. Mapa em tela cheia</h2>
+    <p class="sub">Tocar no mapa do canto (ou a tecla M) escurece a cena e o Personagem abre a folha e a segura pelos cantos. O jogo pausa enquanto o mapa está aberto. A animação respeita "reduzir animações".</p>
+    <button class="replay" id="replay" type="button">Repetir animação</button>
+    <div class="fit"><div class="stage play" data-mode="map" id="mapstage"></div></div>
+  </section>
+
+  <section class="block">
+    <h2>4. Card do avatar</h2>
+    <p class="sub">O nível do Papel (Maestria) e o Editar moram aqui. Editar só existe no Lobby.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="block">
+    <h2>5. Inventário</h2>
+    <p class="sub">A aba Inventário tem as seções Equipamentos (usados primeiro) e Itens (Itens de troca e o que vier depois). O Personagem aparece equipado, com uma caixinha por espaço. Equipamento não evolui: um substitui o outro. Ao passar o mouse num item, o Personagem o veste na prévia e o painel da direita mostra só o que muda em relação ao que está equipado. Nomes, ícones e valores são exemplos.</p>
+    <div class="fit"><div class="stage" data-mode="inv"></div></div>
+  </section>
+
+  <section class="block">
+    <h2>6. Inventário: Cosméticos</h2>
+    <p class="sub">Mesma estrutura, sem atributos. A troca é em tempo real a partir da biblioteca da criança.</p>
+    <div class="fit"><div class="stage" data-mode="cos"></div></div>
+  </section>
+
+  <section class="notes">
+    <strong>O que saiu da tela de jogo</strong>
+    <ul>
+      <li>Atributos, Detalhes, Editar, setas de melhorar e o resumo do Papel. Tudo isso fica no Inventário ou no Lobby.</li>
+      <li>Bolinhas de criaturas acalmadas na placa e legenda e título do mapa pequeno. A legenda e o nome do Andar aparecem só no mapa em tela cheia.</li>
+      <li>Números das teclas na bolsa e o texto "Conta / Ajustes": agora são só ícones de 56 px.</li>
+      <li>Embaixo à esquerda ficam só o Inventário (com selo quando há equipamento para evoluir) e o nome do Papel com o ícone de trocar. O ícone de trocar só aparece em torre híbrida.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+const bolt=(on)=>`<svg viewBox="0 0 24 24"><use href="#${on?'bolt':'boltOff'}"/></svg>`;
+const ic=(id)=>`<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`;
+const mast=(n)=>`<span class="mast" role="img" aria-label="Maestria ${n}">${ic('star')}<b>${n}</b></span>`;
+const avatar=`<div class="avatar"><svg viewBox="0 0 100 100"><use href="#face"/></svg></div>`;
+const energy=`<div class="bolts" role="img" aria-label="Energia 4 de 5">${[1,1,1,1,0].map(bolt).join('')}</div>`;
+const card=(lobby)=>`<div class="card panel">${avatar}<div><div class="nm">Luna ${mast(3)}</div>${lobby?'':energy}</div>${lobby?`<div class="edit panel btn" role="button" aria-label="Editar personagem">${ic('edit')}</div>`:''}</div>`;
+
+/* Andar 2: só o que a criança viu */
+const N={E:[0,1,'done'],A:[1,1,'done'],T:[1,2,'portal'],B:[2,1,'here'],D:[1,0,'q'],G:[2,0,'q'],F:[2,2,'q'],C:[3,1,'q']};
+const L=[['E','A'],['A','B'],['A','D'],['A','T'],['B','C','door'],['B','F'],['B','G']];
+const cx=(c)=>24+c*66, cy=(r)=>24+r*60, S=44;
+function mapSvg(){
+  let s=`<svg viewBox="0 0 222 144" role="img" aria-label="Mapa do Andar: 4 salas vistas e 4 ainda não vistas">`;
+  for(const [a,b,t] of L){
+    const [ac,ar]=N[a],[bc,br]=N[b],x1=cx(ac),y1=cy(ar),x2=cx(bc),y2=cy(br);
+    const unk=N[a][2]==='q'||N[b][2]==='q';
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#946239" stroke-width="3" ${unk?'stroke-dasharray="5 4"':''} stroke-linecap="round"/>`;
+    if(t==='door'){const mx=(x1+x2)/2,my=(y1+y2)/2;s+=`<rect x="${mx-4}" y="${my-9}" width="8" height="18" rx="1.500" fill="#3D2C25"/>`;}
+  }
+  for(const k in N){
+    const [c,r,st]=N[k],x=cx(c)-S/2,y=cy(r)-S/2,here=st==='here',unk=st==='q';
+    s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="3" fill="${here?'#FFF6DC':'#EEDDB8'}" stroke="${here?'#3D2C25':'#946239'}" stroke-width="${here?3.5:1.5}" ${unk?'stroke-dasharray="4 3"':''}/><use href="#i-${st}" x="${x+2}" y="${y+2}" width="${S-4}" height="${S-4}"/>`;
+  }
+  return s+'</svg>';
+}
+const plaque=`<div class="plaque panel"><small>Nível 1 · Andar 2</small><strong>Matemática básica: soma</strong></div>`;
+const top2=`<div class="top2"><div class="panel btn" role="button" aria-label="Conta">${ic('user')}</div><div class="panel btn" role="button" aria-label="Ajustes">${ic('gear')}</div></div>`;
+const dock=`<div class="dock"><div class="inv panel btn" role="button" aria-label="Inventário, 1 equipamento novo">${ic('bag')}<span class="badge">novo</span></div><div class="role panel btn" role="button" aria-label="Trocar de Papel: Matemático">Matemático ${ic('swap')}</div></div>`;
+const toks=[['1'],['4','sel'],['12'],['8','sel'],['+','op'],['9'],['−','op'],['×','op']];
+const bag=`<div class="bag panel">${toks.map(t=>`<div class="tok ${t[1]||''}">${t[0]}</div>`).join('')}</div>`;
+
+const equip=(pic,slot,name,attrIcon,attr,can)=>`<div class="slot panel"><div class="pic">${ic(pic)}</div><small>${slot}</small><b>${name}</b><div class="chip">${ic(attrIcon)}${attr}</div>
+  <div class="evo panel btn ${can?'':'off'}" role="button">${can?ic('up')+'Evoluir':'No máximo'}</div>${can?`<span class="badge">${ic('up')}</span>`:''}</div>`;
+const modal=`<div class="dim"></div><div class="modal panel">
+  <div class="mh"><span>Inventário</span><div class="panel btn" role="button" aria-label="Fechar">✕</div></div>
+  <div class="tabs"><div class="tab panel btn" role="button">Itens</div><div class="tab panel btn on" role="button">Equipamentos<span class="badge">${ic('up')}</span></div><div class="role-chip panel btn">Matemático ${ic('swap')}</div></div>
+  <div class="slots">
+    ${equip('helmet','Capacete','Capuz de giz','bolt','Energia +1',true)}
+    ${equip('armor','Armadura','Colete de papel','boot','Velocidade +0,04×',false)}
+    ${equip('ring','Acessório','Anel de contas','hand','Alcance +0,2',false)}
+  </div>
+  <div class="total"><span>Total do Papel:</span><span class="chip">${ic('bolt')}5 + 1</span><span class="chip">${ic('boot')}1,04×</span><span class="chip">${ic('hand')}+0,2</span></div>
+  <div class="guide"><div class="gh">Equipamentos<span>1 de 3</span></div>
+    <div>Cada Papel tem os seus. Eles dão um empurrãozinho, como mais Energia, e nunca mudam as contas nem as palavras.</div>
+    <div class="gbtns"><div class="panel btn" role="button">${ic('spk')}Ouvir</div><div class="panel btn" role="button">Pular</div><div class="panel btn" role="button">Próximo</div></div></div>
+</div>`;
+
+const slot=(x,y,label,icon,lvl,tryIt)=>`<div class="sl" style="left:${x}px;top:${y}px"><div class="bx ${tryIt?'try':''}">${icon?ic(icon):''}${lvl?`<small>Nv ${lvl}</small>`:''}</div>${label}</div>`;
+const item=(icon,lvl,state)=>`<div class="it ${state==='hov'?'hov':''}">${ic(icon)}${lvl?`<small>${lvl}</small>`:''}${state==='eq'?'<span class="on">✓</span>':''}${state==='new'?'<span class="on">novo</span>':''}${state==='lock'?`<span class="on lk">${ic('lock')}4</span>`:''}</div>`;
+function invModal(m){
+  const eq=(m==='inv');
+  const doll=`<div class="doll"><span class="tag">${eq?'Prévia: Capuz de lã':'Prévia: Asinhas de papel'}</span><svg class="me" viewBox="0 0 100 100" aria-label="Luna equipada"><use href="#hero"/></svg>
+    ${eq?slot(126,44,'Capacete','helmet',0,true)+slot(8,196,'Armadura','armor')+slot(244,196,'Acessório','ring')
+        :slot(126,44,'Chapéu','helmet')+slot(8,196,'Roupa','armor')+slot(244,196,'Costas','star',0,true)+slot(126,340,'Ferramenta','edit')}</div>`;
+  const lib=eq?`<div class="lib"><div class="lh">Equipamentos<span>os usados primeiro</span></div><div class="grid">
+      ${item('helmet','','eq')}${item('armor','','eq')}${item('ring','','eq')}${item('helmet','','hov')}${item('armor','','lock')}${item('ring','','new')}</div>
+      <div class="lh" style="margin-top:6px">Itens<span>2</span></div><div class="grid">${item('key','N1')}${item('key','N2')}</div>
+      <div class="hint">Passe o mouse ou toque num equipamento para ver o que ele muda. O Personagem já aparece com ele. O cadeado mostra a Maestria que falta (aqui, 4) e impede de equipar.</div></div>`
+    :`<div class="lib"><div class="lh">Meus cosméticos<span>8 itens</span></div><div class="grid">
+      ${item('helmet','')}${item('helmet','')}${item('armor','')}${item('armor','')}${item('star','','hov')}${item('star','')}${item('edit','')}${item('edit','')}</div>
+      <div class="hint">Troca na hora, sem sair daqui. Só muda a aparência.</div></div>`.replace(/<small>Nv <\/small>/g,'');
+  const cmp=eq?`<div class="cmp panel"><div><h4>Capuz de lã</h4><div class="sub2">Capacete · troca o Capuz de giz · pede Maestria 2 (você tem 3)</div></div>
+      <div class="row2"><span>${ic('bolt')}Energia máx.</span><span class="delta">5+1 → 5+2 &nbsp;▲ +1</span></div>
+      <div class="row2"><span>${ic('boot')}Velocidade</span><span class="delta">igual</span></div>
+      <div class="row2"><span>${ic('hand')}Alcance</span><span class="delta">igual</span></div>
+      <div class="cb"><div class="panel btn" role="button">${ic('spk')}Ouvir</div><div class="panel btn" role="button">Equipar</div></div></div>`
+    :`<div class="cmp panel"><div><h4>Asinhas de papel</h4><div class="sub2">Costas · cosmético</div></div>
+      <div class="row2"><span>Só muda a aparência</span></div>
+      <div class="row2"><span>Energia, velocidade e alcance ficam como estão</span></div>
+      <div class="cb"><div class="panel btn" role="button">${ic('spk')}Ouvir</div><div class="panel btn" role="button">Vestir</div></div></div>`;
+  return `<div class="dim"></div><div class="inv2 panel">
+    <div class="mh"><span>Inventário</span><div class="panel btn" role="button" aria-label="Fechar">✕</div></div>
+    <div class="tabs"><div class="tab panel btn ${eq?'on':''}" role="button">Inventário<span class="badge">novo</span></div><div class="tab panel btn ${eq?'':'on'}" role="button">Cosméticos</div><div class="role-chip panel btn">Matemático ${ic('swap')}</div></div>
+    <div class="body">${doll}${lib}${cmp}</div></div>`;
+}
+function render(el){
+  const m=el.dataset.mode;
+  let h='<div class="floor"></div>';
+  if(m==='combat'){
+    h+=`<svg class="enemy" viewBox="0 0 200 200" role="img" aria-label="Criatura"><use href="#bot"/></svg>${card(false)}${plaque}${top2}<div class="map panel">${mapSvg()}</div>
+      <div class="bubble panel"><span class="say">${ic('spk')}</span>12</div>${dock}${bag}`;
+  } else if(m==='explore'){
+    h+=`<svg class="hero" viewBox="0 0 100 100" role="img" aria-label="Luna"><use href="#hero"/></svg>${card(false)}${plaque}${top2}<div class="map panel">${mapSvg()}</div>${dock}`;
+  } else if(m==='map'){
+    const arm=(c)=>`<svg class="arm ${c}" viewBox="0 0 150 168" aria-hidden="true"><rect x="45" y="62" width="62" height="120" rx="28" fill="#6b4fa0" stroke="#3D2C25" stroke-width="2.500"/><circle cx="76" cy="46" r="34" fill="#ffd9b0" stroke="#3D2C25" stroke-width="2.500"/><circle cx="110" cy="30" r="14" fill="#ffd9b0" stroke="#3D2C25" stroke-width="2.500"/><path d="M62 30v18M78 24v22" stroke="#3D2C25" stroke-width="2" stroke-linecap="round"/></svg>`;
+    const row=(i,t)=>`<div class="row"><svg viewBox="0 0 40 40"><use href="#i-${i}"/></svg>${t}</div>`;
+    h+=`<svg class="hero" viewBox="0 0 100 100"><use href="#hero"/></svg><div class="dim"></div>
+      <div class="back panel btn" role="button">${ic('swap').replace('#swap','#back')}Voltar</div>
+      <div class="sheet"><div class="sh"><span>Andar 2</span><small>Torre dos Números</small></div>${mapSvg().replace('<svg ','<svg class="g" ')}</div>
+      ${arm('l')}${arm('r')}
+      <div class="leg panel"><div class="lh">Legenda</div>${row('here','Você')}${row('done','Vencida')}${row('portal','Portal')}${row('q','Não vista')}</div>`;
+  } else {
+    h+=`<svg class="hero" viewBox="0 0 100 100"><use href="#hero"/></svg>${card(false)}${plaque}${top2}<div class="map panel">${mapSvg()}</div>${dock}${invModal(m)}`;
+  }
+  el.innerHTML=h;
+}
+document.querySelectorAll('.stage').forEach(render);
+document.getElementById('cards').innerHTML=
+ `<figure>${card(true)}<figcaption>No Lobby: Maestria e Editar, que abre a personalização do Personagem. Sem Energia.</figcaption></figure>
+  <figure>${card(false)}<figcaption>Na Dungeon e no treino: Maestria e Energia. Sem lápis.</figcaption></figure>`;
+
+document.getElementById('replay').onclick=()=>{const s=document.getElementById('mapstage');s.classList.remove('play');void s.offsetWidth;s.classList.add('play')};
+const pairs=[...document.querySelectorAll('.fit')].map(f=>[f,f.firstElementChild]);
+const rescale=()=>pairs.forEach(([f,s])=>{s.style.transform=`scale(${f.clientWidth/1280})`});
+new ResizeObserver(rescale).observe(document.body);rescale();
+</script>

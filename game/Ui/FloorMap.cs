@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using System.Linq;
+using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using Godot;
 
 namespace ArquipelagoDoCeu;
 
 // Desenha o grafo de um Andar: a entrada em cima e as Salas mais longe dela mais abaixo.
-// Cada função tem forma e letra próprias, para a cor nunca ser a única informação.
+// Cada função tem forma e letra próprias, para a cor nunca ser a única informação. Com uma Expedição ligada, só aparece o
+// que a criança explorou: as Salas visitadas, as vizinhas sob névoa (um "?", sem dizer o que são) e o cadeado nas que ainda
+// pedem uma vitória; as outras nem aparecem.
 public partial class FloorMap : Control
 {
 	const float Radius = 17f;
@@ -29,6 +32,23 @@ public partial class FloorMap : Control
 	// Salas já vencidas ou visitadas, e a Sala onde a criança está; usados pelo jogo, e vazios no mapa de depuração.
 	ISet<int> cleared = new HashSet<int>();
 	int? here;
+	Expedition? source;
+	bool complete;
+
+	public Expedition? Source
+	{
+		get => source;
+		set { source = value; QueueRedraw(); }
+	}
+
+	// O selo de Andar completo, no canto do mapa.
+	public bool Complete
+	{
+		get => complete;
+		set { complete = value; QueueRedraw(); }
+	}
+
+	public void Refresh() => QueueRedraw();
 
 	public ISet<int> Cleared
 	{
@@ -54,7 +74,7 @@ public partial class FloorMap : Control
 
 	public static string NameOf(RoomKind kind) => Look[kind].Name;
 
-	public static string Legend => string.Join("   ", Look.Values.Select(v => $"{v.Letter} {v.Name}"));
+	public static string Legend => string.Join("   ", Look.Values.Select(v => $"{v.Letter} {v.Name}")) + "\n? Sala nova (névoa)   Cadeado: falta vencer uma Sala";
 
 	void Layout(Vector2 size)
 	{
@@ -84,11 +104,20 @@ public partial class FloorMap : Control
 	{
 		var line = Color.FromHtml("#D9A64A");
 		foreach (var link in floor.Links)
-			DrawLine(positions[link.A], positions[link.B], line, 3f, true);
+			if (SightOf(link.A) == Sight.Seen || SightOf(link.B) == Sight.Seen)
+				DrawLine(positions[link.A], positions[link.B], line, 3f, true);
 
 		var font = ThemeDB.FallbackFont;
 		foreach (var room in floor.Rooms)
 		{
+			var sight = SightOf(room.Id);
+			if (sight == Sight.Hidden) continue;
+			if (sight == Sight.Fog)
+			{
+				DrawFog(font, positions[room.Id], source!.IsLocked(room.Id));
+				continue;
+			}
+
 			var (letter, _, color) = Look[room.Kind];
 			var at = positions[room.Id];
 			var dim = Cleared.Contains(room.Id) ? 0.45f : 1f;
@@ -100,6 +129,29 @@ public partial class FloorMap : Control
 			if (room.HoldsItem)
 				DrawString(font, at + new Vector2(Radius - 4, -Radius + 6), "★", HorizontalAlignment.Left, -1, 18, Color.FromHtml("#FFEB3B"));
 		}
+
+		if (!complete) return;
+		DrawCircle(new Vector2(18, 18), 16, Colors.Black);
+		DrawCircle(new Vector2(18, 18), 14, Color.FromHtml("#FFD54F"));
+		DrawString(font, new Vector2(7, 26), "★", HorizontalAlignment.Left, -1, 22, Colors.Black);
+	}
+
+	Sight SightOf(int room) => source?.SightOf(room) ?? Sight.Seen;
+
+	// A Sala sob névoa é um círculo cinza com "?"; o cadeado é desenhado (corpo e argola), e nunca só uma cor.
+	void DrawFog(Font font, Vector2 at, bool locked)
+	{
+		DrawCircle(at, Radius, Color.FromHtml("#8A8399"));
+		DrawArc(at, Radius, 0, Mathf.Tau, 24, Color.FromHtml("#E6E0F2"), 2f, true);
+		var width = font.GetStringSize("?", HorizontalAlignment.Left, -1, 20).X;
+		DrawString(font, at + new Vector2(-width / 2, 7), "?", HorizontalAlignment.Left, -1, 20, Colors.Black);
+		if (!locked) return;
+
+		var lock_ = at + new Vector2(Radius - 2, -Radius + 4);
+		DrawArc(lock_ + new Vector2(0, -3), 5f, Mathf.Pi, Mathf.Tau, 10, Colors.Black, 5f, true);
+		DrawArc(lock_ + new Vector2(0, -3), 5f, Mathf.Pi, Mathf.Tau, 10, Colors.White, 2.5f, true);
+		DrawRect(new Rect2(lock_ + new Vector2(-8, -3), new Vector2(16, 13)), Colors.Black);
+		DrawRect(new Rect2(lock_ + new Vector2(-6, -1), new Vector2(12, 9)), Color.FromHtml("#FFD54F"));
 	}
 
 	// Combate é círculo, Puzzle é quadrado, Marco e épico são losangos e o resto é um hexágono: a forma diz a função.
