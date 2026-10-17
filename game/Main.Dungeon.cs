@@ -103,7 +103,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts(), ShowInventory, NewInventoryCount));
+			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts(), ShowInventory, NewInventoryCount, ExpeditionCompleted));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;
@@ -130,6 +130,7 @@ public partial class Main
 		UpdatePlayerControl();
 		interactTarget = null;
 		RefreshCard();
+		RefreshDock();
 		if (reason.Length != 0) Notify(reason);
 		// O que a criança ganhou na Expedição aparece ao voltar, com o número subindo até o saldo novo.
 		// Só vale a Expedição que acabou e do mesmo Perfil: nunca mostra moedas que a criança não ganhou ali.
@@ -152,7 +153,7 @@ public partial class Main
 	CosmeticCatalog LoadCosmetics() => cosmeticCatalog ??= catalogs.Optional("cosmeticos.json", CosmeticCatalog.Parse, CosmeticCatalog.Empty);
 
 	// Sem as recompensas o jogo segue, só sem moedas nem Cosméticos: elas são um extra.
-	RewardCatalog LoadRewards() => catalogs.Optional("recompensas.json", json => RewardCatalog.Parse(json, RewardTriggers.Default, LoadCosmetics()), RewardCatalog.Empty);
+	RewardCatalog LoadRewards() => catalogs.Optional("recompensas.json", json => RewardCatalog.Parse(json, RewardTriggers.Default, LoadCosmetics(), LoadGear()), RewardCatalog.Empty);
 
 	// Sem os nomes dos Conceitos a placa mostra o id em texto legível: o jogo segue.
 	ConceptNames LoadConcepts() => catalogs.Optional("conceitos.json", ConceptNames.Parse, ConceptNames.Empty);

@@ -94,7 +94,7 @@ public sealed class InventoryTests : IDisposable
 		Assert.Contains(entries, e => e.Locked);
 	}
 
-[Fact]
+	[Fact]
 	public void A_biblioteca_so_mostra_o_que_a_crianca_tem_e_o_que_ela_veste()
 	{
 		var library = new GearLibrary(Catalog);

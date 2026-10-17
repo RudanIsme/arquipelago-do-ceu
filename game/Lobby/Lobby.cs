@@ -203,6 +203,7 @@ public partial class Lobby : Node3D, ICombatStage
 			}
 			else if (item.Id.StartsWith("torre-")) top = AddGate(ground, item.Name, "#D9A64A");
 			else if (item.Id == "mestre") top = AddGate(ground, item.Name, "#7A44D1");
+			else if (item.Id == "mercador") top = AddStall(ground, item.Name);
 			var marker = new MeshInstance3D
 			{
 				Mesh = new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0f, Height = 0.55f, RadialSegments = 4, Rings = 0 },
@@ -215,6 +216,23 @@ public partial class Lobby : Node3D, ICombatStage
 			footprints[item.Id] = (ground, top);
 		}
 		Interactables = list;
+	}
+
+	// A barraca do Mercador: balcão, dois postes e um toldo. Greybox, até a arte definitiva.
+	float AddStall(Vector3 ground, string name)
+	{
+		const float height = 2.0f;
+		var wood = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#8A5A32"), Roughness = 0.9f };
+		var cloth = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#D9534F"), Roughness = 0.8f };
+		AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.6f, 0.8f, 0.7f) }, MaterialOverride = wood, Position = ground + new Vector3(0f, 0.4f, 0f) });
+		foreach (var side in new[] { -0.75f, 0.75f })
+			AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.12f, height, 0.12f) }, MaterialOverride = wood, Position = ground + new Vector3(side, height / 2f, -0.3f) });
+		AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.9f, 0.1f, 1.1f) }, MaterialOverride = cloth, Position = ground + new Vector3(0f, height, -0.1f), Rotation = new Vector3(0.18f, 0f, 0f) });
+		var sign = new Label3D { Text = name, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 44, PixelSize = 0.012f, OutlineSize = 14, OutlineModulate = Color.FromHtml("#1B1424"), Modulate = Color.FromHtml("#FFF6E0"), NoDepthTest = true, Position = ground + new Vector3(0f, height + 0.7f, 0f) };
+		AddChild(sign);
+		signs.Add(sign);
+		sign.AddToGroup(CameraController.LabelGroup);
+		return height;
 	}
 
 	// A entrada de uma torre na beira da ilha: duas colunas, uma verga e o nome. Greybox, até a arte definitiva.

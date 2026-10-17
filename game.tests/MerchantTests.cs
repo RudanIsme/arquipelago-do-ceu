@@ -220,6 +220,43 @@ public sealed class MerchantTests : IDisposable
 	}
 
 	[Fact]
+	public void Comprar_guarda_o_estoque_mesmo_se_o_item_comprado_sair_da_lista_de_novos()
+	{
+		var (merchant, _, _) = Start(coins: 1000);
+		var before = merchant.Stock("p").Select(o => o.Id).ToList();
+
+		merchant.Buy("p", before[1]);
+		merchant.AddCharge("p");
+
+		Assert.Equal(before, merchant.Stock("p").Select(o => o.Id));
+		merchant.Rotate("p");
+		Assert.DoesNotContain(merchant.Stock("p"), o => o.Id == before[1]);
+	}
+
+	[Fact]
+	public void Recomprar_o_que_a_crianca_ja_tem_de_novo_nao_duplica_o_equipamento()
+	{
+		var (merchant, store, _) = Start(coins: 100, equipment: ["scout"]);
+		merchant.Sell("p", ["scout"]);
+		store.Update("p", p => p with { Equipment = ["scout"] });
+
+		merchant.Rebuy("p", "scout");
+
+		Assert.Equal(["scout"], store.Of("p")!.Equipment!);
+	}
+
+	[Fact]
+	public void Rotacionar_sem_nada_novo_para_mostrar_nao_gasta_a_carga()
+	{
+		var (merchant, store, _) = Start();
+		store.Update("p", p => p with { Cosmetics = Catalog.Cosmetics.Select(o => o.Id).ToList() });
+		merchant.AddCharge("p");
+
+		Assert.False(merchant.Rotate("p").IsOk);
+		Assert.True(merchant.HasCharge("p"));
+	}
+
+	[Fact]
 	public void O_estado_do_Mercador_sobrevive_a_salvar_e_carregar()
 	{
 		var (merchant, _, _) = Start(coins: 50, equipment: ["scout"]);

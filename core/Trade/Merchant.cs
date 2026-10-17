@@ -73,11 +73,11 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 	public IReadOnlyList<Buyback> Buybacks(string profileId) => State(profileId).Buyback ?? [];
 
 	// O que está à venda agora: o que a rotação guardou, ou, antes da primeira rotação, o começo do catálogo.
-	// Comprar não muda o estoque: o item comprado fica na vitrine, e só a rotação o tira.
+	// Comprar não muda o estoque: o item comprado fica na vitrine (a compra guarda o estoque), e só a rotação o tira.
 	public IReadOnlyList<MerchantOffer> Stock(string profileId)
 	{
 		if (store.Find(profileId) is null) return [];
-		var ids = State(profileId).Stock ?? catalog.Cosmetics.Take(catalog.StockSize).Select(o => o.Id).ToList();
+		var ids = State(profileId).Stock ?? Window(profileId, 0).Ids;
 		return ids.Select(catalog.CosmeticOffer).OfType<MerchantOffer>().ToList();
 	}
 
@@ -90,6 +90,7 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 		if (!HasCharge(profileId)) return Result<IReadOnlyList<MerchantOffer>>.Fail("O Mercador só rotaciona depois de uma Expedição concluída.");
 
 		var window = Window(profileId, NextCursor(profileId));
+		if (window.Ids.Count == 0) return Result<IReadOnlyList<MerchantOffer>>.Fail("Você já tem todos os Cosméticos do Mercador. A carga fica guardada.");
 		var saved = Update(profileId, state => state with { Stock = window.Ids, Cursor = window.Next, Charge = false });
 		return saved.IsOk ? Result<IReadOnlyList<MerchantOffer>>.Ok(Stock(profileId)) : Result<IReadOnlyList<MerchantOffer>>.Fail(saved.Error!);
 	}
@@ -101,7 +102,9 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 		if ((store.Of(profileId)?.Cosmetics ?? []).Contains(cosmeticId)) return Result<ProfileSave>.Fail("Você já tem esse Cosmético.");
 		if (Balance(profileId) < offer.Price) return Result<ProfileSave>.Fail($"Faltam {offer.Price - Balance(profileId)} moedas.");
 
-		return store.Update(profileId, p => p with { Coins = Balance(profileId) - offer.Price, Cosmetics = [.. p.Cosmetics ?? [], cosmeticId] });
+		var shown = Stock(profileId).Select(o => o.Id).ToList();
+		var cursor = NextCursor(profileId);
+		return store.Update(profileId, p => WithState(p with { Coins = Balance(profileId) - offer.Price, Cosmetics = [.. p.Cosmetics ?? [], cosmeticId] }, state => state with { Stock = shown, Cursor = cursor }));
 	}
 
 	// Vende vários equipamentos de uma vez; se algum não puder (equipado, de outro, sem preço), nada é vendido.
@@ -112,7 +115,7 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 		if (ids.Count == 0) return Result<int>.Fail("Escolha ao menos um equipamento para vender.");
 
 		var owned = profile.Progress?.Equipment ?? [];
-		var worn = (profile.Gear ?? new Dictionary<string, Gear>()).Values.SelectMany(g => g.Items.Values).ToHashSet();
+		var worn = InventoryService.WornIds(profile).ToHashSet();
 		var blocked = ids.FirstOrDefault(id => !owned.Contains(id) || worn.Contains(id) || catalog.SellPrice(id) == 0);
 		if (blocked is not null) return Result<int>.Fail(worn.Contains(blocked) ? "O equipamento vestido não se vende." : "Esse equipamento não pode ser vendido.");
 
@@ -135,7 +138,7 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 		return store.Update(profileId, p => WithState(p with
 		{
 			Coins = Balance(profileId) - entry.Price,
-			Equipment = [.. p.Equipment ?? [], itemId],
+			Equipment = (p.Equipment ?? []).Append(itemId).Distinct().ToList(),
 		}, state => state with { Buyback = (state.Buyback ?? []).Where(b => b != entry).ToList() }));
 	}
 
@@ -147,7 +150,7 @@ public sealed class MerchantService(ProgressStore store, MerchantCatalog catalog
 	static ProgressSave WithState(ProgressSave progress, Func<MerchantSave, MerchantSave> change) =>
 		progress with { Merchant = change(progress.Merchant ?? new MerchantSave()) };
 
-	int NextCursor(string profileId) => State(profileId).Cursor ?? catalog.StockSize % catalog.Cosmetics.Count;
+	int NextCursor(string profileId) => State(profileId).Cursor ?? Window(profileId, 0).Next;
 
 	// Os próximos Cosméticos do catálogo, em círculo a partir de `start`, sem os que a criança já tem.
 	(IReadOnlyList<string> Ids, int Next) Window(string profileId, int start)

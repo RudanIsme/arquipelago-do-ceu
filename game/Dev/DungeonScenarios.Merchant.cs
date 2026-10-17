@@ -1,0 +1,71 @@
+using System.Linq;
+using System.Threading.Tasks;
+using Godot;
+
+namespace ArquipelagoDoCeu;
+
+// Cenário `mercador` do piloto: o Mercador do Lobby compra, vende em lote, recompra e rotaciona, sempre com confirmação.
+static partial class DungeonScenarios
+{
+	public static async Task Merchant(DevDriver d)
+	{
+		await EnsureProfile(d);
+		var port = d.Port;
+		var profile = port.ProfileId;
+		await GrantFloors(d, (1, 1), (1, 2));
+		port.Progress.Wallet.Add(profile, 40);
+		var start = port.Merchant.Balance(profile);
+
+		await WalkTo(d, -4, 2);
+		await d.Tap(Controls.Interact);
+		await d.Wait(0.8);
+		d.Expect(Named<Control>(d, "MerchantScreen") is not null, "chegar perto do Mercador e interagir abre a tela dele");
+		d.Expect(d.HasVisible($"Saldo: {start} moedas"), "o saldo aparece escrito");
+		d.Expect(Named<Button>(d, "RotateButton")!.Disabled && HasButtonText(d, "sem carga"), "sem carga o Rotacionar fica desligado e diz isso em texto");
+		await d.Shot("01-mercador");
+
+		var offer = port.Merchant.Stock(profile)[0];
+		Named<Button>(d, "Offer_" + offer.Id)!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(Named<Control>(d, "ConfirmDialog") is not null, "comprar pede confirmação");
+		d.Expect(!port.Rewards.Cosmetics(profile).Contains(offer.Id), "antes de confirmar nada é comprado");
+		await d.Shot("02-confirmar-compra");
+		await d.Press("Sim");
+		await d.Wait(0.4);
+		d.Expect(port.Rewards.Cosmetics(profile).Contains(offer.Id) && d.HasVisible($"Saldo: {start - offer.Price} moedas"), "confirmar compra o Cosmético e desconta o preço");
+
+		Named<Button>(d, "Sell_scout")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.3);
+		Named<Button>(d, "Sell_lantern")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.3);
+		d.Expect(HasButtonText(d, "Vender selecionados (2)"), "a seleção em lote mostra quantos e quanto");
+		Named<Button>(d, "SellSelected")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(Named<Control>(d, "ConfirmDialog") is not null, "vender pede confirmação");
+		await d.Press("Sim");
+		await d.Wait(0.4);
+		d.Expect(!port.Inventory.OwnedGear(profile).Contains("scout") && Named<Button>(d, "Rebuy_scout") is not null, "o vendido vai para a linha Recomprar");
+		await d.Shot("03-recomprar");
+
+		var before = port.Merchant.Balance(profile);
+		Named<Button>(d, "Rebuy_scout")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		await d.Press("Sim");
+		await d.Wait(0.4);
+		d.Expect(port.Inventory.OwnedGear(profile).Contains("scout") && port.Merchant.Balance(profile) < before, "recomprar devolve o equipamento por moedas");
+
+		port.Merchant.AddCharge(profile);
+		await d.Press("Fechar");
+		await d.Tap(Controls.Interact);
+		await d.Wait(0.8);
+		d.Expect(HasButtonText(d, "1 carga") && !Named<Button>(d, "RotateButton")!.Disabled, "com carga o Rotacionar liga");
+		var oldStock = port.Merchant.Stock(profile).Select(o => o.Id).ToList();
+		Named<Button>(d, "RotateButton")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		await d.Press("Sim");
+		await d.Wait(0.4);
+		d.Expect(!oldStock.SequenceEqual(port.Merchant.Stock(profile).Select(o => o.Id)) && Named<Button>(d, "RotateButton")!.Disabled, "Rotacionar troca o estoque e gasta a carga");
+		await d.Shot("04-estoque-novo");
+		await d.Press("Fechar");
+	}
+}

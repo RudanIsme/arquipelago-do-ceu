@@ -224,7 +224,7 @@ public sealed class RewardTests : IDisposable
 		Assert.NotNull(Parse("""{"id":"a","trigger":"floor-complete","coins":2}"""));
 	}
 
-static readonly GearCatalog GearData = GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!;
+	static readonly GearCatalog GearData = GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!;
 
 	static RewardCatalog GameCatalog()
 	{

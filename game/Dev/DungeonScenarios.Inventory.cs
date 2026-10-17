@@ -1,6 +1,7 @@
 using System.Linq;
 using ArquipelagoDoCeu.Generation;
 using System.Threading.Tasks;
+using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using Godot;
@@ -15,6 +16,8 @@ static partial class DungeonScenarios
 		await EnsureProfile(d);
 		var port = d.Port;
 		var profile = port.ProfileId;
+		await GrantFloors(d, (1, 1), (1, 2), (2, 3), (3, 1));
+		port.RefreshDock();
 		var dock = Named<Button>(d, "InventoryButton");
 		d.Expect(dock is not null && dock.Text.Contains("novos"), "o botão do Inventário mostra o selo novo, em texto");
 		d.Expect(d.HasVisible("Matemático"), "o dock mostra o nome do Papel");
@@ -49,7 +52,6 @@ static partial class DungeonScenarios
 		d.Expect(port.Gear.Get(profile, "matematica").In("armor") == "scout", "Equipar veste de verdade");
 		d.Expect(HasButtonText(d, "Armadura: Explorador"), "a caixinha do espaço mostra o equipamento");
 
-		await GiveCosmetic(d);
 		await d.Press("Fechar");
 		d.Expect(Named<Control>(d, "InventoryScreen") is null, "Fechar volta ao Lobby");
 		dock!.EmitSignal(BaseButton.SignalName.Pressed);
@@ -104,15 +106,17 @@ static partial class DungeonScenarios
 	static T? Named<T>(DevDriver d, string name) where T : Node =>
 		d.GetTree().Root.FindChildren(name, "", true, false).OfType<T>().FirstOrDefault(n => n.IsInsideTree() && !n.IsQueuedForDeletion() && (n is not CanvasItem item || item.IsVisibleInTree()));
 
-	// Entrega o primeiro Cosmético da Torre dos Números, pela mesma saída que a Dungeon usa.
-	static async Task GiveCosmetic(DevDriver d)
+	// Completa Andares da Torre dos Números pela mesma saída da Dungeon: cada um concede o Cosmético e o equipamento dos dados.
+	static async Task GrantFloors(DevDriver d, params (int Level, int Floor)[] floors)
 	{
 		using var cosmetics = FileAccess.Open("res://data/cosmeticos.json", FileAccess.ModeFlags.Read);
 		using var rewards = FileAccess.Open("res://data/recompensas.json", FileAccess.ModeFlags.Read);
+		using var equipment = FileAccess.Open("res://data/equipamentos.json", FileAccess.ModeFlags.Read);
+		var gear = GearCatalog.Parse(equipment.GetAsText(), GearEffects.Default).Value!;
 		var catalog = CosmeticCatalog.Parse(cosmetics.GetAsText()).Value!;
-		var parsed = RewardCatalog.Parse(rewards.GetAsText(), RewardTriggers.Default, catalog).Value!;
-		var context = new RewardContext("floor-complete", "matematica", 1, 1);
-		d.Expect(d.Port.Rewards.Grant(d.Port.ProfileId, context, parsed).IsOk, "o Andar completo rende um Cosmético");
+		var parsed = RewardCatalog.Parse(rewards.GetAsText(), RewardTriggers.Default, catalog, gear).Value!;
+		foreach (var (level, floor) in floors)
+			d.Expect(d.Port.Rewards.Grant(d.Port.ProfileId, new RewardContext("floor-complete", "matematica", level, floor), parsed).IsOk, $"o Andar {floor} do Nível {level} rende o prêmio");
 		await d.Wait(0.2);
 	}
 

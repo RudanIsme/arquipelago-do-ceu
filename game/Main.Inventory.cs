@@ -114,7 +114,7 @@ public partial class Main
 	}
 
 	IEnumerable<string> NewInventoryKeys() =>
-		current is null ? [] : InventoryHost.NewKeys(inventory, current.Id, LoadGear(), rewardService.Cosmetics(current.Id));
+		current is null ? [] : InventoryHost.NewKeys(inventory, current.Id, inventory.OwnedGear(current.Id), rewardService.Cosmetics(current.Id));
 
 	// Quantos itens do Inventário a criança ainda não viu; a Dungeon mostra o mesmo selo no dock dela.
 	int NewInventoryCount() => NewInventoryKeys().Count();
@@ -143,6 +143,7 @@ public partial class Main
 		Inventory = inventory,
 		Mastery = () => progress.Mastery.Of(current.Id, role),
 		OwnedCosmetics = () => rewardService.Cosmetics(current.Id),
+		OwnedGear = () => inventory.OwnedGear(current.Id),
 		HeldItems = HeldItems,
 		Say = text => voice.Say(text, interrupt: true),
 		Changed = ApplyEquipment,

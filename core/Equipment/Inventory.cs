@@ -59,12 +59,14 @@ public sealed class InventoryService(SaveSession session, CosmeticCatalog cosmet
 		Worn(profileId).Select(id => cosmetics.Find(id)?.Look).OfType<CosmeticLook>().ToList();
 
 	// Os equipamentos da criança: os que ganhou ou recomprou e os que já estão vestidos em algum Papel.
-	public IReadOnlyList<string> OwnedGear(string profileId)
-	{
-		var profile = Profile(profileId);
-		var worn = (profile?.Gear ?? new Dictionary<string, Gear>()).Values.SelectMany(g => g.Items.Values);
-		return (profile?.Progress?.Equipment ?? []).Concat(worn).Distinct().ToList();
-	}
+	public IReadOnlyList<string> OwnedGear(string profileId) =>
+		(Profile(profileId)?.Progress?.Equipment ?? []).Concat(WornGear(profileId)).Distinct().ToList();
+
+	// O que está vestido em qualquer Papel.
+	public IReadOnlyList<string> WornGear(string profileId) => Profile(profileId) is { } profile ? WornIds(profile) : [];
+
+	public static IReadOnlyList<string> WornIds(ProfileSave profile) =>
+		(profile.Gear ?? new Dictionary<string, Gear>()).Values.SelectMany(g => g.Items.Values).Distinct().ToList();
 
 	// Perfis do experimento vestiam equipamento sem tê-lo na lista: o que está vestido passa a contar como da criança, uma vez só.
 	public Result<IReadOnlyList<string>> ClaimWorn(string profileId)

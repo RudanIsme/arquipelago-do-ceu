@@ -48,6 +48,12 @@ O modal onde a criança vê o Personagem equipado em caixinhas, a biblioteca de 
 **Dock**:
 O canto inferior esquerdo do HUD, com o botão do Inventário (e o selo "novo", sempre em texto) e o nome do Papel.
 
+**Mercador**:
+O comerciante do Lobby. Compra Equipamento da criança (em lote, nunca o vestido, com recompra pelo mesmo preço e sem prazo) e vende Cosméticos de um estoque que só troca quando a criança usa o botão Rotacionar. Só moedas do jogo; toda compra, venda e recompra pede confirmação.
+
+**Carga de rotação**:
+O que cada Expedição concluída (Progressão ou Livre) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
+
 **Pesca** (modo de teste, F9):
 Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
 _Avoid_: Minijogo (é outra coisa, prevista para depois do MVP)
