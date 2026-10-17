@@ -247,6 +247,7 @@ public partial class DungeonRun : Node
 	{
 		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, ctx.LevelKey);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
+		ctx.ExpeditionCompleted?.Invoke();
 		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, ctx.LevelKey) && GiveItem();
 		RefreshHud();
 		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {ctx.TowerName}." + (extra is null ? "" : " " + extra);
@@ -387,6 +388,7 @@ public partial class DungeonRun : Node
 		combat.EndFight();
 		Engine.TimeScale = 1.0;
 		hud.Close();
+		if (ctx.Free && rewards.PaidFloors > 0) ctx.ExpeditionCompleted?.Invoke();
 		Left?.Invoke(reason);
 		QueueFree();
 	}

@@ -30,6 +30,8 @@ public sealed class InventoryHost
 
 	public required Func<IReadOnlyList<string>> OwnedCosmetics { get; init; }
 
+	public required Func<IReadOnlyList<string>> OwnedGear { get; init; }
+
 	public required Func<IReadOnlyList<HeldItem>> HeldItems { get; init; }
 
 	public required Action<string> Say { get; init; }
@@ -49,8 +51,8 @@ public sealed class InventoryHost
 	public string SlotName(string slotId) => Catalog.Slots.FirstOrDefault(s => s.Id == slotId)?.Name ?? slotId;
 
 	// As chaves ainda não vistas, sem precisar montar o host inteiro (o dock pergunta isso toda hora).
-	public static IEnumerable<string> NewKeys(InventoryService inventory, string profileId, GearCatalog catalog, IEnumerable<string> ownedCosmetics) =>
-		catalog.Items.Select(i => GearKey(i.Id)).Concat(ownedCosmetics.Select(CosmeticKey)).Where(key => inventory.IsNew(profileId, key));
+	public static IEnumerable<string> NewKeys(InventoryService inventory, string profileId, IEnumerable<string> ownedGear, IEnumerable<string> ownedCosmetics) =>
+		ownedGear.Select(GearKey).Concat(ownedCosmetics.Select(CosmeticKey)).Where(key => inventory.IsNew(profileId, key));
 
 	public static string GearKey(string id) => "gear:" + id;
 

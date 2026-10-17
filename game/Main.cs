@@ -74,6 +74,7 @@ public partial class Main : Node3D
 		rewardService = new RewardService(new ProgressStore(session));
 		inventory = new ArquipelagoDoCeu.Equipment.InventoryService(session, LoadCosmetics());
 		gear = new ArquipelagoDoCeu.Equipment.GearService(session, LoadGear());
+		merchant = new ArquipelagoDoCeu.Trade.MerchantService(new ProgressStore(session), LoadMerchant());
 		profiles = new ProfileService(session, rules, () => Guid.NewGuid().ToString("N"));
 		settings = new SettingsService(session, rules);
 		// Fechar a janela passa por QuitAsync, para a voz terminar antes de o jogo sair.
@@ -100,7 +101,7 @@ public partial class Main : Node3D
 			notice.Text = missing;
 			GD.PushWarning(missing);
 		}
-		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, inventory, master, training, () => current?.Id ?? "", UnlockedLevel));
+		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, inventory, merchant, RefreshDock, master, training, () => current?.Id ?? "", UnlockedLevel));
 		CallDeferred(nameof(InstallPullTest));
 
 		GD.Print("Cena inicial pronta.");
@@ -185,6 +186,7 @@ public partial class Main : Node3D
 		title.Text = $"{rules.GameName}  ·  {profile.Nickname}";
 		player.Visible = true;
 		ApplyAppearance();
+		if (inventory.ClaimWorn(profile.Id) is { IsOk: false } unclaimed) GD.PushWarning(unclaimed.Error!);
 		LoadProfileLook();
 		UpdatePlayerControl();
 		GD.Print($"Perfil ativo: {profile.Nickname}");
@@ -234,6 +236,7 @@ public partial class Main : Node3D
 		{
 			case "album": ShowOverlay(new AlbumScreen(OwnedCosmetics())); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
+			case "mercador": ShowMerchant(); break;
 			case "mestre": ShowMaster(); break;
 			case var tower when tower.StartsWith("torre-", StringComparison.Ordinal) && towers.Find(tower["torre-".Length..]) is not null: EnterTower(tower["torre-".Length..]); break;
 			case "guia": ShowGuide(); break;
@@ -317,6 +320,8 @@ public partial class Main : Node3D
 	{
 		var free = current is not null && screen is null && editor is null && overlay is null;
 		player.Enabled = free && !inDungeon;
+		// O atalho da pesca de teste não fica por cima de telas abertas.
+		SetPullBlocked(inDungeon || !free);
 		dungeon?.SetEnabled(free);
 		RefreshLobbyVisibility();
 	}

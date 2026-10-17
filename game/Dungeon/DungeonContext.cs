@@ -42,7 +42,8 @@ public sealed record DungeonContext(
 	bool Free = false,
 	ConceptNames? Concepts = null,
 	Action? OpenInventory = null,
-	Func<int>? NewInventoryItems = null)
+	Func<int>? NewInventoryItems = null,
+	Action? ExpeditionCompleted = null)
 {
 	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
 	public const int GeneratorVersion = 1;

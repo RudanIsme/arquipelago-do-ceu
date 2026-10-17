@@ -1,7 +1,7 @@
 namespace ArquipelagoDoCeu.Saves;
 
 // Chaves de texto ("matematica:1:2") e ausente valendo vazio, para saves antigos abrirem; o Nível liberado é o `Level` do Perfil.
-// `Solved` conta vitórias por Conceito, `Mastered` os dominados (a Maestria), `Coins` o saldo e `Occurrences` as recompensas já pagas; o treino nunca escreve aqui.
+// `Solved` conta vitórias por Conceito, `Mastered` os dominados (a Maestria), `Coins` o saldo, `Occurrences` as recompensas já pagas e `Equipment` os equipamentos que a criança tem; o treino nunca escreve aqui.
 public sealed record ProgressSave(
 	IReadOnlyList<string>? EpicDone = null,
 	IReadOnlyList<string>? Items = null,
@@ -14,7 +14,15 @@ public sealed record ProgressSave(
 	IReadOnlyDictionary<string, int>? Solved = null,
 	IReadOnlyList<string>? Mastered = null,
 	int? Coins = null,
-	IReadOnlyList<string>? Occurrences = null);
+	IReadOnlyList<string>? Occurrences = null,
+	IReadOnlyList<string>? Equipment = null,
+	MerchantSave? Merchant = null);
+
+// O Mercador no save: o estoque que a rotação guardou, o ponto do catálogo, a carga de rotação e a linha de recompra.
+public sealed record MerchantSave(IReadOnlyList<string>? Stock = null, int? Cursor = null, bool? Charge = null, IReadOnlyList<Buyback>? Buyback = null);
+
+// Um equipamento vendido e o preço pelo qual ele volta.
+public sealed record Buyback(string Item, int Price);
 
 // As Salas visitadas e vencidas de um Andar, pela chave "matematica:1:2".
 // `Version` é a do gerador que desenhou o Andar: com outra versão os números das Salas não valem mais.

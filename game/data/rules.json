@@ -308,6 +308,13 @@
         "r": -5
       },
       {
+        "id": "mercador",
+        "name": "Mercador",
+        "prompt": "Falar com o Mercador",
+        "q": -4,
+        "r": 1
+      },
+      {
         "id": "mestre",
         "name": "Portal do Desafio mestre",
         "prompt": "Ver o Desafio mestre",

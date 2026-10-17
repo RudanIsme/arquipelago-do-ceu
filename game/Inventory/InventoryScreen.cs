@@ -123,7 +123,7 @@ public partial class InventoryScreen : OverlayScreen
 
 	static string TabText(string name, bool active, bool isNew) => (active ? "▸ " : "") + name + (isNew ? " · NOVO" : "");
 
-	bool HasNewGear() => host.Catalog.Items.Any(i => host.Inventory.IsNew(host.ProfileId, InventoryHost.GearKey(i.Id)));
+	bool HasNewGear() => host.OwnedGear().Any(id => host.Inventory.IsNew(host.ProfileId, InventoryHost.GearKey(id)));
 
 	bool HasNewCosmetics() => host.OwnedCosmetics().Any(id => host.Inventory.IsNew(host.ProfileId, InventoryHost.CosmeticKey(id)));
 
@@ -137,7 +137,7 @@ public partial class InventoryScreen : OverlayScreen
 
 	void OpenGuideIfFirstTime()
 	{
-		if (host.Catalog.Items.Count == 0 || host.Inventory.GuideSeen(host.ProfileId)) return;
+		if (host.OwnedGear().Count == 0 || host.Inventory.GuideSeen(host.ProfileId)) return;
 		OpenGuide();
 	}
 

@@ -70,7 +70,7 @@ public sealed partial class GearTab : Node
 		Clear(library);
 		entryButtons.Clear();
 		library.AddChild(BookStyle.Text("Equipamentos", 22));
-		foreach (var entry in host.Library.Entries(worn, mastery))
+		foreach (var entry in host.Library.Entries(worn, mastery, host.OwnedGear()))
 			library.AddChild(EntryButton(entry));
 		library.AddChild(BookStyle.Text("Itens", 22));
 		AddHeldItems();
@@ -126,7 +126,7 @@ public sealed partial class GearTab : Node
 
 	void UpdateEntryText(GearItem item)
 	{
-		var entry = host.Library.Entries(worn, mastery).First(e => e.Item.Id == item.Id);
+		var entry = host.Library.Entries(worn, mastery, host.OwnedGear()).First(e => e.Item.Id == item.Id);
 		if (entryButtons.TryGetValue(item.Id, out var button)) button.Text = EntryText(entry);
 	}
 

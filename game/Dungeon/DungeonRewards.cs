@@ -28,6 +28,9 @@ public sealed class DungeonRewards
 		this.showCoins = showCoins;
 	}
 
+	// Quantos Andares a Expedição livre já pagou: com ao menos um, ela conta como concluída ao sair.
+	public int PaidFloors => paidFloors.Count;
+
 	public static string? Join(params string?[] parts) => parts.Any(p => !string.IsNullOrEmpty(p)) ? string.Join(" ", parts.Where(p => !string.IsNullOrEmpty(p))) : null;
 
 	// A vitória num Conceito conta para a Maestria do Papel (Dungeon, nunca treino); o aviso sai junto com o resto da Sala.
@@ -82,7 +85,8 @@ public sealed class DungeonRewards
 		var outcome = granted.Value!;
 		if (!outcome.Fired) return null;
 		if (outcome.Coins > 0) showCoins($"+{Coins(outcome.Coins)}");
-		var prizes = outcome.Cosmetics.Select(c => $"Você ganhou um Cosmético: {c.Name}.");
+		var prizes = outcome.Cosmetics.Select(c => $"Você ganhou um Cosmético: {c.Name}.")
+			.Concat((outcome.Gear ?? []).Select(g => $"Você ganhou um equipamento: {g.Name}. Veja no Inventário."));
 		return string.Join(" ", prizes.Append(outcome.Coins > 0 ? $"Você ganhou {Coins(outcome.Coins)}." : "").Where(t => t.Length > 0));
 	}
 

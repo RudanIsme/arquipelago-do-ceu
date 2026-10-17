@@ -82,6 +82,9 @@ static class Scenarios
 			case "cosmeticos":
 				await DungeonScenarios.Cosmetics(d);
 				break;
+			case "mercador":
+				await DungeonScenarios.Merchant(d);
+				break;
 			case "inventario":
 				await DungeonScenarios.Inventory(d);
 				break;

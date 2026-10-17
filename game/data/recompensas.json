@@ -259,6 +259,86 @@
         "level": 3,
         "floor": 4
       }
+    },
+    {
+      "id": "equipamento-scout",
+      "trigger": "floor-complete",
+      "gear": "scout",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 1
+      }
+    },
+    {
+      "id": "equipamento-lantern",
+      "trigger": "floor-complete",
+      "gear": "lantern",
+      "when": {
+        "discipline": "matematica",
+        "level": 1,
+        "floor": 2
+      }
+    },
+    {
+      "id": "equipamento-scholar",
+      "trigger": "floor-complete",
+      "gear": "scholar",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 1
+      }
+    },
+    {
+      "id": "equipamento-amulet",
+      "trigger": "floor-complete",
+      "gear": "amulet",
+      "when": {
+        "discipline": "matematica",
+        "level": 2,
+        "floor": 3
+      }
+    },
+    {
+      "id": "equipamento-guardian",
+      "trigger": "floor-complete",
+      "gear": "guardian",
+      "when": {
+        "discipline": "matematica",
+        "level": 3,
+        "floor": 1
+      }
+    },
+    {
+      "id": "equipamento-open",
+      "trigger": "floor-complete",
+      "gear": "open",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 1
+      }
+    },
+    {
+      "id": "equipamento-wings",
+      "trigger": "floor-complete",
+      "gear": "wings",
+      "when": {
+        "discipline": "portugues",
+        "level": 1,
+        "floor": 2
+      }
+    },
+    {
+      "id": "equipamento-crystal",
+      "trigger": "floor-complete",
+      "gear": "crystal",
+      "when": {
+        "discipline": "portugues",
+        "level": 2,
+        "floor": 1
+      }
     }
   ]
 }

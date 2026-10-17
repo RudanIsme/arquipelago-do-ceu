@@ -1,3 +1,4 @@
+using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
 using Xunit;
@@ -223,12 +224,67 @@ public sealed class RewardTests : IDisposable
 		Assert.NotNull(Parse("""{"id":"a","trigger":"floor-complete","coins":2}"""));
 	}
 
-	[Fact]
-	public void As_recompensas_do_jogo_cobrem_os_Cosmeticos_e_as_moedas_dos_dados()
+	static readonly GearCatalog GearData = GearCatalog.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "equipamentos.json")), GearEffects.Default).Value!;
+
+	static RewardCatalog GameCatalog()
 	{
 		var data = Path.Combine(MissionFiles.RepositoryRoot(), "game", "data");
 		var cosmetics = CosmeticCatalog.Parse(File.ReadAllText(Path.Combine(data, "cosmeticos.json"))).Value!;
-		var catalog = RewardCatalog.Parse(File.ReadAllText(Path.Combine(data, "recompensas.json")), RewardTriggers.Default, cosmetics).Value!;
+		return RewardCatalog.Parse(File.ReadAllText(Path.Combine(data, "recompensas.json")), RewardTriggers.Default, cosmetics, GearData).Value!;
+	}
+
+	[Fact]
+	public void Completar_um_Andar_concede_o_equipamento_da_tabela_de_dados_uma_vez_so()
+	{
+		var (_, rewards, _) = Open();
+		var catalog = GameCatalog();
+
+		var first = rewards.Grant("p", Floor(1), catalog).Value!;
+		var again = rewards.Grant("p", Floor(1), catalog).Value!;
+
+		Assert.Equal(["scout"], first.Gear!.Select(g => g.Id));
+		Assert.False(again.Fired);
+		Assert.Equal(["scout"], rewards.Equipment("p"));
+	}
+
+	[Fact]
+	public void A_mesma_historia_concede_sempre_o_mesmo_equipamento_e_nao_depende_da_ordem_nem_de_tentativas()
+	{
+		var catalog = GameCatalog();
+		var a = Open().Rewards;
+		var b = Open().Rewards;
+
+		foreach (var floor in new[] { 1, 2 }) a.Grant("p", Floor(floor), catalog);
+		foreach (var floor in new[] { 2, 1 }) b.Grant("p", Floor(floor), catalog);
+
+		Assert.Equal(a.Equipment("p").Order(), b.Equipment("p").Order());
+		Assert.Equal(["lantern", "scout"], a.Equipment("p").Order());
+	}
+
+	[Fact]
+	public void A_tabela_de_concessoes_so_usa_gatilhos_de_aprendizado_e_exploracao_e_equipamentos_que_existem()
+	{
+		var gearRewards = GameCatalog().Rewards.Where(r => r.Gear is not null).ToList();
+
+		Assert.NotEmpty(gearRewards);
+		Assert.All(gearRewards, r => Assert.Contains(r.Trigger, new[] { "floor-complete", "concept-mastered", "master-challenge", "item-room" }));
+		Assert.Equal(gearRewards.Count, gearRewards.Select(r => r.Gear!.Id).Distinct().Count());
+	}
+
+	[Fact]
+	public void Equipamento_que_nao_existe_ou_misturado_com_moedas_e_recusado()
+	{
+		RewardCatalog Parse(string reward) => RewardCatalog.Parse("{\"rewards\":[" + reward + "]}", RewardTriggers.Default, Cosmetics, GearData) is { IsOk: true } ok ? ok.Value! : null!;
+
+		Assert.Null(Parse("{\"id\":\"x\",\"trigger\":\"floor-complete\",\"gear\":\"nada\"}"));
+		Assert.Null(Parse("{\"id\":\"x\",\"trigger\":\"floor-complete\",\"gear\":\"scout\",\"coins\":2}"));
+		Assert.NotNull(Parse("{\"id\":\"x\",\"trigger\":\"floor-complete\",\"gear\":\"scout\"}"));
+	}
+
+	[Fact]
+	public void As_recompensas_do_jogo_cobrem_os_Cosmeticos_e_as_moedas_dos_dados()
+	{
+		var catalog = GameCatalog();
 
 		foreach (var discipline in new[] { "matematica", "portugues" })
 			foreach (var level in new[] { 1, 2, 3 })

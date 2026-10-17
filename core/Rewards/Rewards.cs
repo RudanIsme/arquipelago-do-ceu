@@ -1,4 +1,5 @@
 using ArquipelagoDoCeu.Data;
+using ArquipelagoDoCeu.Equipment;
 using ArquipelagoDoCeu.Saves;
 
 namespace ArquipelagoDoCeu.Rewards;
@@ -81,11 +82,11 @@ public sealed record RewardFilter(string? Discipline = null, int? Level = null, 
 		&& (Floor is null || Floor == context.Floor) && (Concept is null || Concept == context.Concept);
 }
 
-// Uma recompensa, em dados: moedas ou um Cosmético, ligada a um gatilho (e, se quiser, a um Andar ou Conceito).
-public sealed record Reward(string Id, string Trigger, int Coins, Cosmetic? Cosmetic, RewardFilter When);
+// Uma recompensa, em dados: moedas, um Cosmético ou um equipamento, ligada a um gatilho (e, se quiser, a um Andar ou Conceito).
+public sealed record Reward(string Id, string Trigger, int Coins, Cosmetic? Cosmetic, RewardFilter When, GearItem? Gear = null);
 
 // O que o gatilho rendeu: `Fired` é falso quando aquele acontecimento já tinha sido pago.
-public sealed record RewardOutcome(bool Fired, int Coins, IReadOnlyList<Cosmetic> Cosmetics);
+public sealed record RewardOutcome(bool Fired, int Coins, IReadOnlyList<Cosmetic> Cosmetics, IReadOnlyList<GearItem>? Gear = null);
 
 // As recompensas do jogo (game/data/recompensas.json): o que cada gatilho paga.
 public sealed class RewardCatalog
@@ -107,8 +108,9 @@ public sealed class RewardCatalog
 
 	public IReadOnlyList<Reward> For(RewardContext context) => Rewards.Where(r => r.Trigger == context.Trigger && r.When.Matches(context)).ToList();
 
-	public static Result<RewardCatalog> Parse(string json, RewardTriggers triggers, CosmeticCatalog cosmetics)
+	public static Result<RewardCatalog> Parse(string json, RewardTriggers triggers, CosmeticCatalog cosmetics, GearCatalog? gear = null)
 	{
+		gear ??= GearCatalog.Empty;
 		var read = CatalogJson.Deserialize<FileDto>(json, "O catálogo de recompensas");
 		if (!read.IsOk) return Result<RewardCatalog>.Fail(read.Error!);
 		if (read.Value!.Rewards is not { Count: > 0 } list) return Result<RewardCatalog>.Fail("O catálogo de recompensas não traz nenhuma recompensa.");
@@ -117,26 +119,27 @@ public sealed class RewardCatalog
 		var rewards = new List<Reward>();
 		foreach (var dto in list)
 		{
-			var problem = Problem(dto, triggers, cosmetics);
+			var problem = Problem(dto, triggers, cosmetics, gear);
 			if (problem is not null) return Result<RewardCatalog>.Fail(problem);
 			rewards.Add(new Reward(dto.Id!, dto.Trigger!, dto.Coins, dto.Cosmetic is null ? null : cosmetics.Find(dto.Cosmetic),
-				new RewardFilter(dto.When?.Discipline, dto.When?.Level, dto.When?.Floor, dto.When?.Concept)));
+				new RewardFilter(dto.When?.Discipline, dto.When?.Level, dto.When?.Floor, dto.When?.Concept), gear.Find(dto.Gear)));
 		}
 		return Result<RewardCatalog>.Ok(new RewardCatalog(rewards, triggers));
 	}
 
-	static string? Problem(RewardDto dto, RewardTriggers triggers, CosmeticCatalog cosmetics)
+	static string? Problem(RewardDto dto, RewardTriggers triggers, CosmeticCatalog cosmetics, GearCatalog gear)
 	{
 		if (string.IsNullOrEmpty(dto.Id)) return "Uma recompensa do catálogo está sem id.";
 		if (dto.Trigger is null || triggers.Find(dto.Trigger) is null) return $"A recompensa {dto.Id} usa o gatilho {dto.Trigger}, que não existe.";
 		if (dto.Coins is < 0 or > MaxCoins) return $"A recompensa {dto.Id} paga moedas fora do limite de 0 a {MaxCoins}.";
-		if ((dto.Coins > 0) == (dto.Cosmetic is not null)) return $"A recompensa {dto.Id} precisa de moedas ou de um Cosmético, só um dos dois.";
+		if (((dto.Coins > 0 ? 1 : 0) + (dto.Cosmetic is not null ? 1 : 0) + (dto.Gear is not null ? 1 : 0)) != 1) return $"A recompensa {dto.Id} precisa de moedas, de um Cosmético ou de um equipamento, só um dos três.";
+		if (dto.Gear is not null && gear.Find(dto.Gear) is null) return $"A recompensa {dto.Id} usa o equipamento {dto.Gear}, que não existe.";
 		return dto.Cosmetic is not null && cosmetics.Find(dto.Cosmetic) is null ? $"A recompensa {dto.Id} usa o Cosmético {dto.Cosmetic}, que não existe." : null;
 	}
 
 	sealed record FileDto(List<RewardDto>? Rewards);
 
-	sealed record RewardDto(string? Id, string? Trigger, int Coins, string? Cosmetic, FilterDto? When);
+	sealed record RewardDto(string? Id, string? Trigger, int Coins, string? Cosmetic, string? Gear, FilterDto? When);
 
 	sealed record FilterDto(string? Discipline, int? Level, int? Floor, string? Concept);
 }
@@ -146,6 +149,8 @@ public sealed class RewardCatalog
 public sealed class RewardService(ProgressStore store)
 {
 	public IReadOnlyList<string> Cosmetics(string profileId) => store.Of(profileId)?.Cosmetics ?? [];
+
+	public IReadOnlyList<string> Equipment(string profileId) => store.Of(profileId)?.Equipment ?? [];
 
 	public Result<RewardOutcome> Grant(string profileId, RewardContext context, RewardCatalog catalog)
 	{
@@ -159,15 +164,18 @@ public sealed class RewardService(ProgressStore store)
 
 		var matched = catalog.For(context);
 		var owned = progress.Cosmetics ?? [];
+		var ownedGear = progress.Equipment ?? [];
 		var coins = matched.Sum(r => r.Coins);
+		var gear = matched.Select(r => r.Gear).OfType<GearItem>().Where(g => !ownedGear.Contains(g.Id)).DistinctBy(g => g.Id).ToList();
 		var cosmetics = matched.Select(r => r.Cosmetic).OfType<Cosmetic>().Where(c => !owned.Contains(c.Id)).DistinctBy(c => c.Id).ToList();
-		var outcome = new RewardOutcome(true, coins, cosmetics);
-		if (ReferenceEquals(trigger.MarkGiven(progress, context), progress) && coins == 0 && cosmetics.Count == 0) return Result<RewardOutcome>.Ok(outcome);
+		var outcome = new RewardOutcome(true, coins, cosmetics, gear);
+		if (ReferenceEquals(trigger.MarkGiven(progress, context), progress) && coins == 0 && cosmetics.Count == 0 && gear.Count == 0) return Result<RewardOutcome>.Ok(outcome);
 
 		var saved = store.Update(profileId, p => trigger.MarkGiven(p, context) with
 		{
 			Coins = coins == 0 ? p.Coins : WalletService.Plus(p.Coins, coins),
 			Cosmetics = cosmetics.Count == 0 ? p.Cosmetics : [.. p.Cosmetics ?? [], .. cosmetics.Select(c => c.Id)],
+			Equipment = gear.Count == 0 ? p.Equipment : [.. p.Equipment ?? [], .. gear.Select(g => g.Id)],
 		});
 		return saved.IsOk ? Result<RewardOutcome>.Ok(outcome) : Result<RewardOutcome>.Fail(saved.Error!);
 	}
