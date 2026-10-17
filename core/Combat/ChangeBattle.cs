@@ -23,6 +23,31 @@ public sealed record ChangeChallenge(MoneyTask Task, int Price, int Given)
 		var bill = money.Denominations.FirstOrDefault(d => d.Kind == "nota" && d.Value >= price);
 		return bill is null || bill.Value == price ? new ChangeChallenge(MoneyTask.Pay, price, price) : new ChangeChallenge(MoneyTask.Change, price, bill.Value);
 	}
+
+	// A peça que a criança deve pôr agora, dado o que já está na mesa: a maior que ainda cabe e deixa o resto montável.
+	// Se já passou do valor, ou nenhuma serve, a sugestão é desfazer. Pedir nunca custa nada, e seguir as sugestões sempre chega lá.
+	public (int? Piece, bool Undo) Suggest(IReadOnlyList<int> table, IReadOnlyList<int> pieceValues)
+	{
+		var left = Target - table.Sum();
+		if (left < 0) return (null, true);
+		var next = Enumerable.Range(0, pieceValues.Count).Where(i => pieceValues[i] <= left).OrderByDescending(i => pieceValues[i])
+			.Cast<int?>().FirstOrDefault(i => CanMake(left - pieceValues[i!.Value], pieceValues));
+		return next is null ? (null, true) : (next, false);
+	}
+
+	// Se as peças montam o valor (cada peça pode ser usada quantas vezes quiser).
+	public static bool CanMake(int amount, IReadOnlyList<int> pieceValues)
+	{
+		if (pieceValues.Count == 0) return false;
+		var step = pieceValues.Aggregate(Gcd);
+		var reach = new bool[amount / step + 1];
+		reach[0] = true;
+		for (var units = 1; units < reach.Length; units++)
+			reach[units] = pieceValues.Any(v => v / step <= units && reach[units - v / step]);
+		return amount % step == 0 && reach[amount / step];
+	}
+
+	static int Gcd(int a, int b) => b == 0 ? a : Gcd(b, a % b);
 }
 
 // A luta "Pagar e dar troco": a criança monta um valor com moedas e cédulas do Real. A dica nunca custa Energia e a criança nunca
@@ -119,11 +144,7 @@ public sealed class ChangeBattle : IBattle
 	// Pedir nunca custa Energia, e seguir as sugestões sempre chega ao valor certo.
 	public (int? Piece, bool Undo) Suggest()
 	{
-		var left = Target - Total;
-		if (left < 0) return (null, true);
-		var next = Enumerable.Range(0, pieces.Count).Where(i => pieces[i].Value <= left).OrderByDescending(i => pieces[i].Value)
-			.Cast<int?>().FirstOrDefault(i => CanMake(left - pieces[i!.Value].Value, pieces));
-		return next is null ? (null, true) : (next, false);
+		return Challenge.Suggest([.. table.Select(i => pieces[i].Value)], [.. pieces.Select(p => p.Value)]);
 	}
 
 	public void Reveal()
@@ -173,7 +194,7 @@ public sealed class ChangeBattle : IBattle
 
 			var available = Available(p);
 			var challenge = new ChangeChallenge(task!.Value, price, task == MoneyTask.Change ? given : price);
-			return available.Count == 0 || !CanMake(challenge.Target, available)
+			return available.Count == 0 || !ChangeChallenge.CanMake(challenge.Target, [.. available.Select(d => d.Value)])
 				? Result<(ChangeChallenge, List<Denomination>)>.Fail($"{mission.Id}: as peças de dinheiro não montam o valor pedido.")
 				: Result<(ChangeChallenge, List<Denomination>)>.Ok((challenge, available));
 		}
@@ -181,17 +202,6 @@ public sealed class ChangeBattle : IBattle
 		{
 			return Result<(ChangeChallenge, List<Denomination>)>.Fail($"{mission.Id}: parâmetros de pagar e dar troco inválidos ({e.Message}).");
 		}
-	}
-
-	// Se as peças montam o valor (cada peça pode ser usada quantas vezes quiser).
-	bool CanMake(int amount, IReadOnlyList<Denomination> available)
-	{
-		var step = money.Smallest;
-		var reach = new bool[amount / step + 1];
-		reach[0] = true;
-		for (var units = 1; units < reach.Length; units++)
-			reach[units] = available.Any(d => d.Value % step == 0 && d.Value / step <= units && reach[units - d.Value / step]);
-		return amount % step == 0 && reach[amount / step];
 	}
 
 	List<Denomination> Available(IReadOnlyDictionary<string, System.Text.Json.JsonElement> p)

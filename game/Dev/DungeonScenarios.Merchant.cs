@@ -27,10 +27,10 @@ static partial class DungeonScenarios
 		var offer = port.Merchant.Stock(profile)[0];
 		Named<Button>(d, "Offer_" + offer.Id)!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
-		d.Expect(Named<Control>(d, "ConfirmDialog") is not null, "comprar pede confirmação");
+		d.Expect(Named<Control>(d, "PaymentDialog") is not null && d.Button("Eu pago") is not null && d.Button("Pagar sozinho") is not null, "comprar pergunta como pagar: Eu pago ou Pagar sozinho");
 		d.Expect(!port.Rewards.Cosmetics(profile).Contains(offer.Id), "antes de confirmar nada é comprado");
 		await d.Shot("02-confirmar-compra");
-		await d.Press("Sim");
+		await d.Press("Pagar sozinho");
 		await d.Wait(0.4);
 		d.Expect(port.Rewards.Cosmetics(profile).Contains(offer.Id) && d.HasVisible($"Saldo: {start - offer.Price} moedas"), "confirmar compra o Cosmético e desconta o preço");
 
@@ -41,8 +41,8 @@ static partial class DungeonScenarios
 		d.Expect(HasButtonText(d, "Vender selecionados (2)"), "a seleção em lote mostra quantos e quanto");
 		Named<Button>(d, "SellSelected")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
-		d.Expect(Named<Control>(d, "ConfirmDialog") is not null, "vender pede confirmação");
-		await d.Press("Sim");
+		d.Expect(Named<Control>(d, "PaymentDialog") is not null, "vender pergunta como pagar");
+		await d.Press("Pagar sozinho");
 		await d.Wait(0.4);
 		d.Expect(!port.Inventory.OwnedGear(profile).Contains("scout") && Named<Button>(d, "Rebuy_scout") is not null, "o vendido vai para a linha Recomprar");
 		await d.Shot("03-recomprar");
@@ -50,7 +50,20 @@ static partial class DungeonScenarios
 		var before = port.Merchant.Balance(profile);
 		Named<Button>(d, "Rebuy_scout")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
-		await d.Press("Sim");
+		await d.Press("Eu pago");
+		await d.Wait(0.4);
+		d.Expect(d.HasVisible("troco"), "na recompra o Eu pago pede o troco da nota");
+		await d.Shot("03b-eu-pago");
+		Named<Button>(d, "Money_500")!.EmitSignal(BaseButton.SignalName.Pressed);
+		Named<Button>(d, "PayCheck")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(!port.Inventory.OwnedGear(profile).Contains("scout") && d.HasVisible("Passou do valor"), "valor errado no Eu pago não custa nada e deixa tentar de novo");
+		Named<Button>(d, "PayUndo")!.EmitSignal(BaseButton.SignalName.Pressed);
+		Named<Button>(d, "PaySuggest")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.3);
+		d.Expect(d.HasVisible("Tente 1 real"), "a dica diz a próxima peça sem custo");
+		Named<Button>(d, "Money_100")!.EmitSignal(BaseButton.SignalName.Pressed);
+		Named<Button>(d, "PayCheck")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
 		d.Expect(port.Inventory.OwnedGear(profile).Contains("scout") && port.Merchant.Balance(profile) < before, "recomprar devolve o equipamento por moedas");
 

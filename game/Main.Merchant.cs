@@ -29,6 +29,7 @@ public partial class Main
 			ProfileId = current.Id,
 			Merchant = merchant,
 			Catalog = LoadMerchant(),
+			Money = LoadMoney(),
 			Cosmetics = LoadCosmetics(),
 			Gear = LoadGear(),
 			Inventory = inventory,

@@ -1,5 +1,6 @@
 {
   "stockSize": 3,
+  "centsPerCoin": 100,
   "cosmetics": [
     {
       "id": "mercador-laco",

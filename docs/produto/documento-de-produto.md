@@ -76,7 +76,7 @@ A bolsa funciona como o baralho de um roguelite de cartas: é o que a criança m
 
 1. A bolsa começa com números de 1 a 5 e o sinal +. A criança tem 5 peças na mão; as usadas num ataque são repostas pela bolsa.
 2. A criatura mostra um escudo com um número, por exemplo 12.
-3. A criança monta uma conta na calculadora do cajado, tecla a tecla: números da mão e o sinal (5 + 4 + 3). Uma conta precisa de um sinal e de pelo menos dois números, e o jogo não mostra o resultado: quem soma é a criança. Cada número que ela escolhe aparece pontilhado e ela o desenha para colocá-lo na conta. O resultado tira do escudo.
+3. A bolsa e o pedido ficam na HUD sobre a cena, sem painel que abra por cima. A criança toca na peça (número ou sinal), ela sobe animada até a área de traço e a criança a traça seguindo a trilha. Cada peça são duas ações (escolher e traçar), e uma conta é número, sinal e número: o terceiro traço confere e o golpe sai na hora, sem botão de atacar. O jogo não mostra o resultado: quem soma é a criança. O resultado tira do escudo.
 4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale: o jogo mostra a conta e conta como erro (tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outros números), o que treina estimativa. As peças da mão voltam inteiras. É o único jeito de errar na calculadora.
 5. Entre andares, a criança escolhe melhorias: adicionar, trocar ou remover peças da bolsa.
 
@@ -120,7 +120,7 @@ Errar na fala nunca tira energia. O jogo repete a palavra, mostra as sílabas e 
 
 O Escriba também escreve a letra ou a sílaba desenhando com o dedo, o que treina coordenação motora fina. No tablet é com o dedo; no PC funciona com mouse ou caneta, com tolerância maior ao traço; quem usa teclado digita. Cada mecânica tem uma versão para toque, mouse e teclado, e a criança nunca fica presa por não ter um tipo de entrada.
 
-**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O desenho pontilhado já vale no combate: número na bolsa do Matemático e sílaba na do Escriba, conferido em código contra o próprio pontilhado (sem reconhecer a letra). Quem não consegue desenhar nunca fica preso: há "Pular o desenho", e no teclado digitar o número ou a sílaba vale como escrever.
+**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O traço por trilha já vale no combate: número e sinal do Matemático, letra, sílaba e palavra do Escriba (uma trilha por letra, na ordem de escrita), conferido em código contra a própria trilha (sem reconhecer a letra) e tolerante: traço torto com o glifo certo passa, e só cobertura insuficiente pede nova tentativa, sem custar Energia. Quem não consegue desenhar nunca fica preso: "Completar sozinho" (ou Enter segurado) anima a tinta, e no teclado digitar o que está pedido vale como escrever.
 
 #### Energia e derrota
 
@@ -174,6 +174,7 @@ O MVP cobre matemática e português do 1º ao 3º ano: cerca de 60 missões bas
 | Sequências | Matemática | Completar 2, 4, 6, ? para religar uma ponte |
 | Formar palavras | Português | Juntar sílabas para escrever a senha de um portão |
 | Ordenar frases | Português | Pôr um bilhete rasgado na ordem certa para achar o caminho |
+| Pagar e dar troco | Matemática | Pagar a fruta no mercado do céu com moedas e notas do Real e conferir o troco (a ordem entre os anos ainda depende da decisão pedagógica) |
 
 ### Repetição e memória
 

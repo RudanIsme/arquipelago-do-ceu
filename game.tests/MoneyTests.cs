@@ -221,4 +221,33 @@ public class MoneyTests
 	}
 
 	static int PieceOf(ChangeBattle battle, int value) => battle.Pieces.ToList().FindIndex(p => p.Value == value);
+
+	[Theory]
+	[InlineData(650)]
+	[InlineData(25)]
+	[InlineData(9995)]
+	public void No_Mercador_seguir_as_sugestoes_tambem_sempre_chega_ao_valor_sem_ficar_preso(int price)
+	{
+		var challenge = ChangeChallenge.ForPurchase(price, Money);
+		var values = Money.Denominations.Where(d => d.Value <= Math.Max(challenge.Given, challenge.Target)).Select(d => d.Value).ToList();
+		var table = new List<int>();
+
+		for (var step = 0; step < 60 && !challenge.Check(table).Correct; step++)
+		{
+			var (piece, undo) = challenge.Suggest(table, values);
+			if (undo) table.RemoveAt(table.Count - 1);
+			else table.Add(values[piece!.Value]);
+		}
+
+		Assert.True(challenge.Check(table).Correct);
+	}
+
+	[Fact]
+	public void Pecas_que_nao_montam_o_valor_nao_deixam_a_Missao_valer()
+	{
+		Assert.False(ChangeChallenge.CanMake(30, [25, 50]));
+		Assert.True(ChangeChallenge.CanMake(75, [25, 50]));
+		Assert.False(ChangeChallenge.CanMake(10, []));
+		Assert.False(ChangeBattle.Start([MoneyMission("a", "pagar", 30, pieces: [25, 50])], Money, new Pcg32(1)).IsOk);
+	}
 }
