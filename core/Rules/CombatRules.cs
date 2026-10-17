@@ -9,7 +9,7 @@ public sealed record YearBag(int Year, IReadOnlyList<int> BagNumbers, IReadOnlyL
 
 // Bolsa do Matemático, sinais da calculadora, tempo da montagem, traçado, Energia, travessura, dica e bolha; todo valor vem de dados.
 // `BagNumbers` e `Operators` são os do 1º ano; `Years` traz os dos anos seguintes.
-public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing, int MistakesForHint, float PrankSeconds, EnergyRules Energy, BubbleRules Bubble, IReadOnlyList<YearBag> Years)
+public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, int BagCopies, float SlowTimeScale, float TargetRange, IReadOnlyList<string> Operators, TracingRules Tracing, int MistakesForHint, float PrankSeconds, EnergyRules Energy, BubbleRules Bubble, RhythmRules Rhythm, IReadOnlyList<YearBag> Years)
 {
 	// A Energia máxima de uma batalha quando ninguém de fora (equipamento, Expedição) diz outra; vem de `maxEnergy` nos dados.
 	public int DefaultMaxEnergy { get; init; } = 5;
@@ -36,7 +36,7 @@ sealed record BubbleDto(float? IntervalSeconds, float? WarningSeconds, float? Sp
 
 sealed record TracingDto(int? DotSpacing, float? Tolerance, float? MinCoverage, float? MaxStray);
 
-sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble, YearBagDto[]? Years);
+sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble, RhythmDto? Rhythm, YearBagDto[]? Years);
 
 static class CombatChecks
 {
@@ -68,7 +68,7 @@ static class CombatChecks
 		if (combat.Operators.Length == 0) return "Regras inválidas: 'combat.operators' precisa de ao menos um sinal.";
 		if (combat.Operators.Any(o => !SupportedOperators.Contains(o)))
 			return $"Regras inválidas: 'combat.operators' só aceita {string.Join(", ", SupportedOperators)} por enquanto (veio {string.Join(", ", combat.Operators)}).";
-		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble) ?? CheckYears(combat);
+		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble) ?? RhythmChecks.Check(combat.Rhythm) ?? CheckYears(combat);
 	}
 
 
@@ -146,6 +146,7 @@ static class CombatChecks
 			combat.MistakesForHint!.Value, combat.PrankSeconds!.Value,
 			new EnergyRules(combat.Energy!.Hit!.Value, combat.Energy.Perfect!.Value, combat.Energy.Mistake!.Value, combat.Energy.Bubble!.Value),
 			new BubbleRules(combat.Bubble!.IntervalSeconds!.Value, combat.Bubble.WarningSeconds!.Value, combat.Bubble.Speed!.Value, combat.Bubble.Radius!.Value, combat.Bubble.Range!.Value),
+			RhythmChecks.Build(combat.Rhythm!),
 			[.. (combat.Years ?? []).Select(y => new YearBag(y.Year!.Value, [.. y.BagNumbers!], [.. y.Operators!]))]);
 
 	static string Required(string field) => $"Regras inválidas: o campo '{field}' é obrigatório.";

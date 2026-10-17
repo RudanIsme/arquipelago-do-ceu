@@ -31,6 +31,7 @@ public partial class TrainingArea : Node
 	readonly Action<OverlayScreen> showOverlay;
 	readonly Action<string> notify;
 	readonly CombatTime time;
+	readonly AttackRhythm rhythm;
 	readonly BubbleDirector bubbles;
 	readonly AnswerReactions reactions;
 	readonly IReadOnlyList<Mission> missions;
@@ -45,7 +46,7 @@ public partial class TrainingArea : Node
 	Action? fightWon;
 	Action? fightLost;
 	bool ownsEnergyView = true;
-	// Cada erro e cada fim de treino mudam a época; um temporizador de uma época antiga não faz mais nada.
+	// Cada erro e cada fim de treino mudam a época: um temporizador antigo não faz mais nada.
 	int epoch;
 	int extraEnergy;
 	public void SetEquipmentEnergy(int bonus)
@@ -72,7 +73,8 @@ public partial class TrainingArea : Node
 		this.showOverlay = showOverlay;
 		this.notify = notify;
 		time = new CombatTime(rules.Combat);
-		bubbles = new BubbleDirector(rules.Combat.Bubble, stage, dummy, player, voice);
+		rhythm = new AttackRhythm(rules.Combat, time);
+		bubbles = new BubbleDirector(rules.Combat.Bubble, rhythm, stage, dummy, player, voice);
 		reactions = new AnswerReactions(this, dummy, player);
 		missions = MissionSource.Load().Missions;
 
@@ -97,7 +99,6 @@ public partial class TrainingArea : Node
 	public int? EnergyTop { get; set; }
 
 	public bool HasTarget => panel is not null;
-	public void RefreshPresentation() => UpdateEnergyDock();
 	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (panel is null ? 154 : 12); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
@@ -387,8 +388,9 @@ public partial class TrainingArea : Node
 	public override void _Process(double delta)
 	{
 		if (session is null || reacting || !canAct()) return;
+		rhythm.UseCreature(Creature.Kind);
 		// Modo calmo e Puzzle: o Boneco não lança bolhas e só reage a erros.
-		if (!bubbles.Tick((float)delta, stopped: settings.Current.CalmMode || !Bubbles)) return;
+		if (!bubbles.Tick(delta, stopped: settings.Current.CalmMode || !Bubbles)) return;
 		session.BubbleHit();
 		UpdateEnergy();
 		if (session.IsOver) Finish("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");

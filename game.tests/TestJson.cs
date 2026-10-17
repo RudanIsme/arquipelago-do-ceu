@@ -32,6 +32,7 @@ static class TestJson
 		  "combat": { "handSize": 5, "bagNumbers": [1, 2, 3, 4, 5], "bagCopies": 2, "slowTimeScale": 0.25, "targetRange": 5, "operators": ["+"], "tracing": { "dotSpacing": 16, "tolerance": 26, "minCoverage": 0.8, "maxStray": 0.25 },
 		    "mistakesForHint": 2, "prankSeconds": 4, "energy": { "hit": 1, "perfect": 2, "mistake": 1, "bubble": 1 },
 		    "bubble": { "intervalSeconds": 8, "warningSeconds": 1.6, "speed": 1.5, "radius": 0.8, "range": 9 },
+		    "rhythm": { "player": { "rechargeSeconds": 0.8 }, "creatures": [ { "kind": "dummy", "intervalSeconds": 8, "warningSeconds": 1.6 }, { "kind": "wild", "intervalSeconds": 7, "warningSeconds": 1.6 } ] },
 		    "years": [{ "year": 2, "bagNumbers": [1, 2, 3, 4, 5, 10, 20], "operators": ["+", "-"] }] },
 		  "dungeon": { "floorsMin": 3, "floorsMax": 4, "roomsMin": 6, "roomsMax": 9, "restEnergy": 2, "shortcutChallenges": 3, "masterChallenges": 4, "conceptSolves": 3 },
 		  "lobby": {

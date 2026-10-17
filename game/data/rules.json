@@ -194,6 +194,16 @@
       "radius": 0.8,
       "range": 9
     },
+    "rhythm": {
+      "player": {
+        "rechargeSeconds": 0.8
+      },
+      "creatures": [
+        { "kind": "dummy", "intervalSeconds": 8, "warningSeconds": 1.6 },
+        { "kind": "wild", "intervalSeconds": 7, "warningSeconds": 1.6 },
+        { "kind": "guardian", "intervalSeconds": 6, "warningSeconds": 1.6 }
+      ]
+    },
     "years": [
       {
         "year": 2,
