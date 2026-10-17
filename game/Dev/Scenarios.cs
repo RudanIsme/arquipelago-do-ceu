@@ -187,7 +187,7 @@ static class Scenarios
 				await d.PressNumberKey();
 				await d.Wait(1.0);
 				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
-				await d.Shot("03-pontilhado");
+				await d.Shot("03-trilha");
 				await d.TraceGuide();
 				await d.Wait(0.8);
 				await d.Shot("04-depois-de-desenhar");

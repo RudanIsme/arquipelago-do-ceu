@@ -104,10 +104,10 @@ public partial class DevDriver : Node
 
 	TracePad? Pad => GetTree().Root.FindChildren("*", "", true, false).OfType<TracePad>().FirstOrDefault(p => p.IsVisibleInTree());
 
-	// Passa o dedo pelo pontilhado, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
+	// Passa o dedo pelo trilha, ponto a ponto pelo vizinho mais perto, levantando o dedo nos saltos longos.
 	public async Task TraceGuide()
 	{
-		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há trilha na tela."); return; }
 		var remaining = pad.GuideOnScreen().ToList();
 		var current = remaining.OrderBy(p => p.Y).ThenBy(p => p.X).First();
 		var down = false;
@@ -125,10 +125,10 @@ public partial class DevDriver : Node
 		await Wait(0.2);
 	}
 
-	// Um rabisco que passa longe do pontilhado.
+	// Um rabisco que passa longe do trilha.
 	public async Task Scribble()
 	{
-		if (Pad is not { } pad) { GD.PushError("Piloto: não há pontilhado na tela."); return; }
+		if (Pad is not { } pad) { GD.PushError("Piloto: não há trilha na tela."); return; }
 		var dots = pad.GuideOnScreen();
 		var origin = new Vector2(dots.Min(p => p.X) - 60, dots.Min(p => p.Y) - 20);
 		Click(origin, true);

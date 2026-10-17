@@ -345,46 +345,25 @@ public class CombatTests
 		Assert.Equal(0.5f, time.Scale);
 	}
 
-	// --- Traçado: o pontilhado e a conferência do desenho
+	// --- Traçado: a trilha e a conferência do desenho
 
 	static readonly TracingRules Tracer = Rules.Tracing;
 
-	// Um "L" grosso de 200 x 200: barra vertical em x 80..110 e barra horizontal em y 140..170.
-	static bool[,] LetterL()
-	{
-		var mask = new bool[200, 200];
-		for (var x = 0; x < 200; x++)
-			for (var y = 0; y < 200; y++)
-				mask[x, y] = (x is >= 80 and <= 110 && y is >= 30 and <= 170) || (y is >= 140 and <= 170 && x is >= 80 and <= 160);
-		return mask;
-	}
-
-	static TraceGuide GuideOfL() => Tracing.GuideFromMask(LetterL(), Tracer).Value!;
+	// O "L" da trilha numa área de 200 x 200: desce pela esquerda e vai para a direita pela base.
+	static TraceGuide GuideOfL() =>
+		TraceTrails.Parse(File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "trilhas.json")), File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", "trilhas.schema.json")))
+			.Value!.Guide("L", new Vector2(200, 200), Tracer).Value!;
 
 	static IReadOnlyList<IReadOnlyList<Vector2>> Strokes(params Vector2[][] strokes) => strokes;
 
+	static Vector2[] Along(TraceGuide guide) => [.. guide.Paths![0].Points];
+
 	[Fact]
-	public void O_guia_tem_pontos_so_dentro_do_desenho()
+	public void Seguir_a_trilha_passa()
 	{
 		var guide = GuideOfL();
-		var mask = LetterL();
 
-		Assert.True(guide.Dots.Count >= 8);
-		Assert.All(guide.Dots, d => Assert.True(mask[(int)d.X, (int)d.Y]));
-	}
-
-	[Fact]
-	public void Desenho_sem_tinta_nao_gera_guia()
-	{
-		Assert.False(Tracing.GuideFromMask(new bool[100, 100], Tracer).IsOk);
-	}
-
-	[Fact]
-	public void Seguir_o_pontilhado_passa()
-	{
-		var stroke = new[] { new Vector2(95, 30), new Vector2(95, 155), new Vector2(160, 155) };
-
-		var check = Tracing.Check(GuideOfL(), Strokes(stroke), Tracer);
+		var check = Tracing.Check(guide, Strokes(Along(guide)), Tracer);
 
 		Assert.True(check.Passed, $"cobertura {check.Coverage}, fora {check.Stray}");
 	}
@@ -392,21 +371,23 @@ public class CombatTests
 	[Fact]
 	public void Traco_em_varios_pedacos_tambem_passa()
 	{
-		var vertical = new[] { new Vector2(95, 30), new Vector2(95, 155) };
-		var horizontal = new[] { new Vector2(95, 155), new Vector2(160, 155) };
+		var guide = GuideOfL();
+		var path = Along(guide);
 
-		Assert.True(Tracing.Check(GuideOfL(), Strokes(vertical, horizontal), Tracer).Passed);
+		Assert.True(Tracing.Check(guide, Strokes(path[..2], path[1..]), Tracer).Passed);
 	}
 
 	[Fact]
 	public void Sem_traco_ou_com_so_um_pedaco_nao_passa()
 	{
-		Assert.False(Tracing.Check(GuideOfL(), Strokes(), Tracer).Passed);
-		Assert.False(Tracing.Check(GuideOfL(), Strokes([new Vector2(95, 30), new Vector2(95, 70)]), Tracer).Passed);
+		var guide = GuideOfL();
+
+		Assert.False(Tracing.Check(guide, Strokes(), Tracer).Passed);
+		Assert.False(Tracing.Check(guide, Strokes(Along(guide)[..2]), Tracer).Passed);
 	}
 
 	[Fact]
-	public void Rabisco_longe_do_pontilhado_nao_passa()
+	public void Rabisco_longe_da_trilha_nao_passa()
 	{
 		var scribble = new[] { new Vector2(10, 10), new Vector2(190, 20), new Vector2(15, 60), new Vector2(180, 90) };
 
@@ -414,12 +395,12 @@ public class CombatTests
 	}
 
 	[Fact]
-	public void Tracar_o_pontilhado_e_encher_a_tela_de_rabisco_nao_passa()
+	public void Tracar_a_trilha_e_encher_a_tela_de_rabisco_nao_passa()
 	{
-		var onGuide = new[] { new Vector2(95, 30), new Vector2(95, 155), new Vector2(160, 155) };
+		var guide = GuideOfL();
 		var noise = Enumerable.Range(0, 60).Select(i => new Vector2(10 + (i % 3), 10 + i * 3)).ToArray();
 
-		Assert.False(Tracing.Check(GuideOfL(), Strokes(onGuide, noise), Tracer).Passed);
+		Assert.False(Tracing.Check(guide, Strokes(Along(guide), noise), Tracer).Passed);
 	}
 
 	// --- #47 Bolsa do Escriba

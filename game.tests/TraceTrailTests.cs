@@ -26,6 +26,35 @@ public class TraceTrailTests
 	}
 
 	[Fact]
+	public void As_letras_de_A_a_Z_tem_trilha_com_inicio_e_direcao()
+	{
+		foreach (var letter in Enumerable.Range('A', 26).Select(c => ((char)c).ToString()))
+		{
+			var trail = Trails.Find(letter);
+			Assert.NotNull(trail);
+			Assert.All(trail.Strokes, s => Assert.True(s.Points.Count >= 2 && s.Points[0] != s.Points[1], letter));
+		}
+	}
+
+	[Fact]
+	public void Seguir_a_propria_trilha_passa_em_todos_os_glifos()
+	{
+		foreach (var glyph in Trails.Glyphs)
+		{
+			var guide = GuideOf(glyph);
+			IReadOnlyList<IReadOnlyList<Vector2>> strokes = [.. guide.Paths!.Select(p => p.Points)];
+
+			Assert.True(Tracing.Check(guide, strokes, TrainingFixtures.Rules.Tracing).Passed, glyph);
+		}
+	}
+
+	[Fact]
+	public void Trilhas_de_letras_e_de_numeros_somam_38_glifos()
+	{
+		Assert.Equal(38, Trails.Glyphs.Count());
+	}
+
+	[Fact]
 	public void O_guia_segue_a_trilha_traco_por_traco_dentro_da_area_de_desenho()
 	{
 		var guide = GuideOf("4");
