@@ -17,7 +17,6 @@ namespace ArquipelagoDoCeu;
 // Nada aqui grava no save: o treino não conta para o progresso.
 public partial class TrainingArea : Node
 {
-	const float DummyPickRadius = 1.3f;
 	const float ReactionSeconds = 3.0f;
 
 	readonly GameRules rules;
@@ -32,7 +31,8 @@ public partial class TrainingArea : Node
 	readonly Action<OverlayScreen> showOverlay;
 	readonly Action<string> notify;
 	readonly CombatTime time;
-	readonly BubbleAttack bubble;
+	readonly BubbleDirector bubbles;
+	readonly AnswerReactions reactions;
 	readonly IReadOnlyList<Mission> missions;
 	readonly IRandomSource random;
 	readonly TowerCatalog towers;
@@ -72,7 +72,8 @@ public partial class TrainingArea : Node
 		this.showOverlay = showOverlay;
 		this.notify = notify;
 		time = new CombatTime(rules.Combat);
-		bubble = new BubbleAttack(rules.Combat.Bubble);
+		bubbles = new BubbleDirector(rules.Combat.Bubble, stage, dummy, player, voice);
+		reactions = new AnswerReactions(this, dummy, player);
 		missions = MissionSource.Load().Missions;
 
 		var (ground, top) = stage.CreatureSpot;
@@ -100,13 +101,7 @@ public partial class TrainingArea : Node
 	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (UiKit.Compact ? (panel is null ? 154 : 12) : 126); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
-	public bool HitsDummy(Godot.Vector2 screenPoint)
-	{
-		var origin = stage.Camera.ProjectRayOrigin(screenPoint);
-		var direction = stage.Camera.ProjectRayNormal(screenPoint);
-		var closest = origin + direction * (dummy.Center - origin).Dot(direction);
-		return closest.DistanceTo(dummy.Center) <= DummyPickRadius;
-	}
+	public bool HitsDummy(Godot.Vector2 screenPoint) => dummy.IsPickedBy(stage.Camera, screenPoint);
 
 	public bool InTargetRange()
 	{
@@ -121,15 +116,7 @@ public partial class TrainingArea : Node
 	}
 
 	// Solta o alvo sem responder; o treino continua (com bolhas e Energia) até a criança sair ou a Energia zerar.
-	public void DropTarget()
-	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Abandon(); break;
-			case NamePanel name: name.Abandon(); break;
-			case WordPanel word: word.Abandon(); break;
-		}
-	}
+	public void DropTarget() => AnswerPanels.Abandon(panel);
 
 	// Se a criança se afasta demais, o alvo se perde.
 	public void CheckRange()
@@ -158,7 +145,9 @@ public partial class TrainingArea : Node
 	// A Missão que acabou de ser vencida numa luta de Sala, antes de a Sala valer como vencida. O treino não dispara isto.
 	public event Action<Mission>? ChallengeSolved;
 
-	// A Missão em jogo, para o piloto de desenvolvimento.
+	internal CombatSession? Session => session;
+
+	// A Missão em jogo.
 	public Mission? CurrentMission => session?.Mission;
 
 	// Começa a luta de uma Sala com a Energia da Expedição. A criança escolhe a criatura (clique ou F) para atacar.
@@ -171,9 +160,9 @@ public partial class TrainingArea : Node
 		fightWon = won;
 		fightLost = lost;
 		reacting = false;
-		bubble.Reset();
+		bubbles.Reset();
 		UpdateEnergy();
-		ShowChallenge();
+		dummy.ShowChallenge(session);
 	}
 
 	// Termina a luta sem mexer na Energia nem na tela dela; vale tanto para vitória quanto para sair da Sala.
@@ -187,9 +176,7 @@ public partial class TrainingArea : Node
 		fightLost = null;
 		energyView = null;
 		ownsEnergyView = true;
-		bubble.Reset();
-		dummy.HideWarning();
-		dummy.HideBubble();
+		bubbles.Clear();
 		time.End();
 		Engine.TimeScale = time.Scale;
 		if (!InDungeon) dummy.Idle();
@@ -221,72 +208,24 @@ public partial class TrainingArea : Node
 		if (!started.IsOk) return started.Error;
 
 		RoleChosen?.Invoke(setup.Discipline);
-		session = started.Value;
-		bubble.Reset();
+		session = started.Value!;
+		bubbles.Reset();
 		energyView = new EnergyView();
 		energyView.LeaveRequested += () => Finish("Treino encerrado. Quando quiser, é só escolher o Boneco de novo.");
 		uiRoot.AddChild(energyView);
 		UpdateEnergy();
-		ShowChallenge();
+		dummy.ShowChallenge(session);
 		OpenPanel();
 		return null;
-	}
-
-	// O Boneco mostra o Desafio atual: o escudo (Matemático) ou a criatura sem nome (Escriba).
-	void ShowChallenge()
-	{
-		if (session!.Math is { } math)
-		{
-			dummy.ShowCreature(null);
-			dummy.Reset(math.Shield.Remaining, "Escudo");
-		}
-		else if (session.Name is { } name)
-		{
-			dummy.ShowCreature(name.Image);
-			dummy.Reset(name.Remaining, name.Kind switch { NameKind.Sentence => "Palavras que faltam", NameKind.Gap => "Lacunas que faltam", _ => "Sílabas que faltam" });
-		}
-		else
-		{
-			dummy.ShowCreature(session.Word!.Image);
-			dummy.Reset(session.Word.Remaining, "Palavras que faltam");
-		}
 	}
 
 	void OpenPanel()
 	{
 		if (session is null || panel is not null) return;
-		OverlayScreen opened;
-		Action<string> tell = _ => { };
-		if (session.Math is { } math)
-		{
-			var staff = new StaffPanel(math, session.Rules, voice, InTargetRange, Creature);
-			staff.Attacked += OnAttacked;
-			staff.ComposingChanged += OnComposing;
-			staff.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
-			staff.ReadRequested += () => { if (session is not null) tell(session.Mission.Prompt); };
-			tell = staff.Tell;
-			opened = staff;
-		}
-		else if (session.Name is { } nameBattle)
-		{
-			var name = new NamePanel(nameBattle, rules.Combat.Tracing, voice, allowPull: !InDungeon);
-			name.Checked += OnChecked;
-			name.ComposingChanged += OnComposing;
-			name.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
-			name.ReadRequested += () => { if (session is not null) tell(session.Mission.Prompt); };
-			tell = name.Tell;
-			opened = name;
-		}
-		else
-		{
-			var word = new WordPanel(session.Word!, voice);
-			word.Checked += OnWordChecked;
-			word.ComposingChanged += OnComposing;
-			word.HintRequested += () => { if (session is not null) tell($"Dica: {session.Hint()}"); };
-			word.ReadRequested += () => { if (session is not null) tell(session.Mission.Prompt); };
-			tell = word.Tell;
-			opened = word;
-		}
+		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, allowPull: !InDungeon, new PanelEvents(
+			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, OnComposing,
+			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
+			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
 
 		panel = opened;
 		UpdateEnergyDock();
@@ -308,7 +247,7 @@ public partial class TrainingArea : Node
 			opened.QueueFree();
 		};
 		opened.TreeExited += Release;
-		tell(session.Mission.Prompt);
+		Tell(session.Mission.Prompt);
 	}
 
 	void OnComposing(bool composing)
@@ -318,117 +257,16 @@ public partial class TrainingArea : Node
 		Engine.TimeScale = time.Scale;
 	}
 
-	void Tell(string text)
+	internal void Tell(string text)
 	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Tell(text); break;
-			case NamePanel name: name.Tell(text); break;
-			case WordPanel word: word.Tell(text); break;
-			default: voice.Say(text, interrupt: true); break;
-		}
-	}
-
-	// --- Matemático
-
-	void OnAttacked(AttackResult result)
-	{
-		if (session is null) return;
-		var from = player.GlobalPosition + Vector3.Up * 1f;
-		AttackAnimation();
-		switch (result.Outcome)
-		{
-			case HitOutcome.Dissolved:
-				dummy.Ray(from, perfect: true);
-				dummy.Dissolved();
-				session.Hit(perfect: true);
-				UpdateEnergy();
-				Say("Golpe perfeito!", $"Golpe perfeito! {result.Equation} dissolveu a névoa. Você recuperou Energia.");
-				Won();
-				break;
-			case HitOutcome.Reduced:
-				dummy.Ray(from, perfect: false);
-				dummy.Reduced(result.Remaining);
-				session.Hit(perfect: false);
-				UpdateEnergy();
-				Say($"Acertou! Faltam {result.Remaining}.", $"Acertou! {result.Equation}. Faltam {result.Remaining}.");
-				break;
-			default:
-				dummy.Overshoot();
-				Mistake("Passou do valor!", $"Passou do valor: {result.Equation} é mais que {result.Remaining}.");
-				break;
-		}
-	}
-
-	// --- Escriba
-
-	void OnChecked(NameVerdict verdict)
-	{
-		if (session?.Name is not { } name) return;
-		var from = player.GlobalPosition + Vector3.Up * 1f;
-		var strikes = verdict.NewStrikes;
-		if (strikes > 0)
-		{
-			AttackAnimation();
-			dummy.Ray(from, perfect: verdict.Freed);
-			dummy.Reduced(name.Remaining);
-		}
-		var piece = name.Kind == NameKind.Syllables ? "sílaba" : "palavra";
-		var struck = strikes switch { 0 => "", 1 => $"1 {piece} certa, 1 golpe! ", _ => $"{strikes} {piece}s certas, {strikes} golpes! " };
-
-		if (verdict.Freed)
-		{
-			dummy.Dissolved();
-			session.Hit(perfect: false);
-			UpdateEnergy();
-			var done = name.Kind switch
-			{
-				NameKind.Sentence => $"Muito bem! A frase ficou assim: {name.Completed}",
-				NameKind.Gap => $"Muito bem! A frase completa é: {name.Completed}",
-				_ => $"Muito bem! O nome é {name.Word.ToUpperInvariant()}. A criatura foi libertada.",
-			};
-			Say(name.Kind == NameKind.Syllables ? "Nome certo!" : "Frase certa!", $"{struck}{done}");
-			Won();
-		}
-		else if (verdict.Mistaken)
-		{
-			dummy.Overshoot();
-			Mistake(name.Kind switch { NameKind.Sentence => "Fora de ordem!", NameKind.Gap => "Palavra errada!", _ => "Sílaba errada!" },
-				$"{struck}{name.Kind switch { NameKind.Sentence => "Uma palavra está fora do lugar.", NameKind.Gap => "Essa palavra não completa a frase.", _ => "Uma sílaba está errada." }}");
-		}
-		else Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : $"Ainda faltam {piece}s. Escolha mais uma.");
-	}
-
-	// O Escriba do 2º ano: a palavra inteira, com a grafia exata. Acertar liberta a criatura; errar é erro.
-	void OnWordChecked(WordResult result)
-	{
-		if (session?.Word is not { } word) return;
-		var from = player.GlobalPosition + Vector3.Up * 1f;
-		AttackAnimation();
-		if (result == WordResult.Freed)
-		{
-			dummy.Ray(from, perfect: true);
-			dummy.Dissolved();
-			session.Hit(perfect: false);
-			UpdateEnergy();
-			Say("Nome certo!", $"Muito bem! Você escreveu {word.Word.ToUpperInvariant()}. A criatura foi libertada.");
-			Won();
-			return;
-		}
-		dummy.Overshoot();
-		Mistake("Grafia errada!", $"Você escreveu {word.Typed.ToUpperInvariant()}, mas não é assim que se escreve.");
+		if (!AnswerPanels.Tell(panel, text)) voice.Say(text, interrupt: true);
 	}
 
 	// --- Erro, travessura, dica
 
-	void Mistake(string headline, string lead)
+	internal void Mistake(string headline, string lead)
 	{
-		if (StopOnMistake is { } stop)
-		{
-			EndFight();
-			stop();
-			return;
-		}
+		if (StopOnMistake is { } stop) { EndFight(); stop(); return; }
 		session!.RevealHidden();
 		epoch++;
 		var outcome = session.Mistake();
@@ -443,8 +281,8 @@ public partial class TrainingArea : Node
 		var prank = outcome.Prank == Prank.Hidden
 			? $"{Creature.Start} fez uma travessura e escondeu uma peça por {rules.Combat.PrankSeconds:0} segundos."
 			: $"{Creature.Start} fez uma travessura e embaralhou as peças.";
-		ShowChallenge();
-		RefreshPanel();
+		dummy.ShowChallenge(session);
+		AnswerPanels.Refresh(panel);
 
 		var text = $"{lead} {prank} Novo Desafio: {session.Mission.Prompt}";
 		if (outcome.HintOffered) text += $" Dica: {session.Hint()}";
@@ -457,22 +295,16 @@ public partial class TrainingArea : Node
 		{
 			if (epoch != mine || session is null) return;
 			session.RevealHidden();
-			RefreshPanel();
+			AnswerPanels.Refresh(panel);
 		};
 	}
 
 	// Num treino vem logo o próximo Desafio; numa Sala, vencer o Desafio vence a Sala.
-	void Won()
+	internal void Won()
 	{
-		if (fightWon is null)
-		{
-			NextChallengeSoon();
-			return;
-		}
+		if (fightWon is null) { NextChallengeSoon(); return; }
 		reacting = true;
-		bubble.Reset();
-		dummy.HideWarning();
-		dummy.HideBubble();
+		bubbles.Clear();
 		var mine = ++epoch;
 		GetTree().CreateTimer(ReactionSeconds, true, false, true).Timeout += () =>
 		{
@@ -488,46 +320,34 @@ public partial class TrainingArea : Node
 	void NextChallengeSoon()
 	{
 		reacting = true;
-		bubble.Reset();
-		dummy.HideWarning();
-		dummy.HideBubble();
+		bubbles.Clear();
 		var mine = epoch;
 		GetTree().CreateTimer(ReactionSeconds, true, false, true).Timeout += () =>
 		{
 			if (epoch != mine || session is null) return;
 			reacting = false;
 			session.NextChallenge();
-			ShowChallenge();
-			RefreshPanel();
+			dummy.ShowChallenge(session);
+			AnswerPanels.Refresh(panel);
 			Tell($"Novo Desafio: {session.Mission.Prompt}");
 		};
 	}
 
-	void RefreshPanel()
-	{
-		switch (panel)
-		{
-			case StaffPanel staff: staff.Refresh(); break;
-			case NamePanel name: name.Reload(); break;
-			case WordPanel word: word.Reload(); break;
-		}
-	}
-
 	// Mostra na cena e no painel; o painel também fala. Sem painel aberto, só o Boneco e a voz.
-	void Say(string headline, string text, bool good = true)
+	internal void Say(string headline, string text, bool good = true)
 	{
 		dummy.Say(headline, good);
 		if (panel is null) voice.Say(text, interrupt: true);
 		else Tell(text);
 	}
 
-	void AttackAnimation()
+	internal void AttackAnimation()
 	{
 		var (ground, _) = stage.CreatureSpot;
 		player.Attack(new Vector2(ground.X, ground.Z));
 	}
 
-	void UpdateEnergy()
+	internal void UpdateEnergy()
 	{
 		if (session is not null) energyView?.Set(session.Energy.Current, session.Energy.Max);
 	}
@@ -546,7 +366,7 @@ public partial class TrainingArea : Node
 		DropTarget();
 		session = null;
 		reacting = false;
-		bubble.Reset();
+		bubbles.Reset();
 		if (ownsEnergyView) energyView?.QueueFree();
 		energyView = null;
 		dummy.Idle();
@@ -562,47 +382,11 @@ public partial class TrainingArea : Node
 	public override void _Process(double delta)
 	{
 		if (session is null || reacting || !canAct()) return;
-		if (settings.Current.CalmMode || !Bubbles)
-		{
-			// Modo calmo: o Boneco não lança bolhas e só reage a erros.
-			if (bubble.Phase != BubblePhase.Waiting)
-			{
-				bubble.Reset();
-				dummy.HideWarning();
-				dummy.HideBubble();
-			}
-			return;
-		}
-
-		var (ground, _) = stage.CreatureSpot;
-		var origin = new Vector2(ground.X, ground.Z);
-		var radius = rules.Combat.Bubble.Radius;
-		switch (bubble.Update((float)delta, origin, player.GroundPosition))
-		{
-			case BubbleEvent.Warned:
-				voice.Say("Cuidado! Bolha de névoa vindo. Saia do caminho.", interrupt: false);
-				break;
-			case BubbleEvent.Launched:
-				dummy.HideWarning();
-				break;
-			case BubbleEvent.Hit:
-				dummy.HideBubble();
-				dummy.Hurt();
-				session.BubbleHit();
-				UpdateEnergy();
-				if (session.IsOver) Finish("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");
-				return;
-			case BubbleEvent.Missed:
-				dummy.HideBubble();
-				break;
-		}
-
-		if (bubble.Phase == BubblePhase.Warning)
-		{
-			var way = bubble.DirectionFrom(origin);
-			dummy.ShowWarning(new Vector3(origin.X, 0f, origin.Y), new Vector3(way.X, 0f, way.Y), rules.Combat.Bubble.Range, radius * 2f, bubble.WarningProgress);
-		}
-		else if (bubble.Phase == BubblePhase.Flying) dummy.MoveBubble(new Vector3(bubble.Position.X, 0f, bubble.Position.Y), radius);
+		// Modo calmo e Puzzle: o Boneco não lança bolhas e só reage a erros.
+		if (!bubbles.Tick((float)delta, stopped: settings.Current.CalmMode || !Bubbles)) return;
+		session.BubbleHit();
+		UpdateEnergy();
+		if (session.IsOver) Finish("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");
 	}
 
 	public override void _ExitTree() => Engine.TimeScale = 1.0;

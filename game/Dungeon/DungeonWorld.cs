@@ -41,6 +41,16 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	public IReadOnlyList<Door> Doors => doors;
 
+	// Com o que a criança pode interagir na Sala de agora: as portas, a escada e a fonte do Descanso.
+	public IReadOnlyList<Interactable> Interactables(Dungeon.Expedition expedition)
+	{
+		var list = doors.Select(d => new Interactable($"door:{d.Target}", new System.Numerics.Vector2(d.Ground.X, d.Ground.Z))).ToList();
+		if (expedition.CanAscend) list.Add(new Interactable("stairs", StairsSpot));
+		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", StairsSpot));
+		if (expedition.Current.Kind == RoomKind.Rest) list.Add(new Interactable("rest", FountainSpot));
+		return list;
+	}
+
 	// A criatura fica no centro da Sala.
 	public (Vector3 Ground, float Top) CreatureSpot => (Vector3.Zero, CreatureHeight);
 

@@ -249,6 +249,6 @@ public sealed class RewardTests : IDisposable
 			.Where(f => File.ReadAllText(f).Contains(".Grant("))
 			.Select(f => Path.GetFileName(f)).Order().ToList();
 
-		Assert.Equal(new[] { "DungeonRun.cs", "MasterChallenge.cs" }, callers.ToArray());
+		Assert.Equal(new[] { "DungeonRewards.cs", "MasterChallenge.cs" }, callers.ToArray());
 	}
 }

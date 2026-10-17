@@ -94,7 +94,7 @@ public partial class MasterChallenge : Node
 		notify($"Desafio mestre! Desafio {round + 1} de {rounds.Count}. Chegue perto do Guardião e escolha-o (clique ou F).");
 	}
 
-	void OnRoundWon()
+	internal void OnRoundWon()
 	{
 		round++;
 		if (round < rounds.Count)
@@ -122,7 +122,7 @@ public partial class MasterChallenge : Node
 		return coins + string.Concat(outcome.Cosmetics.Select(c => $" Você ganhou um Cosmético: {c.Name}."));
 	}
 
-	void OnLost() => Finish("A névoa ficou forte demais desta vez. O Desafio mestre continua esperando: tente de novo quando quiser!");
+	internal void OnLost() => Finish("A névoa ficou forte demais desta vez. O Desafio mestre continua esperando: tente de novo quando quiser!");
 
 	void Quit()
 	{
@@ -138,21 +138,5 @@ public partial class MasterChallenge : Node
 		energyView = null;
 		energy = null;
 		notify(message);
-	}
-
-	// Só para o piloto de desenvolvimento: zera a Energia da luta, pela mesma saída da derrota de verdade.
-	public void DevLose()
-	{
-		if (!OS.IsDebugBuild() || !Active) return;
-		training.EndFight();
-		OnLost();
-	}
-
-	// Só para o piloto de desenvolvimento: vence o Desafio da vez sem resolvê-lo, pela mesma saída da vitória de verdade.
-	public void DevWinRound()
-	{
-		if (!OS.IsDebugBuild() || !Active) return;
-		training.EndFight();
-		OnRoundWon();
 	}
 }

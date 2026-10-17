@@ -6,127 +6,61 @@ using ArquipelagoDoCeu.Dungeon;
 using ArquipelagoDoCeu.Generation;
 using ArquipelagoDoCeu.Missions;
 using ArquipelagoDoCeu.Rules;
-using ArquipelagoDoCeu.Rewards;
 using ArquipelagoDoCeu.Saves;
-using ArquipelagoDoCeu.Settings;
-using ArquipelagoDoCeu.Voice;
 using ArquipelagoDoCeu.World;
 using Godot;
+using static ArquipelagoDoCeu.DungeonRewards;
 using Vector2 = System.Numerics.Vector2;
 
 namespace ArquipelagoDoCeu;
 
-// Tudo o que a Dungeon precisa de fora, reunido num lugar só para a Main não repassar uma lista de parâmetros.
-public sealed record DungeonContext(
-	GameRules Rules,
-	string ProfileId,
-	string Discipline,
-	string TowerName,
-	int Level,
-	VoiceService Voice,
-	SettingsService Settings,
-	Control UiRoot,
-	ProgressServices Progress,
-	FallbackFloors Fallback,
-	RewardCatalog Rewards,
-	RewardService Granter,
-	string Nickname,
-	string RoleName,
-	TowerCatalog Towers,
-	int ExtraEnergy,
-	float ExtraReach,
-	Action<Player> ConfigurePlayer,
-	IRandomSource Random,
-	int StartFloor = 1,
-	bool AtFastTravel = false,
-	Action<OverlayScreen>? ShowOverlay = null,
-	bool Shortcut = false,
-	bool Free = false,
-	ConceptNames? Concepts = null);
-
-// Uma Expedição numa torre: liga as regras de core/ (Expedition) ao mundo 3D das Salas, à interface e ao combate.
+// Uma Expedição numa torre: liga as regras de core/ (Expedition) ao mundo 3D das Salas, ao HUD e ao combate.
 // Nada aqui decide regra: quem manda passar, vencer ou subir é a Expedition; este nó só mostra e conta o que a criança faz.
 public partial class DungeonRun : Node
 {
-	const float MessageSeconds = 4f;
-	// A Energia fica logo abaixo do card do avatar.
-	const int EnergyTop = 104;
 	const float EndSeconds = 4f;
 
 	readonly DungeonContext ctx;
 	readonly IReadOnlyList<Mission> missions = MissionSource.Load().Missions;
 	readonly Expedition expedition;
-	// Na Expedição livre os problemas já vistos ficam de fora, e cada Andar paga as moedas dele uma vez só.
+	// Na Expedição livre os problemas já vistos ficam de fora.
 	readonly MissionHistory history = new();
-	readonly HashSet<int> paidFloors = [];
-	readonly PanelContainer plate = new() { Name = "Placa" };
-	string? masteryNote;
-	(int Floor, TrainingSetup Setup)? fightSetup;
 	readonly DungeonWorld world = new();
-	readonly Control hud = new() { MouseFilter = Control.MouseFilterEnum.Ignore };
-	readonly Label header = new();
-	readonly Label message = new() { HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart };
-	readonly VBoxContainer mapBox = new();
-	AvatarCard card = null!;
-	readonly Label coinToast = new() { Name = "AvisoDeMoedas", MouseFilter = Control.MouseFilterEnum.Ignore, HorizontalAlignment = HorizontalAlignment.Center };
-	int toastEpoch;
-	readonly Label floorLabel = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
-	readonly ProgressBar floorBar = new() { ShowPercentage = false, CustomMinimumSize = new Godot.Vector2(0, 14) };
-	readonly EnergyView energyView = new("Voltar ao Lobby");
-	Button interactButton = null!;
-	FloorMap? map;
+	readonly DungeonHud hud;
+	readonly DungeonNarration narration;
+	readonly DungeonRewards rewards;
+	readonly DungeonExploration exploration;
+	(int Floor, TrainingSetup Setup)? fightSetup;
 	Player player = null!;
 	TrainingArea combat = null!;
 	string? target;
 	bool left;
 	bool enabled = true;
-	int messageEpoch;
 	OverlayScreen? levelDone;
 	// O Atalho de Nível: os Desafios sorteados, na ordem, e qual está em jogo.
 	IReadOnlyList<TrainingSetup> shortcut = [];
 	int shortcutIndex;
-	(int Floor, int Visited, int Cleared) lastSaved;
 
 	public event Action<string>? Left;
 
 	public DungeonRun(DungeonContext ctx)
 	{
 		this.ctx = ctx;
-		var seed = WorldSeed(ctx.ProfileId);
-		var plan = ctx.Free ? LevelPlan.Free(ctx.Discipline, ctx.Level) : LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, GeneratorVersion);
+		var seed = ctx.WorldSeed;
+		var plan = ctx.Free ? LevelPlan.Free(ctx.Discipline, ctx.Level) : LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, DungeonContext.GeneratorVersion);
 		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
-		expedition = Expedition.Start(floors, plan, seed, GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), HasTradeItem,
-			ctx.Free ? 1 : ctx.StartFloor, !ctx.Free && ctx.AtFastTravel, ctx.Shortcut, Explored);
+		exploration = new DungeonExploration(ctx);
+		expedition = Expedition.Start(floors, plan, seed, DungeonContext.GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
+			ctx.Free ? 1 : ctx.StartFloor, !ctx.Free && ctx.AtFastTravel, ctx.Shortcut, exploration.Get);
+		hud = new DungeonHud(ctx, expedition);
+		narration = new DungeonNarration(ctx, expedition);
+		rewards = new DungeonRewards(ctx, () => InShortcut, hud.ShowCoins);
 	}
 
-	// O Atalho não carrega nem guarda exploração: ele pula o caminho, e as Salas do caminho não foram jogadas. A Livre também
-	// não: ela não mexe no que a Progressão guardou.
-	LevelKey TowerLevel => new(ctx.Discipline, ctx.Level);
-	FloorKey FloorOf(int number) => new(ctx.Discipline, ctx.Level, number);
-	bool Persists => !ctx.Shortcut && !ctx.Free;
-
-	FloorExploration? Explored(int floor) =>
-		!Persists ? null : ctx.Progress.Explored.Get(ctx.ProfileId, FloorOf(floor), GeneratorVersion);
-
-	// Em build de depuração, `--seed-do-mundo=N` fixa a seed para o piloto repetir sempre os mesmos Andares.
-	static ulong WorldSeed(string profileId) =>
-		OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--seed-do-mundo="))?["--seed-do-mundo=".Length..] is { } text && ulong.TryParse(text, out var forced)
-			? forced
-			: Seed.ForProfile(profileId);
-
-	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
-	const int GeneratorVersion = 1;
-
-
-	string TowerName(string discipline) => ctx.Towers.Find(discipline)?.Name ?? discipline;
-
-	// A outra torre: é dela o Item de troca que abre o Marco desta.
 	// O Atalho vale até o Desafio épico ser vencido; depois a criança explora a torre como quiser.
 	bool InShortcut => ctx.Shortcut && !expedition.Finished;
 
-	Tower Tower => ctx.Towers.Find(ctx.Discipline)!;
-	string Other => ctx.Towers.Exchange(Tower)?.Id ?? ctx.Discipline;
-	bool HasTradeItem() => ctx.Progress.Levels.HasItem(ctx.ProfileId, new LevelKey(Other, ctx.Level));
+	string OtherName => ctx.TowerNameOf(ctx.OtherTower);
 
 	public TrainingArea Combat => combat;
 
@@ -136,8 +70,7 @@ public partial class DungeonRun : Node
 
 	public MissionHistory History => history;
 
-	// O último aviso de moedas (fica guardado mesmo depois de sumir da tela), para o piloto conferir.
-	public string CoinToast => coinToast.Text;
+	public string CoinToast => hud.CoinToast;
 
 	public ProgressServices Progress => ctx.Progress;
 
@@ -145,12 +78,14 @@ public partial class DungeonRun : Node
 
 	public DungeonWorld World => world;
 
+	public string RoomSpeech(int room) => narration.RoomSpeech(room);
+
 	// A Main liga e desliga o Personagem quando uma tela (configurações, perfis) abre por cima.
 	public void SetEnabled(bool value)
 	{
 		enabled = value;
 		if (player is not null) player.Enabled = value && !left;
-		interactButton.Visible = value && target is not null;
+		hud.ShowPrompt(value && target is not null ? narration.PromptFor(target) : null);
 	}
 
 	public override void _Ready()
@@ -168,84 +103,25 @@ public partial class DungeonRun : Node
 			() => ctx.Level, () => player.Enabled && !left, _ => { }, Say, ctx.Random, ctx.Towers);
 		combat.InDungeon = true;
 		combat.Creature = CreatureWords.Wild;
-		combat.EnergyTop = EnergyTop;
+		combat.EnergyTop = DungeonHud.EnergyTop;
 		combat.ChallengeSolved += OnSolved;
 		AddChild(combat);
 
-		BuildHud();
-		ctx.UiRoot.AddChild(hud);
-		// O card (avatar, apelido e Maestria) fica no canto; a Energia, em raios, logo abaixo.
-		card = new AvatarCard(text => ctx.Voice.Say(text, interrupt: true), canEdit: false);
-		hud.AddChild(card);
-		BuildCoinToast();
-		ShowCoinToast($"Moedas: {ctx.Progress.Wallet.Balance(ctx.ProfileId)}");
-		ctx.UiRoot.AddChild(energyView);
-		energyView.LeaveRequested += () => Leave("");
-		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
-		energyView.OffsetTop = EnergyTop;
+		AddChild(hud);
+		hud.InteractPressed += Activate;
+		hud.LeaveRequested += () => Leave("");
+		hud.MapSpeechRequested += () => Say(narration.MapSpeech(IsFloorDone()));
+		hud.RoomPointed += room => Say(narration.RoomSpeech(room));
 
 		player.Enabled = enabled;
 		if (ctx.Shortcut && !BeginShortcut()) return;
 		// O Atalho não descobre Andares: quem erra joga o Nível normalmente, do Andar mais fundo que já conhecia.
-		if (ctx.Shortcut) BuildMap();
+		if (ctx.Shortcut) hud.BuildMap();
 		else DiscoverFloor();
 		EnterRoom(-1);
 		Say(ctx.Free
 			? $"Expedição livre na {ctx.TowerName}! Os Andares não têm fim: volte ao Lobby quando quiser."
 			: $"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
-	}
-
-	void BuildHud()
-	{
-		hud.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		header.AddThemeFontSizeOverride("font_size", 18);
-		header.AddThemeColorOverride("font_color", UiKit.TextColor);
-		header.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-
-		// O mapa do Andar fica no canto, com a legenda das letras e formas.
-		var panel = new PanelContainer { Name = "Mapa" };
-		panel.AddThemeStyleboxOverride("panel", UiKit.Surface());
-		panel.SetAnchorsPreset(Control.LayoutPreset.TopRight);
-		panel.OffsetLeft = -300;
-		panel.OffsetRight = -12;
-		panel.OffsetTop = 12;
-		mapBox.AddThemeConstantOverride("separation", 4);
-		floorLabel.AddThemeFontSizeOverride("font_size", 15);
-		floorLabel.AddThemeColorOverride("font_color", UiKit.TextColor);
-		mapBox.AddChild(floorBar);
-		mapBox.AddChild(floorLabel);
-		mapBox.AddChild(UiKit.BigButton("Ouvir o mapa", () => Say(MapSpeech()), 200));
-		panel.AddChild(mapBox);
-		hud.AddChild(panel);
-
-		// A placa do centro: Nível, Andar e o objetivo (o Conceito do Andar, que vem das Missões).
-		plate.AddThemeStyleboxOverride("panel", UiKit.Surface());
-		plate.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
-		plate.OffsetLeft = -200;
-		plate.OffsetRight = 200;
-		plate.OffsetTop = 12;
-		plate.GrowHorizontal = Control.GrowDirection.Both;
-		header.HorizontalAlignment = HorizontalAlignment.Center;
-		plate.AddChild(header);
-		hud.AddChild(plate);
-
-		message.SetAnchorsPreset(Control.LayoutPreset.BottomWide);
-		message.OffsetTop = -190;
-		message.OffsetBottom = -110;
-		message.OffsetRight = -310;
-		message.AddThemeFontSizeOverride("font_size", 22);
-		message.AddThemeColorOverride("font_color", Colors.White);
-		UiKit.Outline(message);
-		hud.AddChild(message);
-
-		interactButton = UiKit.BigButton("", Activate, 380);
-		interactButton.Visible = false;
-		interactButton.SetAnchorsPreset(Control.LayoutPreset.CenterBottom);
-		interactButton.OffsetTop = -96;
-		interactButton.OffsetBottom = -36;
-		interactButton.OffsetLeft = -190;
-		interactButton.OffsetRight = 190;
-		hud.AddChild(interactButton);
 	}
 
 	// --- Salas
@@ -259,17 +135,10 @@ public partial class DungeonRun : Node
 		player.PlaceAt(back is null ? DungeonWorld.Center : DungeonWorld.InsideOf(back));
 		StartFight();
 		RefreshHud();
-		SaveExploration();
+		exploration.Save(expedition);
 		var kind = expedition.Current.Kind;
-		var text = kind switch
-		{
-			RoomKind.Marco => HasTradeItem() ? "O Marco brilhou! O Item de troca abriu o caminho." : $"Este é o Marco. Ele só abre com o Item de troca da {TowerName(Other)}.",
-			RoomKind.FastTravel => FindFastTravel(),
-			RoomKind.Rest => "Sala de descanso. Descanse um pouco, se quiser.",
-			RoomKind.Exit => "Sala de saída. A escada leva ao próximo Andar.",
-			_ => null,
-		};
-		var spoken = string.Join(" ", new[] { lead, text, CheckFloorComplete() }.Where(t => t is not null));
+		var text = kind == RoomKind.FastTravel ? FindFastTravel() : narration.RoomLine(kind);
+		var spoken = string.Join(" ", new[] { lead, text, rewards.ForFloor(expedition) }.Where(t => t is not null));
 		if (spoken.Length != 0) Say(spoken);
 	}
 
@@ -284,36 +153,14 @@ public partial class DungeonRun : Node
 			Leave("Não foi possível abrir o Atalho agora.");
 			return false;
 		}
-		var marked = ctx.Progress.Levels.MarkShortcutTried(ctx.ProfileId, TowerLevel);
+		var marked = ctx.Progress.Levels.MarkShortcutTried(ctx.ProfileId, ctx.LevelKey);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
 		shortcut = setups.Value!;
 		return true;
 	}
 
 	void RefreshRoom() =>
-		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, Describe, RoomNote(), expedition.CanDescend);
-
-	// O que a criança precisa saber desta Sala sobre o Item de troca, em texto e com a estrela.
-	string? RoomNote()
-	{
-		var current = expedition.Current;
-		if (current.Kind == RoomKind.Marco)
-			return HasTradeItem() ? $"★ O Item da {TowerName(Other)} abriu o Marco" : $"★ Falta o Item de troca da {TowerName(Other)}";
-		return current.HoldsItem && !expedition.IsCleared(expedition.CurrentRoom) ? "★ Vença esta Sala para ganhar o Item de troca" : null;
-	}
-
-	// A porta de uma Sala que a criança ainda não visitou não diz o que há lá dentro.
-	(string Label, bool Locked, bool Known) Describe(int room)
-	{
-		var known = expedition.Visited.Contains(room);
-		var name = known ? FloorMap.NameOf(expedition.Floor.Rooms[room].Kind) : "Sala nova";
-		return expedition.CanMoveTo(room) switch
-		{
-			Passage.MustClearRoom => ($"{name}\n(vença esta Sala)", true, known),
-			Passage.NeedsItem => ($"{name}\n(precisa do Item)", true, known),
-			_ => (name, false, known),
-		};
-	}
+		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, narration.Describe, narration.RoomNote(), expedition.CanDescend);
 
 	// Combate, Puzzle e épico têm uma criatura a vencer. A criança a escolhe (clique ou F) para abrir a montagem.
 	void StartFight()
@@ -340,7 +187,7 @@ public partial class DungeonRun : Node
 		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), ctx.Free ? history : null);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
-		combat.BeginFight(fight.Value!, energyView, OnWon, OnLost);
+		combat.BeginFight(fight.Value!, hud.Energy, OnWon, OnLost);
 		if (InShortcut)
 		{
 			Say($"Atalho de Nível! Desafio {shortcutIndex + 1} de {shortcut.Count}. Errar encerra a tentativa. Escolha a criatura (clique ou F).");
@@ -354,7 +201,7 @@ public partial class DungeonRun : Node
 		});
 	}
 
-	void OnWon()
+	internal void OnWon()
 	{
 		// No Atalho cada Desafio vencido leva ao seguinte; só o último vence o épico.
 		if (InShortcut && shortcutIndex + 1 < shortcut.Count)
@@ -375,11 +222,10 @@ public partial class DungeonRun : Node
 		expedition.ClearCurrent();
 		world.ShowTarget(false, false);
 		RefreshRoom();
-		SaveExploration();
-		var coins = paying ? Join(room.Kind is RoomKind.Combat or RoomKind.Epic ? Reward("creature-calmed") : null, room.HoldsItem ? Reward("item-room", expedition.Floor.Number) : null) : null;
-		var mastery = masteryNote;
-		masteryNote = null;
-		var completed = CheckFloorComplete();
+		exploration.Save(expedition);
+		var coins = paying ? rewards.ForRoom(room, expedition.Floor.Number) : null;
+		var mastery = rewards.TakeMasteryNote();
+		var completed = rewards.ForFloor(expedition);
 		RefreshHud();
 		if (room.Kind == RoomKind.Epic)
 		{
@@ -390,70 +236,26 @@ public partial class DungeonRun : Node
 		{
 			// O recado do Item já está na tela; o resto vem junto, sem apagá-lo.
 			var extra = Join(coins, mastery, completed);
-			if (extra is not null) Say($"{message.Text} {extra}");
+			if (extra is not null) Say($"{hud.Message} {extra}");
 			return;
 		}
 		var won = expedition.Current.Kind == RoomKind.Puzzle ? "A porta abriu! O caminho está livre." : "Sala vencida! As portas estão livres.";
-		Say(Join(won, coins, mastery, ProgressSpeech(), completed)!);
+		Say(Join(won, coins, mastery, narration.ProgressSpeech(), completed)!);
 	}
 
-	static string? Join(params string?[] parts) => parts.Any(p => !string.IsNullOrEmpty(p)) ? string.Join(" ", parts.Where(p => !string.IsNullOrEmpty(p))) : null;
-
-	// A vitória num Conceito conta para a Maestria do Papel (Dungeon, nunca treino); o aviso sai junto com o resto da Sala.
-	void OnSolved(Mission mission)
-	{
-		// O Atalho pula o caminho: não rende moedas nem Maestria, para as duas recompensas seguirem a mesma regra.
-		if (InShortcut) return;
-		var update = ctx.Progress.Mastery.Record(ctx.ProfileId, new ConceptKey(ctx.Discipline, mission.Concept), ctx.Rules.Dungeon.ConceptSolves);
-		if (!update.IsOk)
-		{
-			GD.PushWarning(update.Error!);
-			return;
-		}
-		if (!update.Value!.NewlyMastered) return;
-		var name = (ctx.Concepts ?? ConceptNames.Empty).NameOf(mission.Concept);
-		masteryNote = Join($"Você dominou \"{name}\"! Maestria {update.Value.Mastery}.", Reward("concept-mastered", concept: mission.Concept));
-	}
-
-	// Pede as recompensas do gatilho (os dados dizem o que cada um paga) e devolve o que a criança ganhou, em texto.
-	// Devolve null quando o acontecimento já tinha sido pago; falha de gravação não trava a criança.
-	string? Reward(string trigger, int? floor = null, string? concept = null)
-	{
-		var granted = ctx.Granter.Grant(ctx.ProfileId, new RewardContext(trigger, ctx.Discipline, ctx.Level, floor, concept), ctx.Rewards);
-		if (!granted.IsOk)
-		{
-			GD.PushWarning(granted.Error!);
-			return null;
-		}
-		var outcome = granted.Value!;
-		if (!outcome.Fired) return null;
-		if (outcome.Coins > 0) ShowCoinToast($"+{Coins(outcome.Coins)}");
-		var prizes = outcome.Cosmetics.Select(c => $"Você ganhou um Cosmético: {c.Name}.");
-		return string.Join(" ", prizes.Append(outcome.Coins > 0 ? $"Você ganhou {Coins(outcome.Coins)}." : "").Where(t => t.Length > 0));
-	}
-
-	static string Coins(int amount) => amount == 1 ? "1 moeda" : $"{amount} moedas";
-
-	// Só para o piloto de desenvolvimento: vence a Sala sem resolver o Desafio, pela mesma saída da vitória de verdade.
-	public void DevWinRoom()
-	{
-		if (!OS.IsDebugBuild()) return;
-		var mission = combat.CurrentMission;
-		combat.EndFight();
-		if (mission is not null) OnSolved(mission);
-		OnWon();
-	}
+	// Chamado pela luta quando a criança resolve a Missão, antes de a Sala valer como vencida.
+	internal void OnSolved(Mission mission) => rewards.RecordSolved(mission);
 
 	// O Desafio épico vencido conclui o Nível nesta torre (também pelo Atalho, que ainda entrega o Item); a criança escolhe seguir.
 	void ConcludeLevel(string? extra = null)
 	{
-		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, TowerLevel);
+		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, ctx.LevelKey);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
-		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, TowerLevel) && GiveItem();
+		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, ctx.LevelKey) && GiveItem();
 		RefreshHud();
-		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {TowerName(ctx.Discipline)}." + (extra is null ? "" : " " + extra);
+		var text = $"Nível {ctx.Level} concluído! Você venceu o Desafio épico da {ctx.TowerName}." + (extra is null ? "" : " " + extra);
 		Say(text);
-		var screen = new LevelDoneScreen(TowerName(ctx.Discipline), ctx.Level, item, () => Leave(""));
+		var screen = new LevelDoneScreen(ctx.TowerName, ctx.Level, item, () => Leave(""));
 		levelDone = screen;
 		if (ctx.ShowOverlay is { } show) show(screen);
 		else GetTree().CreateTimer(EndSeconds, true, false, true).Timeout += () => Leave("");
@@ -464,18 +266,18 @@ public partial class DungeonRun : Node
 
 	bool GiveItem()
 	{
-		var saved = ctx.Progress.Levels.GiveItem(ctx.ProfileId, TowerLevel);
+		var saved = ctx.Progress.Levels.GiveItem(ctx.ProfileId, ctx.LevelKey);
 		if (!saved.IsOk)
 		{
 			GD.PushWarning(saved.Error!);
 			Say("Não foi possível guardar o Item agora. Vamos tentar de novo.");
 			return false;
 		}
-		Say($"Você ganhou o Item de troca da {TowerName(ctx.Discipline)}! Leve-o à {TowerName(ctx.Towers.Beneficiary(Tower)?.Id ?? Other)} para abrir o Marco de lá.");
+		Say($"Você ganhou o Item de troca da {ctx.TowerName}! Leve-o à {ctx.TowerNameOf(ctx.Towers.Beneficiary(ctx.Tower)?.Id ?? ctx.OtherTower)} para abrir o Marco de lá.");
 		return true;
 	}
 
-	void OnLost() => Leave("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");
+	internal void OnLost() => Leave("A névoa ficou forte demais desta vez. Vamos recarregar a energia?");
 
 	// --- Portas e escada
 
@@ -484,30 +286,11 @@ public partial class DungeonRun : Node
 		if (left) return;
 		world.Creature.SetCaptionContext(UiKit.Compact, enabled && combat.InTargetRange());
 		combat.CheckRange();
-		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
-		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, Interactables(), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
+		hud.RefreshEnergy();
+		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, world.Interactables(expedition), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
 		if (near?.Id == target) return;
 		target = near?.Id;
-		interactButton.Visible = target is not null;
-		if (target is not null) interactButton.Text = PromptFor(target);
-	}
-
-	List<Interactable> Interactables()
-	{
-		var list = world.Doors.Select(d => new Interactable($"door:{d.Target}", new Vector2(d.Ground.X, d.Ground.Z))).ToList();
-		if (expedition.CanAscend) list.Add(new Interactable("stairs", DungeonWorld.StairsSpot));
-		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", DungeonWorld.StairsSpot));
-		if (expedition.Current.Kind == RoomKind.Rest) list.Add(new Interactable("rest", DungeonWorld.FountainSpot));
-		return list;
-	}
-
-	string PromptFor(string id)
-	{
-		if (id == "rest") return "Descansar [E]";
-		if (id == "stairs") return $"Subir para o Andar {expedition.Floor.Number + 1} [E]";
-		if (id == "stairs-down") return $"Descer para o Andar {expedition.Floor.Number - 1} [E]";
-		var room = int.Parse(id["door:".Length..], System.Globalization.CultureInfo.InvariantCulture);
-		return expedition.Visited.Contains(room) ? $"Ir para {FloorMap.NameOf(expedition.Floor.Rooms[room].Kind).ToLowerInvariant()} [E]" : "Ir para a sala nova [E]";
+		hud.ShowPrompt(target is null ? null : narration.PromptFor(target));
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -541,7 +324,7 @@ public partial class DungeonRun : Node
 				Say("Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.");
 				break;
 			case Passage.NeedsItem:
-				Say($"O Marco só abre com o Item de troca da {TowerName(Other)}.");
+				Say($"O Marco só abre com o Item de troca da {OtherName}.");
 				break;
 		}
 	}
@@ -551,7 +334,7 @@ public partial class DungeonRun : Node
 	{
 		// Na Livre o ponto não é guardado: ele não pertence ao Plano do Nível.
 		if (ctx.Free) return "Fast travel! Aqui você pode voltar ao Lobby quando quiser.";
-		var saved = ctx.Progress.Levels.FindFastTravel(ctx.ProfileId, FloorOf(expedition.Floor.Number));
+		var saved = ctx.Progress.Levels.FindFastTravel(ctx.ProfileId, ctx.FloorKeyOf(expedition.Floor.Number));
 		if (!saved.IsOk) GD.PushWarning(saved.Error!);
 		return "Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.";
 	}
@@ -559,7 +342,7 @@ public partial class DungeonRun : Node
 	void Rest()
 	{
 		var rested = expedition.UseRest(ctx.Rules.Dungeon.RestEnergy);
-		energyView.Set(expedition.Energy.Current, expedition.Energy.Max);
+		hud.RefreshEnergy();
 		if (rested.IsOk) RefreshRoom();
 		Say(rested.IsOk ? $"Você descansou e recuperou {rested.Value} de Energia." : rested.Error!);
 	}
@@ -569,85 +352,16 @@ public partial class DungeonRun : Node
 	{
 		if (!move()) return;
 		DiscoverFloor();
-		EnterRoom(-1, $"Andar {expedition.Floor.Number}! {ProgressSpeech()}");
+		EnterRoom(-1, $"Andar {expedition.Floor.Number}! {narration.ProgressSpeech()}");
 	}
 
-	// O que a criança explorou fica no save a cada passo: ver o mapa sumir ao zerar a Energia seria punição.
-	void SaveExploration()
-	{
-		if (!Persists) return;
-		// Só grava quando algo mudou: voltar a uma Sala já visitada não precisa reescrever o save.
-		var stamp = (expedition.Floor.Number, expedition.Visited.Count, expedition.Cleared.Count);
-		if (stamp == lastSaved) return;
-		var saved = ctx.Progress.Explored.Save(ctx.ProfileId, FloorOf(expedition.Floor.Number), expedition.Exploration(), GeneratorVersion);
-		if (saved.IsOk) lastSaved = stamp;
-		else GD.PushWarning(saved.Error!);
-	}
+	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || exploration.IsDone(expedition.Floor.Number));
 
-	// Registra o Andar completo uma única vez e diz o que a criança ganhou; falha de gravação não trava ninguém.
-	string? CheckFloorComplete()
-	{
-		var number = expedition.Floor.Number;
-		if (ctx.Shortcut || !expedition.IsFloorComplete(number)) return null;
-		// A Livre paga o Andar uma vez só por Expedição e não registra Andar completo nem Cosmético: isso é do Plano do Nível.
-		if (ctx.Free && !paidFloors.Add(number)) return null;
-		var rewards = Reward(ctx.Free ? "free-floor-complete" : "floor-complete", number);
-		return rewards is null && !ctx.Free ? null : Join($"Andar {number} completo!", rewards);
-	}
-
-	string ProgressSpeech()
-	{
-		var progress = expedition.ProgressOf(expedition.Floor.Number);
-		return $"{progress.Resolved} de {progress.Total} Salas resolvidas.";
-	}
-
-	// O que a voz diz de uma Sala do mapa: o que é (se já visitada), se está vencida, se tem cadeado. Sala sob névoa não revela o tipo.
-	public string RoomSpeech(int room)
-	{
-		var kind = expedition.Floor.Rooms[room];
-		var where = expedition.CurrentRoom == room ? " Você está aqui." : "";
-		return expedition.SightOf(room) switch
-		{
-			Sight.Seen => $"Sala de {FloorMap.NameOf(kind.Kind).ToLowerInvariant()}{(expedition.IsCleared(room) ? ", vencida" : "")}.{where}",
-			Sight.Fog => expedition.IsLocked(room) ? "Sala nova sob névoa, com cadeado: falta vencer uma Sala." : "Sala nova sob névoa.",
-			_ => "Ainda não se vê nada aqui.",
-		};
-	}
-
-	// O mapa dito em voz alta, para quem não lê a névoa e o cadeado.
-	string MapSpeech()
-	{
-		var rooms = expedition.Floor.Rooms.Select(r => r.Id).ToList();
-		var fog = rooms.Count(r => expedition.SightOf(r) == Sight.Fog);
-		var locked = rooms.Count(expedition.IsLocked);
-		var done = IsFloorDone() ? " Este Andar está completo." : "";
-		var item = ctx.Free ? "" : $" Item de troca da {TowerName(Other)}: {(HasTradeItem() ? "você tem" : "ainda não")}.";
-		return $"Andar {expedition.Floor.Number}{OfTotal()}. {ProgressSpeech()} Salas novas sob névoa: {fog}. Salas com cadeado: {locked}.{item}{done}";
-	}
-
-	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || (!ctx.Free && ctx.Progress.Explored.IsFloorDone(ctx.ProfileId, FloorOf(expedition.Floor.Number))));
-
-	// O Andar descoberto fica no save; falha de gravação não trava a criança.
 	void DiscoverFloor()
 	{
-		if (!ctx.Free)
-		{
-			var saved = ctx.Progress.Levels.DiscoverFloor(ctx.ProfileId, FloorOf(expedition.Floor.Number));
-			if (!saved.IsOk) GD.PushWarning(saved.Error!);
-		}
-		BuildMap();
+		exploration.Discover(expedition.Floor.Number);
+		hud.BuildMap();
 	}
-
-	void BuildMap()
-	{
-		map?.QueueFree();
-		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 250)) { Source = expedition };
-		map.RoomPointed += room => Say(RoomSpeech(room));
-		mapBox.AddChild(map);
-		mapBox.MoveChild(map, 0);
-	}
-
-	string OfTotal() => ctx.Free ? "" : $" de {expedition.Plan.Floors.Count}";
 
 	// O objetivo da placa é o Conceito do Andar, lido das Missões e nomeado em dados; o jogo nunca o inventa.
 	string Objective()
@@ -656,62 +370,14 @@ public partial class DungeonRun : Node
 		var setup = fightSetup is { } fight && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
-		var subject = Tower.Subject;
+		var subject = ctx.Tower.Subject;
 		return concept is null ? subject : $"{subject}: {(ctx.Concepts ?? ConceptNames.Empty).NameOf(concept)}";
 	}
 
-	void RefreshHud()
-	{
-		header.Text = $"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{OfTotal()}\n{Objective()}";
-		card.Set(ctx.Nickname, ctx.RoleName, ctx.Progress.Mastery.Of(ctx.ProfileId, ctx.Discipline));
-		var progress = expedition.ProgressOf(expedition.Floor.Number);
-		var complete = IsFloorDone();
-		floorBar.MaxValue = progress.Total;
-		floorBar.Value = progress.Resolved;
-		floorLabel.Text = $"{progress.Resolved} de {progress.Total} Salas resolvidas" + (complete ? "  ★ Andar completo" : "");
-		if (map is null) return;
-		map.Here = expedition.CurrentRoom;
-		map.Cleared = new HashSet<int>(expedition.Cleared);
-		map.Complete = complete;
-		map.Refresh();
-	}
+	void RefreshHud() =>
+		hud.Refresh($"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}\n{Objective()}", IsFloorDone());
 
-	// Aviso curto das moedas ("+3 moedas"): some sozinho e nunca bloqueia o jogo nem o combate.
-	void BuildCoinToast()
-	{
-		coinToast.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
-		coinToast.OffsetLeft = -150;
-		coinToast.OffsetRight = 150;
-		coinToast.OffsetTop = 96;
-		coinToast.Visible = false;
-		coinToast.AddThemeFontSizeOverride("font_size", 26);
-		coinToast.AddThemeColorOverride("font_color", Color.FromHtml("#FFD54F"));
-		UiKit.Outline(coinToast);
-		hud.AddChild(coinToast);
-	}
-
-	void ShowCoinToast(string text)
-	{
-		coinToast.Text = text;
-		coinToast.Visible = true;
-		var mine = ++toastEpoch;
-		GetTree().CreateTimer(4f, true, false, true).Timeout += () =>
-		{
-			if (mine == toastEpoch && IsInstanceValid(coinToast)) coinToast.Visible = false;
-		};
-	}
-
-	// Texto na tela e na voz; some sozinho, e um recado novo nunca é apagado pelo temporizador de um antigo.
-	void Say(string text)
-	{
-		message.Text = text;
-		ctx.Voice.Say(text, interrupt: true);
-		var mine = ++messageEpoch;
-		GetTree().CreateTimer(MessageSeconds, true, false, true).Timeout += () =>
-		{
-			if (mine == messageEpoch && IsInstanceValid(message)) message.Text = "";
-		};
-	}
+	void Say(string text) => hud.Say(text);
 
 	// A criança volta ao Lobby por vontade própria, pelo fim da torre ou por falta de Energia; os Itens ficam com ela.
 	public void Leave(string reason)
@@ -722,8 +388,7 @@ public partial class DungeonRun : Node
 		if (levelDone is not null && IsInstanceValid(levelDone)) levelDone.Close();
 		combat.EndFight();
 		Engine.TimeScale = 1.0;
-		hud.QueueFree();
-		energyView.QueueFree();
+		hud.Close();
 		Left?.Invoke(reason);
 		QueueFree();
 	}

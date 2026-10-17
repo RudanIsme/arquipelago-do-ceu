@@ -22,20 +22,8 @@ public class ArquiteturaTests
 
 	const int LimiteDeLinhas = 400;
 
-	// Arquivos que já passavam do limite quando o portão nasceu; não podem crescer, e saem daqui quando forem decompostos (#170).
-	static readonly Dictionary<string, int> AindaGrandes = new()
-	{
-		["game/Dev/DungeonScenarios.cs"] = 800,
-		["game/Dungeon/DungeonRun.cs"] = 730,
-		["game/Dev/DevDriver.cs"] = 640,
-		["game/Combat/TrainingArea.cs"] = 610,
-		["game/Lobby/Lobby.cs"] = 520,
-		["game/Main.cs"] = 480,
-		["game/Ui/StaffPanel.cs"] = 450,
-	};
-
 	[Fact]
-	public void Arquivo_de_codigo_nao_passa_do_limite_de_linhas_e_os_grandes_nao_crescem()
+	public void Arquivo_de_codigo_nao_passa_do_limite_de_linhas()
 	{
 		var raiz = RaizDoRepositorio();
 		var tamanhos = new[] { "core", "game" }
@@ -44,13 +32,8 @@ public class ArquiteturaTests
 			.Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.godot{Path.DirectorySeparatorChar}"))
 			.ToDictionary(f => Path.GetRelativePath(raiz, f).Replace(Path.DirectorySeparatorChar, '/'), f => File.ReadAllLines(f).Length);
 
-		var acimaDoLimite = tamanhos.Where(t => t.Value > LimiteDeLinhas && !AindaGrandes.ContainsKey(t.Key)).Select(t => $"{t.Key}: {t.Value}");
-		var cresceram = AindaGrandes.Where(g => tamanhos.TryGetValue(g.Key, out var linhas) && linhas > g.Value).Select(g => $"{g.Key}: {tamanhos[g.Key]} > {g.Value}");
-		var jaCabem = AindaGrandes.Where(g => !tamanhos.TryGetValue(g.Key, out var linhas) || linhas <= LimiteDeLinhas).Select(g => g.Key);
-
+		var acimaDoLimite = tamanhos.Where(t => t.Value > LimiteDeLinhas).Select(t => $"{t.Key}: {t.Value}");
 		Assert.Empty(acimaDoLimite);
-		Assert.Empty(cresceram);
-		Assert.Empty(jaCabem);
 	}
 
 	[Fact]
@@ -68,7 +51,7 @@ public class ArquiteturaTests
 	static readonly string[] UsamRelogio =
 	[
 		"game/GodotRandomSource.cs", "game/Voice/GodotSpeechEngine.cs", "game/Lobby/CameraController.cs", "game/Lobby/GuideIdle.cs",
-		"game/Lobby/LobbyAmbience.cs", "game/Character/DynamicCape.cs", "game/Main.cs", "game/Main.PullTest.cs", "game/Dev/",
+		"game/Lobby/LobbyAmbience.cs", "game/Character/DynamicCape.cs", "game/GameExit.cs", "game/Main.PullTest.cs", "game/Dev/",
 	];
 
 	[Fact]
