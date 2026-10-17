@@ -103,6 +103,9 @@ static class Scenarios
 			case "torre-derrota":
 				await DungeonScenarios.Defeat(d);
 				break;
+			case "trilhas":
+				await TrailShots.Run(d);
+				break;
 			case "andar":
 				await FloorShots.Run(d);
 				break;

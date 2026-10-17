@@ -3,8 +3,8 @@ using ArquipelagoDoCeu.Rules;
 
 namespace ArquipelagoDoCeu.Combat;
 
-// Os pontos pontilhados que a criança liga ao desenhar um número ou uma letra.
-public sealed record TraceGuide(IReadOnlyList<Vector2> Dots);
+// Os pontos que a criança cobre ao desenhar um número ou uma letra. `Paths` traz os traços da trilha (para a tela desenhar a faixa).
+public sealed record TraceGuide(IReadOnlyList<Vector2> Dots, IReadOnlyList<TrailPath>? Paths = null);
 
 public sealed record TraceCheck(float Coverage, float Stray, bool Passed);
 

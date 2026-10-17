@@ -3,9 +3,8 @@ using ArquipelagoDoCeu.Rules;
 
 namespace ArquipelagoDoCeu.Combat;
 
-// O ritmo do combate: o relógio de ataque da criatura e a recarga do jogador.
-// O relógio da criatura anda na escala de CombatTime (lento enquanto a criança monta a resposta, parado no Modo calmo):
-// demorar não pune, o golpe só chega mais devagar. A recarga do jogador corre em tempo real.
+// O relógio de ataque da criatura (na escala de CombatTime: lento ao montar a resposta, parado no Modo calmo)
+// e a recarga do jogador, que corre em tempo real. Demorar não pune: o golpe só chega mais devagar.
 public sealed class AttackRhythm
 {
 	readonly CombatRules rules;

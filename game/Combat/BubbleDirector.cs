@@ -41,9 +41,8 @@ public sealed class BubbleDirector
 		dummy.HideBubble();
 	}
 
-	// Avança o ritmo da criatura; devolve verdadeiro no quadro em que a bolha atinge a criança.
-	// `processDelta` já vem na escala do jogo; o ritmo precisa do tempo de relógio, então desfaz a escala.
-	// Parada (Modo calmo, Puzzle), a criatura só reage a erros.
+	// Devolve verdadeiro no quadro em que a bolha atinge a criança. O ritmo quer tempo de relógio, então desfaz a escala
+	// que o Godot já aplicou a `processDelta`. Parada (Modo calmo, Puzzle), a criatura só reage a erros.
 	public bool Tick(double processDelta, bool stopped)
 	{
 		var scale = (float)Engine.TimeScale;
