@@ -20,6 +20,13 @@ public sealed class TowerCatalog
 
 	public Tower? Find(string id) => All.FirstOrDefault(t => t.Id == id);
 
+	// O Nível que a torre oferece: o liberado, até o último que ela tem.
+	public static int LevelFor(Tower tower, int unlocked) => Math.Clamp(unlocked, 1, tower.Levels);
+
+	// Missões cuja Mecânica a torre da disciplina delas não aceita: erro de conteúdo.
+	public IEnumerable<string> MissionsOutsideMechanics(IEnumerable<ArquipelagoDoCeu.Missions.Mission> missions) =>
+		missions.Where(m => Find(m.Discipline) is { } tower && !tower.Mechanics.Contains(m.Mechanic)).Select(m => m.Id);
+
 	public Tower? Exchange(Tower tower) => Find(tower.ExchangeWith);
 
 	// A torre cujo Marco abre com o Item desta.

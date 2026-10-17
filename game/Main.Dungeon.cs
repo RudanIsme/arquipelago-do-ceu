@@ -99,7 +99,7 @@ public partial class Main
 		training.End();
 		var tower = TowerName(discipline);
 		ChooseRole(discipline);
-		var towerLevel = level ?? UnlockedLevel();
+		var towerLevel = TowerCatalog.LevelFor(towers.Find(discipline)!, level ?? UnlockedLevel());
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
 		if (startFloor == 0 && !shortcut && !free && progress.Levels.LastFastTravel(current.Id, new LevelKey(discipline, towerLevel)) is { } last)

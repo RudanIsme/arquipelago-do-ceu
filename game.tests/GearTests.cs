@@ -182,6 +182,19 @@ public sealed class GearTests : IDisposable
 	}
 
 	[Fact]
+	public void O_equipamento_nao_muda_se_o_dicionario_de_origem_mudar()
+	{
+		var source = new Dictionary<string, string> { ["armor"] = "scout" };
+		var gear = new Gear(source);
+
+		source["armor"] = "guardian";
+
+		Assert.Equal("scout", gear.In("armor"));
+		Assert.Equal(new Gear(new Dictionary<string, string> { ["armor"] = "scout" }).GetHashCode(), gear.GetHashCode());
+		Assert.NotEqual(gear.With("helmet", "open").GetHashCode(), gear.GetHashCode());
+	}
+
+	[Fact]
 	public void O_equipamento_grava_como_objeto_simples_de_espaco_para_peca()
 	{
 		var gear = new Gear().With("armor", "scout").With("helmet", "open");

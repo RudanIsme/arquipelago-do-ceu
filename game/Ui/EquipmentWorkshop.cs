@@ -16,8 +16,8 @@ public partial class EquipmentWorkshop : Control
 	public EquipmentWorkshop() : this("minimal", new EquipmentLoadout()) { }
 	// O texto dos bônus vem de quem conhece o catálogo em dados; sem ele, o do experimento.
 	public Func<EquipmentLoadout, string>? Summarize { get; set; }
-	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Armors { get; set; } = [];
-	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Helmets { get; set; } = [];
+	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Armors { get; set; } = [("original", "Traje original", "Aparência original, sem bônus.")];
+	public System.Collections.Generic.IReadOnlyList<(string Id, string Name, string Description)> Helmets { get; set; } = [("none", "Sem capacete", "Rosto livre, sem bônus adicional.")];
 	string Describe(EquipmentLoadout value) => (Summarize ?? (_ => ""))(value);
 	public void SetVariant(string value) { variant = Array.IndexOf(JourneyStyle.Ids, value) >= 0 ? value : "minimal"; if (IsInsideTree()) Build(); }
 	public EquipmentWorkshop(string variant, EquipmentLoadout current, bool comparisonOnly = false)

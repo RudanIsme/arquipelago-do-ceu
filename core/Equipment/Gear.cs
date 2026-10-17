@@ -69,7 +69,7 @@ public sealed class Gear : IEquatable<Gear>
 {
 	readonly IReadOnlyDictionary<string, string> items;
 
-	public Gear(IReadOnlyDictionary<string, string>? items = null) => this.items = items ?? new Dictionary<string, string>();
+	public Gear(IReadOnlyDictionary<string, string>? items = null) => this.items = new Dictionary<string, string>(items ?? new Dictionary<string, string>());
 
 	public IReadOnlyDictionary<string, string> Items => items;
 
@@ -87,7 +87,7 @@ public sealed class Gear : IEquatable<Gear>
 
 	public override bool Equals(object? obj) => obj is Gear other && Equals(other);
 
-	public override int GetHashCode() => items.Count;
+	public override int GetHashCode() => items.Aggregate(items.Count, (hash, p) => hash ^ HashCode.Combine(p.Key, p.Value));
 }
 
 sealed class GearJsonConverter : JsonConverter<Gear>

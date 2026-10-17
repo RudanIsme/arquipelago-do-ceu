@@ -592,7 +592,7 @@ public partial class DungeonRun : Node
 		// A Livre paga o Andar uma vez só por Expedição e não registra Andar completo nem Cosmético: isso é do Plano do Nível.
 		if (ctx.Free && !paidFloors.Add(number)) return null;
 		var rewards = Reward(ctx.Free ? "free-floor-complete" : "floor-complete", number);
-		return rewards is null ? null : Join($"Andar {number} completo!", rewards);
+		return rewards is null && !ctx.Free ? null : Join($"Andar {number} completo!", rewards);
 	}
 
 	string ProgressSpeech()

@@ -111,6 +111,29 @@ public sealed class TowerTests : IDisposable
 		Assert.False(levels.MasterOpen("p", 2, all));
 	}
 
+	[Fact]
+	public void O_Nivel_da_torre_vai_do_liberado_ate_o_ultimo_que_ela_tem()
+	{
+		var two = TowerCatalog.Parse(Json(Tower("a", levels: 2, exchange: "b"), Tower("b", levels: 3, exchange: "a")), MissionLoader.KnownMechanics).Value!;
+
+		Assert.Equal(2, TowerCatalog.LevelFor(two.Find("a")!, 3));
+		Assert.Equal(3, TowerCatalog.LevelFor(two.Find("b")!, 3));
+		Assert.Equal(1, TowerCatalog.LevelFor(two.Find("b")!, 0));
+	}
+
+	[Fact]
+	public void Toda_Missao_do_jogo_usa_uma_Mecanica_que_a_torre_da_disciplina_dela_aceita()
+	{
+		Assert.Empty(GameTowers.MissionsOutsideMechanics(Missions));
+		Assert.Single(GameTowers.MissionsOutsideMechanics([Missions.First(m => m.Discipline == "matematica") with { Mechanic = "escrever_palavra", Id = "fora" }]));
+	}
+
+	[Fact]
+	public void O_Desafio_mestre_sem_torres_falha_em_vez_de_quebrar()
+	{
+		Assert.False(DungeonCombat.MasterSetups(Missions, [], 1, 4, new Pcg32(3)).IsOk);
+	}
+
 	// Disciplina e último Nível vêm das torres em dados: o core não guarda nenhuma delas como constante.
 	[Fact]
 	public void O_core_nao_guarda_disciplina_nem_ultimo_Nivel_como_constante()

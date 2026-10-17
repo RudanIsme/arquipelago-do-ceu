@@ -90,6 +90,9 @@ public sealed record RewardOutcome(bool Fired, int Coins, IReadOnlyList<Cosmetic
 // As recompensas do jogo (game/data/recompensas.json): o que cada gatilho paga.
 public sealed class RewardCatalog
 {
+	// Quanto uma recompensa pode pagar de uma vez; mais que isso é erro de digitação nos dados.
+	const int MaxCoins = 1000;
+
 	RewardCatalog(IReadOnlyList<Reward> rewards, RewardTriggers triggers)
 	{
 		Rewards = rewards;
@@ -126,6 +129,7 @@ public sealed class RewardCatalog
 	{
 		if (string.IsNullOrEmpty(dto.Id)) return "Uma recompensa do catálogo está sem id.";
 		if (dto.Trigger is null || triggers.Find(dto.Trigger) is null) return $"A recompensa {dto.Id} usa o gatilho {dto.Trigger}, que não existe.";
+		if (dto.Coins is < 0 or > MaxCoins) return $"A recompensa {dto.Id} paga moedas fora do limite de 0 a {MaxCoins}.";
 		if ((dto.Coins > 0) == (dto.Cosmetic is not null)) return $"A recompensa {dto.Id} precisa de moedas ou de um Cosmético, só um dos dois.";
 		return dto.Cosmetic is not null && cosmetics.Find(dto.Cosmetic) is null ? $"A recompensa {dto.Id} usa o Cosmético {dto.Cosmetic}, que não existe." : null;
 	}

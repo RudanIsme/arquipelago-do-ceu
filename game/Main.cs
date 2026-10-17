@@ -326,7 +326,7 @@ public partial class Main : Node3D
 			case "album": ShowOverlay(new AlbumScreen(OwnedCosmetics())); break;
 			case "portal": ShowOverlay(BuildPortal()); break;
 			case "mestre": ShowMaster(); break;
-			case var tower when tower.StartsWith("torre-", StringComparison.Ordinal): EnterTower(tower["torre-".Length..]); break;
+			case var tower when tower.StartsWith("torre-", StringComparison.Ordinal) && towers.Find(tower["torre-".Length..]) is not null: EnterTower(tower["torre-".Length..]); break;
 			case "guia": ShowGuide(); break;
 			default: GD.PushWarning($"Objeto do Lobby sem tela: {target}"); break;
 		}

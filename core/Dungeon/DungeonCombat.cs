@@ -11,6 +11,7 @@ public static class DungeonCombat
 	// Todas as disciplinas aparecem em partes iguais, e quem começa também é sorteado.
 	public static Result<IReadOnlyList<TrainingSetup>> MasterSetups(IEnumerable<Mission> missions, IReadOnlyList<string> disciplines, int level, int count, Pcg32 rng)
 	{
+		if (disciplines.Count == 0) return Result<IReadOnlyList<TrainingSetup>>.Fail("Não há torres para o Desafio mestre.");
 		var list = missions.ToList();
 		var perDiscipline = (count + disciplines.Count - 1) / disciplines.Count;
 		var lanes = new List<IReadOnlyList<TrainingSetup>>();

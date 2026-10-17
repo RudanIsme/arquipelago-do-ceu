@@ -216,6 +216,7 @@ public sealed class RewardTests : IDisposable
 		Assert.Null(Parse("""{"id":"a","trigger":"floor-complete","coins":0}"""));
 		Assert.Null(Parse("""{"id":"a","trigger":"floor-complete","coins":2,"cosmetic":"laco"}"""));
 		Assert.Null(Parse("""{"id":"","trigger":"floor-complete","coins":1}"""));
+		Assert.Null(Parse("""{"id":"a","trigger":"floor-complete","coins":1001}"""));
 		Assert.Null(Parse("""{"id":"a","trigger":"floor-complete","coins":1},{"id":"a","trigger":"item-room","coins":1}"""));
 		Assert.False(RewardCatalog.Parse("{", RewardTriggers.Default, Cosmetics).IsOk);
 		Assert.False(RewardCatalog.Parse("""{"rewards":[]}""", RewardTriggers.Default, Cosmetics).IsOk);
