@@ -3,51 +3,50 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Um quadrado da biblioteca ou da caixinha do Personagem: o nome do item e, num cantinho, o que ele é agora (equipado, novo ou a
-// Maestria que falta). O estado vem sempre em texto, nunca só em cor; o item bloqueado também fica esmaecido.
+// Uma moldura da biblioteca, da loja ou da caixinha do Personagem: só o ícone e, num cantinho, o que o item é agora (equipado, novo,
+// preço ou a Maestria que falta). O nome fica na dica do mouse e nos detalhes. O estado vem sempre em texto, nunca só em cor.
 public static class ItemToken
 {
 	const string BadgeName = "Badge";
+	const string IconName = "Icon";
 
-	// Os estilos são os mesmos em todo quadrado: criados uma vez, com o texto começando abaixo do cantinho do estado.
+	// Os estilos são os mesmos em toda moldura: criados uma vez.
 	static readonly Lazy<(string State, StyleBoxFlat Style)[]> Styles = new(() =>
 	[
-		("normal", Padded(BookStyle.Box())),
-		("hover", Padded(BookStyle.Emphasized(BookStyle.Page))),
-		("focus", Padded(BookStyle.Emphasized(BookStyle.Page))),
-		("pressed", Padded(BookStyle.Emphasized(BookStyle.Selected))),
-		("disabled", Padded(BookStyle.Box(BookStyle.Disabled))),
+		("normal", Flat(BookStyle.Box())),
+		("hover", Flat(BookStyle.Emphasized(BookStyle.Page))),
+		("focus", Flat(BookStyle.Emphasized(BookStyle.Page))),
+		("pressed", Flat(BookStyle.Emphasized(BookStyle.Selected))),
+		("disabled", Flat(BookStyle.Box(BookStyle.Disabled))),
 	]);
 
-	static StyleBoxFlat Padded(StyleBoxFlat box)
+	// Sem margem de conteúdo: a moldura tem sempre o mesmo tamanho, no normal, com o mouse por cima ou depois de usada.
+	static StyleBoxFlat Flat(StyleBoxFlat box)
 	{
-		box.ContentMarginTop = 22;
-		box.ContentMarginLeft = 3;
-		box.ContentMarginRight = 3;
-		box.ContentMarginBottom = 3;
+		box.SetContentMarginAll(0);
 		return box;
 	}
 
 	public static Button Create(string name, Action pressed, string nodeName, int size, string? badge = null, bool dim = false, Texture2D? icon = null)
 	{
-		var button = BookStyle.Button(name, pressed, nodeName, size);
+		var button = BookStyle.Button("", pressed, nodeName, size);
 		button.CustomMinimumSize = new Vector2(size, size);
-		button.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-		button.ClipText = true;
-		button.AddThemeFontSizeOverride("font_size", 13);
+		button.TooltipText = name;
 		foreach (var (state, style) in Styles.Value)
 			button.AddThemeStyleboxOverride(state, style);
-		button.TooltipText = name;
-		if (icon is not null)
-		{
-			button.Icon = icon;
-			button.IconAlignment = HorizontalAlignment.Center;
-			button.VerticalIconAlignment = VerticalAlignment.Top;
-			button.ExpandIcon = true;
-			button.AddThemeConstantOverride("icon_max_width", size * 5 / 9);
-			button.AddThemeFontSizeOverride("font_size", 11);
-		}
 		if (dim) button.Modulate = new Color(1f, 1f, 1f, 0.6f);
+		var picture = new TextureRect { Name = IconName, Texture = icon, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
+		picture.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		var inset = size * 0.16f;
+		picture.OffsetLeft = inset;
+		picture.OffsetTop = inset;
+		picture.OffsetRight = -inset;
+		picture.OffsetBottom = -inset;
+		button.AddChild(picture);
+		// Sem ícone, a moldura traz o nome, para nunca ficar vazia.
+		if (icon is null) button.Text = name;
+		button.ClipText = true;
+		button.AddThemeFontSizeOverride("font_size", 12);
 		SetBadge(button, badge);
 		return button;
 	}

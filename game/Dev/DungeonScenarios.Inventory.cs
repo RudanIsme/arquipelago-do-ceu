@@ -58,7 +58,7 @@ static partial class DungeonScenarios
 		Named<Button>(d, "EquipButton")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
 		d.Expect(port.Gear.Get(profile, "matematica").In("armor") == "scout", "Equipar veste de verdade");
-		d.Expect(Named<Button>(d, "Slot_armor")!.Text.Contains("Explorador"), "a caixinha do espaço mostra o equipamento");
+		d.Expect(Named<Button>(d, "Slot_armor")!.TooltipText.Contains("Explorador"), "a caixinha do espaço mostra o equipamento");
 
 		await d.Press("Fechar");
 		d.Expect(Named<Control>(d, "InventoryScreen") is null, "Fechar volta ao Lobby");

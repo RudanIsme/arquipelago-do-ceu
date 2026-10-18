@@ -67,6 +67,8 @@ public partial class PortraitService : Node
 		if (viewers == 0) Sleep();
 	}
 
+	public void Turn(float degrees) => character?.RotateY(Mathf.DegToRad(degrees));
+
 	public void Show(EquipmentLoadout loadout)
 	{
 		pending = loadout;

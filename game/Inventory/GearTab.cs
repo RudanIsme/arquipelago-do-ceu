@@ -134,7 +134,7 @@ public sealed partial class GearTab : Node
 		var grid = Grid();
 		foreach (var item in held)
 		{
-			var token = ItemToken.Create(item.Source, () => host.Say($"{item.Name}. {item.Source}."), "Held_" + item.Source, 78);
+			var token = ItemToken.Create(item.Name, () => host.Say($"{item.Name}. {item.Source}."), "Held_" + item.Source, 78, item.Source.Replace("Nível ", "N"), icon: Icons.For("key", 48));
 			token.TooltipText = item.Name;
 			grid.AddChild(token);
 		}
