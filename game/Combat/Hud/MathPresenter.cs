@@ -18,6 +18,9 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 	public bool FreeDraw => true;
 
+	public string? PieceDrawing(int piece) =>
+		Answering ? piece.ToString(CultureInfo.InvariantCulture) : piece < HandSize ? battle.Bag.Hand[piece]?.ToString(CultureInfo.InvariantCulture) : rules.Operators[piece - HandSize];
+
 	public string? Request => battle.Ask == MathAsk.Answer ? $"{battle.Question} = ?" : $"Faça {battle.StartingShield}";
 
 	public string DrawAllowed => DrawnMath.Allowed(battle.Ask, rules.MathLevel);

@@ -55,7 +55,7 @@ public partial class DungeonRun : Node
 		exploration = new DungeonExploration(ctx);
 		expedition = Expedition.Start(floors, plan, seed, ctx.Version, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
 			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut, exploration.Get);
-		hud = new DungeonHud(ctx, expedition);
+		hud = new DungeonHud(ctx, expedition) { Speed = () => player?.SpeedMultiplier ?? 1f };
 		narration = new DungeonNarration(ctx, expedition);
 		rewards = new DungeonRewards(ctx, () => InShortcut, hud.ShowCoins);
 	}
@@ -288,7 +288,7 @@ public partial class DungeonRun : Node
 		if (left) return;
 		world.Creature.SetCaptionContext(true, enabled && combat.InTargetRange());
 		combat.CheckRange();
-		hud.RefreshEnergy();
+		hud.Tick(world.ToLayoutSpace(player.GroundPosition));
 		if (enabled && world.RoomAt(player.GroundPosition) is { } reached && reached != expedition.CurrentRoom) Arrive(reached);
 		camera.Update(world, player.GroundPosition, expedition.CurrentRoom, (float)delta, player.ReduceMotion, GetViewport().GetVisibleRect().Size);
 		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, world.Interactables(expedition), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;

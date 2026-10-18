@@ -163,7 +163,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 			}
 
 			walkable.UnionWith(cells);
-			RoomMeshes.AddFloor(room, cells.Select(c => (c, 0f)), Color.FromHtml("#8A7FA6"), false);
+			if (!CorridorKit.Add(room, cells)) RoomMeshes.AddFloor(room, cells.Select(c => (c, 0f)), Color.FromHtml("#8A7FA6"), false);
 			walkable.UnionWith(other.Cells.Select(Local));
 			RoomMeshes.AddFloor(room, other.Cells.Select(c => (Local(c), other.HeightAt(c))), color, cleared.Contains(neighbor));
 			var entry = GroundOf(Local(other.Cells.First(c => c.DistanceTo(layout.CorridorBetween(roomId, neighbor)![^1]) == 1)));
@@ -180,6 +180,9 @@ public partial class DungeonWorld : Node3D, ICombatStage
 	}
 
 	HexCell Local(HexCell global) => global - spot;
+
+	// Onde `ground` (no chão da Sala de agora) fica no espaço do Andar inteiro, que é o do mapa.
+	public System.Numerics.Vector2 ToLayoutSpace(System.Numerics.Vector2 ground) => ground + HexGrid.ToWorld(spot);
 
 	static Vector3 GroundOf(HexCell local)
 	{

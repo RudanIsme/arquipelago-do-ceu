@@ -15,7 +15,7 @@ public partial class DungeonRun
 			return;
 		}
 		show(new MapScreen(expedition, $"{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}", IsFloorDone(), player.ReduceMotion,
-			room => Say(narration.RoomSpeech(room)), () => Say(narration.MapSpeech(IsFloorDone()))));
+			room => Say(narration.RoomSpeech(room)), () => Say(narration.MapSpeech(IsFloorDone())), world.ToLayoutSpace(player.GroundPosition)));
 	}
 
 	// A criança atravessou o corredor e pisou numa Sala nova ou já conhecida: é nela que a Expedição passa a estar.

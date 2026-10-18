@@ -90,6 +90,7 @@ public partial class CombatHud : OverlayScreen
 	// Perde o alvo sem responder: as peças voltam para a mão e o desenho some.
 	public void Abandon()
 	{
+		pending = null;
 		layer?.Clear();
 		presenter.Cancel();
 		Requested?.Invoke(null);
@@ -237,6 +238,11 @@ public partial class CombatHud : OverlayScreen
 		if (presenter.Pieces[index] is not { Enabled: true }) return;
 
 		voice.Say(presenter.Announce(index), interrupt: true);
+		if (layer is not null && presenter.PieceDrawing(index) is { } drawing)
+		{
+			AskToTrace(index, drawing);
+			return;
+		}
 		presenter.Place(index);
 		AfterPlace();
 	}
@@ -280,6 +286,11 @@ public partial class CombatHud : OverlayScreen
 
 	void Undo()
 	{
+		if (pending is not null)
+		{
+			DropPending();
+			return;
+		}
 		if (layer?.IsActive == true)
 		{
 			layer.Clear();

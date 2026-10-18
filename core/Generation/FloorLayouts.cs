@@ -3,6 +3,9 @@ using ArquipelagoDoCeu.World;
 
 namespace ArquipelagoDoCeu.Generation;
 
+// Como as Salas se espalham: a de sempre, com formas sorteadas (versão 2) ou compacta, com as Salas perto umas das outras (versão 3).
+public enum LayoutStyle { Legacy, Varied, Compact }
+
 // Posiciona as Salas de um Andar no espaço e liga cada par ligado por um corredor de hexágonos (ADR 0008).
 // O grafo vem pronto do gerador: aqui só se decide onde cada Sala fica, então a versão antiga do gerador segue abrindo igual.
 public static class FloorLayouts
@@ -10,6 +13,8 @@ public static class FloorLayouts
 	// Distância entre os centros dos espaços onde as Salas podem cair; com o desvio, os corredores saem curtos, longos, retos ou com curva.
 	const int Pitch = 20;
 	const int Jitter = 2;
+	const int CompactPitch = 13;
+	const int CompactJitter = 1;
 	// Hexágonos vazios que separam uma Sala de qualquer outra coisa: sem isso a criança passaria de uma para outra sem cruzar a porta.
 	const int Gap = 2;
 	const int Attempts = 60;
@@ -18,13 +23,13 @@ public static class FloorLayouts
 
 	static readonly HexCell[] Directions = [new(1, 0), new(1, -1), new(0, -1), new(-1, 0), new(-1, 1), new(0, 1)];
 
-	// `varied` sorteia a forma de cada Sala (versão 2 do gerador em diante); sem ele todas são a Sala de sempre.
-	public static Result<FloorLayout> Place(Floor floor, RoomForms forms, ulong seed, bool varied)
+	// `Varied` sorteia a forma de cada Sala (versão 2 do gerador em diante); `Legacy` deixa todas na Sala de sempre.
+	public static Result<FloorLayout> Place(Floor floor, RoomForms forms, ulong seed, LayoutStyle style)
 	{
 		var rng = new Pcg32(seed, 91);
 		for (var attempt = 0; attempt < Attempts; attempt++)
 		{
-			var placed = PlaceRooms(floor, forms, rng, varied);
+			var placed = PlaceRooms(floor, forms, rng, style);
 			if (placed is not null && Connect(floor, placed) is { } corridors)
 				return Result<FloorLayout>.Ok(new FloorLayout(placed, corridors));
 		}
@@ -32,8 +37,9 @@ public static class FloorLayouts
 	}
 
 	// Em largura a partir da entrada: cada Sala cai ao lado do espaço da que a levou até ela.
-	static List<PlacedRoom>? PlaceRooms(Floor floor, RoomForms forms, Pcg32 rng, bool varied)
+	static List<PlacedRoom>? PlaceRooms(Floor floor, RoomForms forms, Pcg32 rng, LayoutStyle style)
 	{
+		var varied = style != LayoutStyle.Legacy;
 		var placed = new Dictionary<int, PlacedRoom>
 		{
 			[floor.Entrance] = new PlacedRoom(floor.Entrance, varied ? forms.Pick(rng) : forms.Legacy, new HexCell(0, 0)),
@@ -45,7 +51,7 @@ public static class FloorLayouts
 			var parent = queue.Dequeue();
 			foreach (var child in floor.Neighbors(parent).Order().Where(n => !placed.ContainsKey(n)))
 			{
-				var room = TryPlace(child, placed.Values, placed[parent], forms, rng, varied);
+				var room = TryPlace(child, placed.Values, placed[parent], forms, rng, style);
 				if (room is null) return null;
 				placed[child] = room;
 				queue.Enqueue(child);
@@ -54,9 +60,10 @@ public static class FloorLayouts
 		return floor.Rooms.Count == placed.Count ? placed.Values.OrderBy(r => r.Room).ToList() : null;
 	}
 
-	static PlacedRoom? TryPlace(int id, IEnumerable<PlacedRoom> others, PlacedRoom parent, RoomForms forms, Pcg32 rng, bool varied)
+	static PlacedRoom? TryPlace(int id, IEnumerable<PlacedRoom> others, PlacedRoom parent, RoomForms forms, Pcg32 rng, LayoutStyle style)
 	{
-		var form = varied ? forms.Pick(rng) : forms.Legacy;
+		var form = style != LayoutStyle.Legacy ? forms.Pick(rng) : forms.Legacy;
+		var (pitch, jitter) = style == LayoutStyle.Compact ? (CompactPitch, CompactJitter) : (Pitch, Jitter);
 		var order = Enumerable.Range(0, Directions.Length).ToList();
 		rng.Shuffle(order);
 		var taken = others.ToList();
@@ -64,8 +71,8 @@ public static class FloorLayouts
 		{
 			var step = Directions[direction];
 			var origin = new HexCell(
-				parent.Origin.Q + step.Q * Pitch + rng.NextInt(2 * Jitter + 1) - Jitter,
-				parent.Origin.R + step.R * Pitch + rng.NextInt(2 * Jitter + 1) - Jitter);
+				parent.Origin.Q + step.Q * pitch + rng.NextInt(2 * jitter + 1) - jitter,
+				parent.Origin.R + step.R * pitch + rng.NextInt(2 * jitter + 1) - jitter);
 			var room = new PlacedRoom(id, form, origin);
 			if (taken.All(t => Apart(room, t))) return room;
 		}

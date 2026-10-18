@@ -94,6 +94,23 @@ static class Scenarios
 			case "combate":
 				await DungeonScenarios.Combat(d);
 				break;
+			case "kit-medidas":
+				foreach (var asset in new[] { "hex-base-v02", "margem-reta", "margem-convexa", "margem-concava", "ponte-piso", "ponte-guarda-corpo", "ponte-cabeceira", "rocha-inferior-avaliacao", "grama-tres-pontas-v01" })
+				{
+					var node = GD.Load<PackedScene>($"res://assets/modelos/lote02/{asset}.glb").Instantiate<Node3D>();
+					d.AddChild(node);
+					var box = default(Aabb);
+					var first = true;
+					foreach (var mesh in System.Linq.Enumerable.Cast<MeshInstance3D>(node.FindChildren("*", "MeshInstance3D", true, false)))
+					{
+						var b = mesh.GlobalTransform * mesh.GetAabb();
+						box = first ? b : box.Merge(b);
+						first = false;
+					}
+					GD.Print($"KIT {asset}: pos={box.Position} tamanho={box.Size}");
+					node.QueueFree();
+				}
+				break;
 			case "modais-tempo":
 				await DungeonScenarios.ModalTimes(d);
 				break;
