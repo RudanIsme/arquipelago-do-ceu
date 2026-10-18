@@ -8,7 +8,12 @@ public partial class DungeonRun
 	// O mapa em tela cheia pausa o jogo, por isso só abre fora de combate: a criança precisa responder ao pedido.
 	void OpenMap()
 	{
-		if (left || !enabled || hud.InCombat() || ctx.ShowOverlay is not { } show) return;
+		if (left || !enabled || ctx.ShowOverlay is not { } show) return;
+		if (hud.InCombat())
+		{
+			Say("O mapa só abre fora da luta: termine o pedido ou solte o alvo.");
+			return;
+		}
 		show(new MapScreen(expedition, $"{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}", IsFloorDone(), player.ReduceMotion,
 			room => Say(narration.RoomSpeech(room)), () => Say(narration.MapSpeech(IsFloorDone()))));
 	}

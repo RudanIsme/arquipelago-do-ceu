@@ -55,7 +55,7 @@ public sealed class LobbyMap
 	// O chão pisável: ilhas e pontes, menos onde há objeto e o centro de cada ilha de torre (onde a torre está).
 	public HexGrid Grid(LobbyRules rules)
 	{
-		var blocked = rules.Objects.Select(o => new HexCell(o.Q, o.R)).Concat(rules.Islands.Where(i => i.Id != "mercador").Select(i => new HexCell(i.Q, i.R)));
+		var blocked = rules.Objects.Select(o => new HexCell(o.Q, o.R)).Concat(rules.Islands.Where(i => i.Solid).Select(i => new HexCell(i.Q, i.R)));
 		return new HexGrid(AllCells, blocked);
 	}
 

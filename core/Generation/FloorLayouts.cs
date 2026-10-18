@@ -74,8 +74,8 @@ public static class FloorLayouts
 
 	static bool Apart(PlacedRoom a, PlacedRoom b)
 	{
-		var mine = a.Cells.ToList();
-		return !b.Cells.Any(c => mine.Any(m => m.DistanceTo(c) <= Gap));
+		var near = Halo(a.Cells, Gap);
+		return !b.Cells.Any(near.Contains);
 	}
 
 	// Um corredor por ligação, na ordem dos números das Salas; cada um desvia das Salas e dos corredores que já existem.
@@ -119,11 +119,26 @@ public static class FloorLayouts
 		var origin = HexGrid.ToWorld(room.Spot);
 		var toward = Vector2.Normalize(HexGrid.ToWorld(target.Spot) - origin);
 		var own = room.Cells.ToHashSet();
+		var outside = Outside(own);
 		return own.SelectMany(c => c.Neighbors())
-			.Where(n => !own.Contains(n) && !corridorHalo.Contains(n) && !halos.Any(h => h.Key != room.Room && h.Value.Contains(n)))
+			.Where(n => outside.Contains(n) && !corridorHalo.Contains(n) && !halos.Any(h => h.Key != room.Room && h.Value.Contains(n)))
 			.OrderByDescending(n => Vector2.Dot(HexGrid.ToWorld(n) - origin, toward))
 			.ThenBy(n => n.Q).ThenBy(n => n.R)
 			.Cast<HexCell?>().FirstOrDefault();
+	}
+
+	// Os hexágonos vazios ao redor da forma que dão para o lado de fora; os de dentro de um buraco ou vão fechado ficam de fora.
+	static HashSet<HexCell> Outside(HashSet<HexCell> room)
+	{
+		var (minQ, maxQ) = (room.Min(c => c.Q) - 2, room.Max(c => c.Q) + 2);
+		var (minR, maxR) = (room.Min(c => c.R) - 2, room.Max(c => c.R) + 2);
+		var start = new HexCell(minQ, minR);
+		var seen = new HashSet<HexCell> { start };
+		var queue = new Queue<HexCell>([start]);
+		while (queue.Count > 0)
+			foreach (var next in queue.Dequeue().Neighbors().Where(n => n.Q >= minQ && n.Q <= maxQ && n.R >= minR && n.R <= maxR && !room.Contains(n)))
+				if (seen.Add(next)) queue.Enqueue(next);
+		return seen;
 	}
 
 	// Menor caminho de hexágonos, com um custo por curva para os corredores saírem retos quando dá.

@@ -40,7 +40,7 @@ public partial class Lobby
 	}
 
 	// Onde cada torre está: o centro da ilha dela, que não se pisa.
-	IEnumerable<HexCell> IslandCenters() => Rules.Islands.Where(i => i.Id != "mercador").Select(i => new HexCell(i.Q, i.R));
+	IEnumerable<HexCell> IslandCenters() => Rules.Islands.Where(i => i.Solid).Select(i => new HexCell(i.Q, i.R));
 
 	// A rocha debaixo da ilha principal cresce com o raio; a das outras ilhas é menor.
 	void AddRocks()

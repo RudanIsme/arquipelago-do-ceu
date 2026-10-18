@@ -15,7 +15,8 @@ public sealed record CameraRules(float Size, float MinSize, float MaxSize, float
 public sealed record LobbyCell(int Q, int R);
 
 // Uma ilha além da principal (de uma torre ou do Mercador): o centro, o raio e o hexágono da ilha principal de onde sai a ponte a pé.
-public sealed record LobbyIsland(string Id, int Q, int R, int Radius, int FromQ, int FromR);
+// `Solid` é a ilha cujo centro não se pisa, por causa da torre que está nele.
+public sealed record LobbyIsland(string Id, int Q, int R, int Radius, int FromQ, int FromR, bool Solid);
 
 public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera, float DayCycleSeconds,
 	int IslandRadius, IReadOnlyList<LobbyCell> Carved, IReadOnlyList<LobbyIsland> Islands);
@@ -32,7 +33,7 @@ public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IRea
 
 sealed record LobbyDto(float? InteractionReach, float? DayCycleSeconds, int? IslandRadius, List<int[]?>? Carved, List<IslandDto?>? Islands, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
 
-sealed record IslandDto(string? Id, int? Q, int? R, int? Radius, int[]? From);
+sealed record IslandDto(string? Id, int? Q, int? R, int? Radius, int[]? From, bool? Solid);
 
 sealed record CameraDto(float? Size, float? MinSize, float? MaxSize, float? ZoomStep, float? FollowSharpness, float? DeadZone, float? MaxPan);
 
@@ -148,7 +149,7 @@ static class LobbyChecks
 		lobby.DayCycleSeconds!.Value,
 		lobby.IslandRadius!.Value,
 		(lobby.Carved ?? []).Select(c => new LobbyCell(c![0], c[1])).ToList(),
-		(lobby.Islands ?? []).Select(i => new LobbyIsland(i!.Id!, i.Q!.Value, i.R!.Value, i.Radius!.Value, i.From![0], i.From[1])).ToList());
+		(lobby.Islands ?? []).Select(i => new LobbyIsland(i!.Id!, i.Q!.Value, i.R!.Value, i.Radius!.Value, i.From![0], i.From[1], i.Solid ?? false)).ToList());
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{

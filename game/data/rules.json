@@ -249,8 +249,8 @@
     "islandRadius": 8,
     "carved": [[3,3], [3,4], [4,2], [4,3], [4,4], [5,1], [5,2], [5,3], [6,-3], [6,-2], [6,-1], [6,0], [6,1], [6,2], [7,-4], [7,-3], [7,-2], [7,-1], [7,0], [7,1], [8,-4], [8,-3], [8,-2], [8,-1], [8,0]],
     "islands": [
-      { "id": "matematica", "q": -13, "r": 6, "radius": 2, "from": [-8, 4] },
-      { "id": "portugues", "q": 6, "r": -13, "radius": 2, "from": [4, -8] },
+      { "id": "matematica", "q": -13, "r": 6, "radius": 2, "from": [-8, 4], "solid": true },
+      { "id": "portugues", "q": 6, "r": -13, "radius": 2, "from": [4, -8], "solid": true },
       { "id": "mercador", "q": 0, "r": 13, "radius": 2, "from": [0, 8] }
     ],
     "camera": {
