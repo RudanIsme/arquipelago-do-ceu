@@ -12,6 +12,10 @@ namespace ArquipelagoDoCeu;
 // pronta ("3 + 5 = ?"), vale só o número, sem sinais. Quem soma é a criança: o total só aparece depois do golpe.
 sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWords creature, Action<AttackResult> attacked) : ICombatPresenter
 {
+	// Na conta pronta a mochila é um teclado de dígitos: a resposta (7, 12) nem sempre sai das peças da mão.
+	readonly List<int> digits = [];
+	bool Answering => battle.Ask == MathAsk.Answer;
+
 	public bool FreeDraw => true;
 
 	public string? Request => battle.Ask == MathAsk.Answer ? $"{battle.Question} = ?" : $"Faça {battle.StartingShield}";
@@ -36,18 +40,20 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 	public string Prompt => battle.Mission.Prompt;
 
-	public string Assembled => battle.Ask == MathAsk.Answer ? $"{battle.Question} = ?" : "Escreva uma conta que dê o resultado.";
+	public string Assembled => Answering ? $"{battle.Question} = {(digits.Count == 0 ? "?" : string.Concat(digits))}" : "Escreva uma conta que dê o resultado.";
 
-	public IReadOnlyList<HudPiece> Pieces => [.. Numbers(), .. Signs()];
+	public IReadOnlyList<HudPiece> Pieces => Answering ? [.. Enumerable.Range(0, 10).Select(d => new HudPiece(d.ToString(CultureInfo.InvariantCulture), $"{d}", digits.Count < MaxDigits, d))] : [.. Numbers(), .. Signs()];
 
-	public bool Composing => battle.Staff.Tokens.Count > 0;
+	const int MaxDigits = 4;
+
+	public bool Composing => Answering ? digits.Count > 0 : battle.Staff.Tokens.Count > 0;
 
 	public bool Resolved => battle.Shield.IsDissolved;
 
 	public string ResolvedText => "A névoa está sumindo. Espere o novo escudo.";
 
 	// Uma conta pronta se responde com um número só; um resultado pedido, com número, sinal e número.
-	public bool Complete => battle.Ask == MathAsk.Answer ? battle.Staff.Tokens.Count >= 1 : battle.Staff.IsComplete;
+	public bool Complete => Answering ? digits.Count >= battle.StartingShield.ToString(CultureInfo.InvariantCulture).Length : battle.Staff.IsComplete;
 
 	public bool TypesLetters => false;
 
@@ -57,29 +63,45 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 
 	public string Announce(int piece) =>
-		piece < HandSize ? $"Desenhe o número {battle.Bag.Hand[piece]}." : $"Desenhe o sinal de {(rules.Operators[piece - HandSize] == "+" ? "mais" : "menos")}.";
+		Answering ? $"Número {piece}." : piece < HandSize ? $"Desenhe o número {battle.Bag.Hand[piece]}." : $"Desenhe o sinal de {(rules.Operators[piece - HandSize] == "+" ? "mais" : "menos")}.";
 
 
 	public void Place(int piece)
 	{
-		if (piece < HandSize) battle.Staff.Place(piece);
+		if (Answering) digits.Add(piece);
+		else if (piece < HandSize) battle.Staff.Place(piece);
 		else battle.Staff.PlaceOperator(rules.Operators[piece - HandSize]);
 	}
 
-	public bool Undo() => battle.Staff.Undo();
+	public bool Undo()
+	{
+		if (!Answering) return battle.Staff.Undo();
+		if (digits.Count == 0) return false;
+		digits.RemoveAt(digits.Count - 1);
+		return true;
+	}
 
-	public void Cancel() => battle.Staff.Cancel();
+	public void Cancel()
+	{
+		digits.Clear();
+		battle.Staff.Cancel();
+	}
 
 	public bool Attack(out string? error)
 	{
 		// A conta montada com peças segue as mesmas regras da desenhada.
-		var text = string.Concat(battle.Staff.Tokens);
-		battle.Staff.Cancel();
+		var text = Answering ? string.Concat(digits) : string.Concat(battle.Staff.Tokens);
+		Cancel();
 		return Write(text, out error);
 	}
 
 	public int? PieceForKey(InputEventKey key)
 	{
+		if (Answering)
+		{
+			var d = (int)key.PhysicalKeycode - (int)Key.Key0;
+			return d is >= 0 and <= 9 ? d : null;
+		}
 		var digit = (int)key.PhysicalKeycode - (int)Key.Key1;
 		if (digit >= 0 && digit < HandSize) return digit;
 		var sign = key.PhysicalKeycode switch { Key.Plus or Key.KpAdd => "+", Key.Minus or Key.KpSubtract => "-", _ => null };
