@@ -9,7 +9,6 @@ namespace ArquipelagoDoCeu;
 public partial class Lobby
 {
 	const float HexEdge = 0.8660254f;
-	const float RockDrop = 0f;
 
 	// As ilhas do Lobby (a principal e as das torres e do Mercador) e as pontes: tudo o que está em `tiles` e não é água nem tábua.
 	void AddIslandKit()
@@ -52,7 +51,7 @@ public partial class Lobby
 	{
 		var variation = Hash01(cell.X * 53 + cell.Y * 29);
 		var scale = 1.1f + 0.35f * variation;
-		AddLote02("rocha-inferior-avaliacao", center + new Vector3(0f, RockDrop, 0f), Vector3.One * scale, yaw: Mathf.Tau * Hash01(cell.X * 7 + cell.Y * 41));
+		AddLote02("rocha-inferior-avaliacao", center, Vector3.One * scale, yaw: Mathf.Tau * Hash01(cell.X * 7 + cell.Y * 41));
 	}
 
 	// Uma ilha solta (as de Ciências, História e Geografia) feita de hexágonos do kit, com o mesmo contorno e a mesma rocha.

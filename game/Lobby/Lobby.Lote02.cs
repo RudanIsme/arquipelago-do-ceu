@@ -77,7 +77,8 @@ public partial class Lobby
 	public Godot.Collections.Dictionary ValidateLote02()
 	{
 		var lakeBlocked = plan.Lake.All(c => !Grid.IsWalkable(c));
-		var interactions = Rules.Objects.All(o => Grid.Cells.Any(c => Grid.IsWalkable(c) && Point.Distance(HexGrid.ToWorld(c), HexGrid.ToWorld(new HexCell(o.Q, o.R))) <= Rules.InteractionReach));
+		var start = HexGrid.FromWorld(StartPoint);
+		var interactions = Rules.Objects.All(o => new HexCell(o.Q, o.R).Neighbors().Any(n => Grid.IsWalkable(n) && Grid.FindPath(start, n) is not null));
 		long triangles = 0;
 		var missingMaterials = 0;
 		foreach (var root in lote02Roots)

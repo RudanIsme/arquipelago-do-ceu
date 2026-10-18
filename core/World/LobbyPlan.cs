@@ -7,7 +7,8 @@ namespace ArquipelagoDoCeu.World;
 // um caminho até cada zona e até cada ponte, e as árvores. Mudar o raio muda o tamanho de tudo junto, sem deixar canto vazio nem nada fora da ilha.
 public sealed class LobbyPlan
 {
-	// A distância do centro à borda da ilha, em unidades do mundo (um hexágono tem 1,5 de largura de passo): as frações dos dados valem sobre ela.
+	// Quanto vale uma casa de raio no mundo (1,5 na horizontal): as frações dos dados valem sobre `raio * 1,5`, que é a borda a leste e a oeste.
+	// Na vertical a ilha vai até `raio * 1,73`, então fração perto de 1 só cabe nesses lados.
 	const float StepWidth = 1.5f;
 	// Quantos pontos se amostram no anel: o bastante para os hexágonos virarem um caminho contínuo.
 	const int RingSamples = 720;

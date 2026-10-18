@@ -337,14 +337,15 @@ public partial class Main : Node3D
 	{
 		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
 		var actor = inDungeon ? dungeon?.Player : player;
-		if (!inDungeon && actor is { Enabled: true } && GetViewport().GuiGetHoveredControl() is null && lobby.PickInteractable(lobby.Camera, click.Position) is { } picked)
+		var combat = dungeon?.Combat ?? training;
+		var onDummy = actor is { Enabled: true } && GetViewport().GuiGetHoveredControl() is null && combat.HitsDummy(click.Position);
+		if (!onDummy && !inDungeon && actor is { Enabled: true } && GetViewport().GuiGetHoveredControl() is null && lobby.PickInteractable(lobby.Camera, click.Position) is { } picked)
 		{
 			GetViewport().SetInputAsHandled();
 			if (interactTarget == picked) Interact(picked);
 			else player.WalkTo(lobby.Camera.UnprojectPosition(lobby.FootprintOf(picked).Ground));
 			return;
 		}
-		var combat = dungeon?.Combat ?? training;
 		if (actor is null || !actor.Enabled || GetViewport().GuiGetHoveredControl() is not null || !combat.HitsDummy(click.Position)) return;
 		GetViewport().SetInputAsHandled();
 		combat.ToggleTarget();

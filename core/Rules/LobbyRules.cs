@@ -119,9 +119,11 @@ static class LobbyChecks
 			var inZone = lobby.Layout?.Zones?.Any(z => z?.Id == item.Id) == true;
 			if (item.Q is null && !inZone) return Required($"{path}.q");
 			if (item.R is null && !inZone) return Required($"{path}.r");
+			if (inZone && (item.Q is not null || item.R is not null)) return $"Regras inválidas: '{path}' tem zona em 'lobby.layout.zones' e também q e r; use só um dos dois.";
 			if (item.Lines?.Any(Blank) == true) return Required($"{path}.lines");
 		}
-		return null;
+		var orphan = lobby.Layout?.Zones?.FirstOrDefault(z => z is not null && !objectIds.Contains(z.Id!));
+		return orphan is null ? null : $"Regras inválidas: a zona '{orphan.Id}' de 'lobby.layout.zones' não tem objeto em 'lobby.objects'.";
 	}
 
 	static string? CheckIslands(LobbyDto lobby)

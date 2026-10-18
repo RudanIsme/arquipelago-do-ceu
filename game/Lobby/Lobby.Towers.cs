@@ -12,7 +12,9 @@ public partial class Lobby
 	// Os modelos que se escolhem por clique, por id do objeto de interação ("torre-matematica", "mestre").
 	readonly Dictionary<string, Node3D> pickable = new();
 
-	static readonly StandardMaterial3D Glow = new()
+	StandardMaterial3D? towerGlow;
+
+	StandardMaterial3D Glow => towerGlow ??= new StandardMaterial3D
 	{
 		AlbedoColor = new Color(0.95f, 0.71f, 0.2f, 0.28f),
 		Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
@@ -41,11 +43,11 @@ public partial class Lobby
 
 	// Onde a criança começa: o caminho ao lado do Guia, nunca dentro da lagoa.
 	public System.Numerics.Vector2 StartPoint => plan.Zones.TryGetValue("guia", out var guide)
-		? HexGrid.ToWorld(guide.Neighbors().FirstOrDefault(plan.Path.Contains, guide))
+		? HexGrid.ToWorld(guide.Neighbors().FirstOrDefault(c => plan.Path.Contains(c) && Grid.IsWalkable(c), guide))
 		: System.Numerics.Vector2.Zero;
 
 	// Liga ou apaga o realce dourado num modelo inteiro.
-	static void SetGlow(Node3D? root, bool on)
+	void SetGlow(Node3D? root, bool on)
 	{
 		if (root is null) return;
 		foreach (var node in root.FindChildren("*", "MeshInstance3D", true, false))

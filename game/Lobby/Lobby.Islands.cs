@@ -10,7 +10,6 @@ public partial class Lobby
 {
 	LobbyMap map = null!;
 	LobbyPlan plan = LobbyPlan.Empty;
-	readonly HashSet<HexCell> planks = new();
 
 	// Os hexágonos de cada ilha e ponte entram no mesmo mapa de tiles, então colisão e caminho valem em todas.
 	void BuildIslands()
@@ -30,7 +29,6 @@ public partial class Lobby
 		foreach (var cell in map.Bridges.Values.SelectMany(c => c))
 		{
 			tiles[new Vector2I(cell.Q, cell.R)] = Kind.Plank;
-			planks.Add(cell);
 		}
 	}
 

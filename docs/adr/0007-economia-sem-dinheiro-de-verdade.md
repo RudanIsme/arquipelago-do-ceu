@@ -1,6 +1,6 @@
 # A economia do jogo usa só moedas do jogo, nunca dinheiro de verdade, e nada se perde
 
-O jogo tem moedas, Maestria, Equipamento e um Mercador, e nada disso custa dinheiro de verdade. As moedas vêm de aprendizado e exploração (criatura acalmada, Sala do Item e Andar completo), o Mercador compra Equipamento e vende Cosméticos rotativos com elas, e a Maestria do Papel libera Equipamentos mais fortes.
+O jogo tem moedas, Maestria, Equipamento e um Mercador, e nada disso custa dinheiro de verdade. As moedas vêm de aprendizado e exploração (criatura acalmada, porta de Puzzle aberta, Sala do Item e Andar completo), o Mercador compra Equipamento e vende Cosméticos rotativos com elas, e a Maestria do Papel libera Equipamentos mais fortes.
 
 Regras que valem para toda a economia:
 
