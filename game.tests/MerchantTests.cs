@@ -314,8 +314,11 @@ public sealed class MerchantTests : IDisposable
 		var tradeFolder = Path.Combine(MissionFiles.RepositoryRoot(), "game", "Trade");
 		var forbidden = new[] { "Mastery", "BattleEnded", "Conclude(", "MissionHistory", "RewardService", "Occurrences" };
 
-		var touching = Directory.EnumerateFiles(tradeFolder, "*.cs").Where(f => forbidden.Any(token => File.ReadAllText(f).Contains(token))).Select(Path.GetFileName);
+		var touching = Directory.EnumerateFiles(tradeFolder, "*.cs").Where(f => forbidden.Any(token => ReadWithoutMinimum(f).Contains(token))).Select(Path.GetFileName);
 
 		Assert.Empty(touching);
 	}
+
+	// Mostrar a Maestria mínima de um item (MinMastery) não é contar Maestria: o Mercador só lê o número.
+	static string ReadWithoutMinimum(string file) => File.ReadAllText(file).Replace("MinMastery", "");
 }

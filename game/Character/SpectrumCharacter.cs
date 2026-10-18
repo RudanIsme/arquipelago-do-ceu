@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using ArquipelagoDoCeu.Equipment;
 using Godot;
@@ -9,6 +10,9 @@ public partial class SpectrumCharacter : Node3D
 {
 	AnimationPlayer animations = null!;
 	DynamicCape dynamicCape = null!;
+
+	// O retrato só precisa da pose parada: não carrega os modelos de andar e correr, que só servem para pegar animações.
+	public bool IdleOnly { get; init; }
 	EquipmentVisuals equipment = null!;
 	EquipmentLoadout? pendingEquipment;
 	string idle = "";
@@ -28,7 +32,7 @@ public partial class SpectrumCharacter : Node3D
 		animations = model.FindChildren("*", "AnimationPlayer", true, false).OfType<AnimationPlayer>().First();
 		idle = animations.GetAnimationList().First(n => n != "RESET");
 		var library = new AnimationLibrary();
-		foreach (var name in new[] { "andando", "correndo" })
+		foreach (var name in IdleOnly ? Array.Empty<string>() : ["andando", "correndo"])
 		{
 			var motion = GD.Load<PackedScene>($"res://assets/modelos/spectrum-cape-body-v2/guerreiro-{name}.glb").Instantiate<Node3D>();
 			var source = motion.FindChildren("*", "AnimationPlayer", true, false).OfType<AnimationPlayer>().First();

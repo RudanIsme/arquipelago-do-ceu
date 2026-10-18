@@ -30,6 +30,9 @@ public sealed class MerchantHost
 	// O conjunto do Papel de agora, para a prévia mostrar o Personagem como ele está.
 	public required Func<Gear> Worn { get; init; }
 
+	// Com a redução de animações o item não gira.
+	public required Func<bool> ReduceMotion { get; init; }
+
 	public required Action<string> Say { get; init; }
 
 	// Chamado quando o que a criança tem mudou (comprou, vendeu, recomprou), para o resto do jogo atualizar.

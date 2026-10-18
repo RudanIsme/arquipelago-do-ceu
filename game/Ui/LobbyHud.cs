@@ -25,6 +25,7 @@ public partial class LobbyHud : Control
 		card.EditRequested += () => EditRequested?.Invoke();
 		Dock = new Dock();
 		Dock.InventoryRequested += () => InventoryRequested?.Invoke();
+		Dock.RoleSwitchRequested += () => RoleSwitchRequested?.Invoke();
 		context = BuildContext();
 		AddChild(card);
 		AddChild(BuildTopRight());
@@ -43,6 +44,8 @@ public partial class LobbyHud : Control
 	public event Action? InteractRequested;
 
 	public event Action? InventoryRequested;
+
+	public event Action? RoleSwitchRequested;
 
 	public AvatarCard Card => card;
 

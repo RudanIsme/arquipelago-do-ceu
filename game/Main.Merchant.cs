@@ -35,6 +35,7 @@ public partial class Main
 			Inventory = inventory,
 			OwnedCosmetics = () => rewardService.Cosmetics(current.Id),
 			Worn = () => gear.Get(current.Id, role),
+			ReduceMotion = () => settings.Current.ReduceMotion,
 			Say = text => voice.Say(text, interrupt: true),
 			Changed = RefreshDock,
 		});
