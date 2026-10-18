@@ -30,12 +30,20 @@ Criatura de treino da Área de treino. Luta como uma criatura das Dungeons, com 
 _Avoid_: Dummy
 
 **Travessura**:
-A reação do Boneco quando a criança erra: embaralha as peças da bolsa ou esconde uma por alguns segundos (valor em dados). Nunca é violenta.
+A reação da criatura quando a criança erra: ela só faz graça, sem tirar nada da criança (no desenho livre não há peças para embaralhar ou esconder). Nunca é violenta.
 _Avoid_: Castigo, punição, ataque
 
 **Bolha de névoa**:
-O ataque lento do Boneco, sempre avisado antes por uma faixa no chão, texto e som. A criança desvia andando; ser atingida tira 1 de Energia. Com o Modo calmo ligado ela não aparece.
+O ataque lento das criaturas hoje, sempre avisado antes por uma faixa no chão, texto e som. A criança desvia andando; ser atingida tira 1 de Energia. Com o Modo calmo ligado ela não aparece. O Lance (#189) a substitui.
 _Avoid_: Tiro, projétil
+
+**Lance**:
+O ataque da criatura decidido para o lugar da Bolha de névoa (#189): um anel enche sobre ela até o próximo lance, num intervalo próprio em dados. Se a criança não responde a tempo, custa 1 de Energia e o anel recomeça; o contato físico nunca custa. O anel muda de cor e também de espessura ou pulso perto do fim. Não há Lance no Modo calmo, e o Boneco do Treino não lança.
+_Avoid_: Golpe da criatura, dano
+
+**Modo calmo**:
+Opção de acessibilidade que deixa o tempo em 0,3× a luta toda, sem nenhum Lance. O Personagem segue no tempo normal.
+_Avoid_: Modo fácil
 
 **Álbum**:
 A coleção do Perfil, com as criaturas libertadas (cartas de revisão) e os Cosméticos.
@@ -56,10 +64,22 @@ O modal onde a criança vê o Personagem equipado em caixinhas, a biblioteca de 
 O canto inferior esquerdo do HUD, com o botão do Inventário (e o selo "novo", sempre em texto) e o nome do Papel.
 
 **Trilha**:
-O caminho de traço de um número, sinal ou letra, na ordem de escrita, com início numerado e seta. A criança o segue com o dedo ou o mouse e a tinta preenche; a conferência é tolerante. Substitui o pontilhado.
+O caminho de traço de um número, sinal ou letra, na ordem de escrita, com início numerado e seta. Serve de modelo para o Desenho livre reconhecer o que a criança escreveu e de pontilhado-guia na Dica.
 
 **HUD de combate**:
-O pedido e a bolsa de peças embaixo da cena, sem painel que abra por cima. A criança toca na peça, ela sobe até a área de traço e é traçada; a última ação confere e golpeia.
+O que fica na tela durante a luta, sem painel que abra por cima. Hoje é só a Energia e uma fileira baixa de botões; o pedido e os recados ficam no balão da criatura. Falta o ícone da mochila (#187).
+
+**Desenho livre**:
+A criança escreve números, sinais e letras em qualquer lugar da tela, com a cena visível. O jogo reconhece sozinho, sem IA e sem rede, comparando com as Trilhas; levantar o dedo e esperar cerca de 0,8 s fecha o desenho, e o fim dele ataca (não há botão Atacar). Enquanto ela desenha o mundo fica em 0,3× e o Personagem anda no tempo normal. Ambiguidade nunca custa Energia: o jogo pede para escrever de novo.
+_Avoid_: Traçado guiado, reconhecimento de escrita (sugere IA)
+
+**Pedido**:
+O que a criatura pede no balão dela. Na Matemática é um resultado (a criança desenha uma conta que o dê; o número sozinho e o zero como parcela não valem) ou uma conta pronta, "3 + 5 = ?", respondida só com o número e sem sinais. No Escriba é o nome, a palavra ou a sílaba.
+_Avoid_: Enunciado (é da Missão), pergunta
+
+**Trava de alvo**:
+Toque, clique ou Tab prende na criatura que recebe o desenho, com um anel no chão. Várias criaturas podem lançar ao mesmo tempo, mas a criança responde uma por vez; sem trava, vale a mais próxima ao começar a desenhar, e acalmar uma criatura passa o alvo para a mais próxima (#188).
+_Avoid_: Mira, lock-on
 
 **Pagar e dar troco**:
 A Mecânica em que a criança monta um valor com moedas e notas do Real, para pagar um preço ou dar o troco de uma nota. O jogo calcula o troco; a dica nunca custa.
@@ -74,7 +94,7 @@ O comerciante do Lobby. Compra Equipamento da criança (em lote, nunca o vestido
 O que cada Expedição concluída (com ou sem Andares profundos) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
 
 **Pesca** (modo de teste, F9):
-Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
+Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua desenhando as sílabas no Desenho livre.
 _Avoid_: Minijogo (é outra coisa, prevista para depois do MVP)
 
 **Dungeon**:
@@ -245,7 +265,7 @@ O número de um Papel, que sobe cada vez que a criança domina um Conceito na Du
 _Avoid_: Nível do Papel, XP
 
 **Matemático** (nome provisório):
-O Papel da Dungeon de Matemática, que monta contas com uma bolsa de números.
+O Papel da Dungeon de Matemática, que desenha contas.
 
 **Escriba** (nome provisório):
 O Papel da Dungeon de Português, que forma nomes e frases com sílabas e letras.

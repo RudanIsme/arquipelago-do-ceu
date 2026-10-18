@@ -1,0 +1,35 @@
+{
+  "id": "mat-adic10-009",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "adicao-ate-10",
+  "bncc": [
+    "EF01MA06"
+  ],
+  "year": 1,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": {
+    "target": 8,
+    "pieces": [
+      3,
+      5,
+      1
+    ],
+    "maxPieces": 2,
+    "question": "3 + 5"
+  },
+  "prompt": "Quanto é 3 + 5? Escreva só o número da resposta.",
+  "hints": [
+    "Comece no 5 e conte mais 3 com os dedos.",
+    "5, depois 6, 7 e 8.",
+    "3 e mais 5 juntos formam quantos?"
+  ],
+  "explanation": "3 + 5 = 8. Juntamos 3 e 5 e chegamos a 8.",
+  "accessibility": {
+    "timerAllowed": false
+  },
+  "review": {
+    "status": "pending"
+  }
+}

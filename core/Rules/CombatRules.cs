@@ -4,8 +4,11 @@ namespace ArquipelagoDoCeu.Rules;
 // `MinCoverage` dos pontos tocados e no máximo `MaxStray` do traço fora do guia. Tudo em pixels da área de desenho.
 public sealed record TracingRules(int DotSpacing, float Tolerance, float MinCoverage, float MaxStray);
 
-// A bolsa e os sinais de um ano escolar: a partir do 2º ano entram as dezenas como peça e a subtração.
-public sealed record YearBag(int Year, IReadOnlyList<int> BagNumbers, IReadOnlyList<string> Operators);
+// A bolsa e os sinais de um ano escolar: a partir do 2º ano entram as dezenas como peça e a subtração; no 3º, a conta tem três parcelas.
+public sealed record YearBag(int Year, IReadOnlyList<int> BagNumbers, IReadOnlyList<string> Operators, int MaxTerms = 2);
+
+// O que o Nível libera numa conta desenhada: os sinais e quantas parcelas cabem. Os dois vêm de dados.
+public sealed record MathLevel(IReadOnlyList<string> Operators, int MaxTerms);
 
 // Bolsa do Matemático, sinais da calculadora, tempo da montagem, traçado, Energia, travessura, dica e bolha; todo valor vem de dados.
 // `BagNumbers` e `Operators` são os do 1º ano; `Years` traz os dos anos seguintes.
@@ -14,15 +17,23 @@ public sealed record CombatRules(int HandSize, IReadOnlyList<int> BagNumbers, in
 	// A Energia máxima de uma batalha quando ninguém de fora (equipamento, Expedição) diz outra; vem de `maxEnergy` nos dados.
 	public int DefaultMaxEnergy { get; init; } = 5;
 
+	// Quantas parcelas cabem numa conta desenhada (vem de `maxTerms`, e o ano pode mudar) e o desenho livre.
+	public int MaxTerms { get; init; } = 2;
+
+	public FreeDrawRules FreeDraw { get; init; } = FreeDrawRules.Default;
+
+	// O que o desenho de uma conta pode usar neste Nível: os sinais e o número de parcelas.
+	public MathLevel MathLevel => new(Operators, MaxTerms);
+
 	// As regras do ano pedido: o último ano definido que não passa dele (o 3º usa os do 2º até existir multiplicação).
 	public CombatRules ForYear(int year)
 	{
 		var bag = Years.Where(y => y.Year <= year).OrderByDescending(y => y.Year).FirstOrDefault();
-		return bag is null ? this : this with { BagNumbers = bag.BagNumbers, Operators = bag.Operators };
+		return bag is null ? this : this with { BagNumbers = bag.BagNumbers, Operators = bag.Operators, MaxTerms = bag.MaxTerms };
 	}
 }
 
-sealed record YearBagDto(int? Year, int[]? BagNumbers, string[]? Operators);
+sealed record YearBagDto(int? Year, int[]? BagNumbers, string[]? Operators, int? MaxTerms);
 
 // Quanto cada acontecimento muda a Energia: acerto, golpe perfeito, erro e bolha de névoa.
 public sealed record EnergyRules(int Hit, int Perfect, int Mistake, int Bubble);
@@ -36,7 +47,7 @@ sealed record BubbleDto(float? IntervalSeconds, float? WarningSeconds, float? Sp
 
 sealed record TracingDto(int? DotSpacing, float? Tolerance, float? MinCoverage, float? MaxStray);
 
-sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble, RhythmDto? Rhythm, MovementDto? Movement, YearBagDto[]? Years);
+sealed record CombatDto(int? HandSize, int[]? BagNumbers, int? BagCopies, float? SlowTimeScale, float? TargetRange, string[]? Operators, TracingDto? Tracing, int? MistakesForHint, float? PrankSeconds, EnergyDto? Energy, BubbleDto? Bubble, RhythmDto? Rhythm, MovementDto? Movement, YearBagDto[]? Years, int? MaxTerms, FreeDrawDto? FreeDraw);
 
 static class CombatChecks
 {
@@ -68,9 +79,11 @@ static class CombatChecks
 		if (combat.Operators.Length == 0) return "Regras inválidas: 'combat.operators' precisa de ao menos um sinal.";
 		if (combat.Operators.Any(o => !SupportedOperators.Contains(o)))
 			return $"Regras inválidas: 'combat.operators' só aceita {string.Join(", ", SupportedOperators)} por enquanto (veio {string.Join(", ", combat.Operators)}).";
-		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble) ?? RhythmChecks.Check(combat.Rhythm) ?? MovementChecks.Check(combat.Movement) ?? CheckYears(combat);
+		return CheckTracing(combat.Tracing) ?? CheckFeedback(combat) ?? CheckEnergy(combat.Energy) ?? CheckBubble(combat.Bubble) ?? RhythmChecks.Check(combat.Rhythm) ?? MovementChecks.Check(combat.Movement) ?? CheckYears(combat) ?? CheckTerms(combat.MaxTerms, "combat.maxTerms") ?? FreeDrawChecks.Check(combat.FreeDraw);
 	}
 
+
+	static string? CheckTerms(int? terms, string field) => terms is null or (>= 2 and <= 3) ? null : OutOfRange(field, "2 e 3", terms);
 
 	// `years` é opcional; cada ano repete o que muda: as peças da bolsa e os sinais.
 	static string? CheckYears(CombatDto combat)
@@ -87,6 +100,7 @@ static class CombatChecks
 			if (combat.HandSize > year.BagNumbers.Length * combat.BagCopies) return $"Regras inválidas: a bolsa de 'combat.years[{year.Year}]' tem menos peças que a mão.";
 			if (year.Operators is null || year.Operators.Length == 0) return Required($"combat.years[{year.Year}].operators");
 			if (year.Operators.Any(o => !SupportedOperators.Contains(o))) return $"Regras inválidas: 'combat.years[{year.Year}].operators' só aceita {string.Join(", ", SupportedOperators)}.";
+			if (CheckTerms(year.MaxTerms, $"combat.years[{year.Year}].maxTerms") is { } terms) return terms;
 		}
 		return null;
 	}
@@ -148,7 +162,11 @@ static class CombatChecks
 			new BubbleRules(combat.Bubble!.IntervalSeconds!.Value, combat.Bubble.WarningSeconds!.Value, combat.Bubble.Speed!.Value, combat.Bubble.Radius!.Value, combat.Bubble.Range!.Value),
 			RhythmChecks.Build(combat.Rhythm!),
 			MovementChecks.Build(combat.Movement!),
-			[.. (combat.Years ?? []).Select(y => new YearBag(y.Year!.Value, [.. y.BagNumbers!], [.. y.Operators!]))]);
+			[.. (combat.Years ?? []).Select(y => new YearBag(y.Year!.Value, [.. y.BagNumbers!], [.. y.Operators!], y.MaxTerms ?? combat.MaxTerms ?? 2))])
+		{
+			MaxTerms = combat.MaxTerms ?? 2,
+			FreeDraw = FreeDrawChecks.Build(combat.FreeDraw),
+		};
 
 	static string Required(string field) => $"Regras inválidas: o campo '{field}' é obrigatório.";
 

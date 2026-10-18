@@ -141,4 +141,32 @@ public class TraceTrailTests
 		Assert.NotNull(parsed.Value!.Find("I"));
 		Assert.NotNull(parsed.Value.Find("i"));
 	}
+
+	[Fact]
+	public void A_conta_de_exemplo_vira_uma_fileira_de_glifos_da_esquerda_para_a_direita()
+	{
+		var row = Trails.GuideRow("3+5", Canvas, TrainingFixtures.Rules.Tracing).Value!;
+
+		Assert.Equal(GuideOf("3").Paths!.Count + GuideOf("+").Paths!.Count + GuideOf("5").Paths!.Count, row.Paths!.Count);
+		var firstOfEach = row.Paths.Select(p => p.Points[0].X).ToList();
+		Assert.True(firstOfEach[0] < firstOfEach[^1]);
+		Assert.All(row.Dots, d => Assert.InRange(d.X, 0f, Canvas.X));
+		Assert.Equal(row.Paths.Sum(p => p.DotCount), row.Dots.Count);
+	}
+
+	[Fact]
+	public void A_fileira_ignora_o_acento_e_o_cedilha_e_mostra_a_letra()
+	{
+		var plain = Trails.GuideRow("CAO", Canvas, TrainingFixtures.Rules.Tracing).Value!;
+		var accented = Trails.GuideRow("ÇÃO", Canvas, TrainingFixtures.Rules.Tracing).Value!;
+
+		Assert.Equal(plain.Dots.Count, accented.Dots.Count);
+	}
+
+	[Fact]
+	public void A_fileira_ignora_o_que_nao_tem_trilha_e_falha_se_nada_tem()
+	{
+		Assert.True(Trails.GuideRow("a b", Canvas, TrainingFixtures.Rules.Tracing).IsOk);
+		Assert.False(Trails.GuideRow("  ", Canvas, TrainingFixtures.Rules.Tracing).IsOk);
+	}
 }

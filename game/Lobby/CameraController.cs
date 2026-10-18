@@ -35,6 +35,9 @@ public partial class CameraController : Node
 
 	public float Size => rig.Size;
 
+	// Onde está a criatura em luta, se há; a câmera centra a luta.
+	public System.Func<Vector2?>? Battle { get; set; }
+
 	public override void _Ready() => lastTicks = Time.GetTicksUsec();
 
 	public override void _Process(double delta)
@@ -43,6 +46,7 @@ public partial class CameraController : Node
 		var seconds = Mathf.Min((now - lastTicks) / 1_000_000f, 0.1f);
 		lastTicks = now;
 
+		rig.Battle = Battle?.Invoke();
 		rig.Update(player.GroundPosition, seconds, reduceMotion());
 		Apply();
 	}

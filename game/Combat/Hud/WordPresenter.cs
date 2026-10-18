@@ -6,10 +6,34 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Escriba do 2º ano na HUD: a criança escolhe cada letra e a traça; com a palavra inteira escrita, a última ação confere e golpeia.
-// "Sugerir letra" mostra a próxima com forma e texto e nunca custa Energia.
-sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord) : ICombatPresenter
+// O Escriba do 2º ano na HUD: a criança desenha a palavra em qualquer lugar da tela, em pedaços ou inteira; a palavra completa liberta.
+// A Dica mostra o pontilhado das próximas letras e nunca custa Energia.
+sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord, bool guideAlways) : ICombatPresenter
 {
+	const int GuideLetters = 4;
+
+	public bool FreeDraw => true;
+
+	public string? Request => Assembled;
+
+	public string DrawAllowed => "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	public string? GuideText => Remainder;
+
+	public bool GuideAlways => guideAlways;
+
+	public string? HintGuide => Remainder;
+
+	// As próximas letras da palavra, para o pontilhado caber na tela.
+	string? Remainder => battle.Typed.Length >= battle.Word.Length ? null : battle.Word[battle.Typed.Length..].ToUpperInvariant()[..Math.Min(GuideLetters, battle.Word.Length - battle.Typed.Length)];
+
+	public bool Write(string text, out string? message)
+	{
+		message = null;
+		checkedWord(battle.Write(text));
+		return true;
+	}
+
 	char? suggested;
 
 	public string Heading => "Escreva o nome da criatura";
@@ -34,15 +58,13 @@ sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord) : 
 
 	public bool TypesLetters => true;
 
-	public string KeyHelp => "Teclado: digite a letra para escolher e digite de novo para traçar. Backspace apaga. Para andar, use as setas.";
+	public string KeyHelp => "Desenhe as letras na tela, ou digite. Backspace apaga. Para andar, use as setas.";
 
-	public string? ExtraLabel => "Sugerir letra";
+	public string? ExtraLabel => null;
 
-	public string? TraceText(int piece) => Upper(battle.Keys[piece]);
 
 	public string Announce(int piece) => $"Desenhe a letra {Upper(battle.Keys[piece])}.";
 
-	public string TraceLabel(int piece) => $"Desenhe a letra {Upper(battle.Keys[piece])}";
 
 	public void Place(int piece)
 	{
@@ -65,9 +87,9 @@ sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord) : 
 	public bool Attack(out string? error)
 	{
 		error = null;
-		var result = battle.Check();
-		if (result == WordResult.Incomplete) return false;
-		checkedWord(result);
+		var text = battle.Typed;
+		battle.Clear();
+		checkedWord(battle.Write(text));
 		return true;
 	}
 

@@ -44,13 +44,8 @@ public interface ICombatPresenter
 
 	bool CanConfirm => false;
 
-	// O que a criança traça para esta peça, ou null quando a peça entra direto, sem traço.
-	string? TraceText(int piece);
-
 	// A fala de quando a criança escolhe a peça.
 	string Announce(int piece);
-
-	string TraceLabel(int piece);
 
 	void Place(int piece);
 
@@ -61,6 +56,30 @@ public interface ICombatPresenter
 
 	// Confere e golpeia. Falso quando a conta não vale (`error` diz por quê) e a montagem deve recomeçar.
 	bool Attack(out string? error);
+
+	// O pedido curto que a criatura mostra no balão dela; nulo deixa a legenda de sempre.
+	string? Request => null;
+
+	// Matemática e Português por sílaba se escrevem desenhando em qualquer lugar da tela, sem bolsa nem painel.
+	bool FreeDraw => false;
+
+	// Os caracteres que o desenho pode ser (o 0 e a letra O têm a mesma forma; o que a Missão aceita decide).
+	string DrawAllowed => "";
+
+	// O que o pontilhado mostra agora (a sílaba que falta) e se ele fica sempre à vista neste Nível; fora disso, só na Dica.
+	string? GuideText => null;
+
+	bool GuideAlways => false;
+
+	// O que a Dica mostra em pontilhado: uma conta de exemplo ou a sílaba. Pedir nunca custa Energia.
+	string? HintGuide => null;
+
+	// Recebe o que a criança escreveu. Verdadeiro quando valeu como resposta (a luta reage); falso com o motivo em `message`, sem custo.
+	bool Write(string text, out string? message)
+	{
+		message = null;
+		return false;
+	}
 
 	// O atalho de teclado: qual peça esta tecla escolhe.
 	int? PieceForKey(InputEventKey key);

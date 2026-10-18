@@ -45,6 +45,27 @@ public sealed class TrainingBattle : IBattle
 			: Result<TrainingBattle>.Ok(new TrainingBattle(rules, usable, new MathBag(rules, rng), rng, history));
 	}
 
+	// A criatura pode pedir um resultado (a criança desenha uma conta que o dê) ou mostrar uma conta pronta, "3 + 5 = ?",
+	// que se responde só com o número. A Missão diz qual pelo parâmetro `question`.
+	public MathAsk Ask => Mission.Params.ContainsKey("question") ? MathAsk.Answer : MathAsk.Result;
+
+	public string Question => Mission.Params.TryGetValue("question", out var question) ? question.GetString() ?? "" : "";
+
+	// Confere o que a criança desenhou. Falha (com o motivo) quando o desenho não é resposta e nada custa; senão o resultado diz se acertou.
+	public Result<AttackResult> Draw(string drawn, MathLevel level)
+	{
+		var verdict = DrawnMath.Judge(drawn, StartingShield, Ask, level);
+		if (!verdict.IsAnswer) return Result<AttackResult>.Fail(verdict.Message);
+
+		var right = verdict.Kind == DrawnKind.Right;
+		if (right) Shield.Dissolve();
+		var comparison = verdict.Total < StartingShield ? Comparison.Below : verdict.Total == StartingShield ? Comparison.Equal : Comparison.Above;
+		return Result<AttackResult>.Ok(new AttackResult(new ExpressionResult(verdict.Total!.Value, comparison), right ? HitOutcome.Dissolved : HitOutcome.Wrong, Shield.Remaining, verdict.Equation));
+	}
+
+	// A conta de exemplo da Dica, só quando se pede um resultado. Tem sorteio próprio: pedir a Dica nunca mexe no sorteio da luta.
+	public string? Example(MathLevel level) => Ask == MathAsk.Answer ? null : DrawnMath.Example(StartingShield, level, new Pcg32((ulong)Mission.Id.Sum(c => c) * 7919 + (ulong)StartingShield));
+
 	public void Reveal() => Bag.Reveal();
 
 	public Prank PlayPrank() => Bag.PlayPrank();

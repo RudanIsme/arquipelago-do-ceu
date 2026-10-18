@@ -47,7 +47,8 @@ public static class ExpressionEvaluator
 	}
 }
 
-public enum HitOutcome { Reduced, Dissolved, Overshoot }
+// `Wrong` é a conta desenhada que não dá o que a criatura pede (não é só passar do valor).
+public enum HitOutcome { Reduced, Dissolved, Overshoot, Wrong }
 
 // O número da criatura. Uma conta abaixo tira do escudo, a exata o dissolve, e passar do valor não vale.
 public sealed class Shield

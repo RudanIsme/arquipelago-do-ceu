@@ -41,6 +41,9 @@ public partial class TrainingDummy : Node3D
 	public string RestingCompact { get; set; } = "Treinar [F]";
 	bool compactCaption, captionNear, resting = true;
 	int captionValue;
+	// Na conta pronta ("3 + 5 = ?") o número do escudo é a resposta e não aparece: a criatura mostra a conta.
+	string? question;
+	string? request;
 	public void SetCaptionContext(bool compact, bool near)
 	{
 		if (compactCaption == compact && captionNear == near) return;
@@ -51,7 +54,16 @@ public partial class TrainingDummy : Node3D
 		shieldLabel.Visible = !compactCaption || !resting || captionNear;
 		shieldLabel.Text = resting
 			? (compactCaption ? RestingCompact : $"{Title}\n{RestingHint}")
-			: (compactCaption ? $"{unit}: {captionValue}" : $"{Title}\n{unit}: {captionValue}");
+			: (compactCaption ? Shown : $"{Title}\n{Shown}");
+	}
+	string Shown => request ?? (question is null ? $"{unit}: {captionValue}" : $"{question} = ?");
+
+	// O pedido da luta, no balão sobre a criatura; nulo volta à legenda de sempre.
+	public void SetRequest(string? text)
+	{
+		request = text;
+		shieldLabel.FontSize = text is null ? 96 : 200;
+		UpdateCaption();
 	}
 	int startingShield = 1;
 	string unit = "Escudo";
@@ -261,9 +273,11 @@ public partial class TrainingDummy : Node3D
 	// Mostra o Desafio atual: o escudo (Matemático) ou a criatura sem nome (Escriba).
 	public void ShowChallenge(CombatSession session)
 	{
+		question = null;
 		if (session.Math is { } math)
 		{
 			ShowCreature(null);
+			question = math.Ask == MathAsk.Answer ? math.Question : null;
 			Reset(math.Shield.Remaining, "Escudo");
 		}
 		else if (session.Change is { } change)

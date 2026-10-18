@@ -44,7 +44,7 @@ public class RhythmTests
 	public void Enquanto_a_crianca_monta_a_resposta_o_relogio_anda_em_camera_lenta()
 	{
 		var (rhythm, time) = Start();
-		time.Begin(calmMode: false);
+		time.Begin();
 
 		// Com a escala lenta o aviso que viria em 8 s leva bem mais: demorar não pune, o golpe só chega mais devagar.
 		Assert.Equal(BubbleEvent.None, Run(rhythm, 20f));
@@ -52,14 +52,13 @@ public class RhythmTests
 	}
 
 	[Fact]
-	public void No_Modo_calmo_o_relogio_da_criatura_pausa_na_montagem_e_volta_ao_terminar()
+	public void No_Modo_calmo_a_criatura_nao_lanca_e_o_relogio_recomeca_ao_sair()
 	{
-		var (rhythm, time) = Start();
-		time.Begin(calmMode: true);
+		var (rhythm, _) = Start();
 
-		Assert.Equal(BubbleEvent.None, Run(rhythm, 300f));
+		for (var t = 0f; t < 300f; t += 0.1f)
+			Assert.Equal(BubbleEvent.None, rhythm.Tick(0.1f, Vector2.Zero, new Vector2(3, 0), stopped: true));
 
-		time.End();
 		Assert.Equal(BubbleEvent.Warned, Run(rhythm, 9f));
 	}
 
@@ -95,7 +94,7 @@ public class RhythmTests
 	public void A_recarga_corre_em_tempo_real_mesmo_na_montagem()
 	{
 		var (rhythm, time) = Start();
-		time.Begin(calmMode: true);
+		time.Begin();
 		rhythm.PlayerAnswered();
 
 		Run(rhythm, Rules.Rhythm.PlayerRechargeSeconds + 0.2f);

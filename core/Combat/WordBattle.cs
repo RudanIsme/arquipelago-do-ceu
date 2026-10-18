@@ -18,6 +18,7 @@ public sealed class WordBattle : IBattle
 	readonly List<char> typed = [];
 	List<char> keys = [];
 	char? hidden;
+	DrawnWord drawn = DrawnWord.ByLetters("");
 
 	WordBattle(IReadOnlyList<Mission> missions, Pcg32 rng, MissionHistory? history)
 	{
@@ -73,6 +74,21 @@ public sealed class WordBattle : IBattle
 		if (!char.IsLetter(letter) || typed.Count >= Word.Length || hidden == char.ToLowerInvariant(letter)) return false;
 		typed.Add(char.ToLowerInvariant(letter));
 		return true;
+	}
+
+	// A palavra escrita à mão, em pedaços ou inteira; só uma letra fora do lugar é erro.
+	public string? NextLetter => drawn.NextPart;
+
+	public WordResult Write(string letters)
+	{
+		if (drawn.IsDone) return WordResult.Incomplete;
+		var step = drawn.Submit(letters);
+		typed.Clear();
+		typed.AddRange(drawn.Written.ToLowerInvariant());
+		if (step.Kind == WriteKind.Wrong) return WordResult.Mistaken;
+		if (!drawn.IsDone) return WordResult.Incomplete;
+		Remaining = 0;
+		return WordResult.Freed;
 	}
 
 	public bool Backspace()
@@ -133,6 +149,7 @@ public sealed class WordBattle : IBattle
 			Mission = mission;
 			history?.Add(mission.Id);
 			Word = word;
+			drawn = DrawnWord.ByLetters(word);
 			Image = image;
 			keys = chosen;
 			typed.Clear();

@@ -23,6 +23,7 @@ public sealed class NameBattle : IBattle
 	readonly HashSet<int> hidden = [];
 	List<string> pieces = [];
 	bool[] struck = [];
+	DrawnWord drawn = new([]);
 
 	NameBattle(IReadOnlyList<Mission> missions, Pcg32 rng, MissionHistory? history)
 	{
@@ -67,6 +68,11 @@ public sealed class NameBattle : IBattle
 	public IReadOnlyList<int> Chosen => chosen;
 
 	public bool IsHidden(int piece) => hidden.Contains(piece);
+
+	// As sílabas já escritas à mão, em maiúsculas, e a que o pontilhado-guia mostra a seguir.
+	public string Written => drawn.Written;
+
+	public string? NextSyllable => drawn.NextPart;
 
 	// Com todas as peças do nome postas, a última ação confere e golpeia.
 	public bool IsComplete => chosen.Count == Name.Count;
@@ -126,6 +132,17 @@ public sealed class NameBattle : IBattle
 		return new NameVerdict(check.Correct, strikes, check.IsComplete, mistaken);
 	}
 
+	// O que a criança escreveu à mão: uma sílaba por vez, ou o nome inteiro. Cada sílaba certa é um golpe;
+	// sílaba pela metade espera o resto sem erro, e só uma sílaba errada é erro.
+	public NameVerdict Write(string letters)
+	{
+		if (drawn.IsDone) return new NameVerdict([.. struck], 0, false, false);
+		var before = struck.Count(s => s);
+		var step = drawn.Submit(letters);
+		for (var i = before; i < before + step.Parts; i++) struck[i] = true;
+		return new NameVerdict([.. struck], step.Parts, drawn.IsDone, step.Kind == WriteKind.Wrong);
+	}
+
 	// Travessura do Boneco: embaralha as sílabas da bolsa ou esconde uma por alguns segundos.
 	public Prank PlayPrank()
 	{
@@ -173,6 +190,7 @@ public sealed class NameBattle : IBattle
 		chosen.Clear();
 		hidden.Clear();
 		struck = new bool[p.Name.Count];
+		drawn = new DrawnWord(p.Name);
 		return Result<bool>.Ok(true);
 	}
 
