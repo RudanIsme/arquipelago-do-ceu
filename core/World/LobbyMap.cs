@@ -69,7 +69,7 @@ public sealed class LobbyMap
 	}
 
 	// Os hexágonos de uma reta de `a` até `b`, em passos iguais pelo cubo e arredondados.
-	static List<HexCell> Line(HexCell a, HexCell b)
+	public static IReadOnlyList<HexCell> Line(HexCell a, HexCell b)
 	{
 		var steps = a.DistanceTo(b);
 		var cells = new List<HexCell>();

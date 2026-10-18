@@ -142,8 +142,7 @@ static class Scenarios
 				await d.Shot("01-visao-geral");
 				break;
 			case "album":
-				await d.ClickHex(-2, -2);
-				await d.Wait(3.2);
+				await d.GoToObject("album");
 				await d.Shot("01-perto-do-album");
 				await d.Press("Abrir o Álbum");
 				await d.Shot("02-album-criaturas");
@@ -153,8 +152,7 @@ static class Scenarios
 				await d.Shot("04-de-volta-ao-lobby");
 				break;
 			case "portal":
-				await d.ClickHex(-1, 4);
-				await d.Wait(3.5);
+				await d.GoToObject("portal");
 				await d.Shot("01-perto-do-portal");
 				await d.Press("Usar o portal");
 				await d.Shot("02-portal");
@@ -162,8 +160,7 @@ static class Scenarios
 				await d.Shot("03-de-volta-ao-lobby");
 				break;
 			case "tecla":
-				await d.ClickHex(-2, -2);
-				await d.Wait(3.2);
+				await d.GoToObject("album");
 				await d.Tap(Controls.Interact);
 				await d.Shot("01-abriu-com-a-tecla");
 				await d.PressKey(Key.Escape);
@@ -245,7 +242,7 @@ static class Scenarios
 				await d.Shot("saiu-do-treino");
 				break;
 			case "bolha":
-				await d.GoNearDummy(4, -2);
+				await d.GoNearDummy();
 				await d.ClickCreature();
 				await d.Press("Começar");
 				await d.PressKey(Key.Escape);

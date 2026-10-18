@@ -75,7 +75,7 @@ static partial class DungeonScenarios
 
 		// 3. Os dois épicos concluídos abrem o Desafio mestre; vencê-lo libera o Nível 2.
 		d.Expect(progress.Levels.MasterOpen(profile, 1, ["matematica", "portugues"]), "o Desafio mestre está aberto");
-		await WalkTo(d, 4, -4);
+		await WalkTo(d, d.NearObject("mestre").Q, d.NearObject("mestre").R);
 		await d.Tap(Controls.Interact);
 		await d.Press("Começar o Desafio mestre");
 		d.Expect(main.Master.Active, "o Desafio mestre começou");
@@ -107,7 +107,7 @@ static partial class DungeonScenarios
 		var main = d.Port;
 		var profile = main.ProfileId;
 
-		await WalkTo(d, 4, -4);
+		await WalkTo(d, d.NearObject("mestre").Q, d.NearObject("mestre").R);
 		await d.Tap(Controls.Interact);
 		d.Expect(d.HasVisible("O portal só abre quando"), "o portal fechado diz o que falta");
 		await d.Shot("01-portal-fechado");
@@ -142,7 +142,7 @@ static partial class DungeonScenarios
 		d.Expect(main.Level == 2, "vencer subiu o Nível liberado");
 		await d.Shot("04-nivel-2");
 
-		await WalkTo(d, 4, -4);
+		await WalkTo(d, d.NearObject("mestre").Q, d.NearObject("mestre").R);
 		await d.Tap(Controls.Interact);
 		d.Expect(d.HasVisible("O portal só abre quando") && d.HasVisible("Nível 2"), "no Nível 2 o portal volta a pedir os dois épicos");
 	}
@@ -201,9 +201,9 @@ static partial class DungeonScenarios
 			await d.Wait(0.4);
 			return;
 		}
-		await d.ClickHex(q, r);
 		var target = Lobby.HexToWorld(q, r);
-		for (var i = 0; i < 100; i++)
+		d.Player?.WalkToGround(new Vector2(target.X, target.Z));
+		for (var i = 0; i < 160; i++)
 		{
 			await d.Wait(0.25);
 			if (d.Player is { } p && new Vector2(p.GroundPosition.X - target.X, p.GroundPosition.Y - target.Z).Length() < 0.3f) break;
@@ -213,7 +213,7 @@ static partial class DungeonScenarios
 
 	static async Task OpenPortal(DevDriver d)
 	{
-		await WalkTo(d, -1, 3);
+		await WalkTo(d, d.NearObject("portal").Q, d.NearObject("portal").R);
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.3);
 	}

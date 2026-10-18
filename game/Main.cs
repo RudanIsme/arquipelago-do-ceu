@@ -89,6 +89,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera, lobby.GroundHeight) { Visible = false };
 		AddChild(player);
+		player.PlaceAt(lobby.StartPoint);
 		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion) { Battle = () => training.HasTarget ? training.CreatureGround : null });
 		AddChild(portrait);
 		portrait.Warm();
@@ -336,6 +337,13 @@ public partial class Main : Node3D
 	{
 		if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } click) return;
 		var actor = inDungeon ? dungeon?.Player : player;
+		if (!inDungeon && actor is { Enabled: true } && GetViewport().GuiGetHoveredControl() is null && lobby.PickInteractable(lobby.Camera, click.Position) is { } picked)
+		{
+			GetViewport().SetInputAsHandled();
+			if (interactTarget == picked) Interact(picked);
+			else player.WalkTo(lobby.Camera.UnprojectPosition(lobby.FootprintOf(picked).Ground));
+			return;
+		}
 		var combat = dungeon?.Combat ?? training;
 		if (actor is null || !actor.Enabled || GetViewport().GuiGetHoveredControl() is not null || !combat.HitsDummy(click.Position)) return;
 		GetViewport().SetInputAsHandled();

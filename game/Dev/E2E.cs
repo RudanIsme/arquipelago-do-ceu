@@ -26,6 +26,7 @@ static class E2E
 		await d.Hold(Controls.Down, 1.5);
 		d.Expect(System.Numerics.Vector2.Distance(start, d.Player.GroundPosition) > 0.5f, "o Personagem andou");
 
+		await d.TeleportNear("boneco");
 		await d.Tap(Controls.Target);
 		d.Expect(d.Button("Começar") is not null, "a escolha do treino abriu");
 		await d.Press("Começar");

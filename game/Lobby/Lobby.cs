@@ -13,6 +13,8 @@ public partial class Lobby : Node3D, ICombatStage
 	const float TileThickness = 0.5f;
 	const float TileGap = 0.98f;       // fresta fina entre os hexágonos
 	const float PortalHeight = 2.8f;
+	// A seta de interação de uma torre fica perto da base dela, e não lá em cima.
+	const float TowerBaseHeight = 1.2f;
 	const float LecternHeight = 1.4f;
 	const float GuideHeight = 1.8f;
 	const float DummyHeight = 1.7f;
@@ -26,8 +28,8 @@ public partial class Lobby : Node3D, ICombatStage
 	// Vizinhos em coordenadas axiais; a ordem é a mesma dos bits da máscara no shader.
 	static readonly Vector2I[] Neighbors = [new(1, 0), new(1, -1), new(0, -1), new(-1, 0), new(-1, 1), new(0, 1)];
 
-	// Grupos de árvores (q, r); ficam fora do caminho central.
-	static readonly Vector2I[] TreeSpots = [new(-3, 1), new(-2, 3), new(3, -1), new(2, 2), new(-4, 0), new(1, -4), new(4, -3)];
+	// Grupos de árvores (q, r): os pontos do desenho em zonas, longe do caminho, da lagoa e das praças.
+	IEnumerable<Vector2I> TreeSpots => plan.Trees.Select(c => new Vector2I(c.Q, c.R));
 
 	readonly Dictionary<Vector2I, Kind> tiles = new();
 
@@ -54,12 +56,12 @@ public partial class Lobby : Node3D, ICombatStage
 	public override void _Ready()
 	{
 		BuildMap();
-		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells(), IsLote02PointFree, CanCrossLote02);
+		Grid = new HexGrid(tiles.Keys.Select(c => new HexCell(c.X, c.Y)), BlockedCells());
 		AddEnvironment();
 		AddCamera();
 		AddDepthOfField();
 		AddTerrain();
-		AddRocks();
+		AddIslandKit();
 		AddBridges();
 		AddLote02Details();
 		AddTrees();
@@ -76,7 +78,7 @@ public partial class Lobby : Node3D, ICombatStage
 	void BuildMap() => BuildIslands();
 
 	IEnumerable<HexCell> BlockedCells() =>
-		tiles.Where(t => t.Value == Kind.Water && new HexCell(t.Key.X, t.Key.Y) != BridgeCell).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
+		tiles.Where(t => t.Value == Kind.Water).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
 			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R))).Concat(IslandCenters());
 
 	// Luz quente e sombras suaves (direção de arte). O glow só pega o que emite luz, nunca números nem pontilhado (interface 2D).
@@ -192,8 +194,8 @@ public partial class Lobby : Node3D, ICombatStage
 				else if (item.Id == "guia")
 					model.AddChild(new GuideIdle(model, () => ReduceMotion));
 			}
-			else if (item.Id.StartsWith("torre-")) top = AddGate(ground, item.Name, "#D9A64A");
-			else if (item.Id == "mestre") top = AddGate(ground, item.Name, "#7A44D1");
+			else if (item.Id.StartsWith("torre-")) top = TowerBaseHeight;
+			else if (item.Id == "mestre") top = AddHall(ground, item.Name);
 			else if (item.Id == "mercador") top = AddStall(ground, item.Name);
 			var marker = new MeshInstance3D
 			{
@@ -226,23 +228,6 @@ public partial class Lobby : Node3D, ICombatStage
 		return height;
 	}
 
-	// A entrada de uma torre na beira da ilha: duas colunas, uma verga e o nome. Greybox, até a arte definitiva.
-	float AddGate(Vector3 ground, string name, string color)
-	{
-		const float height = 2.4f;
-		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml(color), Roughness = 0.8f };
-		var way = new Vector3(-ground.X, 0f, -ground.Z).Normalized();
-		var side = new Vector3(-way.Z, 0f, way.X) * 0.8f;
-		foreach (var offset in new[] { side, -side })
-			AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.35f, height, 0.35f) }, MaterialOverride = material, Position = ground + offset + new Vector3(0f, height / 2f, 0f) });
-		AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(2.1f, 0.35f, 0.4f) }, MaterialOverride = material, Position = ground + new Vector3(0f, height + 0.1f, 0f), Rotation = new Vector3(0f, Mathf.Atan2(side.X, side.Z) - Mathf.Pi / 2f, 0f) });
-		var sign = new Label3D { Text = name, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, FontSize = 44, PixelSize = 0.012f, OutlineSize = 14, OutlineModulate = Color.FromHtml("#1B1424"), Modulate = Color.FromHtml("#FFF6E0"), NoDepthTest = true, Position = ground + new Vector3(0f, height + 0.9f, 0f) };
-		AddChild(sign);
-		signs.Add(sign);
-		sign.AddToGroup(CameraController.LabelGroup);
-		return height;
-	}
-
 	// Ilhas e torres ao redor, cada uma com a placa; torre sem modelo vira uma torre simples em greybox.
 	void AddPlaces()
 	{
@@ -250,7 +235,7 @@ public partial class Lobby : Node3D, ICombatStage
 		{
 			var center = new Vector3(place.X, 0f, place.Z);
 			bool landmark = place.Id is "ciencias" or "historia" or "geografia";
-			if (!map.Islands.ContainsKey(place.Id)) AddIslet(center, landmark ? 3.0f : 2.3f);
+			if (!map.Islands.ContainsKey(place.Id)) AddKitIslet(center, landmark ? 2 : 1);
 			var top = 5.2f;
 			if (LoadModel(place.Model) is { } model)
 			{
@@ -268,7 +253,11 @@ public partial class Lobby : Node3D, ICombatStage
 					model.Rotation = new Vector3(0, facing, 0);
 					top = FitToHeight(model, height, center + new Vector3(0f, .10f, 0f));
 				}
-				else top = FitToHeight(model, TowerHeight, center + new Vector3(0f, 0.2f, 0f));
+				else
+				{
+					top = FitToHeight(model, TowerHeight, center + new Vector3(0f, 0.2f, 0f));
+					pickable[$"torre-{place.Id}"] = model;
+				}
 			}
 			else AddGreyboxTower(center + new Vector3(0f, 0.2f, 0f));
 
@@ -351,6 +340,7 @@ public partial class Lobby : Node3D, ICombatStage
 	public void Highlight(string? objectId)
 	{
 		foreach (var (id, marker) in markers) marker.Visible = id == objectId;
+		GlowOnly(objectId);
 	}
 
 	public void SetCompactSigns(bool compact)

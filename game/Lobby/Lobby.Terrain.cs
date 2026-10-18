@@ -60,7 +60,7 @@ public partial class Lobby
 		if (tiles[cell] != Kind.Path) return 0;
 		var mask = 0;
 		for (var i = 0; i < Neighbors.Length; i++)
-			if (tiles.TryGetValue(cell + Neighbors[i], out var other) && (other == Kind.Path || new HexCell(cell.X + Neighbors[i].X, cell.Y + Neighbors[i].Y) == BridgeCell)) mask |= 1 << i;
+			if (tiles.TryGetValue(cell + Neighbors[i], out var other) && other == Kind.Path) mask |= 1 << i;
 		return mask;
 	}
 }

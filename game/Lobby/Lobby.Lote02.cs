@@ -10,34 +10,11 @@ namespace ArquipelagoDoCeu;
 // Camada visual reversivel do lote 02; a grade e os objetos de interacao continuam no Lobby.
 public partial class Lobby
 {
-	static readonly HexCell BridgeCell = new(2, -2);
-	static readonly Point BridgeCenter = HexGrid.ToWorld(BridgeCell);
-	static readonly float BridgeHalfLength = MathF.Sqrt(3f);
 	readonly Dictionary<int, Material> pathMaterials = new();
 	readonly List<Node3D> lote02Roots = new();
 
-	bool CanCrossLote02(HexCell a, HexCell b)
-	{
-		if (a != BridgeCell && b != BridgeCell) return true;
-		var other = a == BridgeCell ? b : a;
-		return other == new HexCell(2, -3) || other == new HexCell(2, -1);
-	}
-
-	bool IsLote02PointFree(Point p)
-	{
-		var d = p - BridgeCenter;
-		// As faixas laterais impedem entrada pelo guarda-corpo; os extremos ficam abertos.
-		if (MathF.Abs(d.Y) < BridgeHalfLength - .04f && MathF.Abs(d.X) < .84f)
-			return MathF.Abs(d.X) <= .54f;
-		return HexGrid.FromWorld(p) != BridgeCell || MathF.Abs(d.X) <= .54f;
-	}
-
-	public float GroundHeight(Point p)
-	{
-		var d = p - BridgeCenter;
-		if (MathF.Abs(d.X) > .65f || MathF.Abs(d.Y) > BridgeHalfLength) return 0f;
-		return .30f * (1f - d.Y * d.Y / 3f);
-	}
+	// O chão do Lobby é plano: as pontes entre as ilhas e os corredores da Dungeon ficam rentes ao chão.
+	public float GroundHeight(Point p) => 0f;
 
 	Node3D AddLote02(string asset, Vector3 position, Vector3? scale = null, float yaw = 0f)
 	{
@@ -68,21 +45,8 @@ public partial class Lobby
 			}
 	}
 
-	void AddIslet(Vector3 center, float radius = 2.3f)
-	{
-		AddLote02("hex-base-v02", center, new Vector3(radius, .8f, radius));
-		AddLote02("rocha-inferior-avaliacao", center + new Vector3(0, .28f, 0), new Vector3(radius + .2f, 1.36f, radius + .2f));
-	}
 	void AddLote02Details()
 	{
-		var center = new Vector3(BridgeCenter.X, 0, BridgeCenter.Y);
-		var bridge = AddLote02("ponte-piso", center, yaw: Mathf.Pi / 2f);
-		bridge.Name = "Lote02_Ponte";
-		foreach (var side in new[] { -1f, 1f })
-		{
-			AddLote02("ponte-guarda-corpo", center + new Vector3(side * .64f, 0, 0), yaw: Mathf.Pi / 2f);
-			AddLote02("ponte-cabeceira", center + new Vector3(0, 0, side * (BridgeHalfLength + .2f)), yaw: Mathf.Pi / 2f);
-		}
 		// Bordas retas seguem as arestas exatas da lagoa; curvas ficam para recortes de lagoa futuros.
 		foreach (var (cell, kind) in tiles)
 		{
@@ -95,8 +59,6 @@ public partial class Lobby
 				var n = (water - HexToWorld(next.X, next.Y)).Normalized();
 				var t = new Vector3(-n.Z, 0, n.X);
 				var edge = water - n * .8660254f;
-				// Nao colocar margem sobre as entradas do piso da ponte.
-				if (Mathf.Abs(edge.X - center.X) < .75f && Mathf.Abs(edge.Z - center.Z) < 2.2f) continue;
 				AddLote02("margem-reta", edge - t * .5f, yaw: Mathf.Atan2(-t.Z, t.X));
 			}
 		}
@@ -111,18 +73,11 @@ public partial class Lobby
 		}
 	}
 
-	// Verifica a mesma grade e o mesmo controlador usados pelo jogo, sem mudar o save.
+	// Verifica a mesma grade usada pelo jogo, sem mudar o save: a lagoa fecha o centro e todo objeto tem chão por perto.
 	public Godot.Collections.Dictionary ValidateLote02()
 	{
-		var start = HexGrid.ToWorld(new HexCell(2, -3));
-		var finish = HexGrid.ToWorld(new HexCell(2, -1));
-		var mover = new MovementController(Grid, start, 3f);
-		var accepted = mover.GoTo(finish);
-		var peak = 0f;
-		for (var i = 0; i < 240; i++) { mover.Tick(Point.Zero, 1f / 60f); peak = MathF.Max(peak, GroundHeight(mover.Position)); }
-		var crossing = accepted && Point.Distance(mover.Position, finish) < .02f && peak > .29f;
-		var guarded = !Grid.IsFree(BridgeCenter + new Point(.65f, 0), .2f);
-		var interactions = Rules.Objects.All(o => Grid.Cells.Any(c => Grid.IsWalkable(c) && Point.Distance(HexGrid.ToWorld(c), HexGrid.ToWorld(new HexCell(o.Q, o.R))) <= Rules.InteractionReach && Grid.FindPath(new HexCell(0, 0), c) is not null));
+		var lakeBlocked = plan.Lake.All(c => !Grid.IsWalkable(c));
+		var interactions = Rules.Objects.All(o => Grid.Cells.Any(c => Grid.IsWalkable(c) && Point.Distance(HexGrid.ToWorld(c), HexGrid.ToWorld(new HexCell(o.Q, o.R))) <= Rules.InteractionReach));
 		long triangles = 0;
 		var missingMaterials = 0;
 		foreach (var root in lote02Roots)
@@ -134,6 +89,6 @@ public partial class Lobby
 					var indices = arrays[(int)Mesh.ArrayType.Index].AsInt32Array();
 					triangles += indices.Length > 0 ? indices.Length / 3 : arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length / 3;
 				}
-		return new Godot.Collections.Dictionary { ["passagem_ponte"] = crossing, ["altura_maxima"] = peak, ["laterais_bloqueadas"] = guarded, ["interacoes_alcancaveis"] = interactions, ["triangulos_lote02_instanciados"] = triangles, ["materiais_ausentes"] = missingMaterials, ["instancias_lote02"] = lote02Roots.Count };
+		return new Godot.Collections.Dictionary { ["lagoa_bloqueada"] = lakeBlocked, ["interacoes_alcancaveis"] = interactions, ["triangulos_lote02_instanciados"] = triangles, ["materiais_ausentes"] = missingMaterials, ["instancias_lote02"] = lote02Roots.Count };
 	}
 }

@@ -113,7 +113,7 @@ static partial class DungeonScenarios
 		run.Leave("");
 		await d.Wait(0.5);
 
-		await WalkTo(d, -2, -2);
+		await WalkTo(d, d.NearObject("album").Q, d.NearObject("album").R);
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.3);
 		await d.Press("Cosméticos");
