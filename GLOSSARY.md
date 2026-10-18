@@ -7,8 +7,15 @@ Roguelite educativo em que a criança sobe dungeons, uma por disciplina, e vence
 ### Mundo
 
 **Lobby**:
-O lugar neutro de onde a criança parte e para onde volta ao fim de uma Expedição. É uma ilha cercada pelas torres das Dungeons, com o NPC guia, a Área de treino, o Álbum, o portal de fast travel e as configurações.
+O lugar neutro de onde a criança parte e para onde volta ao fim de uma Expedição. É a ilha principal, ligada por pontes a pé às ilhas das torres das Dungeons e à do Mercador, com o NPC guia, a Área de treino, o Álbum, o portal de fast travel e as configurações.
 _Avoid_: Ilha-base, hub
+
+**Ponte**:
+A tira de hexágonos que liga duas ilhas do Lobby e que a criança atravessa a pé, sem tela de carregamento nem teleporte. Só o Lobby tem ilhas; dentro das torres a ligação entre Salas é o Corredor.
+_Avoid_: Portal (portal é o de fast travel e o do Desafio mestre)
+
+**Dia e noite**:
+O ciclo visual curto do Lobby (luz, céu e lampiões), medido no tempo de jogo e com a duração em dados. Nunca usa o relógio do aparelho, nada depende dele e uma opção das Configurações fixa o dia.
 
 **Guia**:
 O NPC do Lobby que orienta a criança e fala por voz sintética.
@@ -35,7 +42,7 @@ A coleção do Perfil, com as criaturas libertadas (cartas de revisão) e os Cos
 _Avoid_: Biblioteca de descobertas
 
 **Cosmético**:
-Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Só se ganha por aprendizado e exploração nas Dungeons, nunca por compra ou sorteio nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
+Item de aparência do personagem do Perfil (roupas, cores, acessórios, variações visuais da ferramenta), sem efeito no jogo. Ganha-se por aprendizado e exploração nas Dungeons ou comprando no Mercador com Moedas do jogo; nunca por dinheiro de verdade, sorteio ou sequência, nem pelo treino no Lobby. Completar um Andar rende um Cosmético pequeno, uma só vez.
 _Avoid_: Skin
 
 **Equipamento**:
@@ -64,7 +71,7 @@ As duas formas de pagar no Mercador, escolhidas a cada compra ou venda. Em "Eu p
 O comerciante do Lobby. Compra Equipamento da criança (em lote, nunca o vestido, com recompra pelo mesmo preço e sem prazo) e vende Cosméticos de um estoque que só troca quando a criança usa o botão Rotacionar. Só moedas do jogo; toda compra, venda e recompra pede confirmação.
 
 **Carga de rotação**:
-O que cada Expedição concluída (Progressão ou Livre) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
+O que cada Expedição concluída (com ou sem Andares profundos) dá ao Mercador, no máximo uma. O botão Rotacionar gasta a carga. Nunca há relógio, "só hoje" nem contagem regressiva.
 
 **Pesca** (modo de teste, F9):
 Prática opcional em que a criança "puxa" sílabas com uma encenação (BOA/B) e confere desenhando a letra com traço neon. Não grava progresso e não integra a campanha; o Escriba do jogo continua sendo a bolsa de sílabas.
@@ -83,8 +90,16 @@ A divisão de um Nível em Andares: quantos são e em qual deles ficam a Sala do
 _Avoid_: Roteiro, mapa do Nível
 
 **Andar**:
-A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que são Puzzles. Tem um Fast travel, que também salva o progresso. A escada vale nos dois sentidos e cada Andar guarda as Salas visitadas e vencidas (ADR 0004). No mapa, a Sala vizinha ainda não visitada aparece sob névoa, sem dizer o que é, e a que ainda pede uma vitória tem um cadeado.
+A unidade que o jogo gera de uma vez: um grafo de Salas ligadas por portas, que são Puzzles. Tem um Fast travel, que também salva o progresso. A escada vale nos dois sentidos e cada Andar guarda as Salas visitadas e vencidas (ADR 0004). No mapa, cada Sala aparece com a silhueta real (forma e posição do layout), ligada por corredores; a Sala vizinha ainda não visitada aparece sob névoa, sem dizer o que é, e a que ainda pede uma vitória tem um cadeado.
 _Avoid_: Fase, mapa
+
+**Forma da Sala**:
+Os hexágonos que formam uma Sala (pequena, média, grande, alongada, em L, em anel ou com desnível), sorteada pela seed a partir de dados. O tema visual é separado da estrutura. A média é a Sala dos Andares da versão antiga do gerador.
+_Avoid_: Tamanho da Sala (a forma inclui o desenho)
+
+**Corredor**:
+A tira de hexágonos que a criança atravessa a pé de uma Sala à vizinha, curta ou longa, reta ou com curva. Começa na porta física da Sala; a vizinha carrega ao abrir a porta, sem tela de carregamento nem teleporte (ADR 0008).
+_Avoid_: Túnel
 
 **Sala**:
 Cada espaço de um Andar, com uma função: combate, Puzzle, Descanso, Fast travel, Marco ou Desafio épico. Combate, Puzzle, Marco e Desafio épico precisam ser vencidos para seguir a uma Sala nova; voltar a uma Sala já visitada é sempre permitido.
@@ -133,11 +148,11 @@ O saldo do Perfil, só do jogo e nunca dinheiro de verdade. Ganha-se por criatur
 _Avoid_: Dinheiro, ouro
 
 **Progressão**:
-O modo de Expedição que segue o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível.
+O que a criança sempre joga ao entrar numa torre: o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível. Não há tela de escolha de modo.
 
-**Expedição livre**:
-O outro modo de Expedição: os Andares seguem sem fim, a partir da mesma seed, no Nível que a criança já liberou, sem Marco, Item de troca nem Desafio épico. O conteúdo varia (o mesmo problema não se repete na Expedição) e rende moedas, mas não avança o Plano do Nível, o Desafio épico nem o Desafio mestre. A criança sai quando quiser, sem punição.
-_Avoid_: Modo infinito
+**Andar profundo**:
+Andar além do Plano do Nível, gerado pela mesma seed e sem fim. A criança chega depois do último Andar do Plano ou pela escada lateral opcional, na entrada de qualquer Andar da Progressão. Não tem Marco, Item de troca nem Desafio épico, nunca é obrigatório e nunca bloqueia nada. Rende moedas e Maestria, mas não avança o Plano do Nível, o Desafio épico nem o Desafio mestre. O conteúdo varia (o mesmo problema não se repete na Expedição). O Fast travel dele volta à Progressão, e a criança sai quando quiser, sem punição.
+_Avoid_: Modo infinito, Expedição livre
 
 **Expedição**:
 Uma tentativa contínua, desde a saída do Lobby até a volta. Termina quando a criança decide voltar ou quando a Energia acaba; ao concluir um Desafio épico, ela escolhe entre continuar e voltar ao Lobby. Perde-se o que é temporário; Andares salvos e habilidades ficam.

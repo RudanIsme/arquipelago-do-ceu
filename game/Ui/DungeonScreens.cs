@@ -81,32 +81,6 @@ public partial class CoinsArrivalScreen : OverlayScreen
 	}
 }
 
-// Ao iniciar a Expedição: seguir o Plano do Nível (Progressão) ou explorar Andares sem fim (Livre). Esc fecha sem entrar.
-public partial class ExpeditionModeScreen : OverlayScreen
-{
-	readonly string tower;
-	readonly Action progression;
-	readonly Action free;
-
-	public ExpeditionModeScreen(string tower, Action progression, Action free)
-	{
-		this.tower = tower;
-		this.progression = progression;
-		this.free = free;
-	}
-
-	public override void _Ready()
-	{
-		base._Ready();
-		var box = UiKit.Card(this, $"{tower}: como explorar?", out var footer);
-		box.AddChild(UiKit.Hint("Progressão: segue o Plano do Nível, com o Marco, o Item de troca e o Desafio épico. É o que conclui o Nível."));
-		box.AddChild(UiKit.Hint("Livre: Andares sem fim, com problemas variados, só para praticar e ganhar moedas. Não avança o Nível, e você sai quando quiser."));
-		footer.AddChild(UiKit.BigButton("Progressão", () => { Close(); progression(); }, 300));
-		footer.AddChild(UiKit.BigButton("Livre", () => { Close(); free(); }, 300));
-		footer.AddChild(UiKit.BigButton("Voltar", Close, 300));
-	}
-}
-
 // A oferta do Atalho de Nível, na porta da torre: a criança escolhe com calma, e o texto diz que só há uma tentativa.
 public partial class ShortcutOfferScreen : OverlayScreen
 {
@@ -194,7 +168,7 @@ public partial class LevelDoneScreen : OverlayScreen
 		base._Ready();
 		var box = UiKit.Card(this, "Nível concluído!", out var footer);
 		var item = gotItem ? " Você também ganhou o Item de troca desta torre." : "";
-		box.AddChild(UiKit.Hint($"Você venceu o Desafio épico do Nível {level} da {tower}. Parabéns!{item} Quer continuar explorando ou voltar ao Lobby?"));
+		box.AddChild(UiKit.Hint($"Você venceu o Desafio épico do Nível {level} da {tower}. Parabéns!{item} Quer continuar explorando (a escada lateral desta Sala leva aos Andares profundos) ou voltar ao Lobby?"));
 		footer.AddChild(UiKit.BigButton("Continuar explorando", Close, 420));
 		footer.AddChild(UiKit.BigButton("Voltar ao Lobby", () => { Close(); leave(); }, 420));
 	}

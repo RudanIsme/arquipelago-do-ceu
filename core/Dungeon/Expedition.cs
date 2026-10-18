@@ -35,6 +35,7 @@ public sealed class Expedition
 	readonly Dictionary<int, FloorState> states = [];
 	readonly Dictionary<int, Floor> built = [];
 	readonly int startNumber;
+	(int Floor, int Room)? origin;
 	readonly bool legacyBelow;
 
 	Expedition(FloorProvider floors, LevelPlan plan, ulong world, int version, Energy energy, Func<bool> hasItem, int startFloor, bool atFastTravel, bool atEpic,
@@ -47,10 +48,10 @@ public sealed class Expedition
 		this.hasItem = hasItem;
 		this.explored = explored;
 		Energy = energy;
-		startNumber = atEpic ? plan.Floors.Count : plan.Endless ? Math.Max(startFloor, 1) : Math.Clamp(startFloor, 1, plan.Floors.Count);
+		startNumber = atEpic ? plan.Floors.Count : Math.Clamp(startFloor, 1, plan.Floors.Count);
 		// Quem recomeça num Andar alto sem ter exploração guardada dos de baixo (save antigo) já os percorreu; no Atalho não.
 		legacyBelow = !atEpic;
-		Floor = FloorOf(startNumber);
+		Floor = FloorOf(MainKey(startNumber));
 		CurrentRoom = Floor.Entrance;
 		State.Visited.Add(CurrentRoom);
 		if (atEpic) MoveToRoom(RoomTypes.Epic);
@@ -73,7 +74,7 @@ public sealed class Expedition
 
 	public Room Current => Floor.Rooms[CurrentRoom];
 
-	FloorState State => StateOf(Floor.Number);
+	FloorState State => StateOf(KeyOf(Floor));
 
 	public IReadOnlySet<int> Cleared => State.Cleared;
 
@@ -140,9 +141,10 @@ public sealed class Expedition
 	}
 
 	// A escada está sempre aberta: sobe-se pela saída do Andar e desce-se pela entrada. O que trava o avanço é o Marco e o épico.
-	public bool CanAscend => Current.Kind.Stairs == RoomStairs.Up && plan.HasFloor(Floor.Number + 1);
+	// Os Andares profundos não têm fim; descer do primeiro volta à Progressão, de onde a criança saiu.
+	public bool CanAscend => Current.Kind.Stairs == RoomStairs.Up && (InDeep || plan.HasFloor(Floor.Number + 1));
 
-	public bool CanDescend => Current.Kind.Stairs == RoomStairs.Down && Floor.Number > 1;
+	public bool CanDescend => Current.Kind.Stairs == RoomStairs.Down && (InDeep || Floor.Number > 1);
 
 	public bool Ascend()
 	{
@@ -154,7 +156,35 @@ public sealed class Expedition
 	public bool Descend()
 	{
 		if (!CanDescend) return false;
+		if (InDeep && Floor.Number == 1) return ReturnToProgression();
 		GoToFloor(Floor.Number - 1, fromAbove: true);
+		return true;
+	}
+
+	// O Andar profundo (ADR 0003) é opcional: a escada lateral fica na entrada de qualquer Andar da Progressão
+	// e no épico já vencido, e nunca esconde o Marco nem o Desafio épico.
+	public bool InDeep => Floor.Deep;
+
+	public bool CanEnterDeep => !InDeep && (Current.Kind == RoomTypes.Entrance || (Current.Kind.EndsExpedition && IsCleared(CurrentRoom)));
+
+	public bool EnterDeep()
+	{
+		if (!CanEnterDeep) return false;
+		origin = (Floor.Number, CurrentRoom);
+		Floor = FloorOf(DeepKey(1));
+		CurrentRoom = Floor.Entrance;
+		State.Visited.Add(CurrentRoom);
+		return true;
+	}
+
+	// O Fast travel dos Andares profundos leva de volta à Progressão.
+	public bool CanReturnToProgression => InDeep && Current.Kind.SavesPoint;
+
+	public bool ReturnToProgression()
+	{
+		if (!InDeep || origin is not { } from) return false;
+		Floor = FloorOf(MainKey(from.Floor));
+		CurrentRoom = from.Room;
 		return true;
 	}
 
@@ -170,10 +200,11 @@ public sealed class Expedition
 		SightOf(room) == Sight.Fog && Floor.Neighbors(room).Where(Visited.Contains).All(v => Leaving(v) != Passage.Open);
 
 	// Combate, Puzzle, Marco e épico contam quando vencidos; Descanso e Fast travel, quando visitados.
-	public FloorProgress ProgressOf(int floorNumber)
+	public FloorProgress ProgressOf(int floorNumber, bool deep = false)
 	{
-		var state = StateOf(floorNumber);
-		var rooms = FloorOf(floorNumber).Rooms.Where(r => r.Kind.Counts != RoomCounting.None).ToList();
+		var key = deep ? DeepKey(floorNumber) : MainKey(floorNumber);
+		var state = StateOf(key);
+		var rooms = FloorOf(key).Rooms.Where(r => r.Kind.Counts != RoomCounting.None).ToList();
 		var resolved = rooms.Count(r => IsResolved(r, state));
 		return new FloorProgress(resolved, rooms.Count);
 	}
@@ -183,39 +214,51 @@ public sealed class Expedition
 		room.Kind.Counts != RoomCounting.Victory ? state.Visited.Contains(room.Id)
 		: state.Cleared.Contains(room.Id) || (room.Kind.OpensWithItem && hasItem() && state.Visited.Contains(room.Id));
 
-	public bool IsFloorComplete(int floorNumber) => ProgressOf(floorNumber) is { Resolved: var done, Total: var total } && total > 0 && done == total;
+	public bool IsFloorComplete(int floorNumber, bool deep = false) => ProgressOf(floorNumber, deep) is { Resolved: var done, Total: var total } && total > 0 && done == total;
 
 	// O que o save guarda do Andar atual.
 	public FloorExploration Exploration() => new(Visited.Order().ToList(), Cleared.Order().ToList());
 
 	void GoToFloor(int number, bool fromAbove)
 	{
-		Floor = FloorOf(number);
+		Floor = FloorOf(InDeep ? DeepKey(number) : MainKey(number));
 		CurrentRoom = fromAbove ? Floor.Exit : Floor.Entrance;
 		State.Visited.Add(CurrentRoom);
 	}
 
-	Floor FloorOf(int number)
+	// Andares da Progressão e profundos vivem no mesmo dicionário; os profundos têm chave acima de qualquer Plano.
+	const int DeepBase = 100_000;
+
+	static int MainKey(int number) => number;
+
+	static int DeepKey(int depth) => DeepBase + depth;
+
+	static int KeyOf(Floor floor) => floor.Deep ? DeepKey(floor.Number) : MainKey(floor.Number);
+
+	Floor FloorOf(int key)
 	{
-		if (!built.TryGetValue(number, out var floor)) built[number] = floor = BuildFloor(number);
+		if (!built.TryGetValue(key, out var floor)) built[key] = floor = BuildFloor(key);
 		return floor;
 	}
 
-	Floor BuildFloor(int number) => floors.Get(world, plan.Discipline, plan.Level, plan.For(number), version);
+	Floor BuildFloor(int key) =>
+		floors.Get(world, plan.Discipline, plan.Level, key >= DeepBase ? LevelPlan.DeepFloor(key - DeepBase) : plan.For(key), version);
 
-	FloorState StateOf(int number)
+	FloorState StateOf(int key)
 	{
-		if (states.TryGetValue(number, out var state)) return state;
+		if (states.TryGetValue(key, out var state)) return state;
 		state = new FloorState();
-		states[number] = state;
-		var floor = FloorOf(number);
-		if (explored(number) is { } saved)
+		states[key] = state;
+		var floor = FloorOf(key);
+		var deep = key >= DeepBase;
+		// Os Andares profundos não vão para o save: não pertencem ao Plano do Nível.
+		if (!deep && explored(key) is { } saved)
 		{
 			// Sala que não existe mais (o gerador mudou) é ignorada em vez de quebrar a Expedição.
 			state.Visited.UnionWith(saved.Visited.Where(id => id >= 0 && id < floor.Rooms.Count));
 			state.Cleared.UnionWith(saved.Cleared.Where(id => id >= 0 && id < floor.Rooms.Count));
 		}
-		else if (legacyBelow && number < startNumber)
+		else if (!deep && legacyBelow && key < startNumber)
 			MarkPath(floor, state, floor.Exit);
 		return state;
 	}

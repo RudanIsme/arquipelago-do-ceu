@@ -9,7 +9,6 @@ namespace ArquipelagoDoCeu;
 // Cena do Lobby: ilha hexagonal flutuante, câmera isométrica e luz quente.
 public partial class Lobby : Node3D, ICombatStage
 {
-	const int IslandRadius = 5;
 	const float TileSize = 1f;         // do centro ao vértice; a grade de colisão (HexGrid) também assume 1
 	const float TileThickness = 0.5f;
 	const float TileGap = 0.98f;       // fresta fina entre os hexágonos
@@ -22,7 +21,7 @@ public partial class Lobby : Node3D, ICombatStage
 	// O Mobile não desenha SSAO e avisa a cada vez que ele é ligado; só o Forward+ e o Compatibility o têm.
 	static bool SsaoAvailable => RenderingServer.GetCurrentRenderingMethod() != "mobile";
 
-	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3 }
+	enum Kind { Grass = 0, Flowers = 1, Path = 2, Water = 3, Plank = 4 }
 
 	// Vizinhos em coordenadas axiais; a ordem é a mesma dos bits da máscara no shader.
 	static readonly Vector2I[] Neighbors = [new(1, 0), new(1, -1), new(0, -1), new(-1, 0), new(-1, 1), new(0, 1)];
@@ -60,34 +59,25 @@ public partial class Lobby : Node3D, ICombatStage
 		AddCamera();
 		AddDepthOfField();
 		AddTerrain();
-		AddRock();
+		AddRocks();
+		AddBridges();
 		AddLote02Details();
 		AddTrees();
 		AddObjects();
 		AddPlaces();
 		AddConceptWaterfall();
+		AddLamps();
 	}
 
 	// Hexágono "flat-top": vértices à esquerda e à direita, como nos mockups.
 	public static Vector3 HexToWorld(int q, int r) =>
 		new(HexGrid.ToWorld(new HexCell(q, r)).X, 0f, HexGrid.ToWorld(new HexCell(q, r)).Y);
 
-	void BuildMap()
-	{
-		for (var q = -IslandRadius; q <= IslandRadius; q++)
-			for (var r = -IslandRadius; r <= IslandRadius; r++)
-			{
-				if (Mathf.Abs(q + r) > IslandRadius) continue;
-				var onPath = (r == 0 && Mathf.Abs(q) <= 3) || (q == 0 && Mathf.Abs(r) <= 3) || (q == 2 && (r == -3 || r == -1));
-				var onPond = (q == 3 && r == -2) || (q == 3 && r == -3) || (q == 2 && r == -2) || (r == -2 && (q == 4 || q == 5));
-				var flowery = Hash01(q * 31 + r * 17) < 0.2f;
-				tiles[new Vector2I(q, r)] = onPond ? Kind.Water : onPath ? Kind.Path : flowery ? Kind.Flowers : Kind.Grass;
-			}
-	}
+	void BuildMap() => BuildIslands();
 
 	IEnumerable<HexCell> BlockedCells() =>
 		tiles.Where(t => t.Value == Kind.Water && new HexCell(t.Key.X, t.Key.Y) != BridgeCell).Select(t => t.Key).Concat(TreeSpots).Select(c => new HexCell(c.X, c.Y))
-			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R)));
+			.Concat(Rules.Objects.Select(o => new HexCell(o.Q, o.R))).Concat(IslandCenters());
 
 	// Luz quente e sombras suaves (direção de arte). O glow só pega o que emite luz, nunca números nem pontilhado (interface 2D).
 	// O SSAO está nos dados, mas só o Forward+ o desenha; o Mobile, que é o do jogo, o ignora.
@@ -109,14 +99,15 @@ public partial class Lobby : Node3D, ICombatStage
 			GlowBloom = 0f,
 		};
 		AddChild(new WorldEnvironment { Environment = environment });
-		AddChild(new DirectionalLight3D
+		sun = new DirectionalLight3D
 		{
 			LightColor = Color.FromHtml("#FFE4BC"),
 			LightEnergy = 1.2f,
 			ShadowEnabled = true,
 			ShadowBlur = 2f,
 			RotationDegrees = new Vector3(-50f, -30f, 0f),
-		});
+		};
+		AddChild(sun);
 	}
 
 	// Desfoque leve das bordas (efeito maquete): só o que está bem longe da câmera, para os números e as criaturas ficarem nítidos.
@@ -259,7 +250,7 @@ public partial class Lobby : Node3D, ICombatStage
 		{
 			var center = new Vector3(place.X, 0f, place.Z);
 			bool landmark = place.Id is "ciencias" or "historia" or "geografia";
-			AddIslet(center, landmark ? 3.0f : 2.3f);
+			if (!map.Islands.ContainsKey(place.Id)) AddIslet(center, landmark ? 3.0f : 2.3f);
 			var top = 5.2f;
 			if (LoadModel(place.Model) is { } model)
 			{
@@ -376,6 +367,7 @@ public partial class Lobby : Node3D, ICombatStage
 	{
 		clock += delta;
 		TickLandmarks(delta);
+		TickDay();
 		var bob = ReduceMotion ? 0f : Mathf.Sin((float)clock * 4f) * 0.15f;
 		foreach (var marker in markers.Values)
 			if (marker.Visible) marker.Position = new Vector3(marker.Position.X, MarkerBaseY(marker) + bob, marker.Position.Z);

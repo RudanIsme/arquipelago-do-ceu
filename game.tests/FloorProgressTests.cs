@@ -18,6 +18,21 @@ public sealed class FloorProgressTests : IDisposable
 	ProgressServices NewProgress(SaveStore store) => ProgressServices.Create(new SaveSession(store, Example));
 
 	[Fact]
+	public void O_Nivel_explorado_numa_versao_antiga_do_gerador_continua_nela_e_o_novo_usa_a_atual()
+	{
+		var progress = NewProgress(new SaveStore(PathName));
+		var level = new LevelKey("matematica", 1);
+
+		Assert.Equal(2, progress.Explored.VersionFor("p", level, current: 2));
+		progress.Explored.Save("p", new FloorKey("matematica", 1, 1), new FloorExploration([0], []), version: 1);
+
+		Assert.Equal(1, progress.Explored.VersionFor("p", level, current: 2));
+		Assert.Equal(2, progress.Explored.VersionFor("p", new LevelKey("matematica", 2), current: 2));
+		Assert.Equal(2, progress.Explored.VersionFor("p", new LevelKey("portugues", 1), current: 2));
+		Assert.Equal(2, progress.Explored.VersionFor("q", level, current: 2));
+	}
+
+	[Fact]
 	public void A_exploracao_do_Andar_sobrevive_a_gravar_e_reabrir()
 	{
 		var store = new SaveStore(PathName);

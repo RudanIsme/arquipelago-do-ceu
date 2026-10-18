@@ -38,6 +38,8 @@ static class TestJson
 		  "dungeon": { "floorsMin": 3, "floorsMax": 4, "roomsMin": 6, "roomsMax": 9, "restEnergy": 2, "shortcutChallenges": 3, "masterChallenges": 4, "conceptSolves": 3 },
 		  "lobby": {
 		    "interactionReach": 2.0,
+		    "dayCycleSeconds": 480,
+		    "islandRadius": 5,
 		    "camera": { "size": 28, "minSize": 12, "maxSize": 44, "zoomStep": 3, "followSharpness": 4, "deadZone": 1.5, "maxPan": 9 },
 		    "places": [
 		      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -10, "z": -6 },

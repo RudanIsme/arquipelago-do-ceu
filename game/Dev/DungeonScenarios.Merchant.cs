@@ -16,7 +16,7 @@ static partial class DungeonScenarios
 		port.Progress.Wallet.Add(profile, 40);
 		var start = port.Merchant.Balance(profile);
 
-		await WalkTo(d, -4, 2);
+		await WalkTo(d, 0, 11);
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.8);
 		d.Expect(Named<Control>(d, "MerchantScreen") is not null, "chegar perto do Mercador e interagir abre a tela dele");

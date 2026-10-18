@@ -52,7 +52,7 @@ O Personagem é um só, do Perfil, e é personalizável: cores de roupa e de car
 
 **Opção em aberto: trocar de Papel dentro da Dungeon.** No MVP cada torre tem um só Papel. Se mais tarde houver torres híbridas (Andares com Matemática e Português juntos), o HUD de combate pode ganhar um botão **Trocar** no painel do Papel, para a criança alternar entre Matemático e Escriba (no teclado, a tecla Q). Trocar não cura nem muda a Energia, e cada Andar só aceita o Papel que combina com a Sala. Enquanto a torre tiver um só Papel, o botão fica escondido. Não está decidido; depende de existirem torres híbridas.
 
-**Cosméticos:** roupas, cores, acessórios e variações visuais da ferramenta (como o tipo de arma). Não mudam o Papel nem dão vantagem. *Exceção em aberto: o experimento de equipamentos (PR #97) dá bônus pequenos de velocidade, Energia e alcance; precisa ser decidido se vira regra ou volta a ser só visual (ver `docs/arte-e-ux/quatro-caminhos-e-equipamentos.md`).* Só se ganham por aprendizado e exploração nas Dungeons (libertar criatura, dominar conceito, concluir Nível), nunca por compra, sorteio ou sequência diária.
+**Cosméticos:** roupas, cores, acessórios e variações visuais da ferramenta (como o tipo de arma). Não mudam o Papel nem dão vantagem. Equipamento é outra coisa: dá atributos e pede Maestria (ver `docs/adr/0007-economia-sem-dinheiro-de-verdade.md`). Cosmético se ganha por aprendizado e exploração nas Dungeons (libertar criatura, dominar conceito, concluir Andar ou Nível) ou comprando no Mercador com moedas do jogo; nunca por dinheiro de verdade, sorteio ou sequência diária.
 
 Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. Na Área de treino do Lobby ela pratica o mesmo combate das Dungeons contra o Boneco de treino, com uma Energia própria; se a Energia zera, a criança só sai da Área de treino, sem perder nada. **O treino no Lobby não conta para o progresso**: habilidades, caixas de memória e dificuldade adaptativa só mudam com o que acontece nas Dungeons.
 
@@ -193,7 +193,7 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 
 | Recurso | No MVP | Depois |
 | --- | --- | --- |
-| Lobby | Ilha cercada por cinco torres (Matemática e Português abertas, em greybox; Ciências, História e Geografia "em breve"), Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles | Decoração, mais torres |
+| Lobby | Ilha principal ampliada, com Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles. Cada torre (Matemática e Português) e o Mercador ficam em ilha própria, ligada à principal por uma ponte que a criança atravessa a pé, sem carregamento nem teleporte (Ciências, História e Geografia seguem como ilhas "em breve", sem ponte). Um ciclo curto de dia e noite (8 minutos de jogo, em dados) muda só luz, céu e lampiões; não usa o relógio do aparelho, nada depende do horário e uma opção nas Configurações fixa o dia. Dentro das torres a luz é fixa | Decoração, mais ilhas |
 | Dungeon | Matemática e Português, 3 níveis cada (1º ao 3º ano), andares gerados inteiros, desafios mestres | Novos biomas e tipos de sala |
 | Fast travel | Um ponto por andar, que também salva | Mapa do mundo completo |
 | Personagens | Matemático e Escriba, 2 a 3 habilidades cada | Mais personagens, Ciências |
@@ -220,9 +220,9 @@ Depois do Lobby, as duas torres ficaram jogáveis, sem arte nem tema definitivos
 - O Item de troca fica numa Sala de um Andar anterior ao Marco, e o Marco só abre com o Item da outra torre, do mesmo Nível.
 - O Desafio épico conclui o Nível naquela torre, e a criança escolhe continuar ou voltar. O Atalho de Nível, oferecido na porta da torre, leva direto ao épico com 3 Desafios sorteados do Nível; errar encerra a tentativa sem tirar Energia, e só há uma tentativa por Nível e torre. Acertar conclui o Nível e entrega o Item.
 - O Desafio mestre acontece no Lobby, num portal roxo que só abre com os dois épicos do Nível concluídos. São 4 Desafios alternando Matemática e Português contra o Guardião do Nível, e vencê-los sobe o Nível liberado nas duas torres.
-- Ao iniciar a Expedição a criança escolhe **Progressão** (o Plano do Nível) ou **Livre**. Na Livre os Andares seguem sem fim, no Nível já liberado, sem Marco, Item de troca nem Desafio épico; as Missões variam (o mesmo problema não se repete na Expedição e os últimos vistos são evitados) e a Livre não avança o Plano, o épico nem o Desafio mestre. Zerar a Energia volta ao Lobby como sempre.
+- Entrar numa torre sempre começa a **Progressão** (o Plano do Nível); não há tela de escolha. Na entrada de qualquer Andar, e no Desafio épico já vencido, há uma **escada lateral** opcional para os **Andares profundos**: sem fim, no Nível já liberado, sem Marco, Item de troca nem Desafio épico. As Missões variam (o mesmo problema não se repete na Expedição e os últimos vistos são evitados), rendem moedas e Maestria, e não avançam o Plano, o épico nem o Desafio mestre. O Fast travel deles volta à Progressão, e descer do primeiro Andar profundo também. Zerar a Energia volta ao Lobby como sempre; sair é sem punição.
 - Cada Papel tem uma **Maestria**: sobe quando a criança vence um mesmo Conceito na Dungeon o número de vezes definido em dados (`dungeon.conceptSolves`), sem XP e sem perda; o treino não conta.
-- O **equipamento** (Capacete, Armadura e Acessório, por Papel) soma atributos ao Personagem: Energia máxima até +2, velocidade até 1,12× e alcance de interação até +0,5, em qualquer combate, inclusive no treino. Cada peça pede uma Maestria mínima do Papel (quem não tem vê o motivo e não veste), uma substitui a outra e vestir nunca cura. A oficina atual é provisória, até o Inventário.
+- O **equipamento** (Capacete, Armadura e Acessório, por Papel) soma atributos ao Personagem: Energia máxima até +2, velocidade até 1,12× e alcance de interação até +0,5, em qualquer combate, inclusive no treino. Cada peça pede uma Maestria mínima do Papel (quem não tem vê o motivo e não veste), uma substitui a outra e vestir nunca cura. Vive no Inventário (abre pelo Dock).
 - O card do canto mostra o avatar, o apelido e a Maestria do Papel de agora (segurá-lo lê em voz alta); o lápis de Editar só existe no Lobby. A Energia aparece em raios (o vazio é o contorno do raio) na Dungeon e no treino.
 - O mapa pequeno da Dungeon mostra só o explorado, sem título nem legenda: visto na Sala vencida, boneco na atual, arco no Fast travel, traço na linha para a porta (Puzzle), "?" e cadeado. Parar o mouse ou o dedo numa Sala diz o estado dela em voz alta.
 - Ao ir para uma Expedição aparece o total de moedas; ao ganhar, um aviso curto ("+3 moedas") que some sozinho; ao voltar, o total com "+X" e o número subindo (Enter ou toque pulam; "reduzir animações" mostra direto), com a voz dizendo quanto ganhou e quanto tem. O HUD não mostra o saldo.
@@ -262,7 +262,7 @@ As contas também seguem o ECA Digital (Lei 15.211/2025), que traz regras para s
 
 ### Sem compras
 
-Nada é cobrado dentro do jogo: sem conteúdo pago, anúncios, moedas ou caixas de recompensa.
+Nada é cobrado dentro do jogo: sem conteúdo pago, anúncios ou caixas de recompensa. As moedas existem, mas são só do jogo (ganhas aprendendo e explorando), nunca se compram com dinheiro de verdade e não se perdem (ADR 0007).
 
 ### Ranking
 

@@ -15,7 +15,7 @@ public sealed class FallbackFloors
 	public Floor For(FloorPlan plan)
 	{
 		var t = templates.First(t => t.Item == plan.HoldsItem && t.Marco == plan.HasMarco && t.Epic == plan.HasEpic);
-		return new Floor(plan.Number, t.Rooms, t.Links, 0, t.Rooms.Count - 1);
+		return new Floor(plan.Number, t.Rooms, t.Links, 0, t.Rooms.Count - 1, plan.Deep);
 	}
 
 	public static Result<FallbackFloors> Parse(string json)
@@ -60,17 +60,49 @@ public sealed class FallbackFloors
 	sealed record RoomDto(string? Kind, bool Item);
 }
 
-// Entrega o Andar gerado quando ele passa no validador e o de reserva quando não passa.
-// O gerador é injetável para o teste poder provar a troca com um Andar quebrado.
+// Entrega o Andar gerado quando ele passa no validador (do grafo e do layout) e o de reserva quando não passa.
+// O gerador e o posicionador são injetáveis para o teste poder provar a troca com um Andar quebrado.
 public delegate Floor GenerateFloor(DungeonRules rules, ulong world, string discipline, int level, FloorPlan plan, int version);
 
-public sealed class FloorProvider(DungeonRules rules, FallbackFloors fallback, GenerateFloor? generate = null, RoomTypes? types = null)
+public delegate Result<FloorLayout> PlaceLayout(Floor floor, RoomForms forms, ulong seed, bool varied);
+
+public sealed class FloorProvider(DungeonRules rules, FallbackFloors fallback, GenerateFloor? generate = null, RoomTypes? types = null, RoomForms? forms = null, PlaceLayout? layout = null)
 {
+	// A partir desta versão do gerador cada Sala sorteia a forma; as anteriores seguem com a Sala de sempre (ADR 0008).
+	public const int VariedFromVersion = 2;
+
+	const int FallbackTries = 20;
+
 	readonly GenerateFloor generator = generate ?? ((r, w, d, l, p, v) => FloorGenerator.Generate(r, w, d, l, p, v, types));
+	readonly PlaceLayout placer = layout ?? FloorLayouts.Place;
 
 	public Floor Get(ulong world, string discipline, int level, FloorPlan plan, int version)
 	{
 		var floor = generator(rules, world, discipline, level, plan, version);
-		return FloorValidator.Validate(floor, plan).IsOk ? floor : fallback.For(plan);
+		var valid = FloorValidator.Validate(floor, plan).IsOk;
+		if (forms is null) return valid ? floor : fallback.For(plan);
+
+		var seed = FloorGenerator.SeedOf(world, discipline, level, plan, version);
+		var varied = version >= VariedFromVersion;
+		if (valid && Lay(floor, seed, varied, placer) is { } laid) return laid;
+		return LaidFallback(plan, seed, varied);
+	}
+
+	Floor? Lay(Floor floor, ulong seed, bool varied, PlaceLayout place)
+	{
+		var placed = place(floor, forms!, seed, varied);
+		if (!placed.IsOk) return null;
+		var laid = floor with { Layout = placed.Value };
+		return FloorLayoutValidator.Validate(laid).IsOk ? laid : null;
+	}
+
+	// O Andar de reserva também precisa de layout: tenta formas variadas e, se preciso, a Sala de sempre, com outras posições.
+	Floor LaidFallback(FloorPlan plan, ulong seed, bool varied)
+	{
+		var floor = fallback.For(plan);
+		for (var attempt = 0; attempt < FallbackTries; attempt++)
+			foreach (var tryVaried in new[] { varied, false })
+				if (Lay(floor, seed + (ulong)attempt, tryVaried, FloorLayouts.Place) is { } laid) return laid;
+		return floor;
 	}
 }

@@ -105,6 +105,7 @@ public partial class SettingsScreen : OverlayScreen
 		AddToggle(box, "Fonte para dislexia", current.DyslexiaFont, (s, on) => s with { DyslexiaFont = on });
 		AddToggle(box, "Modo calmo", current.CalmMode, (s, on) => s with { CalmMode = on });
 		AddToggle(box, "Efeitos visuais reduzidos", current.ReduceEffects, (s, on) => s with { ReduceEffects = on });
+		AddToggle(box, "Fixar o dia no Lobby", current.FixedDay, (s, on) => s with { FixedDay = on });
 	}
 
 	void VoiceSection(VBoxContainer box)

@@ -23,18 +23,21 @@ public partial class DungeonRun : Node
 	readonly DungeonContext ctx;
 	readonly IReadOnlyList<Mission> missions = MissionSource.Load().Missions;
 	readonly Expedition expedition;
-	// Na Expedição livre os problemas já vistos ficam de fora.
+	// Nos Andares profundos os problemas já vistos ficam de fora.
 	readonly MissionHistory history = new();
 	readonly DungeonWorld world = new();
+	readonly DungeonCamera camera = new();
 	readonly DungeonHud hud;
 	readonly DungeonNarration narration;
 	readonly DungeonRewards rewards;
 	readonly DungeonExploration exploration;
-	(int Floor, TrainingSetup Setup)? fightSetup;
+	(bool Deep, int Floor, TrainingSetup Setup)? fightSetup;
 	Player player = null!;
 	TrainingArea combat = null!;
 	string? target;
 	bool left;
+	// Uma Expedição dá no máximo uma carga de rotação ao Mercador, mesmo que passe pelo épico e pelos Andares profundos.
+	bool completedCounted;
 	bool enabled = true;
 	OverlayScreen? levelDone;
 	// O Atalho de Nível: os Desafios sorteados, na ordem, e qual está em jogo.
@@ -47,11 +50,11 @@ public partial class DungeonRun : Node
 	{
 		this.ctx = ctx;
 		var seed = ctx.WorldSeed;
-		var plan = ctx.Free ? LevelPlan.Free(ctx.Discipline, ctx.Level) : LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, DungeonContext.GeneratorVersion);
-		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
+		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, ctx.Version);
+		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback, forms: ctx.Forms);
 		exploration = new DungeonExploration(ctx);
-		expedition = Expedition.Start(floors, plan, seed, DungeonContext.GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
-			ctx.Free ? 1 : ctx.StartFloor, !ctx.Free && ctx.AtFastTravel, ctx.Shortcut, exploration.Get);
+		expedition = Expedition.Start(floors, plan, seed, ctx.Version, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
+			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut, exploration.Get);
 		hud = new DungeonHud(ctx, expedition);
 		narration = new DungeonNarration(ctx, expedition);
 		rewards = new DungeonRewards(ctx, () => InShortcut, hud.ShowCoins);
@@ -94,7 +97,7 @@ public partial class DungeonRun : Node
 		world.Camera.MakeCurrent();
 		world.Name = "Dungeon";
 
-		player = new Player(world.Grid, world.Camera);
+		player = new Player(world.Grid, world.Camera, world.HeightAt);
 		ctx.ConfigurePlayer(player);
 		AddChild(player);
 
@@ -112,6 +115,7 @@ public partial class DungeonRun : Node
 		hud.InteractPressed += Activate;
 		hud.LeaveRequested += () => Leave("");
 		hud.MapSpeechRequested += () => Say(narration.MapSpeech(IsFloorDone()));
+		hud.MapOpenRequested += OpenMap;
 		hud.RoomPointed += room => Say(narration.RoomSpeech(room));
 
 		player.Enabled = enabled;
@@ -120,9 +124,7 @@ public partial class DungeonRun : Node
 		if (ctx.Shortcut) hud.BuildMap();
 		else DiscoverFloor();
 		EnterRoom(-1);
-		Say(ctx.Free
-			? $"Expedição livre na {ctx.TowerName}! Os Andares não têm fim: volte ao Lobby quando quiser."
-			: $"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
+		Say($"Bem-vinda à {ctx.TowerName}! Ande até uma porta e escolha entrar.");
 	}
 
 	// --- Salas
@@ -131,9 +133,11 @@ public partial class DungeonRun : Node
 	void EnterRoom(int from, string? lead = null)
 	{
 		combat.EndFight();
-		RefreshRoom();
-		var back = from >= 0 ? world.DoorTo(from) : null;
-		player.PlaceAt(back is null ? DungeonWorld.Center : DungeonWorld.InsideOf(back));
+		var shift = RefreshRoom();
+		// Pela escada ou ao começar a criança aparece no centro; ao cruzar a porta ela segue onde estava, e o chão é que anda.
+		if (from < 0) player.PlaceAt(DungeonWorld.Center);
+		else player.PlaceAt(player.GroundPosition - shift);
+		camera.Move(from < 0 ? Vector2.Zero : shift, snap: from < 0);
 		StartFight();
 		RefreshHud();
 		exploration.Save(expedition);
@@ -160,8 +164,8 @@ public partial class DungeonRun : Node
 		return true;
 	}
 
-	void RefreshRoom() =>
-		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, narration.Describe, narration.RoomNote(), expedition.CanDescend);
+	Vector2 RefreshRoom() =>
+		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, narration.Describe, narration.RoomNote(), expedition.CanDescend, expedition.CanEnterDeep);
 
 	// Combate, Puzzle e épico têm uma criatura a vencer. A criança a escolhe (clique ou F) para abrir a montagem.
 	void StartFight()
@@ -181,11 +185,11 @@ public partial class DungeonRun : Node
 		world.Creature.RestingCompact = puzzle ? "Abrir [F]" : "Lutar [F]";
 
 		var setup = InShortcut ? Result<TrainingSetup>.Ok(shortcut[shortcutIndex])
-			: ctx.Free ? DungeonCombat.FreeSetup(missions, history, ctx.Discipline, ctx.Level, expedition.Floor.Number)
+			: expedition.InDeep ? DungeonCombat.FreeSetup(missions, history, ctx.Discipline, ctx.Level, expedition.Floor.Number)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		if (!setup.IsOk) { Say(setup.Error!); return; }
-		if (!InShortcut) fightSetup = (expedition.Floor.Number, setup.Value!);
-		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), ctx.Free ? history : null, ctx.Mechanics);
+		if (!InShortcut) fightSetup = (expedition.InDeep, expedition.Floor.Number, setup.Value!);
+		var fight = CombatSession.Start(ctx.Rules.Combat, expedition.Energy, ctx.Level, setup.Value!, missions, ctx.Random.NewStream(), expedition.InDeep ? history : null, ctx.Mechanics);
 		if (!fight.IsOk) { Say(fight.Error!); return; }
 
 		combat.BeginFight(fight.Value!, hud.Energy, OnWon, OnLost);
@@ -247,6 +251,7 @@ public partial class DungeonRun : Node
 	{
 		var marked = ctx.Progress.Levels.MarkEpicDone(ctx.ProfileId, ctx.LevelKey);
 		if (!marked.IsOk) GD.PushWarning(marked.Error!);
+		completedCounted = true;
 		ctx.ExpeditionCompleted?.Invoke();
 		var item = ctx.Shortcut && !ctx.Progress.Levels.HasItem(ctx.ProfileId, ctx.LevelKey) && GiveItem();
 		RefreshHud();
@@ -284,6 +289,8 @@ public partial class DungeonRun : Node
 		world.Creature.SetCaptionContext(true, enabled && combat.InTargetRange());
 		combat.CheckRange();
 		hud.RefreshEnergy();
+		if (enabled && world.RoomAt(player.GroundPosition) is { } reached && reached != expedition.CurrentRoom) Arrive(reached);
+		camera.Update(world, player.GroundPosition, expedition.CurrentRoom, (float)delta, player.ReduceMotion, GetViewport().GetVisibleRect().Size);
 		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, world.Interactables(expedition), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
 		if (near?.Id == target) return;
 		target = near?.Id;
@@ -292,8 +299,9 @@ public partial class DungeonRun : Node
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (left || !@event.IsActionPressed(Controls.Interact)) return;
-		Activate();
+		if (left) return;
+		if (@event.IsActionPressed(Controls.Map)) OpenMap();
+		else if (@event.IsActionPressed(Controls.Interact)) Activate();
 	}
 
 	void Activate()
@@ -308,29 +316,25 @@ public partial class DungeonRun : Node
 		}
 
 		if (target == "stairs") { ChangeFloor(expedition.Ascend); return; }
+		if (target == "stairs-deep") { ChangeFloor(expedition.EnterDeep, "Andar profundo! Aqui os Andares não têm fim: ganhe moedas e Maestria, e volte quando quiser."); return; }
+		if (target == "progression") { ChangeFloor(expedition.ReturnToProgression, "De volta à Progressão."); return; }
 		if (target == "stairs-down") { ChangeFloor(expedition.Descend); return; }
 
+		// Só as portas trancadas chegam aqui: as abertas se atravessam andando.
 		var room = int.Parse(target["door:".Length..], System.Globalization.CultureInfo.InvariantCulture);
-		var from = expedition.CurrentRoom;
-		switch (expedition.MoveTo(room))
+		Say(expedition.CanMoveTo(room) switch
 		{
-			case Passage.Open:
-				EnterRoom(from);
-				break;
-			case Passage.MustClearRoom:
-				Say("Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.");
-				break;
-			case Passage.NeedsItem:
-				Say($"O Marco só abre com o Item de troca da {OtherName}.");
-				break;
-		}
+			Passage.MustClearRoom => "Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.",
+			Passage.NeedsItem => $"O Marco só abre com o Item de troca da {OtherName}.",
+			_ => "A porta está aberta: siga pelo corredor.",
+		});
 	}
 
 	// Chegar ao Fast travel salva o ponto: é por ele que a criança retoma pelo portal do Lobby.
 	string FindFastTravel()
 	{
-		// Na Livre o ponto não é guardado: ele não pertence ao Plano do Nível.
-		if (ctx.Free) return "Fast travel! Aqui você pode voltar ao Lobby quando quiser.";
+		// No Andar profundo o ponto não é guardado: ele não pertence ao Plano do Nível.
+		if (expedition.InDeep) return "Fast travel! Aqui você pode voltar à Progressão, pela fonte de luz, ou ao Lobby quando quiser.";
 		var saved = ctx.Progress.Levels.FindFastTravel(ctx.ProfileId, ctx.FloorKeyOf(expedition.Floor.Number));
 		if (!saved.IsOk) GD.PushWarning(saved.Error!);
 		return "Fast travel encontrado! O progresso foi salvo, e você pode voltar por aqui pelo portal do Lobby.";
@@ -345,26 +349,27 @@ public partial class DungeonRun : Node
 	}
 
 	// Sobe ou desce a escada; o Andar de chegada volta como a criança o deixou.
-	void ChangeFloor(Func<bool> move)
+	void ChangeFloor(Func<bool> move, string? lead = null)
 	{
 		if (!move()) return;
 		DiscoverFloor();
-		EnterRoom(-1, $"Andar {expedition.Floor.Number}! {narration.ProgressSpeech()}");
+		EnterRoom(-1, $"{lead ?? $"Andar {expedition.Floor.Number}!"} {narration.ProgressSpeech()}");
 	}
 
-	bool IsFloorDone() => !ctx.Shortcut && (expedition.IsFloorComplete(expedition.Floor.Number) || exploration.IsDone(expedition.Floor.Number));
+	bool IsFloorDone() => !ctx.Shortcut
+		&& (expedition.IsFloorComplete(expedition.Floor.Number, expedition.InDeep) || (!expedition.InDeep && exploration.IsDone(expedition.Floor.Number)));
 
 	void DiscoverFloor()
 	{
-		exploration.Discover(expedition.Floor.Number);
+		if (!expedition.InDeep) exploration.Discover(expedition.Floor.Number);
 		hud.BuildMap();
 	}
 
 	// O objetivo da placa é o Conceito do Andar, lido das Missões e nomeado em dados; o jogo nunca o inventa.
 	string Objective()
 	{
-		// Na Livre a luta pode ter procurado outra dificuldade; o objetivo mostra o da luta de verdade.
-		var setup = fightSetup is { } fight && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
+		// No Andar profundo a luta pode ter procurado outra dificuldade; o objetivo mostra o da luta de verdade.
+		var setup = fightSetup is { } fight && fight.Deep == expedition.InDeep && fight.Floor == expedition.Floor.Number ? Result<TrainingSetup>.Ok(fight.Setup)
 			: DungeonCombat.Setup(missions, ctx.Discipline, ctx.Level, expedition.Floor.Number);
 		var concept = setup.IsOk ? DungeonCombat.ConceptOf(missions, setup.Value!) : null;
 		var subject = ctx.Tower.Subject;
@@ -374,7 +379,7 @@ public partial class DungeonRun : Node
 	public void RefreshDock() => hud.RefreshDock();
 
 	void RefreshHud() =>
-		hud.Refresh($"{(ctx.Free ? "Livre · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}\n{Objective()}", IsFloorDone());
+		hud.Refresh($"{(expedition.InDeep ? "Profundo · " : "")}{ctx.TowerName} · Nível {ctx.Level} · Andar {expedition.Floor.Number}{narration.OfTotal()}\n{Objective()}", IsFloorDone());
 
 	void Say(string text) => hud.Say(text);
 
@@ -388,7 +393,7 @@ public partial class DungeonRun : Node
 		combat.EndFight();
 		Engine.TimeScale = 1.0;
 		hud.Close();
-		if (ctx.Free && rewards.PaidFloors > 0) ctx.ExpeditionCompleted?.Invoke();
+		if (rewards.PaidFloors > 0 && !completedCounted) ctx.ExpeditionCompleted?.Invoke();
 		Left?.Invoke(reason);
 		QueueFree();
 	}

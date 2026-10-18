@@ -17,6 +17,7 @@ public static class Controls
 	public const string ZoomOut = "zoom_out";
 	public const string ZoomReset = "zoom_reset";
 	public const string Inventory = "inventory";
+	public const string Map = "map";
 
 	// Verdadeiro durante o gesto de pinça: os dedos que afastam ou aproximam não mandam o Personagem andar.
 	public static bool Pinching { get; set; }
@@ -34,6 +35,7 @@ public static class Controls
 		Bind(ZoomOut, Key.Pagedown);
 		Bind(ZoomReset, Key.Home);
 		Bind(Inventory, Key.I);
+		Bind(Map, Key.M);
 		Bind(Run, Key.Shift);
 
 	}

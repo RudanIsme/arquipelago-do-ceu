@@ -62,7 +62,7 @@ public partial class Main
 	void EnterTower(string discipline)
 	{
 		if (current is null || inDungeon) return;
-		ShowOverlay(new ExpeditionModeScreen(TowerName(discipline), () => EnterProgression(discipline), () => EnterDungeon(discipline, free: true)));
+		EnterProgression(discipline);
 	}
 
 	void EnterProgression(string discipline)
@@ -78,14 +78,15 @@ public partial class Main
 			() => EnterDungeon(discipline, shortcut: true), () => EnterDungeon(discipline)));
 	}
 
-	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false, bool shortcut = false, bool free = false)
+	void EnterDungeon(string discipline, int? level = null, int startFloor = 0, bool atFastTravel = false, bool shortcut = false)
 	{
 		if (current is null || inDungeon) return;
 		var floors = LoadFallbackFloors();
-		if (!floors.IsOk)
+		var forms = catalogs.Required("formas-de-sala.json", RoomForms.Parse);
+		if (!floors.IsOk || !forms.IsOk)
 		{
 			Notify("Não foi possível abrir a torre agora.");
-			GD.PushError(floors.Error!);
+			GD.PushError(floors.Error ?? forms.Error!);
 			return;
 		}
 
@@ -95,7 +96,7 @@ public partial class Main
 		var towerLevel = TowerCatalog.LevelFor(towers.Find(discipline)!, level ?? UnlockedLevel());
 		// Pela porta da torre a criança recomeça no último Fast travel que achou, em qualquer Andar; sem nenhum, na entrada do
 		// Andar mais fundo que visitou. Como a escada vale nos dois sentidos, ela volta para trás quando quiser.
-		if (startFloor == 0 && !shortcut && !free && progress.Levels.LastFastTravel(current.Id, new LevelKey(discipline, towerLevel)) is { } last)
+		if (startFloor == 0 && !shortcut && progress.Levels.LastFastTravel(current.Id, new LevelKey(discipline, towerLevel)) is { } last)
 		{
 			startFloor = last.Floor;
 			atFastTravel = true;
@@ -103,7 +104,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, free, LoadConcepts(), ShowInventory, NewInventoryCount, ExpeditionCompleted, battleMechanics));
+			progress, floors.Value!, forms.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, LoadConcepts(), ShowInventory, NewInventoryCount, ExpeditionCompleted, battleMechanics));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;

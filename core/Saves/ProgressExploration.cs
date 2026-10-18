@@ -10,6 +10,11 @@ public sealed class ExplorationService(ProgressStore store)
 			? new FloorExploration(saved.Visited, saved.Cleared)
 			: null;
 
+	// A versão do gerador em que a criança já explorou este Nível, para os Andares salvos seguirem abrindo iguais (ADR 0008);
+	// um Nível ainda não explorado usa a versão atual.
+	public int VersionFor(string profileId, LevelKey level, int current) =>
+		store.Of(profileId)?.Explored?.Where(e => e.Version >= 1 && FloorKey.TryParse(e.Key)?.Of == level).Select(e => (int?)e.Version).Min() ?? current;
+
 	// Guarda o que foi explorado no Andar, no lugar do que havia.
 	public Result<ProfileSave> Save(string profileId, FloorKey floor, FloorExploration exploration, int version = 0)
 	{

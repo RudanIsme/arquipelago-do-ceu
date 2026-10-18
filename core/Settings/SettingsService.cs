@@ -4,7 +4,7 @@ using ArquipelagoDoCeu.Saves;
 namespace ArquipelagoDoCeu.Settings;
 
 // As configurações já resolvidas: sempre valores que existem nos dados, nunca nulos.
-public sealed record GameSettings(string TextSize, float TextScale, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls, string? VoiceId, string VoiceSpeed, float VoiceRate, bool ReduceEffects);
+public sealed record GameSettings(string TextSize, float TextScale, bool Voice, bool ReduceMotion, bool DyslexiaFont, bool CalmMode, string Controls, string? VoiceId, string VoiceSpeed, float VoiceRate, bool ReduceEffects, bool FixedDay = false);
 
 // Configurações do aparelho: valem para todos os Perfis e ficam no save. Ausente ou fora dos dados
 // vale o padrão (pensado para uma criança pequena); a mudança só vale depois de gravada.
@@ -37,7 +37,7 @@ public sealed class SettingsService
 		var speed = rules.Settings.VoiceSpeeds.FirstOrDefault(v => v.Id == next.VoiceSpeed);
 		if (speed is null) return Result<GameSettings>.Fail("Essa velocidade de voz não existe.");
 
-		var saved = new SettingsSave(next.TextSize, next.Voice, next.ReduceMotion, next.DyslexiaFont, next.CalmMode, next.Controls, next.VoiceId, next.VoiceSpeed, next.ReduceEffects);
+		var saved = new SettingsSave(next.TextSize, next.Voice, next.ReduceMotion, next.DyslexiaFont, next.CalmMode, next.Controls, next.VoiceId, next.VoiceSpeed, next.ReduceEffects, next.FixedDay);
 		var written = session.Commit(d => d with { Settings = saved });
 		if (!written.IsOk) return Result<GameSettings>.Fail(written.Error!);
 
@@ -65,6 +65,7 @@ public sealed class SettingsService
 			saved?.VoiceId,
 			speed.Id,
 			speed.Rate,
-			saved?.ReduceEffects ?? defaults.ReduceEffects);
+			saved?.ReduceEffects ?? defaults.ReduceEffects,
+			saved?.FixedDay ?? false);
 	}
 }

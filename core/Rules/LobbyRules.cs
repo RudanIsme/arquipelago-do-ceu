@@ -11,7 +11,15 @@ public sealed record LobbyObject(string Id, string Name, string Prompt, string? 
 // a suavidade do acompanhamento, a folga (a câmera só segue quando o Personagem sai dela) e até onde a câmera pode se afastar do centro.
 public sealed record CameraRules(float Size, float MinSize, float MaxSize, float ZoomStep, float FollowSharpness, float DeadZone, float MaxPan);
 
-public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera);
+// Um hexágono da ilha (q, r em coordenadas axiais), em dados.
+public sealed record LobbyCell(int Q, int R);
+
+// Uma ilha além da principal (de uma torre ou do Mercador): o centro, o raio e o hexágono da ilha principal de onde sai a ponte a pé.
+// `Solid` é a ilha cujo centro não se pisa, por causa da torre que está nele.
+public sealed record LobbyIsland(string Id, int Q, int R, int Radius, int FromQ, int FromR, bool Solid);
+
+public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera, float DayCycleSeconds,
+	int IslandRadius, IReadOnlyList<LobbyCell> Carved, IReadOnlyList<LobbyIsland> Islands);
 
 public sealed record TextSizeOption(string Id, string Name, float Scale);
 
@@ -23,7 +31,9 @@ public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMo
 
 public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, IReadOnlyList<VoiceSpeedOption> VoiceSpeeds, SettingsDefaults Defaults);
 
-sealed record LobbyDto(float? InteractionReach, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
+sealed record LobbyDto(float? InteractionReach, float? DayCycleSeconds, int? IslandRadius, List<int[]?>? Carved, List<IslandDto?>? Islands, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
+
+sealed record IslandDto(string? Id, int? Q, int? R, int? Radius, int[]? From, bool? Solid);
 
 sealed record CameraDto(float? Size, float? MinSize, float? MaxSize, float? ZoomStep, float? FollowSharpness, float? DeadZone, float? MaxPan);
 
@@ -48,6 +58,8 @@ static class LobbyChecks
 	const float MaxReach = 10f;
 	const float MinScale = 0.75f;
 	const float MaxScale = 2f;
+	const float MinDayCycle = 60f;
+	const float MaxDayCycle = 3600f;
 	const float MinRate = 0.5f;
 	const float MaxRate = 2f;
 
@@ -57,6 +69,11 @@ static class LobbyChecks
 		if (lobby.InteractionReach is null) return Required("lobby.interactionReach");
 		if (lobby.InteractionReach < MinReach || lobby.InteractionReach > MaxReach)
 			return $"Regras inválidas: '{"lobby.interactionReach"}' deve estar entre {MinReach} e {MaxReach} (veio {lobby.InteractionReach}).";
+		if (lobby.DayCycleSeconds is null) return Required("lobby.dayCycleSeconds");
+		if (lobby.DayCycleSeconds < MinDayCycle || lobby.DayCycleSeconds > MaxDayCycle)
+			return $"Regras inválidas: 'lobby.dayCycleSeconds' deve estar entre {MinDayCycle} e {MaxDayCycle} (veio {lobby.DayCycleSeconds}).";
+		if (lobby.IslandRadius is not (>= 4 and <= 16)) return "Regras inválidas: 'lobby.islandRadius' deve estar entre 4 e 16.";
+		if (CheckIslands(lobby) is { } islandError) return islandError;
 		if (lobby.Places is null) return Required("lobby.places");
 		if (lobby.Objects is null) return Required("lobby.objects");
 		if (CheckCamera(lobby.Camera) is { } cameraError) return cameraError;
@@ -90,6 +107,24 @@ static class LobbyChecks
 		return null;
 	}
 
+	static string? CheckIslands(LobbyDto lobby)
+	{
+		if (lobby.Carved?.Any(c => c is not { Length: 2 }) == true) return "Regras inválidas: cada item de 'lobby.carved' deve ser [q, r].";
+		var ids = new HashSet<string>();
+		for (var i = 0; i < (lobby.Islands?.Count ?? 0); i++)
+		{
+			var path = $"lobby.islands[{i}]";
+			var island = lobby.Islands![i];
+			if (island is null || Blank(island.Id)) return Required($"{path}.id");
+			if (!ids.Add(island.Id!)) return Duplicate("ilha", island.Id!, "lobby.islands");
+			if (island.Q is null) return Required($"{path}.q");
+			if (island.R is null) return Required($"{path}.r");
+			if (island.Radius is not (>= 1 and <= 4)) return $"Regras inválidas: '{path}.radius' deve estar entre 1 e 4.";
+			if (island.From is not { Length: 2 }) return $"Regras inválidas: '{path}.from' deve ser [q, r], o hexágono da ilha principal de onde sai a ponte.";
+		}
+		return null;
+	}
+
 	static string? CheckCamera(CameraDto? camera)
 	{
 		if (camera is null) return Required("lobby.camera");
@@ -110,7 +145,11 @@ static class LobbyChecks
 		lobby.InteractionReach!.Value,
 		lobby.Places!.Select(p => new LobbyPlace(p!.Id!, p.Name!, p.Sign!, Blank(p.Model) ? null : p.Model, p.X!.Value, p.Z!.Value)).ToList(),
 		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList(),
-		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value));
+		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value),
+		lobby.DayCycleSeconds!.Value,
+		lobby.IslandRadius!.Value,
+		(lobby.Carved ?? []).Select(c => new LobbyCell(c![0], c[1])).ToList(),
+		(lobby.Islands ?? []).Select(i => new LobbyIsland(i!.Id!, i.Q!.Value, i.R!.Value, i.Radius!.Value, i.From![0], i.From[1], i.Solid ?? false)).ToList());
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{

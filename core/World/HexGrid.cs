@@ -7,6 +7,14 @@ public readonly record struct HexCell(int Q, int R)
 {
 	static readonly HexCell[] Offsets = [new(1, 0), new(1, -1), new(0, -1), new(-1, 0), new(-1, 1), new(0, 1)];
 
+	public static HexCell operator +(HexCell a, HexCell b) => a.Add(b);
+
+	public static HexCell operator -(HexCell a, HexCell b) => a.Subtract(b);
+
+	public HexCell Add(HexCell other) => new(Q + other.Q, R + other.R);
+
+	public HexCell Subtract(HexCell other) => new(Q - other.Q, R - other.R);
+
 	public int DistanceTo(HexCell other)
 	{
 		var dq = Q - other.Q;
@@ -48,6 +56,16 @@ public sealed class HexGrid
 	}
 
 	public IReadOnlyCollection<HexCell> Cells => cells;
+
+	// Troca o chão sem trocar o objeto: quem anda guarda a grade, e a Sala de uma Dungeon muda a cada porta.
+	public void Reset(IEnumerable<HexCell> newCells, IEnumerable<HexCell> newBlocked)
+	{
+		var (freshCells, freshBlocked) = (newCells.ToList(), newBlocked.ToList());
+		cells.Clear();
+		cells.UnionWith(freshCells);
+		blocked.Clear();
+		blocked.UnionWith(freshBlocked);
+	}
 
 	public bool IsWalkable(HexCell cell) => cells.Contains(cell) && !blocked.Contains(cell);
 

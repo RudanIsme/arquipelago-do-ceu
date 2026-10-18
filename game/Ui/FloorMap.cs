@@ -11,7 +11,7 @@ namespace ArquipelagoDoCeu;
 // Com uma Expedição ligada só aparece o explorado: Salas visitadas, vizinhas sob névoa ("?") e o cadeado.
 public partial class FloorMap : Control
 {
-	const float Radius = 17f;
+	float Radius = 17f;
 
 	readonly Floor floor;
 	readonly Dictionary<int, Vector2> positions = new();
@@ -54,7 +54,8 @@ public partial class FloorMap : Control
 		this.floor = floor;
 		CustomMinimumSize = size;
 		Size = size;
-		Layout(size);
+		if (floor.Layout is null) Layout(size);
+		else LayoutSpace(size);
 	}
 
 	public static Color ColorOf(RoomType kind) => Color.FromHtml(kind.Color);
@@ -88,12 +89,13 @@ public partial class FloorMap : Control
 	public override void _Draw()
 	{
 		var line = Color.FromHtml("#D9A64A");
-		foreach (var link in floor.Links)
-			if (SightOf(link.A) == Sight.Seen || SightOf(link.B) == Sight.Seen)
-			{
-				DrawLine(positions[link.A], positions[link.B], line, 3f, true);
-				if (floor.Rooms[link.A].Kind.IsDoor || floor.Rooms[link.B].Kind.IsDoor) DrawDoorMark(positions[link.A], positions[link.B]);
-			}
+		if (floor.Layout is not null) DrawSilhouettes();
+		else foreach (var link in floor.Links)
+				if (SightOf(link.A) == Sight.Seen || SightOf(link.B) == Sight.Seen)
+				{
+					DrawLine(positions[link.A], positions[link.B], line, 3f, true);
+					if (floor.Rooms[link.A].Kind.IsDoor || floor.Rooms[link.B].Kind.IsDoor) DrawDoorMark(positions[link.A], positions[link.B]);
+				}
 
 		var font = ThemeDB.FallbackFont;
 		foreach (var room in floor.Rooms)
@@ -168,6 +170,11 @@ public partial class FloorMap : Control
 	// Parar o dedo ou o mouse sobre uma Sala pede a descrição dela em voz alta.
 	public event Action<int>? RoomPointed;
 
+	// No mapa pequeno do HUD, tocar abre o mapa em tela cheia.
+	public event Action? Tapped;
+
+	public bool TapOpens { get; set; }
+
 	int? pointed;
 	int pointEpoch;
 
@@ -179,6 +186,11 @@ public partial class FloorMap : Control
 		var position = ((InputEventMouse)@event).Position;
 		var near = positions.Where(p => SightOf(p.Key) != Sight.Hidden && p.Value.DistanceTo(position) <= Radius + 6).Select(p => (int?)p.Key).FirstOrDefault();
 		var click = @event is InputEventMouseButton;
+		if (click && TapOpens)
+		{
+			Tapped?.Invoke();
+			return;
+		}
 		if (near == pointed && !click) return;
 		pointed = near;
 		var mine = ++pointEpoch;
