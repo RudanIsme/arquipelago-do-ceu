@@ -169,7 +169,7 @@ public partial class CombatHud : OverlayScreen
 		heading.Text = presenter.Heading;
 		prompt.Text = presenter.Prompt;
 		assembled.Text = presenter.Assembled;
-		if (!presenter.FreeDraw) RefreshPieces();
+		RefreshPieces();
 		undo.Disabled = !presenter.Composing && layer?.IsActive != true;
 		RefreshGuide();
 		Requested?.Invoke(presenter.Request);
@@ -280,7 +280,7 @@ public partial class CombatHud : OverlayScreen
 
 	void Undo()
 	{
-		if (layer is not null)
+		if (layer?.IsActive == true)
 		{
 			layer.Clear();
 			return;

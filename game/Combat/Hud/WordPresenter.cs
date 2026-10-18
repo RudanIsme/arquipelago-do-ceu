@@ -87,9 +87,9 @@ sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord, bo
 	public bool Attack(out string? error)
 	{
 		error = null;
-		var result = battle.Check();
-		if (result == WordResult.Incomplete) return false;
-		checkedWord(result);
+		var text = battle.Typed;
+		battle.Clear();
+		checkedWord(battle.Write(text));
 		return true;
 	}
 

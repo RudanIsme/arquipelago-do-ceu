@@ -10,6 +10,7 @@ namespace ArquipelagoDoCeu;
 public partial class CombatHud
 {
 	FreeDrawLayer? layer;
+	const int ButtonSize = 56;
 	bool hintShown;
 
 	// O que a criatura diz em voz e em texto (o balão dela) e o pedido que ela mostra, ou nulo para voltar ao normal.
@@ -28,20 +29,32 @@ public partial class CombatHud
 		layer.ActiveChanged += _ => NotifyComposing();
 	}
 
-	// No desenho livre a HUD é só uma fileira baixa de botões: o pedido e os recados ficam no balão da criatura.
+	// Como no mockup: a mochila fica sempre à vista, numa fileira baixa embaixo, com os botões pequenos ao lado. O pedido e os recados
+	// ficam no balão da criatura. A criança escolhe entre atacar na hora (as peças) e desenhar.
 	Control BuildCompactBar()
 	{
-		undo = BookStyle.Button("Apagar", Undo, "Undo", PieceSize);
+		undo = BookStyle.Button("Apagar", Undo, "Undo", ButtonSize);
+		pieces = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, Name = "Pieces" };
+		pieces.AddThemeConstantOverride("h_separation", 12);
 		var bar = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
 		bar.AddThemeConstantOverride("separation", 8);
-		bar.AddChild(undo);
-		bar.AddChild(BookStyle.Button("Dica", AskHint, "Hint", PieceSize));
-		bar.AddChild(BookStyle.Button("Ouvir", () => ReadRequested?.Invoke(), "Read", PieceSize));
-		bar.AddChild(BookStyle.Button("Soltar alvo", Abandon, "Release", PieceSize));
-		bar.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterBottom, LayoutPresetMode.Minsize);
+		var bag = BookStyle.Panel(pieces);
+		bag.Name = "Bag";
+		bag.CustomMinimumSize = new Vector2(0, PieceSize + 28);
+		bag.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+		bar.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+		bar.AddChild(bag);
+		Button[] buttons = [undo, BookStyle.Button("Dica", AskHint, "Hint", ButtonSize), BookStyle.Button("Ouvir", () => ReadRequested?.Invoke(), "Read", ButtonSize), BookStyle.Button("Soltar alvo", Abandon, "Release", ButtonSize)];
+		foreach (var button in buttons)
+		{
+			button.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+			bar.AddChild(button);
+		}
+		bar.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide, LayoutPresetMode.Minsize);
+		bar.OffsetLeft = Margin;
+		bar.OffsetRight = -Margin;
 		bar.OffsetBottom = -Margin;
 		bar.GrowVertical = GrowDirection.Begin;
-		bar.GrowHorizontal = GrowDirection.Both;
 		return bar;
 	}
 

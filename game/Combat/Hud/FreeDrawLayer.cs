@@ -126,10 +126,16 @@ public partial class FreeDrawLayer : Control
 		clock += delta;
 		// O mundo anda em câmera lenta enquanto se escreve, mas a espera de 0,8 s é de relógio.
 		var real = (float)(Engine.TimeScale > 0.0 ? delta / Engine.TimeScale : delta);
-		if (drawing.Tick(real) is { } reading) Read?.Invoke(recognizer.Read(reading, allowed()));
+		if (drawing.Tick(real) is { } reading) Emit(recognizer.Read(reading, allowed()));
 		if (typed.Length > 0 && (typedIdle += real) >= idleSeconds) Submit();
 		Notify();
 		if (guide is not null || drawing.IsActive || typed.Length > 0) QueueRedraw();
+	}
+
+	void Emit(TextGuess guess)
+	{
+		GD.Print($"Desenho lido: {guess.Kind} '{guess.Text}'");
+		Read?.Invoke(guess);
 	}
 
 	void Notify()

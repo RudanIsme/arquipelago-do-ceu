@@ -89,7 +89,9 @@ sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName, b
 	public bool Attack(out string? error)
 	{
 		error = null;
-		checkedName(battle.Check());
+		var text = string.Concat(battle.Chosen.Select(i => battle.Pieces[i]));
+		battle.UndoAll();
+		checkedName(FreeDraw ? battle.Write(text) : battle.Check());
 		return true;
 	}
 

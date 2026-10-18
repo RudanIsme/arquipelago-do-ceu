@@ -173,8 +173,8 @@
     "freeDraw": {
       "idleSeconds": 0.8,
       "points": 32,
-      "maxDistance": 0.2,
-      "ambiguityRatio": 0.88,
+      "maxDistance": 0.25,
+      "ambiguityRatio": 0.82,
       "mergeOverlap": 0.5,
       "markRatio": 0.15,
       "guideAlwaysUpToYear": 1

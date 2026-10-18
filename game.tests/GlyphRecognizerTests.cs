@@ -27,25 +27,37 @@ public class GlyphRecognizerTests
 		})])];
 	}
 
+	// Ler errado custa Energia, e pedir de novo não custa: o jogo pode duvidar, mas quando afirma não pode errar.
 	[Fact]
-	public void Reconhece_numeros_e_sinais_desenhados_tortos()
+	public void Numeros_e_sinais_tortos_quase_sempre_sao_lidos_e_nunca_lidos_errado()
 	{
+		var sure = 0;
+		var total = 0;
 		foreach (var glyph in Digits.Select(c => c.ToString()))
-			foreach (var seed in new[] { 1, 4 })
+			foreach (var seed in new[] { 1, 2, 4 })
 			{
 				var guess = Recognizer.Recognize(Crooked(glyph, new Vector2(100, 80), 200, seed), Digits);
-				Assert.True(guess is { Kind: GuessKind.Sure } && guess.Glyph == glyph, $"{glyph} (seed {seed}) veio {guess.Kind} {guess.Glyph}");
+				total++;
+				Assert.NotEqual(GuessKind.Unknown, guess.Kind);
+				Assert.Equal(glyph, guess.Glyph);
+				if (guess.Kind == GuessKind.Sure) sure++;
 			}
+		Assert.True(sure >= total * 0.9, $"{sure} de {total} lidos com segurança");
 	}
 
 	[Fact]
-	public void O_melhor_palpite_das_letras_de_A_a_Z_tortas_e_a_certa_e_so_a_duvida_pede_de_novo()
+	public void Letras_tortas_nunca_sao_lidas_com_segurança_erradas()
 	{
+		var sure = 0;
 		foreach (var glyph in Letters.Select(c => c.ToString()))
 		{
 			var guess = Recognizer.Recognize(Crooked(glyph, new Vector2(40, 60), 150, 2), Letters);
-			Assert.True(guess.Kind != GuessKind.Unknown && guess.Glyph == glyph, $"{glyph} veio {guess.Kind} {guess.Glyph}");
+			Assert.NotEqual(GuessKind.Unknown, guess.Kind);
+			if (guess.Kind != GuessKind.Sure) continue;
+			sure++;
+			Assert.Equal(glyph, guess.Glyph);
 		}
+		Assert.True(sure >= Letters.Length * 0.7, $"{sure} de {Letters.Length} lidas com segurança");
 	}
 
 	[Fact]

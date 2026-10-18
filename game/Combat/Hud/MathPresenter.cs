@@ -46,7 +46,8 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 	public string ResolvedText => "A névoa está sumindo. Espere o novo escudo.";
 
-	public bool Complete => battle.Staff.IsComplete;
+	// Uma conta pronta se responde com um número só; um resultado pedido, com número, sinal e número.
+	public bool Complete => battle.Ask == MathAsk.Answer ? battle.Staff.Tokens.Count >= 1 : battle.Staff.IsComplete;
 
 	public bool TypesLetters => false;
 
@@ -71,11 +72,10 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 	public bool Attack(out string? error)
 	{
-		var attack = battle.Confirm();
-		error = attack.Error;
-		if (!attack.IsOk) return false;
-		attacked(attack.Value!);
-		return true;
+		// A conta montada com peças segue as mesmas regras da desenhada.
+		var text = string.Concat(battle.Staff.Tokens);
+		battle.Staff.Cancel();
+		return Write(text, out error);
 	}
 
 	public int? PieceForKey(InputEventKey key)
@@ -96,5 +96,5 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 			: new HudPiece(battle.Bag.IsHidden(slot) ? "?" : "", "peça escondida", false));
 
 	IEnumerable<HudPiece> Signs() =>
-		rules.Operators.Select(sign => new HudPiece(sign, sign == "+" ? "mais" : "menos", battle.Staff.CanPlaceOperator));
+		rules.Operators.Where(_ => battle.Ask == MathAsk.Result).Select(sign => new HudPiece(sign, sign == "+" ? "mais" : "menos", battle.Staff.CanPlaceOperator));
 }

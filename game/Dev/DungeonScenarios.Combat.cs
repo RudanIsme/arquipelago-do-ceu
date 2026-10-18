@@ -31,6 +31,9 @@ static partial class DungeonScenarios
 		d.Expect(d.FightShield() != shield || d.HasVisible("Acertou") || d.HasVisible("Ainda não") || d.HasVisible("Golpe") || d.HasVisible("perfeito"), "o desenho foi lido e o golpe saiu sem botão");
 		d.Expect(Engine.TimeScale >= 1.0, "o tempo volta ao normal depois da leitura");
 		await d.Shot("04-golpe");
+		d.Expect(d.Hud?.Presenter.Pieces.Count > 0 && d.Button("Dica") is not null, "a mochila fica sempre à vista, com as peças");
+		await d.PlayPiece(0);
+		await d.Shot("04b-mochila");
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
 

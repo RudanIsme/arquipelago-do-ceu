@@ -11,18 +11,23 @@ public sealed record GlyphGuess(GuessKind Kind, string? Glyph, string? Other = n
 // O palpite sobre o desenho todo: `Text` tem um caractere por símbolo ("?" onde não deu para ler).
 public sealed record TextGuess(GuessKind Kind, string Text);
 
-// Reconhece um símbolo comparando o traço com as trilhas em JSON, sem IA e sem rede; ordem e direção dos traços não importam.
+// Reconhece um símbolo comparando o traço com as trilhas em JSON, sem IA e sem rede, em todas as ordens e sentidos possíveis dos traços.
 // Na dúvida entre dois glifos, ou longe de todos, nunca escolhe: quem chama pede para refazer, sem custo.
 public sealed class GlyphRecognizer
 {
-	readonly Dictionary<string, Vector2[]> templates = [];
+	const int MaxPermuted = 4;
+
+	readonly Dictionary<string, List<Vector2[]>> templates = [];
 	readonly FreeDrawRules rules;
 
 	public GlyphRecognizer(TraceTrails trails, FreeDrawRules rules)
 	{
 		this.rules = rules;
 		foreach (var glyph in trails.Glyphs)
-			if (Cloud([.. trails.Find(glyph)!.Strokes.Select(s => s.Points)]) is { } cloud) templates[glyph] = cloud;
+		{
+			var variants = Variants([.. trails.Find(glyph)!.Strokes.Select(s => s.Points)]);
+			if (variants.Count > 0) templates[glyph] = variants;
+		}
 	}
 
 	// `allowed` são os caracteres que a Missão aceita: o 0 e a letra O têm a mesma forma, e quem decide é o que se pede.
@@ -40,10 +45,10 @@ public sealed class GlyphRecognizer
 	// Os glifos permitidos do mais parecido ao menos, com a distância de cada um.
 	public IReadOnlyList<(string Glyph, float Distance)> Rank(IReadOnlyList<IReadOnlyList<Vector2>> strokes, string allowed)
 	{
-		var drawn = Cloud(strokes);
+		var drawn = Normalize(strokes);
 		var candidates = allowed.Select(c => c.ToString().ToUpperInvariant()).Distinct().Where(templates.ContainsKey).ToList();
 		if (drawn is null) return [];
-		return [.. candidates.Select(g => (Glyph: g, Distance: Distance(drawn, templates[g]))).OrderBy(r => r.Distance)];
+		return [.. candidates.Select(g => (Glyph: g, Distance: templates[g].Min(v => Distance(drawn, v)))).OrderBy(r => r.Distance)];
 	}
 
 	// Lê o desenho símbolo por símbolo. Basta um símbolo duvidoso para o desenho todo pedir outra tentativa.
@@ -55,45 +60,80 @@ public sealed class GlyphRecognizer
 		return new TextGuess(guesses.Count == 0 ? GuessKind.Unknown : kind, text);
 	}
 
-	// Pontos espalhados pelo traço todo, com o glifo escalado para ter lado 1 e centrado na origem.
-	Vector2[]? Cloud(IReadOnlyList<IReadOnlyList<Vector2>> strokes)
+	// Todas as ordens e sentidos em que a criança pode ter feito os traços do glifo: o traço de um 5 pode começar pela barra ou pela barriga.
+	List<Vector2[]> Variants(List<IReadOnlyList<Vector2>> strokes)
 	{
-		var total = strokes.Sum(Length);
-		if (total <= 0f) return null;
+		var variants = new List<Vector2[]>();
+		var orders = strokes.Count <= MaxPermuted ? Permutations(Enumerable.Range(0, strokes.Count).ToList()) : [Enumerable.Range(0, strokes.Count).ToList()];
+		var flips = strokes.Count <= MaxPermuted ? 1 << strokes.Count : 1;
+		foreach (var order in orders)
+			for (var mask = 0; mask < flips; mask++)
+			{
+				var chain = order.Select(i => Oriented(strokes[i], (mask & 1 << i) != 0)).ToList();
+				if (Normalize(chain) is { } normalized) variants.Add(normalized);
+			}
+		return variants;
+	}
 
-		var dense = new List<Vector2>();
-		var step = total / (rules.Points * 4f);
-		foreach (var stroke in strokes.Where(s => s.Count > 1)) dense.AddRange(Densify(stroke, step));
+	static IReadOnlyList<Vector2> Oriented(IReadOnlyList<Vector2> stroke, bool reversed) => reversed ? [.. stroke.Reverse()] : stroke;
 
-		var picked = Enumerable.Range(0, rules.Points).Select(i => dense[i * (dense.Count - 1) / (rules.Points - 1)]).ToArray();
-		var min = new Vector2(picked.Min(p => p.X), picked.Min(p => p.Y));
-		var max = new Vector2(picked.Max(p => p.X), picked.Max(p => p.Y));
+	static IEnumerable<List<int>> Permutations(List<int> items)
+	{
+		if (items.Count <= 1)
+		{
+			yield return [.. items];
+			yield break;
+		}
+		foreach (var item in items)
+			foreach (var rest in Permutations([.. items.Where(i => i != item)]))
+				yield return [item, .. rest];
+	}
+
+	// Os traços, na ordem, viram um caminho só (como o dedo se moveu), com pontos a distâncias iguais, glifo com lado 1 e centrado.
+	Vector2[]? Normalize(IReadOnlyList<IReadOnlyList<Vector2>> strokes)
+	{
+		var path = strokes.Where(s => s.Count > 1).SelectMany(s => s).ToList();
+		if (path.Count < 2) return null;
+		var points = Resample(path, rules.Points);
+		var min = new Vector2(points.Min(p => p.X), points.Min(p => p.Y));
+		var max = new Vector2(points.Max(p => p.X), points.Max(p => p.Y));
 		var scale = Math.Max(max.X - min.X, max.Y - min.Y);
 		if (scale <= 0f) return null;
 		var center = (min + max) / 2f;
-		return [.. picked.Select(p => (p - center) / scale)];
+		return [.. points.Select(p => (p - center) / scale)];
 	}
 
-	static IEnumerable<Vector2> Densify(IReadOnlyList<Vector2> stroke, float step)
+	static Vector2[] Resample(List<Vector2> path, int count)
 	{
-		for (var i = 0; i < stroke.Count; i++)
+		var total = path.Zip(path.Skip(1), Vector2.Distance).Sum();
+		if (total <= 0f) return [.. Enumerable.Repeat(path[0], count)];
+
+		var step = total / (count - 1);
+		var points = new List<Vector2> { path[0] };
+		var carried = 0f;
+		for (var i = 1; i < path.Count && points.Count < count; i++)
 		{
-			yield return stroke[i];
-			if (i == stroke.Count - 1) continue;
-			var length = Vector2.Distance(stroke[i], stroke[i + 1]);
-			for (var d = step; d < length; d += step)
-				yield return Vector2.Lerp(stroke[i], stroke[i + 1], d / length);
+			var length = Vector2.Distance(path[i - 1], path[i]);
+			while (length > 0f && carried + length >= step && points.Count < count)
+			{
+				var at = (step - carried) / length;
+				var point = Vector2.Lerp(path[i - 1], path[i], at);
+				points.Add(point);
+				path[i - 1] = point;
+				length = Vector2.Distance(point, path[i]);
+				carried = 0f;
+			}
+			carried += length;
 		}
+		while (points.Count < count) points.Add(path[^1]);
+		return [.. points];
 	}
 
-	static float Length(IReadOnlyList<Vector2> stroke) => stroke.Zip(stroke.Skip(1), Vector2.Distance).Sum();
-
-	static float Distance(Vector2[] a, Vector2[] b) => (Worst(a, b) + Worst(b, a)) / 2f;
-
-	// A média do quarto mais distante: um pedaço que falta no desenho (a barra do H num M) pesa mais que o tremor do traço.
-	static float Worst(Vector2[] from, Vector2[] to)
+	// A média da distância entre pontos de mesma posição no caminho: a ordem do traço conta, e é isso que separa o 3 do 5 e do 8.
+	static float Distance(Vector2[] a, Vector2[] b)
 	{
-		var far = from.Select(p => to.Min(q => Vector2.Distance(p, q))).OrderByDescending(d => d).Take(Math.Max(1, from.Length / 4));
-		return far.Average();
+		var sum = 0f;
+		for (var i = 0; i < a.Length; i++) sum += Vector2.Distance(a[i], b[i]);
+		return sum / a.Length;
 	}
 }

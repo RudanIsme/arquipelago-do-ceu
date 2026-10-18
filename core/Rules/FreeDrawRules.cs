@@ -4,7 +4,7 @@ namespace ArquipelagoDoCeu.Rules;
 // o quanto de cobertura junta traços num símbolo, o tamanho de acento e até que Nível o pontilhado fica sempre à vista.
 public sealed record FreeDrawRules(float IdleSeconds, int Points, float MaxDistance, float AmbiguityRatio, float MergeOverlap, float MarkRatio, int GuideAlwaysUpToYear)
 {
-	public static FreeDrawRules Default { get; } = new(0.8f, 32, 0.2f, 0.88f, 0.5f, 0.15f, 1);
+	public static FreeDrawRules Default { get; } = new(0.8f, 32, 0.25f, 0.82f, 0.5f, 0.15f, 1);
 
 	public bool GuideAlwaysShown(int year) => year <= GuideAlwaysUpToYear;
 }
