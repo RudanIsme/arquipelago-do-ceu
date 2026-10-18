@@ -7,14 +7,14 @@
   "year": 1,
   "difficulty": 1,
   "mechanic": "compor_numero",
-  "params": { "target": 3, "pieces": [1,2,5], "maxPieces": 2 },
-  "prompt": "Quanto é 1 + 2? Monte o 3 para acender a lanterna!",
+  "params": { "target": 3, "pieces": [1,2,5], "maxPieces": 2, "question": "1 + 2" },
+  "prompt": "Quanto é 1 + 2? Escreva o número para acender a lanterna!",
   "hints": [
-    "Olhe os pontinhos de cada peça e veja quantos faltam para chegar a 3.",
-    "Comece pela peça 1.",
-    "1 e mais quanto dá 3?"
+    "Olhe a conta com calma: 1 + 2.",
+    "Comece em 1 e conte mais 2.",
+    "Use os dedos para contar o resultado."
   ],
-  "explanation": "1 + 2 = 3. Juntamos as peças e chegamos a 3.",
+  "explanation": "1 + 2 = 3. Juntamos os dois números e chegamos a 3.",
   "accessibility": { "timerAllowed": false },
   "review": { "status": "pending" }
 }
