@@ -7,8 +7,8 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A HUD do combate, sem modal: o pedido e a bolsa ficam embaixo, sobre a cena. A peça escolhida sobe até a área de traço, a criança
-// a traça e a última ação confere e golpeia, sem botão de atacar. Nada depende de velocidade ou precisão: o teclado faz tudo.
+// A HUD do combate, sem modal. Matemática e Português por sílaba se escrevem desenhando (CombatHud.FreeDraw); as outras Mecânicas
+// escolhem a peça e a última ação golpeia, sem botão de atacar. Nada depende de velocidade ou precisão: o teclado faz tudo.
 public partial class CombatHud : OverlayScreen
 {
 	const int PieceSize = 72;
@@ -18,9 +18,7 @@ public partial class CombatHud : OverlayScreen
 	readonly VoiceService voice;
 	readonly AttackRhythm rhythm;
 	readonly Func<bool> inRange;
-	readonly Func<bool> reduceMotion;
 	readonly CreatureWords creature;
-	readonly TraceZone zone;
 	readonly List<Button> pieceButtons = [];
 	readonly Label heading = BookStyle.Text("", 20);
 	readonly Label prompt = BookStyle.Text("", 24);
@@ -29,12 +27,10 @@ public partial class CombatHud : OverlayScreen
 	readonly Label recharging = BookStyle.Text("", 18);
 	HFlowContainer pieces = null!;
 	Button undo = null!;
-	bool tracing;
 	bool composing;
 	bool wasReady = true;
-	int tracingPiece;
 
-	public CombatHud(ICombatPresenter presenter, TracingRules tracingRules, VoiceService voice, AttackRhythm rhythm, Func<bool> inRange, CreatureWords creature, Func<bool> reduceMotion)
+	public CombatHud(ICombatPresenter presenter, CombatRules rules, VoiceService voice, AttackRhythm rhythm, Func<bool> inRange, CreatureWords creature)
 	{
 		Name = "CombatHud";
 		this.presenter = presenter;
@@ -42,10 +38,7 @@ public partial class CombatHud : OverlayScreen
 		this.rhythm = rhythm;
 		this.inRange = inRange;
 		this.creature = creature;
-		this.reduceMotion = reduceMotion;
-		zone = new TraceZone(tracingRules);
-		zone.Completed += OnTraced;
-		zone.Cancelled += EndTracing;
+		if (presenter.FreeDraw) BuildLayer(rules);
 	}
 
 	public ICombatPresenter Presenter => presenter;
@@ -72,6 +65,7 @@ public partial class CombatHud : OverlayScreen
 	{
 		base._Ready();
 		MouseFilter = MouseFilterEnum.Ignore;
+		if (layer is not null) AddChild(layer);
 		AddChild(BuildBottom());
 		SetMessage("");
 		Refresh();
@@ -93,26 +87,24 @@ public partial class CombatHud : OverlayScreen
 		message.Visible = text.Length > 0;
 	}
 
-	// Perde o alvo sem responder: as peças voltam para a mão.
+	// Perde o alvo sem responder: as peças voltam para a mão e o desenho some.
 	public void Abandon()
 	{
-		zone.End();
+		layer?.Clear();
 		presenter.Cancel();
-		tracing = false;
 		Close();
 	}
 
-	// Embaixo, sobre a cena: o pedido e a bolsa à esquerda e, quando a criança traça, a área de traço ao lado.
+	// Embaixo, sobre a cena: o pedido e a bolsa (ou, no desenho livre, só os botões).
 	Control BuildBottom()
 	{
 		var column = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkEnd, MouseFilter = MouseFilterEnum.Ignore };
 		column.AddThemeConstantOverride("separation", 8);
 		column.AddChild(BuildRequest());
-		column.AddChild(BuildTray());
+		column.AddChild(presenter.FreeDraw ? BuildDrawBar() : BuildTray());
 		var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
 		row.AddThemeConstantOverride("separation", 8);
 		row.AddChild(column);
-		row.AddChild(zone);
 		row.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide, LayoutPresetMode.Minsize);
 		row.OffsetLeft = Margin;
 		row.OffsetRight = -Margin;
@@ -162,7 +154,7 @@ public partial class CombatHud : OverlayScreen
 		actions.AddThemeConstantOverride("v_separation", 8);
 		undo = BookStyle.Button("Apagar", Undo, "Undo", PieceSize);
 		actions.AddChild(undo);
-		actions.AddChild(BookStyle.Button("Dica", () => HintRequested?.Invoke(), "Hint", PieceSize));
+		actions.AddChild(BookStyle.Button("Dica", AskHint, "Hint", PieceSize));
 		if (presenter.ExtraLabel is { } extra) actions.AddChild(BookStyle.Button(extra, Extra, "Extra", PieceSize));
 		if (presenter.ConfirmLabel is { } confirm) actions.AddChild(BookStyle.Button(confirm, Confirm, "Confirm", PieceSize));
 		actions.AddChild(BookStyle.Button("Soltar alvo", Abandon, "Release", PieceSize));
@@ -175,8 +167,9 @@ public partial class CombatHud : OverlayScreen
 		heading.Text = presenter.Heading;
 		prompt.Text = presenter.Prompt;
 		assembled.Text = presenter.Assembled;
-		RefreshPieces();
-		undo.Disabled = !presenter.Composing || tracing;
+		if (!presenter.FreeDraw) RefreshPieces();
+		undo.Disabled = !presenter.Composing && layer?.IsActive != true;
+		RefreshGuide();
 		NotifyComposing();
 	}
 
@@ -198,7 +191,7 @@ public partial class CombatHud : OverlayScreen
 			var button = BookStyle.Button(piece.Dots > 0 ? $"{piece.Label}\n " : piece.Label, () => Choose(index), $"Piece_{i}", PieceSize);
 			button.CustomMinimumSize = new Vector2(PieceSize, PieceSize);
 			button.AddThemeFontSizeOverride("font_size", 26);
-			button.Disabled = !piece.Enabled || !ready || tracing || presenter.Resolved;
+			button.Disabled = !piece.Enabled || !ready || presenter.Resolved;
 			button.TooltipText = piece.Name;
 			button.FocusMode = FocusModeEnum.None;
 			// A peça escondida fica no lugar, esmaecida e com "?", para as outras não pularem de posição.
@@ -229,10 +222,9 @@ public partial class CombatHud : OverlayScreen
 		Refresh();
 	}
 
-	// A criança escolhe uma peça (toque, mouse ou tecla); ela sobe animada e é traçada. Frases entram direto, sem traço.
+	// A criança escolhe uma peça (toque, mouse ou tecla); ela entra direto na montagem.
 	void Choose(int index)
 	{
-		if (tracing) return;
 		if (!rhythm.PlayerReady) return;
 		if (presenter.Resolved)
 		{
@@ -242,33 +234,8 @@ public partial class CombatHud : OverlayScreen
 		if (presenter.Pieces[index] is not { Enabled: true }) return;
 
 		voice.Say(presenter.Announce(index), interrupt: true);
-		if (presenter.TraceText(index) is not { } text)
-		{
-			presenter.Place(index);
-			AfterPlace();
-			return;
-		}
-		tracing = true;
-		tracingPiece = index;
-		SetMessage("");
-		var from = pieceButtons[index].GlobalPosition;
-		zone.Begin(text, presenter.TraceLabel(index), from, animate: !reduceMotion());
-		Refresh();
-	}
-
-	void OnTraced()
-	{
-		var piece = tracingPiece;
-		EndTracing();
-		presenter.Place(piece);
+		presenter.Place(index);
 		AfterPlace();
-	}
-
-	void EndTracing()
-	{
-		zone.End();
-		tracing = false;
-		Refresh();
 	}
 
 	void AfterPlace()
@@ -299,7 +266,7 @@ public partial class CombatHud : OverlayScreen
 
 	void Confirm()
 	{
-		if (tracing || !rhythm.PlayerReady || !presenter.CanConfirm) return;
+		if (!rhythm.PlayerReady || !presenter.CanConfirm) return;
 		if (presenter.Resolved)
 		{
 			Tell(presenter.ResolvedText);
@@ -310,6 +277,11 @@ public partial class CombatHud : OverlayScreen
 
 	void Undo()
 	{
+		if (layer is not null)
+		{
+			layer.Clear();
+			return;
+		}
 		if (!presenter.Undo()) return;
 		SetMessage("");
 		Refresh();
@@ -324,16 +296,21 @@ public partial class CombatHud : OverlayScreen
 
 	void NotifyComposing()
 	{
-		var now = tracing || presenter.Composing;
+		var now = layer?.IsActive == true || presenter.Composing;
 		if (now == composing) return;
 		composing = now;
 		ComposingChanged?.Invoke(now);
 	}
 
-	// No teclado, a tecla escolhe a peça; o traço se faz digitando o que está pedido. Backspace apaga.
+	// No teclado, a tecla escolhe a peça (ou, no desenho livre, digita o que está pedido). Backspace apaga.
 	public override void _Input(InputEvent @event)
 	{
-		if (tracing || @event is not InputEventKey { Pressed: true, Echo: false } key) return;
+		if (@event is not InputEventKey { Pressed: true, Echo: false } key) return;
+		if (presenter.FreeDraw)
+		{
+			TypeKey(key);
+			return;
+		}
 		if (key.PhysicalKeycode is Key.Enter or Key.KpEnter && presenter.ConfirmLabel is not null)
 		{
 			GetViewport().SetInputAsHandled();
@@ -351,12 +328,12 @@ public partial class CombatHud : OverlayScreen
 		Choose(piece);
 	}
 
-	// Esc volta do traço; sem traço aberto, solta o alvo: as peças voltam para a mão e nada conta como resposta.
+	// Esc apaga o desenho em andamento; sem desenho, solta o alvo: as peças voltam para a mão e nada conta como resposta.
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (!@event.IsActionPressed("ui_cancel")) return;
 		GetViewport().SetInputAsHandled();
-		if (tracing) EndTracing();
+		if (layer?.IsActive == true) layer.Clear();
 		else Abandon();
 	}
 }

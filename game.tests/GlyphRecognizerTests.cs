@@ -1,0 +1,100 @@
+using System.Numerics;
+using ArquipelagoDoCeu.Combat;
+using ArquipelagoDoCeu.Rules;
+using Xunit;
+
+namespace ArquipelagoDoCeu.Tests;
+
+public class GlyphRecognizerTests
+{
+	static string Data(string name) => File.ReadAllText(Path.Combine(MissionFiles.RepositoryRoot(), "game", "data", name));
+
+	static readonly TraceTrails Trails = TraceTrails.Parse(Data("trilhas.json"), Data("trilhas.schema.json")).Value!;
+	static readonly FreeDrawRules Rules = FreeDrawRules.Default;
+	static readonly GlyphRecognizer Recognizer = new(Trails, Rules);
+	const string Digits = "0123456789+-";
+	const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	// Um traço torto de criança: a trilha com tremor, inclinação e proporção mudada, em pixels.
+	static List<IReadOnlyList<Vector2>> Crooked(string glyph, Vector2 origin, float size, int seed)
+	{
+		const float wobble = 0.035f;
+		return [.. Trails.Find(glyph)!.Strokes.Select((stroke, s) => (IReadOnlyList<Vector2>)[.. stroke.Points.Select((p, i) =>
+		{
+			var jitter = new Vector2(MathF.Sin((i + seed) * 1.7f + s), MathF.Cos((i * 2.3f) + seed)) * wobble;
+			var q = p + jitter;
+			return origin + new Vector2((q.X + (q.Y - 0.5f) * 0.12f) * 0.85f, q.Y) * size;
+		})])];
+	}
+
+	[Fact]
+	public void Reconhece_numeros_e_sinais_desenhados_tortos()
+	{
+		foreach (var glyph in Digits.Select(c => c.ToString()))
+			foreach (var seed in new[] { 1, 4 })
+			{
+				var guess = Recognizer.Recognize(Crooked(glyph, new Vector2(100, 80), 200, seed), Digits);
+				Assert.True(guess is { Kind: GuessKind.Sure } && guess.Glyph == glyph, $"{glyph} (seed {seed}) veio {guess.Kind} {guess.Glyph}");
+			}
+	}
+
+	[Fact]
+	public void O_melhor_palpite_das_letras_de_A_a_Z_tortas_e_a_certa_e_so_a_duvida_pede_de_novo()
+	{
+		foreach (var glyph in Letters.Select(c => c.ToString()))
+		{
+			var guess = Recognizer.Recognize(Crooked(glyph, new Vector2(40, 60), 150, 2), Letters);
+			Assert.True(guess.Kind != GuessKind.Unknown && guess.Glyph == glyph, $"{glyph} veio {guess.Kind} {guess.Glyph}");
+		}
+	}
+
+	[Fact]
+	public void A_ordem_e_a_direcao_dos_tracos_nao_importam()
+	{
+		var strokes = Crooked("4", new Vector2(0, 0), 200, 1);
+		strokes.Reverse();
+		IReadOnlyList<IReadOnlyList<Vector2>> flipped = [.. strokes.Select(s => (IReadOnlyList<Vector2>)[.. s.Reverse()])];
+
+		Assert.Equal("4", Recognizer.Recognize(flipped, Digits).Glyph);
+	}
+
+	[Fact]
+	public void O_tamanho_e_a_posicao_na_tela_nao_importam()
+	{
+		Assert.Equal("5", Recognizer.Recognize(Crooked("5", new Vector2(900, 400), 60, 3), Digits).Glyph);
+		Assert.Equal("5", Recognizer.Recognize(Crooked("5", new Vector2(10, 10), 600, 3), Digits).Glyph);
+	}
+
+	[Fact]
+	public void Um_1_com_a_bandeira_pela_metade_e_um_7_nunca_vira_resposta_segura()
+	{
+		var half = new List<IReadOnlyList<Vector2>> { new Vector2[] { new(0.285f, 0.2f), new(0.65f, 0.11f), new(0.47f, 0.9f) }.Select(p => p * 200).ToList() };
+
+		var guess = Recognizer.Recognize(half, Digits);
+
+		Assert.NotEqual(GuessKind.Sure, guess.Kind);
+	}
+
+	[Fact]
+	public void Rabisco_sem_forma_nao_e_reconhecido()
+	{
+		var scribble = new List<IReadOnlyList<Vector2>> { Enumerable.Range(0, 60).Select(i => new Vector2(i * 37 % 91, i * 53 % 83) * 3).ToList() };
+
+		Assert.NotEqual(GuessKind.Sure, Recognizer.Recognize(scribble, Digits).Kind);
+	}
+
+	[Fact]
+	public void Sem_nenhum_traco_nao_ha_o_que_reconhecer()
+	{
+		Assert.Equal(GuessKind.Unknown, Recognizer.Recognize([], Digits).Kind);
+	}
+
+	[Fact]
+	public void So_os_glifos_permitidos_entram_na_disputa()
+	{
+		var seven = Crooked("7", new Vector2(0, 0), 200, 1);
+
+		Assert.Equal("7", Recognizer.Recognize(seven, Digits).Glyph);
+		Assert.DoesNotContain(Recognizer.Rank(seven, "ABC").Select(r => r.Glyph), g => g == "7");
+	}
+}

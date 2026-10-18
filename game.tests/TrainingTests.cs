@@ -17,11 +17,12 @@ static class TrainingFixtures
 
 	static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
-	public static Mission MathMission(string id, int target, int year = 1, int difficulty = 1, string hint = "h")
+	public static Mission MathMission(string id, int target, int year = 1, int difficulty = 1, string hint = "h", string? question = null)
 	{
+		var extra = question is null ? "" : $", \"question\": \"{question}\"";
 		var json = $$"""
 			{ "id": "{{id}}", "version": 1, "discipline": "matematica", "concept": "adicao-ate-10", "bncc": ["EF01MA06"], "year": {{year}},
-			  "difficulty": {{difficulty}}, "mechanic": "compor_numero", "params": { "target": {{target}}, "pieces": [1, 2, 3], "maxPieces": 2 },
+			  "difficulty": {{difficulty}}, "mechanic": "compor_numero", "params": { "target": {{target}}, "pieces": [1, 2, 3], "maxPieces": 2{{extra}} },
 			  "prompt": "Faça {{target}}.", "hints": ["{{hint}}1", "{{hint}}2"], "explanation": "e", "accessibility": { "timerAllowed": false }, "review": { "status": "pending" } }
 			""";
 		return JsonSerializer.Deserialize<Mission>(json, Options)!;

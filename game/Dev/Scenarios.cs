@@ -193,12 +193,9 @@ static class Scenarios
 				await d.Press("Começar");
 				GD.Print($"Tempo com o alvo escolhido: {Engine.TimeScale}");
 				await d.Shot("02-alvo-escolhido");
-				await d.PlayPiece(0, trace: false);
-				await d.Wait(1.0);
-				GD.Print($"Tempo desenhando: {Engine.TimeScale}");
-				await d.Shot("03-trilha");
-				await d.TraceGuide();
-				await d.Wait(0.8);
+				await d.Press("Dica");
+				await d.Shot("03-dica-com-conta-de-exemplo");
+				await d.DrawText("3+5");
 				await d.Shot("04-depois-de-desenhar");
 				break;
 			case "erro":
@@ -288,10 +285,8 @@ static class Scenarios
 				await d.Shot("01-escolha-nivel-2");
 				await d.Press("Começar");
 				await d.Shot("02-dezenas-na-mao");
-				await d.PlayPiece(0);
-				await d.Shot("03-primeiro-numero-na-conta");
-				await d.PlayPiece(d.Hud!.Presenter.Pieces.Count - 1);
-				await d.Shot("04-sinal-de-menos");
+				await d.PlayMath();
+				await d.Shot("03-conta-escrita");
 				break;
 			case "nivel2-escrita":
 				await d.GoNearDummy();
@@ -300,8 +295,8 @@ static class Scenarios
 				await d.Press("Nível 2");
 				await d.Press("Começar");
 				await d.Shot("01-teclado-na-tela");
-				await d.Press("Sugerir letra");
-				await d.Shot("02-letra-sugerida");
+				await d.Press("Dica");
+				await d.Shot("02-pontilhado-na-dica");
 				await d.PlayWord();
 				await d.Shot("03-palavra-certa");
 				break;

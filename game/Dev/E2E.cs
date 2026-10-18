@@ -30,7 +30,7 @@ static class E2E
 		d.Expect(d.Button("Começar") is not null, "a escolha do treino abriu");
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null && d.Button("Atacar") is null, "o treino de Matemática começou, sem botão de atacar");
-		await d.PlayPiece(0);
+		await d.PlayMath();
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
 

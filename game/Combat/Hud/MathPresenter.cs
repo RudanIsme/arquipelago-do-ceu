@@ -8,24 +8,33 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A Matemática na HUD: a bolsa de números e os sinais. Cada peça são duas ações (escolher e traçar), e o terceiro traço,
-// número sinal número, valida a conta e o golpe sai na hora. Quem soma é a criança: o total só aparece depois do golpe.
+// A Matemática na HUD: a criança desenha em qualquer lugar da tela. Com um resultado pedido, vale só uma conta que o dê; com uma conta
+// pronta ("3 + 5 = ?"), vale só o número, sem sinais. Quem soma é a criança: o total só aparece depois do golpe.
 sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWords creature, Action<AttackResult> attacked) : ICombatPresenter
 {
+	public bool FreeDraw => true;
+
+	public string DrawAllowed => DrawnMath.Allowed(battle.Ask, rules.MathLevel);
+
+	// Resultado pedido: o número da criatura é o alvo e a criança faz a conta. Conta pronta: o número é a resposta e não aparece.
+	public string? HintGuide => battle.Example(rules.MathLevel);
+
+	public bool Write(string text, out string? message)
+	{
+		var attack = battle.Draw(text, rules.MathLevel);
+		message = attack.Error;
+		if (!attack.IsOk) return false;
+		attacked(attack.Value!);
+		return true;
+	}
+
 	int HandSize => battle.Bag.Hand.Count;
 
-	public string Heading => $"{creature.Title} · Escudo: {battle.Shield.Remaining}";
+	public string Heading => battle.Ask == MathAsk.Answer ? creature.Title : $"{creature.Title} · Escudo: {battle.Shield.Remaining}";
 
 	public string Prompt => battle.Mission.Prompt;
 
-	public string Assembled
-	{
-		get
-		{
-			var tokens = battle.Staff.Tokens;
-			return tokens.Count == 0 ? "Monte uma conta: número, sinal e número." : string.Join(" ", tokens) + (battle.Staff.IsComplete ? "" : " ?");
-		}
-	}
+	public string Assembled => battle.Ask == MathAsk.Answer ? $"{battle.Question} = ?" : "Escreva uma conta que dê o resultado.";
 
 	public IReadOnlyList<HudPiece> Pieces => [.. Numbers(), .. Signs()];
 
@@ -39,16 +48,14 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 
 	public bool TypesLetters => false;
 
-	public string KeyHelp => $"Teclado: 1 a {HandSize} escolhem o número, + e - escolhem o sinal, depois digite o que está pedido. Backspace apaga.";
+	public string KeyHelp => battle.Ask == MathAsk.Answer ? "Desenhe o número na tela, ou digite. Backspace apaga." : "Desenhe a conta na tela, ou digite números e sinais. Backspace apaga.";
 
 	public string? ExtraLabel => null;
 
-	public string? TraceText(int piece) => piece < HandSize ? battle.Bag.Hand[piece]?.ToString(CultureInfo.InvariantCulture) : rules.Operators[piece - HandSize];
 
 	public string Announce(int piece) =>
 		piece < HandSize ? $"Desenhe o número {battle.Bag.Hand[piece]}." : $"Desenhe o sinal de {(rules.Operators[piece - HandSize] == "+" ? "mais" : "menos")}.";
 
-	public string TraceLabel(int piece) => $"Desenhe o {TraceText(piece)}";
 
 	public void Place(int piece)
 	{

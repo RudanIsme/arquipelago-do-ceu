@@ -4,7 +4,7 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Cenário `combate` do piloto: o combate sem modal da Matemática e do Português, do toque na peça ao golpe, sem botão de atacar.
+// Cenário `combate` do piloto: o combate sem modal da Matemática e do Português, do desenho livre ao golpe, sem botão de atacar.
 static partial class DungeonScenarios
 {
 	public static async Task Combat(DevDriver d)
@@ -15,27 +15,21 @@ static partial class DungeonScenarios
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null, "o treino de Matemática abriu a HUD de combate");
 		d.Expect(d.Button("Atacar") is null && d.Button("Conferir") is null, "não existe botão de atacar nem de conferir");
-		d.Expect(d.HasVisible("Escudo:") && d.HasVisible("Monte uma conta"), "a bolsa e o pedido ficam na HUD");
+		d.Expect(d.HasVisible("Escudo:") && d.HasVisible("Escreva uma conta"), "o pedido fica na HUD e não há bolsa");
 		await d.Shot("01-hud-matematica");
 
 		var before = d.Player!.GroundPosition;
 		await d.Hold(Controls.Right, 0.4);
 		d.Expect(System.Numerics.Vector2.Distance(before, d.Player.GroundPosition) > 0.05f, "com a HUD aberta o Personagem anda: nada de modal");
 
-		await d.PlayPiece(0, trace: false);
-		await d.Wait(0.6);
-		await d.Shot("02-peca-subiu-e-trilha");
-		d.Expect(d.Pad is not null, "a peça escolhida abre a trilha para traçar");
-		await d.TraceGuide();
-		await d.Wait(0.9);
-		d.Expect(!d.HasVisible("Monte uma conta"), "o traço certo põe a peça na conta");
-
-		await d.PlayPiece(d.Hud!.Presenter.Pieces.Count - 1);
-		await d.Shot("03-conta-pela-metade");
+		await d.Press("Dica");
+		await d.Shot("02-dica-com-conta-de-exemplo");
+		d.Expect(Engine.TimeScale >= 1.0, "o tempo é normal antes de desenhar");
 		var shield = d.FightShield();
-		await d.PlayPiece(1);
+		await d.DrawText("1+2");
 		await d.Wait(0.8);
-		d.Expect(d.FightShield() != shield || d.HasVisible("Acertou") || d.HasVisible("Passou") || d.HasVisible("Golpe"), "o terceiro traço confere e o golpe sai sem botão");
+		d.Expect(d.FightShield() != shield || d.HasVisible("Acertou") || d.HasVisible("Ainda não") || d.HasVisible("Golpe") || d.HasVisible("perfeito"), "o desenho foi lido e o golpe saiu sem botão");
+		d.Expect(Engine.TimeScale >= 1.0, "o tempo volta ao normal depois da leitura");
 		await d.Shot("04-golpe");
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
@@ -91,7 +85,7 @@ static partial class DungeonScenarios
 		await d.Press("Nível 2");
 		await d.Press("Começar");
 		d.Expect(d.Hud?.Presenter is WordPresenter, "o Escriba do 2º ano abriu a HUD da palavra, sem painel");
-		await d.Press("Sugerir letra");
+		await d.Press("Dica");
 		await d.Shot("01-hud-palavra-letra-sugerida");
 		await d.PlayWord();
 		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "a última letra traçada conferiu a palavra");

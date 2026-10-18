@@ -6,10 +6,28 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Escriba na HUD (sílabas, frase na ordem ou lacuna): a criança escolhe a peça e, nas sílabas, traça as letras uma de cada vez.
-// Com todas as peças do nome postas, a última ação confere e golpeia, sem botão de conferir.
-sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName) : ICombatPresenter
+// O Escriba na HUD. Nas sílabas a criança desenha o nome em qualquer lugar da tela, uma sílaba por vez (BO, depois LA) ou inteiro;
+// frase na ordem e lacuna seguem escolhendo a peça, e a última ação confere e golpeia, sem botão de conferir.
+sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName, bool guideAlways) : ICombatPresenter
 {
+	// As sílabas se escrevem desenhando, uma por vez ou o nome inteiro; frases e lacunas seguem escolhendo a peça.
+	public bool FreeDraw => battle.Kind == NameKind.Syllables;
+
+	public string DrawAllowed => "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	public string? GuideText => battle.NextSyllable?.ToUpperInvariant();
+
+	public bool GuideAlways => guideAlways;
+
+	public string? HintGuide => battle.NextSyllable?.ToUpperInvariant();
+
+	public bool Write(string text, out string? message)
+	{
+		message = null;
+		checkedName(battle.Write(text));
+		return true;
+	}
+
 	public string Heading => battle.Kind switch { NameKind.Sentence => "Ponha as palavras na ordem", NameKind.Gap => "Complete a frase", _ => "Qual é o nome da criatura?" };
 
 	public string Prompt => battle.Mission.Prompt;
@@ -18,6 +36,7 @@ sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName) :
 	{
 		get
 		{
+			if (FreeDraw) return DrawnSlots();
 			var slots = Enumerable.Range(0, battle.Name.Count).Select(i => i < battle.Chosen.Count ? Label(battle.Pieces[battle.Chosen[i]]) : "__");
 			return battle.Kind switch
 			{
@@ -26,6 +45,13 @@ sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName) :
 				_ => string.Join("  ·  ", slots),
 			};
 		}
+	}
+
+	// Cada sílaba certa aparece escrita no lugar dela; as que faltam ficam em branco.
+	string DrawnSlots()
+	{
+		var done = battle.Name.Count - battle.Remaining;
+		return string.Join("  ·  ", battle.Name.Select((syllable, i) => i < done ? syllable.ToUpperInvariant() : "__"));
 	}
 
 	public IReadOnlyList<HudPiece> Pieces =>
@@ -41,18 +67,15 @@ sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName) :
 
 	public bool Complete => battle.IsComplete;
 
-	public bool TypesLetters => false;
+	public bool TypesLetters => FreeDraw;
 
-	public string KeyHelp => $"Teclado: 1 a {Math.Min(9, battle.Pieces.Count)} escolhem a peça e, nas sílabas, digite as letras para traçar. Backspace desfaz.";
+	public string KeyHelp => FreeDraw ? "Desenhe as letras na tela, ou digite. Backspace apaga. Para andar, use as setas." : $"Teclado: 1 a {Math.Min(9, battle.Pieces.Count)} escolhem a peça. Backspace desfaz.";
 
 	public string? ExtraLabel => null;
 
-	// Sílabas se traçam letra por letra; palavras de frases entram direto: no 3º ano a criança já escreve, e o desafio é a ordem.
-	public string? TraceText(int piece) => battle.Kind == NameKind.Syllables ? battle.Pieces[piece].ToUpperInvariant() : null;
 
 	public string Announce(int piece) => battle.Kind == NameKind.Syllables ? $"Desenhe a sílaba {battle.Pieces[piece]}." : battle.Pieces[piece];
 
-	public string TraceLabel(int piece) => $"Desenhe {battle.Pieces[piece].ToUpperInvariant()}";
 
 	public void Place(int piece) => battle.Place(piece);
 

@@ -1,0 +1,35 @@
+{
+  "id": "mat-fatos20-007",
+  "version": 1,
+  "discipline": "matematica",
+  "concept": "fatos-adicao-subtracao-ate-20",
+  "bncc": [
+    "EF02MA05"
+  ],
+  "year": 2,
+  "difficulty": 2,
+  "mechanic": "compor_numero",
+  "params": {
+    "target": 7,
+    "pieces": [
+      12,
+      5,
+      1
+    ],
+    "maxPieces": 2,
+    "question": "12 - 5"
+  },
+  "prompt": "Quanto é 12 - 5? Escreva só o número da resposta.",
+  "hints": [
+    "Comece no 12 e volte 5 passos.",
+    "12, 11, 10, 9, 8 e 7.",
+    "Tirando 5 de 12, sobram quantos?"
+  ],
+  "explanation": "12 - 5 = 7. Tiramos 5 de 12 e sobram 7.",
+  "accessibility": {
+    "timerAllowed": false
+  },
+  "review": {
+    "status": "pending"
+  }
+}

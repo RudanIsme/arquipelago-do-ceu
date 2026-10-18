@@ -58,33 +58,46 @@ Regra: uma habilidade bloqueada nunca impede a criança de praticar o conceito. 
 
 ### Combate pelas mecânicas de aprendizado
 
-O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela escolhe a criatura (clique, toque ou tecla F) a uma distância máxima definida em dados, e a UI de combate aparece sem interromper o jogo: o Personagem continua andando. O tempo desacelera só enquanto ela monta a resposta com as peças da bolsa, e volta ao normal quando o ataque sai. Se ela se afasta demais, o alvo se perde. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
+O combate acontece em tempo real, no próprio cenário, sem trocar de tela. As criaturas se movem devagar e avisam antes de atacar, e a criança se move e desvia. Para atacar, ela escolhe a criatura (clique, toque ou tecla F) a uma distância máxima definida em dados, e a UI de combate aparece sem interromper o jogo: o Personagem continua andando. O mundo desacelera para 0,3× (valor em dados) só enquanto ela desenha a resposta, e volta ao normal quando o ataque sai; o Personagem não sente a câmera lenta e continua andando no tempo normal. Várias criaturas podem lançar ao mesmo tempo, mas a criança responde uma por vez: toque, clique ou Tab trava a criatura que recebe o desenho (um anel no chão mostra qual é) e, sem trava, a mais próxima é travada quando ela começa a desenhar. Trocar de alvo no meio de um desenho descarta só esse desenho, sem custo, e acalmar uma criatura passa o alvo para a mais próxima. Se ela se afasta demais, o alvo se perde. O jogo tem ritmo de ação, mas a parte de pensar nunca é corrida.
 
 - **Energia:** acertar recupera; errar, ou ser atingida por uma bolha de névoa, tira. Quando a energia acaba, a expedição termina (veja Energia e derrota).
 - **A ação não fica mais difícil com o ano escolar.** Só o conteúdo fica. Ataques de criatura são sempre lentos, avisados e fáceis de desviar.
-- **Modo calmo:** opção que para o tempo por completo durante a montagem e faz as criaturas só reagirem a erros. Serve para crianças menores ou com dificuldade motora, e o jogo sugere ligar se a criança perde muita energia por desvio. *Proposta, a fechar quando o combate existir: no Modo calmo as bolhas de névoa não tiram energia, para que qualquer criança conclua o jogo sem depender de reflexo.*
+- **Modo calmo:** opção que deixa o tempo em 0,3× a luta toda (o Personagem segue no tempo normal), sem nenhum lance das criaturas, que só reagem a erros. Serve para crianças menores ou com dificuldade motora, e o jogo sugere ligar se a criança perde muita energia por desvio. Assim qualquer criança conclui o jogo sem depender de reflexo.
 
 **O ataque da criança é o próprio conhecimento.** A conta montada pelo Matemático vira um raio de energia que dissolve a névoa da criatura; o nome escrito pelo Escriba voa em letras luminosas até ela. O acerto exato é um golpe perfeito, com animação especial.
 
-**O ataque da criatura nunca é violento.** As criaturas lançam bolhas de névoa lentas, com aviso visual e sonoro antes. Se a criança erra uma resposta, a criatura reage na hora com uma travessura: embaralha as peças da bolsa ou esconde uma peça por alguns segundos. Nada de golpes, sangue ou personagem caído: quando a energia acaba, o personagem volta flutuando ao Lobby.
+**O ataque da criatura nunca é violento.** Hoje as criaturas lançam bolhas de névoa lentas, com aviso visual e sonoro antes. Decidido, a implementar no #189: cada criatura passa a ter um anel que enche sobre ela até o próximo lance, num intervalo próprio em dados (na ordem de 20 a 30 s de jogo, que passam mais devagar durante o desenho). Se a criança não responde a tempo, o lance custa 1 de Energia e o anel recomeça; o contato físico nunca tira Energia, o anel muda de cor e também de espessura ou pulso perto do fim (nunca só cor), e várias criaturas lançam cada uma no seu ritmo. No Modo calmo não há lance, e o Boneco do Treino não lança nem custa Energia. Se a criança erra uma resposta, a criatura reage na hora com uma travessura: ela só faz graça, sem tirar nada da criança. Nada de golpes, sangue ou personagem caído: quando a energia acaba, o personagem volta flutuando ao Lobby.
 
 Depois de um erro o desafio recomeça com outros números ou outra palavra, para a criança não acertar por eliminação. Dois erros seguidos liberam uma dica.
 
-#### Matemático: a bolsa de números
+#### Como a criança responde: desenho livre
 
-A bolsa funciona como o baralho de um roguelite de cartas: é o que a criança monta e melhora ao longo da expedição.
+Na Matemática e no Escriba a criança escreve a resposta desenhando com o dedo, o mouse ou a caneta **em qualquer lugar da tela**, sem painel nem moldura e com a cena visível. O jogo reconhece números de 0 a 9, os sinais + e −, e letras de A a Z sozinho, no próprio aparelho, sem IA e sem rede: compara o traço com as trilhas em JSON e é tolerante a traço torto. O fim de um símbolo é levantar o dedo e esperar cerca de 0,8 s (valor em dados); vários símbolos lado a lado são separados pela posição. O fim do desenho ataca: não existe botão Atacar. Um toque curto no vazio, sem arrastar, não é traço: o Personagem anda até ali.
 
-1. A bolsa começa com números de 1 a 5 e o sinal +. A criança tem 5 peças na mão; as usadas num ataque são repostas pela bolsa.
-2. A criatura mostra um escudo com um número, por exemplo 12.
-3. A bolsa e o pedido ficam na HUD sobre a cena, sem painel que abra por cima. A criança toca na peça (número ou sinal), ela sobe animada até a área de traço e a criança a traça seguindo a trilha. Cada peça são duas ações (escolher e traçar), e uma conta é número, sinal e número: o terceiro traço confere e o golpe sai na hora, sem botão de atacar. O jogo não mostra o resultado: quem soma é a criança. O resultado tira do escudo.
-4. Acertar o valor exato é um golpe perfeito: derrota a criatura de uma vez e dá um bônus. Passar do valor não vale: o jogo mostra a conta e conta como erro (tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outros números), o que treina estimativa. As peças da mão voltam inteiras. É o único jeito de errar na calculadora.
-5. Entre andares, a criança escolhe melhorias: adicionar, trocar ou remover peças da bolsa.
+- **Ambiguidade nunca custa Energia.** Se o jogo não tem certeza (1 e 7, B e D) ou não leu nada, ele pede para escrever de novo, e nada se perde. Só uma resposta errada, reconhecida com segurança, custa 1 de Energia.
+- **O pedido fica no balão da criatura**, não na HUD (a conta, a figura ou a sílaba), com um botão de ouvir e voz. A HUD de combate guarda só a Energia e a mochila. Isso é decidido; o balão entra no #187, e até lá o pedido fica na faixa da HUD.
+- **A Dica mostra o pontilhado**, com a bolinha de início pulsando e a seta de direção, sem moldura, e nunca custa Energia. Na Matemática o pontilhado é de uma conta de exemplo que dá o resultado pedido. No Escriba o pontilhado da sílaba (ou das próximas letras) fica sempre visível no Nível 1 e só aparece na Dica nos Níveis 2 e 3; a regra está em dados.
+- **Mochila opcional (#190, previsto).** A criança nunca é obrigada a abrir a mochila: um ícone pequeno abre uma fileira baixa com as peças do pedido, para atacar na hora ou para quem não consegue desenhar. Com a mesma regra de conta e o mesmo custo de Energia.
+- **Teclado:** digitar vale como escrever (números e sinais na Matemática, letras no Escriba), e Enter ou uma pausa conferem.
+
+**Tensão em aberto: o anel do lance e a regra de não depender de velocidade.** O anel do lance dá um ritmo à luta, e o jogo prometeu que nada depende de velocidade ou precisão motora para avançar. A garantia é o Modo calmo, sem nenhum lance, e o tempo que passa mais devagar durante o desenho. Quem decide se isso basta é o responsável pelo produto, ouvindo os profissionais de psicologia e fonoaudiologia, antes de o anel ir para os testes com crianças.
+
+#### Matemático: a conta no desenho
+
+A criatura pede de dois jeitos, e o Desafio diz qual:
+
+1. **Um resultado.** A criatura mostra um número, por exemplo 8, e a criança desenha uma conta que dê esse resultado: 3 + 5, 4 + 4 ou 10 − 2 valem. O número sozinho não vale: o jogo o recusa, sem custo, avisando que é preciso fazer uma conta. O zero não entra como parcela (nem 8 + 0), e o aviso explica o motivo. Quem lê a conta, da esquerda para a direita, e calcula a resposta é o jogo, em código; a conta nunca vem de fora. O jogo não mostra o resultado antes do golpe: quem soma é a criança.
+2. **Uma conta pronta.** A criatura mostra a conta com uma interrogação, "3 + 5 = ?", e a criança escreve só o número da resposta. Com essas criaturas nenhum sinal aparece nem é aceito no desenho: é só o número.
+
+Acertar o valor exato é um golpe perfeito: acalma a criatura de uma vez e dá um bônus. Uma resposta válida, mas errada (3 + 4 quando se pedia 8), reconhecida com segurança, é erro: tira 1 de Energia, a criatura faz uma travessura e o Desafio recomeça com outros números. Conta mal formada (sinal sobrando, número sozinho, zero como parcela) é recusada sem custo.
+
+Os sinais e o tamanho da conta mudam com o Nível, em dados (`combat` no `rules.json`): no Nível 1 só o +, no Nível 2 o + e o −, e no Nível 3 contas de até três parcelas. A bolsa de peças do Matemático volta como mochila opcional (#190); entre andares, melhorar a bolsa fica para depois.
 
 | Ano | Peças e operações |
 | --- | --- |
-| 1º | Números até 10, adição |
-| 2º | Dezenas como peça (10, 20), subtração |
-| 3º | Multiplicação e divisão simples, peça especial "dobro" |
+| 1º | Números até 10, adição (só o sinal +) |
+| 2º | Dezenas (10, 20), adição e subtração (+ e −) |
+| 3º | Contas de até três parcelas; multiplicação e divisão simples ficam para depois |
 | Depois | Frações: dividir o escudo em partes |
 
 Criaturas têm traços que mudam o raciocínio: "só aceita números pares", "o escudo cresce com o tempo", "só cai com subtração".
@@ -95,14 +108,14 @@ As criaturas esqueceram o próprio nome, e dizer o nome certo as liberta. O jogo
 
 | Ano | Como a criança luta |
 | --- | --- |
-| 1º | Bolsa de sílabas: monta o nome (GA-TO); cada sílaba certa é um golpe e o nome completo liberta |
-| 2º | Escreve a palavra inteira no teclado físico ou na tela, com letras sugeridas se travar |
+| 1º | Desenha o nome uma sílaba por vez (GA, depois TO); cada sílaba certa aparece escrita sobre a criatura, é um golpe e o nome completo liberta |
+| 2º | Desenha a palavra inteira (ou em pedaços), com o pontilhado na Dica se travar |
 | 3º | Completa ou ordena uma frase-feitiço sobre a criatura; ortografia (ss, rr, ç) |
 | Depois do MVP | Fala a sílaba ou o nome no microfone, com reconhecimento de voz no próprio PC |
 
 Para acessibilidade: fonte para dislexia, peças grandes e nenhum tempo obrigatório.
 
-No Escriba, cada sílaba certa é um golpe e o nome completo liberta a criatura (recupera 1 de Energia). Sílaba errada é erro: tira 1 de Energia, o Boneco faz uma travessura e o Desafio recomeça com outro nome. Sílaba que ainda falta não é erro.
+No Escriba, cada sílaba certa é um golpe e o nome completo liberta a criatura (recupera 1 de Energia). Sílaba errada, reconhecida com segurança, é erro: tira 1 de Energia, a criatura faz uma travessura e o Desafio recomeça com outro nome. Sílaba que ainda falta, pela metade ou ambígua não é erro.
 
 #### Voz
 
@@ -120,7 +133,7 @@ Errar na fala nunca tira energia. O jogo repete a palavra, mostra as sílabas e 
 
 O Escriba também escreve a letra ou a sílaba desenhando com o dedo, o que treina coordenação motora fina. No tablet é com o dedo; no PC funciona com mouse ou caneta, com tolerância maior ao traço; quem usa teclado digita. Cada mecânica tem uma versão para toque, mouse e teclado, e a criança nunca fica presa por não ter um tipo de entrada.
 
-**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O traço por trilha já vale no combate: número e sinal do Matemático, letra, sílaba e palavra do Escriba (uma trilha por letra, na ordem de escrita), conferido em código contra a própria trilha (sem reconhecer a letra) e tolerante: traço torto com o glifo certo passa, e só cobertura insuficiente pede nova tentativa, sem custar Energia. Quem não consegue desenhar nunca fica preso: "Completar sozinho" (ou Enter segurado) anima a tinta, e no teclado digitar o que está pedido vale como escrever.
+**Quando entram:** a voz do reconhecedor entra logo depois do MVP. O desenho livre (ver "Como a criança responde") já vale no combate: número e sinal do Matemático; letra, sílaba e palavra do Escriba. Para uma palavra como BOLA a criança desenha uma sílaba por vez (BO, depois LA): ao reconhecer, a sílaba aparece escrita sobre a criatura e o centro da tela limpa; a palavra inteira de uma vez também vale, se couber na área. Uma sílaba pela metade espera o resto, sem custo. Acento e cedilha não têm traço e não contam: vale o corpo da letra. O jogo só reconhece letras maiúsculas por enquanto. Quem não consegue desenhar nunca fica preso: no teclado, digitar o que está pedido vale como escrever, e a mochila opcional (#190) preenche a resposta sem desenhar.
 
 #### Energia e derrota
 
@@ -227,7 +240,7 @@ Depois do Lobby, as duas torres ficaram jogáveis, sem arte nem tema definitivos
 - O mapa pequeno da Dungeon mostra só o explorado, sem título nem legenda: visto na Sala vencida, boneco na atual, arco no Fast travel, traço na linha para a porta (Puzzle), "?" e cadeado. Parar o mouse ou o dedo numa Sala diz o estado dela em voz alta.
 - Ao ir para uma Expedição aparece o total de moedas; ao ganhar, um aviso curto ("+3 moedas") que some sozinho; ao voltar, o total com "+X" e o número subindo (Enter ou toque pulam; "reduzir animações" mostra direto), com a voz dizendo quanto ganhou e quanto tem. O HUD não mostra o saldo.
 - A criança ganha **moedas** por criatura acalmada, Sala do Item e Andar completo (os valores ficam em `game/data/recompensas.json`); o saldo fica no Perfil, não tem teto e não cai. Treino do Lobby não rende moedas.
-- O HUD mostra só o que se usa agora: na Dungeon, a placa do centro (Nível, Andar e objetivo, o Conceito do Andar, nomeado em `game/data/conceitos.json`), o mapa e a Energia; a bolsa de números e o pedido só aparecem em combate e no treino. O painel "Controles / bônus" saiu da tela de jogo (os controles estão nas Configurações).
+- O HUD mostra só o que se usa agora: na Dungeon, a placa do centro (Nível, Andar e objetivo, o Conceito do Andar, nomeado em `game/data/conceitos.json`), o mapa e a Energia; o pedido só aparece em combate e no treino (no balão da criatura, a partir do #187). O painel "Controles / bônus" saiu da tela de jogo (os controles estão nas Configurações).
 - Fora do marco, e ainda sem código: repetição espaçada, dificuldade adaptativa, Portal da Memória, Álbum com criaturas, aparência dos Cosméticos no Personagem e o cliente de rede.
 
 ### Primeiro marco: Lobby funcional
@@ -238,7 +251,7 @@ O primeiro marco entregável foi o Lobby funcional, ainda sem Dungeons jogáveis
 - Cena 3D caminhável, em greybox seguindo `mockups/lobby.png`; os assets CC0 entram depois, em ticket próprio.
 - Cinco ilhas com torres ao redor: Matemática e Português com placa "em construção", Ciências, História e Geografia com placa "em breve".
 - NPC Guia, que fala por voz sintética.
-- Área de treino com Boneco de treino: **o mesmo combate real das Dungeons** (botão de ataque, tempo que desacelera, golpe perfeito, bolhas de névoa avisadas e travessuras no erro, dicas, Modo calmo), contra um Boneco que também ataca. Usa **tudo o que já existir**: as Mecânicas de Matemática (compor número, com a bolsa e o cajado do Matemático) e de Português (formar palavras com sílabas, com o Escriba), com Desafios sorteados conforme a dificuldade escolhida, lidos de Missões em JSON validadas pelo schema.
+- Área de treino com Boneco de treino: **o mesmo combate real das Dungeons** (desenho livre que ataca no fim do traço, tempo que desacelera, golpe perfeito, travessuras no erro, dicas, Modo calmo), contra um Boneco que não lança nem custa Energia (decisão do #189). Usa **tudo o que já existir**: as Mecânicas de Matemática (compor número, desenhando a conta) e de Português (formar palavras com sílabas, com o Escriba), com Desafios sorteados conforme a dificuldade escolhida, lidos de Missões em JSON validadas pelo schema.
 - **A criança só treina os Níveis a que o Perfil já tem acesso** (no começo, o Nível 1), em cada Papel. O treino nunca libera um Nível.
 - A Área de treino tem **Energia própria**, com o mesmo máximo das Expedições (valor em dados). Zerar a Energia só tira a criança da Área de treino, sem perder nada e sem tela de derrota. O treino não conta para o progresso: nenhum Conceito, caixa de memória, habilidade, Cosmético ou dificuldade adaptativa muda.
 - Álbum de criaturas e de Cosméticos (vazio por enquanto).
@@ -279,5 +292,7 @@ Alternativas que mantêm a motivação:
 
 - [x] Tema Arquipélago do Céu e nomes Matemático e Escriba aprovados como provisórios; nome do jogo e dos Papéis ficam em dados e podem mudar
 - [ ] Quais habilidades da BNCC entram primeiro em cada ano: depende do consenso de pedagogia, psicologia e fonoaudiologia (há uma ordem recomendada provisória, usada no MVP)
-- [ ] Quando entram voz e traçado de letras (padrão: logo após o MVP, junto com tablets)
+- [ ] Quando entra a voz do reconhecedor (padrão: logo após o MVP, junto com tablets). O desenho livre de números e letras já vale no combate
+- [ ] **Onde entra a subtração.** Este documento a põe no 2º ano; a ordem recomendada provisória (`docs/pedagogia/ordem-recomendada-mvp.md`) a traz como opcional já no 1º ano, depois da adição (M1.07). Hoje o jogo segue este documento: Nível 1 só com +, Nível 2 com + e −. A ordem final depende do consenso de pedagogia, psicologia e fonoaudiologia. Quem decide: o responsável pelo produto, com esses profissionais
+- [ ] **O anel do lance contra a regra de não depender de velocidade.** O Modo calmo (sem lance) é a garantia; falta decidir se ela basta. Quem decide: o responsável pelo produto, com psicologia e fonoaudiologia (ver "Como a criança responde")
 - [ ] Trocar de Papel dentro da Dungeon, se surgirem torres híbridas (ver "Personagem e Papéis")

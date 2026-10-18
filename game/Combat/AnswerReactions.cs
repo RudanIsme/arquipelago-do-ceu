@@ -43,12 +43,21 @@ public sealed class AnswerReactions
 				area.UpdateEnergy();
 				area.Say($"Acertou! Faltam {result.Remaining}.", $"Acertou! {result.Equation}. Faltam {result.Remaining}.");
 				break;
+			case HitOutcome.Wrong:
+				dummy.Overshoot();
+				area.Mistake("Ainda não é esse!", Wrong(session, result));
+				break;
 			default:
 				dummy.Overshoot();
 				area.Mistake("Passou do valor!", $"Passou do valor: {result.Equation} é mais que {result.Remaining}.");
 				break;
 		}
 	}
+
+	// Mostra a conta que a criança fez (ou o número que escreveu) e o que a criatura pedia.
+	static string Wrong(CombatSession session, AttackResult result) => session.Math is { Ask: MathAsk.Answer } math
+		? $"Você escreveu {result.Equation}, mas {math.Question} não dá esse resultado."
+		: $"{result.Equation}, mas a criatura pedia {result.Remaining}.";
 
 	// Escriba: sílabas, frase ou lacuna
 	public void NameChecked(NameVerdict verdict)
@@ -85,7 +94,7 @@ public sealed class AnswerReactions
 			area.Mistake(name.Kind switch { NameKind.Sentence => "Fora de ordem!", NameKind.Gap => "Palavra errada!", _ => "Sílaba errada!" },
 				$"{struck}{name.Kind switch { NameKind.Sentence => "Uma palavra está fora do lugar.", NameKind.Gap => "Essa palavra não completa a frase.", _ => "Uma sílaba está errada." }}");
 		}
-		else area.Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : $"Ainda faltam {piece}s. Escolha mais uma.");
+		else area.Tell(strikes > 0 ? $"{struck}Faltam {name.Remaining}." : $"Ainda faltam {piece}s. Continue escrevendo.");
 	}
 
 	// Pagar e dar troco: o valor montado bate com o pedido ou não; errar é erro e mostra se passou ou faltou.
@@ -114,6 +123,11 @@ public sealed class AnswerReactions
 	public void WordChecked(WordResult result)
 	{
 		if (area.Session is not { Word: { } word } session) return;
+		if (result == WordResult.Incomplete)
+		{
+			area.Tell("Continue escrevendo a palavra.");
+			return;
+		}
 		var from = RayOrigin;
 		area.AttackAnimation();
 		if (result == WordResult.Freed)

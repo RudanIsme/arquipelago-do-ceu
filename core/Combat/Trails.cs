@@ -70,6 +70,30 @@ public sealed class TraceTrails
 		return Result<TraceGuide>.Ok(new TraceGuide(dots, paths));
 	}
 
+	// Os glifos de `text` lado a lado, cada um na sua célula, para mostrar uma conta ou uma sílaba. Sem trilha (espaço, letra rara) é pulado.
+	public Result<TraceGuide> GuideRow(string text, Vector2 canvas, TracingRules rules)
+	{
+		var glyphs = Letters(text).Where(g => Find(g) is not null).ToList();
+		if (glyphs.Count == 0) return Result<TraceGuide>.Fail($"Não há trilha para {text}.");
+
+		var cell = Math.Min(canvas.X / glyphs.Count, canvas.Y);
+		var left = (canvas.X - cell * glyphs.Count) / 2f;
+		var dots = new List<Vector2>();
+		var paths = new List<TrailPath>();
+		for (var i = 0; i < glyphs.Count; i++)
+		{
+			var guide = Guide(glyphs[i], new Vector2(cell, canvas.Y), rules).Value!;
+			var shift = new Vector2(left + i * cell, 0f);
+			paths.AddRange(guide.Paths!.Select(p => new TrailPath([.. p.Points.Select(q => q + shift)], p.FirstDot + dots.Count, p.DotCount)));
+			dots.AddRange(guide.Dots.Select(d => d + shift));
+		}
+		return Result<TraceGuide>.Ok(new TraceGuide(dots, paths));
+	}
+
+	// Sem acento nem cedilha: o traço é do corpo da letra.
+	static IEnumerable<string> Letters(string text) =>
+		text.Normalize(System.Text.NormalizationForm.FormD).Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).Select(c => c.ToString());
+
 	// Um ponto no início, um a cada `spacing` pixels ao longo do traço e o último na ponta.
 	static List<Vector2> Sample(IReadOnlyList<Vector2> points, float spacing)
 	{
