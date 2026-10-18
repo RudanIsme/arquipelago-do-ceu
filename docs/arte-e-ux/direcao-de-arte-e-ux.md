@@ -55,6 +55,10 @@ O HUD tem painéis escuros com borda dourada, como nas referências, mas com fon
 | Feedback | Acerto: brilho dourado e som de sino. Erro: tremida leve e som macio. Nunca usar vermelho forte. |
 | Som | Voz em todos os pedidos e música calma com instrumentos de madeira. |
 
+### Lobby em ilhas e dia e noite
+
+O Lobby é uma ilha principal ampla; cada torre e o Mercador têm ilha própria, ligada por uma ponte de tábuas que se atravessa a pé (sem tela de carregamento). A câmera acompanha a criança por todo o arquipélago. O ciclo de dia e noite (8 minutos, só visual) muda céu, luz e acende lampiões; "fixar o dia" nas Configurações o desliga. Dentro das torres a luz é fixa.
+
 ### HUD enxuto, Inventário e mapa
 
 Mockup de referência: `mockups/hud-papel.html` (nomes, ícones e valores são exemplos).

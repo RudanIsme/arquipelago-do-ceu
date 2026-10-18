@@ -15,7 +15,7 @@ public sealed class DungeonExploration
 	bool Persists => !ctx.Shortcut;
 
 	public FloorExploration? Get(int floor) =>
-		!Persists ? null : ctx.Progress.Explored.Get(ctx.ProfileId, ctx.FloorKeyOf(floor), DungeonContext.GeneratorVersion);
+		!Persists ? null : ctx.Progress.Explored.Get(ctx.ProfileId, ctx.FloorKeyOf(floor), ctx.Version);
 
 	// Grava a cada passo: ver o mapa sumir ao zerar a Energia seria punição.
 	public void Save(Expedition expedition)
@@ -24,7 +24,7 @@ public sealed class DungeonExploration
 		// Só grava quando algo mudou: voltar a uma Sala já visitada não precisa reescrever o save.
 		var stamp = (expedition.Floor.Number, expedition.Visited.Count, expedition.Cleared.Count);
 		if (stamp == lastSaved) return;
-		var saved = ctx.Progress.Explored.Save(ctx.ProfileId, ctx.FloorKeyOf(expedition.Floor.Number), expedition.Exploration(), DungeonContext.GeneratorVersion);
+		var saved = ctx.Progress.Explored.Save(ctx.ProfileId, ctx.FloorKeyOf(expedition.Floor.Number), expedition.Exploration(), ctx.Version);
 		if (saved.IsOk) lastSaved = stamp;
 		else GD.PushWarning(saved.Error!);
 	}

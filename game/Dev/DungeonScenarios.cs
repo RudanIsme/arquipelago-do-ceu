@@ -80,7 +80,7 @@ static partial class DungeonScenarios
 		await d.Tap(Controls.Interact);
 		d.Expect(expedition.Energy.Current == before + 2, "o Descanso só vale uma vez");
 
-		await GoTo(d, run, RoomTypes.Puzzle);
+		await GoTo(d, run, r => r.Kind == RoomTypes.Puzzle && !expedition.IsCleared(r.Id));
 		d.Expect(expedition.Current.Kind == RoomTypes.Puzzle, "chegou a uma Sala de Puzzle");
 		d.Expect(!run.Combat.Bubbles, "o Puzzle não lança bolhas");
 		d.Expect(run.World.Creature.Visible, "a porta mostra o escudo a resolver");
@@ -206,8 +206,8 @@ static partial class DungeonScenarios
 	static async Task<DungeonRun?> Enter(DevDriver d, bool letters = false, bool shortcut = false)
 	{
 		await EnsureProfile(d);
-		if (letters) await WalkTo(d, 2, -4);
-		else await WalkTo(d, -3, 3);
+		if (letters) await WalkTo(d, 5, -11);
+		else await WalkTo(d, -11, 6);
 		await d.Shot("00-perto-da-torre");
 		await d.Tap(Controls.Interact);
 		await d.Wait(0.5);
@@ -239,12 +239,12 @@ static partial class DungeonScenarios
 			d.Expect(expedition.IsCleared(expedition.CurrentRoom), "vencer a Sala a libera");
 		}
 
-		var door = run.World.DoorTo(next);
-		if (door is null) { d.Expect(false, $"a Sala {expedition.CurrentRoom} tem porta para a {next}"); return false; }
 		var from = expedition.CurrentRoom;
-		run.Player.PlaceAt(new Vector2(door.Ground.X * 0.85f, door.Ground.Z * 0.85f));
+		// A porta aberta leva por um corredor: o piloto pisa na outra ponta, como a criança faria andando.
+		if (run.World.DoorTo(next) is not { } door) { d.Expect(false, $"a Sala {from} tem porta para a {next}"); return false; }
+		if (door.Locked || run.World.EntryTo(next) is not { } entry) return false;
+		run.Player.PlaceAt(entry);
 		await d.Wait(0.3);
-		await d.Tap(Controls.Interact);
 		return expedition.CurrentRoom != from;
 	}
 

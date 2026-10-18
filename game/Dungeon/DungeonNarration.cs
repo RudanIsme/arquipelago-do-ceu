@@ -39,6 +39,8 @@ public sealed class DungeonNarration
 	{
 		var known = expedition.Visited.Contains(room);
 		var name = known ? expedition.Floor.Rooms[room].Kind.Name : "Sala nova";
+		// No Atalho a criança fica na Sala do Desafio até terminá-lo.
+		if (ctx.Shortcut && !expedition.Finished) return ($"{name}\n(termine o Atalho)", true, known);
 		return expedition.CanMoveTo(room) switch
 		{
 			Passage.MustClearRoom => ($"{name}\n(vença esta Sala)", true, known),

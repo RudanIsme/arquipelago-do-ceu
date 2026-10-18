@@ -193,7 +193,7 @@ Tudo o que foi escolhido para o MVP entra, mas na forma mais simples que ainda p
 
 | Recurso | No MVP | Depois |
 | --- | --- | --- |
-| Lobby | Ilha cercada por cinco torres (Matemática e Português abertas, em greybox; Ciências, História e Geografia "em breve"), Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles | Decoração, mais torres |
+| Lobby | Ilha principal ampliada, com Perfil e Personagem editáveis, NPC Guia, Área de treino, Álbum de criaturas e Cosméticos, portal de fast travel (sem pontos ainda), configurações de jogo, acessibilidade e controles. Cada torre (Matemática e Português) e o Mercador ficam em ilha própria, ligada à principal por uma ponte que a criança atravessa a pé, sem carregamento nem teleporte (Ciências, História e Geografia seguem como ilhas "em breve", sem ponte). Um ciclo curto de dia e noite (8 minutos de jogo, em dados) muda só luz, céu e lampiões; não usa o relógio do aparelho, nada depende do horário e uma opção nas Configurações fixa o dia. Dentro das torres a luz é fixa | Decoração, mais ilhas |
 | Dungeon | Matemática e Português, 3 níveis cada (1º ao 3º ano), andares gerados inteiros, desafios mestres | Novos biomas e tipos de sala |
 | Fast travel | Um ponto por andar, que também salva | Mapa do mundo completo |
 | Personagens | Matemático e Escriba, 2 a 3 habilidades cada | Mais personagens, Ciências |

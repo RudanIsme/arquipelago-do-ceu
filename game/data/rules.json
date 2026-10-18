@@ -246,14 +246,21 @@
   "lobby": {
     "interactionReach": 2.2,
     "dayCycleSeconds": 480,
+    "islandRadius": 8,
+    "carved": [[3,3], [3,4], [4,2], [4,3], [4,4], [5,1], [5,2], [5,3], [6,-3], [6,-2], [6,-1], [6,0], [6,1], [6,2], [7,-4], [7,-3], [7,-2], [7,-1], [7,0], [7,1], [8,-4], [8,-3], [8,-2], [8,-1], [8,0]],
+    "islands": [
+      { "id": "matematica", "q": -13, "r": 6, "radius": 2, "from": [-8, 4] },
+      { "id": "portugues", "q": 6, "r": -13, "radius": 2, "from": [4, -8] },
+      { "id": "mercador", "q": 0, "r": 13, "radius": 2, "from": [0, 8] }
+    ],
     "camera": {
-      "size": 24,
+      "size": 28,
       "minSize": 8,
-      "maxSize": 32,
+      "maxSize": 44,
       "zoomStep": 3,
       "followSharpness": 4,
       "deadZone": 1.5,
-      "maxPan": 9
+      "maxPan": 24
     },
     "places": [
       {
@@ -261,39 +268,39 @@
         "name": "Torre dos Números",
         "sign": "Aberta: entre pela porta",
         "model": "torre-numeros-meshy-v01",
-        "x": -13.4,
-        "z": 4.9
+        "x": -19.5,
+        "z": -0.87
       },
       {
         "id": "portugues",
         "name": "Torre das Letras",
         "sign": "Aberta: entre pela porta",
         "model": "torre-letras-meshy-v01",
-        "x": 4.9,
-        "z": -13.4
+        "x": 9,
+        "z": -17.32
       },
       {
         "id": "ciencias",
         "name": "Ilha das Ciências",
         "sign": "Em breve",
-        "x": -7.8,
-        "z": 12.5,
+        "x": -16,
+        "z": 26,
         "model": "landmarks/botanic-v01"
       },
       {
         "id": "historia",
         "name": "Ilha da História",
         "sign": "Em breve",
-        "x": 9.0,
-        "z": 9.0,
+        "x": 18,
+        "z": 18,
         "model": "landmarks/history-v01"
       },
       {
         "id": "geografia",
         "name": "Ilha da Geografia",
         "sign": "Em breve",
-        "x": 12.5,
-        "z": -7.8,
+        "x": 26,
+        "z": -16,
         "model": "landmarks/geography-v01"
       }
     ],
@@ -318,22 +325,22 @@
         "id": "torre-matematica",
         "name": "Torre dos Números",
         "prompt": "Entrar na Torre dos Números",
-        "q": -4,
-        "r": 4
+        "q": -12,
+        "r": 6
       },
       {
         "id": "torre-portugues",
         "name": "Torre das Letras",
         "prompt": "Entrar na Torre das Letras",
-        "q": 2,
-        "r": -5
+        "q": 5,
+        "r": -12
       },
       {
         "id": "mercador",
         "name": "Mercador",
         "prompt": "Falar com o Mercador",
-        "q": -4,
-        "r": 1
+        "q": 0,
+        "r": 12
       },
       {
         "id": "mestre",

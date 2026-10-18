@@ -57,6 +57,16 @@ public sealed class HexGrid
 
 	public IReadOnlyCollection<HexCell> Cells => cells;
 
+	// Troca o chão sem trocar o objeto: quem anda guarda a grade, e a Sala de uma Dungeon muda a cada porta.
+	public void Reset(IEnumerable<HexCell> newCells, IEnumerable<HexCell> newBlocked)
+	{
+		var (freshCells, freshBlocked) = (newCells.ToList(), newBlocked.ToList());
+		cells.Clear();
+		cells.UnionWith(freshCells);
+		blocked.Clear();
+		blocked.UnionWith(freshBlocked);
+	}
+
 	public bool IsWalkable(HexCell cell) => cells.Contains(cell) && !blocked.Contains(cell);
 
 	public IEnumerable<HexCell> WalkableNeighbors(HexCell cell) => cell.Neighbors().Where(n => IsWalkable(n) && (edgeAllowed?.Invoke(cell, n) ?? true));

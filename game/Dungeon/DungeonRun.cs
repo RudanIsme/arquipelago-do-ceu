@@ -26,6 +26,7 @@ public partial class DungeonRun : Node
 	// Nos Andares profundos os problemas já vistos ficam de fora.
 	readonly MissionHistory history = new();
 	readonly DungeonWorld world = new();
+	readonly DungeonCamera camera = new();
 	readonly DungeonHud hud;
 	readonly DungeonNarration narration;
 	readonly DungeonRewards rewards;
@@ -49,10 +50,10 @@ public partial class DungeonRun : Node
 	{
 		this.ctx = ctx;
 		var seed = ctx.WorldSeed;
-		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, DungeonContext.GeneratorVersion);
-		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback);
+		var plan = LevelPlan.Create(ctx.Rules.Dungeon, seed, ctx.Discipline, ctx.Level, ctx.Version);
+		var floors = new FloorProvider(ctx.Rules.Dungeon, ctx.Fallback, forms: ctx.Forms);
 		exploration = new DungeonExploration(ctx);
-		expedition = Expedition.Start(floors, plan, seed, DungeonContext.GeneratorVersion, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
+		expedition = Expedition.Start(floors, plan, seed, ctx.Version, new Energy(ctx.Rules.MaxEnergy + ctx.ExtraEnergy), ctx.HasTradeItem,
 			ctx.StartFloor, ctx.AtFastTravel, ctx.Shortcut, exploration.Get);
 		hud = new DungeonHud(ctx, expedition);
 		narration = new DungeonNarration(ctx, expedition);
@@ -96,7 +97,7 @@ public partial class DungeonRun : Node
 		world.Camera.MakeCurrent();
 		world.Name = "Dungeon";
 
-		player = new Player(world.Grid, world.Camera);
+		player = new Player(world.Grid, world.Camera, world.HeightAt);
 		ctx.ConfigurePlayer(player);
 		AddChild(player);
 
@@ -114,6 +115,7 @@ public partial class DungeonRun : Node
 		hud.InteractPressed += Activate;
 		hud.LeaveRequested += () => Leave("");
 		hud.MapSpeechRequested += () => Say(narration.MapSpeech(IsFloorDone()));
+		hud.MapOpenRequested += OpenMap;
 		hud.RoomPointed += room => Say(narration.RoomSpeech(room));
 
 		player.Enabled = enabled;
@@ -131,9 +133,11 @@ public partial class DungeonRun : Node
 	void EnterRoom(int from, string? lead = null)
 	{
 		combat.EndFight();
-		RefreshRoom();
-		var back = from >= 0 ? world.DoorTo(from) : null;
-		player.PlaceAt(back is null ? DungeonWorld.Center : DungeonWorld.InsideOf(back));
+		var shift = RefreshRoom();
+		// Pela escada ou ao começar a criança aparece no centro; ao cruzar a porta ela segue onde estava, e o chão é que anda.
+		if (from < 0) player.PlaceAt(DungeonWorld.Center);
+		else player.PlaceAt(player.GroundPosition - shift);
+		camera.Move(from < 0 ? Vector2.Zero : shift, snap: from < 0);
 		StartFight();
 		RefreshHud();
 		exploration.Save(expedition);
@@ -160,7 +164,7 @@ public partial class DungeonRun : Node
 		return true;
 	}
 
-	void RefreshRoom() =>
+	Vector2 RefreshRoom() =>
 		world.Show(expedition.Floor, expedition.CurrentRoom, expedition.Cleared, narration.Describe, narration.RoomNote(), expedition.CanDescend, expedition.CanEnterDeep);
 
 	// Combate, Puzzle e épico têm uma criatura a vencer. A criança a escolhe (clique ou F) para abrir a montagem.
@@ -285,6 +289,8 @@ public partial class DungeonRun : Node
 		world.Creature.SetCaptionContext(true, enabled && combat.InTargetRange());
 		combat.CheckRange();
 		hud.RefreshEnergy();
+		if (world.RoomAt(player.GroundPosition) is { } reached && reached != expedition.CurrentRoom) Arrive(reached);
+		camera.Update(world, player.GroundPosition, expedition.CurrentRoom, (float)delta, player.ReduceMotion, GetViewport().GetVisibleRect().Size);
 		var near = enabled ? InteractionFinder.Nearest(player.GroundPosition, world.Interactables(expedition), ctx.Rules.Lobby.InteractionReach + ctx.ExtraReach) : null;
 		if (near?.Id == target) return;
 		target = near?.Id;
@@ -293,8 +299,9 @@ public partial class DungeonRun : Node
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (left || !@event.IsActionPressed(Controls.Interact)) return;
-		Activate();
+		if (left) return;
+		if (@event.IsActionPressed(Controls.Map)) OpenMap();
+		else if (@event.IsActionPressed(Controls.Interact)) Activate();
 	}
 
 	void Activate()
@@ -313,20 +320,14 @@ public partial class DungeonRun : Node
 		if (target == "progression") { ChangeFloor(expedition.ReturnToProgression, "De volta à Progressão."); return; }
 		if (target == "stairs-down") { ChangeFloor(expedition.Descend); return; }
 
+		// Só as portas trancadas chegam aqui: as abertas se atravessam andando.
 		var room = int.Parse(target["door:".Length..], System.Globalization.CultureInfo.InvariantCulture);
-		var from = expedition.CurrentRoom;
-		switch (expedition.MoveTo(room))
+		Say(expedition.CanMoveTo(room) switch
 		{
-			case Passage.Open:
-				EnterRoom(from);
-				break;
-			case Passage.MustClearRoom:
-				Say("Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.");
-				break;
-			case Passage.NeedsItem:
-				Say($"O Marco só abre com o Item de troca da {OtherName}.");
-				break;
-		}
+			Passage.MustClearRoom => "Vença a criatura desta Sala para seguir. Escolha-a com clique ou F.",
+			Passage.NeedsItem => $"O Marco só abre com o Item de troca da {OtherName}.",
+			_ => "A porta está aberta: siga pelo corredor.",
+		});
 	}
 
 	// Chegar ao Fast travel salva o ponto: é por ele que a criança retoma pelo portal do Lobby.

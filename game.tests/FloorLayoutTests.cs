@@ -117,6 +117,30 @@ public class FloorLayoutTests
 	}
 
 	[Fact]
+	public void O_Personagem_anda_de_verdade_pelos_corredores_sem_ficar_preso()
+	{
+		for (ulong world = 1; world <= 25; world++)
+		{
+			var floor = Laid(world, 2, 2);
+			var layout = floor.Layout!;
+			var cells = layout.Rooms.SelectMany(r => r.Cells).Concat(layout.Corridors.SelectMany(c => c.Cells));
+			var grid = new HexGrid(cells, []);
+			foreach (var link in floor.Links)
+			{
+				var from = layout.Room(link.A);
+				var to = layout.Room(link.B);
+				var mover = new MovementController(grid, HexGrid.ToWorld(from.Spot), 3f);
+				var target = HexGrid.ToWorld(to.Spot);
+
+				Assert.True(mover.GoTo(target));
+				for (var i = 0; i < 60 * 40; i++) mover.Tick(System.Numerics.Vector2.Zero, 1f / 60f);
+
+				Assert.True(System.Numerics.Vector2.Distance(mover.Position, target) < 0.1f, $"mundo {world}, {link.A}-{link.B}: parou em {mover.Position}");
+			}
+		}
+	}
+
+	[Fact]
 	public void Layout_que_falha_cai_no_Andar_de_reserva_que_tem_layout_valido()
 	{
 		var plan = new FloorPlan(2, false, true, false);

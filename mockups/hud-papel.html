@@ -213,7 +213,7 @@ p,li{line-height:1.5}
 
   <section class="block">
     <h2>3. Mapa em tela cheia</h2>
-    <p class="sub">Tocar no mapa do canto (ou a tecla M) escurece a cena e o Personagem abre a folha e a segura pelos cantos. O jogo pausa enquanto o mapa está aberto. A animação respeita "reduzir animações".</p>
+    <p class="sub">O mapa desenha a silhueta real de cada Sala (forma e tamanho simplificados) nas posições do layout, ligadas pelos corredores, com névoa nas Salas ainda não vistas. Tocar no mapa do canto (ou a tecla M) escurece a cena e o Personagem abre a folha e a segura pelos cantos. O jogo pausa enquanto o mapa está aberto. A animação respeita "reduzir animações".</p>
     <button class="replay" id="replay" type="button">Repetir animação</button>
     <div class="fit"><div class="stage play" data-mode="map" id="mapstage"></div></div>
   </section>
@@ -255,21 +255,28 @@ const avatar=`<div class="avatar"><svg viewBox="0 0 100 100"><use href="#face"/>
 const energy=`<div class="bolts" role="img" aria-label="Energia 4 de 5">${[1,1,1,1,0].map(bolt).join('')}</div>`;
 const card=(lobby)=>`<div class="card panel">${avatar}<div><div class="nm">Luna ${mast(3)}</div>${lobby?'':energy}</div>${lobby?`<div class="edit panel btn" role="button" aria-label="Editar personagem">${ic('edit')}</div>`:''}</div>`;
 
-/* Andar 2: só o que a criança viu */
-const N={E:[0,1,'done'],A:[1,1,'done'],T:[1,2,'portal'],B:[2,1,'here'],D:[1,0,'q'],G:[2,0,'q'],F:[2,2,'q'],C:[3,1,'q']};
-const L=[['E','A'],['A','B'],['A','D'],['A','T'],['B','C','door'],['B','F'],['B','G']];
-const cx=(c)=>24+c*66, cy=(r)=>24+r*60, S=44;
+/* Andar 2: só o que a criança viu. Cada Sala é a silhueta real (forma e tamanho simplificados) nas posições do layout, ligadas por corredores. */
+const poly=(c,r,rx,ry)=>[0,1,2,3,4,5].map(i=>[c+rx*Math.cos(i*Math.PI/3),r+ry*Math.sin(i*Math.PI/3)].map(v=>v.toFixed(1)).join(',')).join(' ');
+const N={
+  E:{c:[24,92],pts:poly(24,92,16,14),st:'done'},
+  A:{c:[78,92],pts:poly(78,92,22,19),st:'done'},
+  T:{c:[78,34],pts:poly(78,34,14,12),st:'portal'},
+  B:{c:[150,92],pts:'122,70 190,70 190,114 166,114 166,100 122,100',st:'here'},
+  D:{c:[130,26],pts:poly(130,26,13,11),st:'q'},
+  C:{c:[200,30],pts:poly(200,30,13,11),st:'q'},
+  F:{c:[196,128],pts:poly(196,128,12,10),st:'q'}
+};
+const L=[['E','A','M 40,92 L 56,92'],['A','B','M 100,92 L 122,92'],['A','T','M 78,73 L 78,46'],['A','D','M 98,76 L 112,60 L 124,38'],['B','C','M 170,70 L 190,52 L 198,43','door'],['B','F','M 178,114 L 190,120']];
 function mapSvg(){
-  let s=`<svg viewBox="0 0 222 144" role="img" aria-label="Mapa do Andar: 4 salas vistas e 4 ainda não vistas">`;
-  for(const [a,b,t] of L){
-    const [ac,ar]=N[a],[bc,br]=N[b],x1=cx(ac),y1=cy(ar),x2=cx(bc),y2=cy(br);
-    const unk=N[a][2]==='q'||N[b][2]==='q';
-    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#946239" stroke-width="3" ${unk?'stroke-dasharray="5 4"':''} stroke-linecap="round"/>`;
-    if(t==='door'){const mx=(x1+x2)/2,my=(y1+y2)/2;s+=`<rect x="${mx-4}" y="${my-9}" width="8" height="18" rx="1.500" fill="#3D2C25"/>`;}
+  let s=`<svg viewBox="0 0 222 144" role="img" aria-label="Mapa do Andar: 4 salas vistas e 3 ainda não vistas">`;
+  for(const [a,b,d,t] of L){
+    const unk=N[a].st==='q'||N[b].st==='q';
+    s+=`<path d="${d}" fill="none" stroke="#3D2C25" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#946239" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" ${unk?'stroke-dasharray="5 4"':''}/>`;
+    if(t==='door'){const m=d.match(/L ([d.]+),([d.]+) L/);if(m){s+=`<rect x="${m[1]-4}" y="${m[2]-9}" width="8" height="18" rx="1.500" fill="#3D2C25"/>`;}}
   }
   for(const k in N){
-    const [c,r,st]=N[k],x=cx(c)-S/2,y=cy(r)-S/2,here=st==='here',unk=st==='q';
-    s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="3" fill="${here?'#FFF6DC':'#EEDDB8'}" stroke="${here?'#3D2C25':'#946239'}" stroke-width="${here?3.5:1.5}" ${unk?'stroke-dasharray="4 3"':''}/><use href="#i-${st}" x="${x+2}" y="${y+2}" width="${S-4}" height="${S-4}"/>`;
+    const {c,pts,st}=N[k],here=st==='here',unk=st==='q',S=26;
+    s+=`<polygon points="${pts}" fill="${here?'#FFF6DC':unk?'#CDBF9C':'#EEDDB8'}" stroke="${here?'#3D2C25':'#946239'}" stroke-width="${here?3.5:1.5}" stroke-linejoin="round" ${unk?'stroke-dasharray="4 3"':''}/><use href="#i-${st}" x="${c[0]-S/2}" y="${c[1]-S/2}" width="${S}" height="${S}"/>`;
   }
   return s+'</svg>';
 }

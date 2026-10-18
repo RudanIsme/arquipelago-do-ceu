@@ -82,10 +82,11 @@ public partial class Main
 	{
 		if (current is null || inDungeon) return;
 		var floors = LoadFallbackFloors();
-		if (!floors.IsOk)
+		var forms = catalogs.Required("formas-de-sala.json", RoomForms.Parse);
+		if (!floors.IsOk || !forms.IsOk)
 		{
 			Notify("Não foi possível abrir a torre agora.");
-			GD.PushError(floors.Error!);
+			GD.PushError(floors.Error ?? forms.Error!);
 			return;
 		}
 
@@ -103,7 +104,7 @@ public partial class Main
 		var floor = startFloor > 0 ? startFloor : progress.Levels.HighestFloor(current.Id, new LevelKey(discipline, towerLevel));
 		coinsAtStart = (current.Id, progress.Wallet.Balance(current.Id));
 		var run = new DungeonRun(new DungeonContext(rules, current.Id, discipline, tower, towerLevel, voice, settings, uiRoot,
-			progress, floors.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, LoadConcepts(), ShowInventory, NewInventoryCount, ExpeditionCompleted, battleMechanics));
+			progress, floors.Value!, forms.Value!, LoadRewards(), rewardService, current.Nickname, RoleName(discipline), towers, equipmentBonuses.ExtraEnergy, equipmentBonuses.InteractionReachBonus, ConfigureDungeonPlayer, random, floor, atFastTravel, ShowOverlay, shortcut, LoadConcepts(), ShowInventory, NewInventoryCount, ExpeditionCompleted, battleMechanics));
 		run.Left += LeaveDungeon;
 		dungeon = run;
 		inDungeon = true;

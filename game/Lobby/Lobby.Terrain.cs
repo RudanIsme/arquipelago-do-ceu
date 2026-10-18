@@ -14,6 +14,7 @@ public partial class Lobby
 		foreach (var (cell, kind) in tiles)
 		{
 			var center = HexToWorld(cell.X, cell.Y);
+			if (kind == Kind.Plank) continue;
 			if (kind != Kind.Water) { AddLote02Tile(center, PathMask(cell)); continue; }
 			center.Y = -.24f;
 			var info = new Color((int)kind / 3f, PathMask(cell) / 63f, Hash01(cell.X * 7 + cell.Y * 13), 1f);

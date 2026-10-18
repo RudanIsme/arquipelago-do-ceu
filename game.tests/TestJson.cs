@@ -39,6 +39,7 @@ static class TestJson
 		  "lobby": {
 		    "interactionReach": 2.0,
 		    "dayCycleSeconds": 480,
+		    "islandRadius": 5,
 		    "camera": { "size": 28, "minSize": 12, "maxSize": 44, "zoomStep": 3, "followSharpness": 4, "deadZone": 1.5, "maxPan": 9 },
 		    "places": [
 		      { "id": "matematica", "name": "Torre dos Números", "sign": "Em construção", "model": "torre-numeros", "x": -10, "z": -6 },

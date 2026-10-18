@@ -6,6 +6,8 @@ Quantos Andares tem um Nível, e em qual ficam a Sala do Item, o Marco e o Desaf
 
 Trocar o grafo por uma fila de Salas, ou o Plano por ordem fixa, muda o gerador e o formato do save; por isso o registro.
 
+O Andar também existe no espaço, com formas de Sala e corredores a pé: ver o ADR 0008.
+
 ## Andares profundos (#153)
 
 Além do Plano do Nível há os Andares profundos: sem fim, gerados pela mesma seed (com números de seed acima dos do Plano, para o primeiro Andar profundo não repetir o Andar 1), comuns, sem Marco, Item de troca nem Desafio épico. A criança chega a eles depois do último Andar do Plano, ou por uma escada lateral opcional na entrada de qualquer Andar da Progressão. Eles rendem moedas e Maestria, não avançam o Nível, nunca bloqueiam o Marco nem são obrigatórios, e o Fast travel deles volta à Progressão. Substitui a escolha entre Progressão e Livre: entrar numa torre sempre começa a Progressão, e o validador continua provando só os dois bloqueios do Plano.

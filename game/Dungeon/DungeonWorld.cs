@@ -6,30 +6,29 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A cena 3D de uma Sala da Dungeon: o chão hexagonal, as portas para as Salas ligadas e a criatura.
-// Greybox, sem tema visual: cada função tem cor, forma e texto, e o jogo reconstrói a Sala a cada mudança.
+// A cena 3D de uma Sala da Dungeon, das Salas vizinhas já abertas e dos corredores a pé (greybox, sem tema visual).
+// O centro da Sala de agora fica sempre na origem; ao trocar de Sala, `Show` diz quanto o chão andou para quem guarda posições.
 public partial class DungeonWorld : Node3D, ICombatStage
 {
-	const int RoomRadius = 3;
-	const float TileGap = 0.98f;
-	const float TileThickness = 0.5f;
 	const float CreatureHeight = 1.7f;
 	const float CreatureRadius = 0.35f;
 	const float PillarHeight = 1.8f;
 
 	public sealed record Door(int Target, Vector3 Ground, string Label, bool Locked);
 
-	// Cada porta ocupa um hexágono da borda; um Andar tem poucas ligações por Sala, então 18 posições sobram.
-	static readonly HexCell[] Ring = BuildRing();
-
 	readonly Node3D room = new();
 	readonly List<Door> doors = new();
 	readonly List<Label3D> labels = new();
+	readonly Dictionary<int, System.Numerics.Vector2> entries = new();
 	Font? font;
+	FloorLayout? layout;
+	(int Number, bool Deep) shownFloor;
+	int currentId = -1;
+	HexCell spot;
 
 	public DungeonWorld()
 	{
-		Grid = HexGrid.Island(RoomRadius, []);
+		Grid = new HexGrid([], []);
 		Camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 13f, Current = false };
 		Creature = new TrainingDummy { Title = "Criatura da névoa", RestingHint = "Escolha-a para lutar", RestingCompact = "Lutar [F]" };
 	}
@@ -42,10 +41,14 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	public IReadOnlyList<Door> Doors => doors;
 
-	// Com o que a criança pode interagir na Sala de agora: as portas, a escada e a fonte do Descanso.
+	public FloorLayout? Layout => layout;
+
+	public int CurrentRoom => currentId;
+
+	// Com o que a criança pode interagir na Sala de agora: as portas trancadas (para ouvir por que), a escada e a fonte do Descanso.
 	public IReadOnlyList<Interactable> Interactables(Dungeon.Expedition expedition)
 	{
-		var list = doors.Select(d => new Interactable($"door:{d.Target}", new System.Numerics.Vector2(d.Ground.X, d.Ground.Z))).ToList();
+		var list = doors.Where(d => d.Locked).Select(d => new Interactable($"door:{d.Target}", new System.Numerics.Vector2(d.Ground.X, d.Ground.Z))).ToList();
 		if (expedition.CanAscend) list.Add(new Interactable("stairs", StairsSpot));
 		if (expedition.CanDescend) list.Add(new Interactable("stairs-down", StairsSpot));
 		if (expedition.CanEnterDeep) list.Add(new Interactable("stairs-deep", DeepStairsSpot));
@@ -72,7 +75,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 			AmbientLightEnergy = 0.8f,
 		};
 		AddChild(Camera);
-		Camera.LookAtFromPosition(new Vector3(12f, 14f, 12f), new Vector3(0f, 1f, 0f), Vector3.Up);
+		Frame(System.Numerics.Vector2.Zero, 13f);
 		AddChild(new DirectionalLight3D { LightColor = Color.FromHtml("#FFE4BC"), LightEnergy = 1.1f, ShadowEnabled = true, RotationDegrees = new Vector3(-50f, -30f, 0f) });
 		AddChild(room);
 		AddChild(Creature);
@@ -97,6 +100,13 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		Visible = false,
 	};
 
+	// Põe a câmera olhando `focus` (x, z) do chão, mostrando `size` unidades na altura da tela.
+	public void Frame(System.Numerics.Vector2 focus, float size)
+	{
+		Camera.Size = size;
+		Camera.LookAtFromPosition(new Vector3(focus.X + 12f, 14f, focus.Y + 12f), new Vector3(focus.X, 1f, focus.Y), Vector3.Up);
+	}
+
 	public void SetFont(Font? value)
 	{
 		font = value;
@@ -113,98 +123,124 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		barrier.Visible = fight && puzzle;
 	}
 
-	// Reconstrói a Sala: chão pela função, portas para as vizinhas e o letreiro do centro.
-	// `describe` dá o texto da porta, se está trancada e se a Sala já é conhecida: a porta de uma Sala nova não a revela.
-	public void Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false, bool deepStairs = false)
+	// Reconstrói a Sala de agora, os corredores e, atrás das portas abertas, as vizinhas; a porta de uma Sala nova não a revela.
+	// Devolve quanto o chão andou desde a Sala anterior do mesmo Andar (zero na primeira vez).
+	public System.Numerics.Vector2 Show(Floor floor, int roomId, IReadOnlySet<int> cleared, System.Func<int, (string Label, bool Locked, bool Known)> describe, string? note = null, bool stairsDown = false, bool deepStairs = false)
 	{
 		foreach (var child in room.GetChildren()) child.QueueFree();
 		doors.Clear();
 		labels.Clear();
+		entries.Clear();
+
+		layout = floor.Layout!;
+		var here = layout.Room(roomId);
+		var key = (floor.Number, floor.Deep);
+		var shift = currentId >= 0 && shownFloor == key ? HexGrid.ToWorld(here.Spot - spot) : System.Numerics.Vector2.Zero;
+		(shownFloor, currentId, spot) = (key, roomId, here.Spot);
 
 		var kind = floor.Rooms[roomId].Kind;
-		AddFloor(FloorMap.ColorOf(kind), cleared.Contains(roomId));
+		var walkable = new HashSet<HexCell>(here.Cells.Select(Local));
+		var blocked = new HashSet<HexCell>();
+		RoomMeshes.AddFloor(room, here.Cells.Select(c => (Local(c), here.HeightAt(c))), FloorMap.ColorOf(kind), cleared.Contains(roomId));
 
-		var neighbors = floor.Neighbors(roomId).OrderBy(n => n).ToList();
-		for (var i = 0; i < neighbors.Count; i++)
+		foreach (var neighbor in floor.Neighbors(roomId).OrderBy(n => n))
 		{
-			var cell = Ring[(i * Ring.Length / neighbors.Count + Ring.Length / (2 * neighbors.Count)) % Ring.Length];
-			var ground = Lobby.HexToWorld(cell.Q, cell.R);
-			var (label, locked, known) = describe(neighbors[i]);
-			var door = new Door(neighbors[i], ground, label, locked);
+			var cells = layout.CorridorBetween(roomId, neighbor)!.Select(Local).ToList();
+			var (label, locked, known) = describe(neighbor);
+			var other = layout.Room(neighbor);
+			var color = known ? FloorMap.ColorOf(floor.Rooms[neighbor].Kind) : Color.FromHtml("#8A8399");
+			var door = new Door(neighbor, GroundOf(cells[0]), label, locked);
 			doors.Add(door);
-			AddDoor(door, known ? FloorMap.ColorOf(floor.Rooms[neighbors[i]].Kind) : Color.FromHtml("#8A8399"));
+			var way = cells.Count > 1 ? GroundOf(cells[1]) - door.Ground : GroundOf(Local(other.Spot)) - door.Ground;
+			AddDoor(door, color, new Vector3(way.X, 0f, way.Z));
+
+			walkable.Add(cells[0]);
+			if (locked)
+			{
+				blocked.Add(cells[0]);
+				RoomMeshes.AddFloor(room, [(cells[0], 0f)], Color.FromHtml("#6B6578"), false);
+				continue;
+			}
+
+			walkable.UnionWith(cells);
+			RoomMeshes.AddFloor(room, cells.Select(c => (c, 0f)), Color.FromHtml("#8A7FA6"), false);
+			walkable.UnionWith(other.Cells.Select(Local));
+			RoomMeshes.AddFloor(room, other.Cells.Select(c => (Local(c), other.HeightAt(c))), color, cleared.Contains(neighbor));
+			var entry = GroundOf(Local(other.Cells.First(c => c.DistanceTo(layout.CorridorBetween(roomId, neighbor)![^1]) == 1)));
+			entries[neighbor] = new System.Numerics.Vector2(entry.X, entry.Z);
 		}
+		Grid.Reset(walkable, blocked);
 
 		AddSign($"{kind.Name}", new Vector3(0f, kind.HasChallenge ? 5.6f : 2.4f, 0f), 56);
 		if (note is not null) AddSign(note, new Vector3(0f, 3.4f, 0f), 34);
 		if (kind.Stairs == RoomStairs.Up || stairsDown) AddStairs(stairsDown);
 		if (kind.Restores) AddFountain(cleared.Contains(roomId));
 		if (deepStairs) AddDeepStairs();
+		return shift;
 	}
 
-	// A porta da Sala `target`, para a criança chegar nela vinda de lá.
+	HexCell Local(HexCell global) => global - spot;
+
+	static Vector3 GroundOf(HexCell local)
+	{
+		var world = HexGrid.ToWorld(local);
+		return new Vector3(world.X, 0f, world.Y);
+	}
+
+	// A porta da Sala `target`.
 	public Door? DoorTo(int target) => doors.FirstOrDefault(d => d.Target == target);
 
-	// Um ponto do chão de dentro da Sala, junto da porta: onde a criança aparece ao chegar por ela.
-	public static System.Numerics.Vector2 InsideOf(Door door) => new(door.Ground.X * 0.62f, door.Ground.Z * 0.62f);
+	// Um ponto do chão dentro da Sala `target` (já aberta), colado ao fim do corredor: onde a criança pisa ao chegar nela.
+	public System.Numerics.Vector2? EntryTo(int target) => entries.TryGetValue(target, out var at) ? at : null;
+
+	// A Sala (que não é a de agora) em que o ponto do chão está, se estiver dentro de uma.
+	public int? RoomAt(System.Numerics.Vector2 ground)
+	{
+		if (layout is null) return null;
+		var found = layout.RoomAt(HexGrid.FromWorld(ground) + spot);
+		return found?.Room;
+	}
+
+	// A altura do chão sob o ponto (só o desnível tem altura).
+	public float HeightAt(System.Numerics.Vector2 ground)
+	{
+		var cell = HexGrid.FromWorld(ground) + spot;
+		return layout?.RoomAt(cell) is { } placed ? placed.HeightAt(cell) : 0f;
+	}
+
+	// Os cantos da Sala de agora e das portas, no chão (x, z), para a câmera enquadrar tudo sem cortar nada.
+	public IEnumerable<System.Numerics.Vector2> Bounds() =>
+		layout!.Room(currentId).Cells.Select(c => HexGrid.ToWorld(Local(c))).Concat(doors.Select(d => new System.Numerics.Vector2(d.Ground.X, d.Ground.Z)));
+
+	public System.Numerics.Vector2 CenterOfRoom()
+	{
+		var points = layout!.Room(currentId).Cells.Select(c => HexGrid.ToWorld(Local(c))).ToList();
+		return new System.Numerics.Vector2(points.Average(p => p.X), points.Average(p => p.Y));
+	}
 
 	public static System.Numerics.Vector2 Center => System.Numerics.Vector2.Zero;
 
 	// A escada do Andar fica no meio da Sala de saída (para subir) ou da entrada (para descer).
 	public static System.Numerics.Vector2 StairsSpot => new(0f, 0f);
 
-	// A escada lateral dos Andares profundos fica ao lado, fora do caminho das portas e da escada principal.
-	public static System.Numerics.Vector2 DeepStairsSpot => new(-2.4f, 1.4f);
+	// A escada lateral dos Andares profundos fica num hexágono ao lado do centro, fora do caminho da escada principal.
+	public System.Numerics.Vector2 DeepStairsSpot => layout is null ? new(-2.4f, 1.4f) : HexGrid.ToWorld(Local(layout.Room(currentId).SideSpot));
 
-	void AddFloor(Color baseColor, bool cleared)
-	{
-		var st = new SurfaceTool();
-		st.Begin(Mesh.PrimitiveType.Triangles);
-		foreach (var cell in HexGridCells())
-		{
-			var center = Lobby.HexToWorld(cell.Q, cell.R);
-			var tint = (cell.Q + cell.R) % 2 == 0 ? 0.85f : 1f;
-			var top = baseColor.Lerp(Colors.White, 0.35f) * tint;
-			top = cleared ? top.Lerp(Color.FromHtml("#8BC34A"), 0.35f) : top;
-			top.A = 1f;
-			var corners = Enumerable.Range(0, 6).Select(i => center + new Vector3(Mathf.Cos(Mathf.DegToRad(60f * i)), 0f, Mathf.Sin(Mathf.DegToRad(60f * i))) * TileGap).ToArray();
-			for (var i = 0; i < 6; i++)
-			{
-				var a = corners[i];
-				var b = corners[(i + 1) % 6];
-				Triangle(st, center, a, b, Vector3.Up, top);
-				var down = new Vector3(0f, -TileThickness, 0f);
-				var outward = ((a + b) / 2f - center).Normalized();
-				var side = top.Darkened(0.4f);
-				Triangle(st, a, a + down, b, outward, side);
-				Triangle(st, b, a + down, b + down, outward, side);
-			}
-		}
-		room.AddChild(new MeshInstance3D { Mesh = st.Commit(), MaterialOverride = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f } });
-	}
+	public static System.Numerics.Vector2 FountainSpot => System.Numerics.Vector2.Zero;
 
-	static void Triangle(SurfaceTool st, Vector3 a, Vector3 b, Vector3 c, Vector3 normal, Color color)
-	{
-		foreach (var point in new[] { a, b, c })
-		{
-			st.SetNormal(normal);
-			st.SetColor(color);
-			st.AddVertex(point);
-		}
-	}
-
-	// Duas colunas e uma verga; a cor é a da Sala do outro lado, e o texto diz o que é e se está trancada.
-	void AddDoor(Door door, Color color)
+	// Duas colunas e uma verga; trancada, ganha um painel fechando a passagem. O texto diz o que é e se está trancada.
+	void AddDoor(Door door, Color color, Vector3 way)
 	{
 		var tint = door.Locked ? Color.FromHtml("#6B6578") : color;
 		var material = new StandardMaterial3D { AlbedoColor = tint, Roughness = 0.8f };
-		var way = new Vector3(door.Ground.X, 0f, door.Ground.Z).Normalized();
-		var side = new Vector3(-way.Z, 0f, way.X) * 0.55f;
+		var along = way.LengthSquared() > 0.0001f ? way.Normalized() : Vector3.Forward;
+		var side = new Vector3(-along.Z, 0f, along.X) * 0.8f;
 		foreach (var offset in new[] { side, -side })
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.28f, PillarHeight, 0.28f) }, MaterialOverride = material, Position = door.Ground + offset + new Vector3(0f, PillarHeight / 2f, 0f) });
-		var lintel = new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f, 0.26f, 0.3f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight + 0.1f, 0f) };
-		lintel.Rotation = new Vector3(0f, Mathf.Atan2(side.X, side.Z) - Mathf.Pi / 2f, 0f);
-		room.AddChild(lintel);
+		var across = Mathf.Atan2(side.X, side.Z) - Mathf.Pi / 2f;
+		room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.9f, 0.26f, 0.3f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight + 0.1f, 0f), Rotation = new Vector3(0f, across, 0f) });
+		if (door.Locked)
+			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f, PillarHeight - 0.1f, 0.18f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight / 2f, 0f), Rotation = new Vector3(0f, across, 0f) });
 		AddSign(door.Label, door.Ground + new Vector3(0f, PillarHeight + 0.95f, 0f), 40);
 	}
 
@@ -215,8 +251,6 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		room.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 1.1f, BottomRadius = 1.2f, Height = 0.5f }, MaterialOverride = water, Position = new Vector3(0f, 0.25f, 0f) });
 		room.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.45f, Height = 0.9f }, MaterialOverride = water, Position = new Vector3(0f, 0.9f, 0f) });
 	}
-
-	public static System.Numerics.Vector2 FountainSpot => System.Numerics.Vector2.Zero;
 
 	void AddStairs(bool down)
 	{
@@ -231,7 +265,7 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		var material = new StandardMaterial3D { AlbedoColor = Color.FromHtml("#6F5BB0"), Roughness = 0.8f };
 		var at = new Vector3(DeepStairsSpot.X, 0f, DeepStairsSpot.Y);
 		for (var step = 0; step < 3; step++)
-			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f - step * 0.35f, 0.2f, 1.5f - step * 0.35f) }, MaterialOverride = material, Position = at + new Vector3(0f, 0.1f + step * 0.2f, 0f) });
+			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.2f - step * 0.3f, 0.2f, 1.2f - step * 0.3f) }, MaterialOverride = material, Position = at + new Vector3(0f, 0.1f + step * 0.2f, 0f) });
 		AddSign("Escada lateral\nAndares profundos", at + new Vector3(0f, 1.9f, 0f), 36);
 	}
 
@@ -252,19 +286,5 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		};
 		room.AddChild(label);
 		labels.Add(label);
-	}
-
-	IEnumerable<HexCell> HexGridCells() => Grid.Cells;
-
-	static HexCell[] BuildRing()
-	{
-		var cells = new List<HexCell>();
-		for (var q = -RoomRadius; q <= RoomRadius; q++)
-			for (var r = -RoomRadius; r <= RoomRadius; r++)
-			{
-				var cell = new HexCell(q, r);
-				if (cell.DistanceTo(new HexCell(0, 0)) == RoomRadius) cells.Add(cell);
-			}
-		return cells.OrderBy(c => { var p = HexGrid.ToWorld(c); return System.MathF.Atan2(p.Y, p.X); }).ToArray();
 	}
 }

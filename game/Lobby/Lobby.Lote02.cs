@@ -68,7 +68,6 @@ public partial class Lobby
 			}
 	}
 
-	void AddRock() => AddLote02("rocha-inferior-avaliacao", new Vector3(0, .573f, 0), new Vector3(10f, 2.146f, 10f));
 	void AddIslet(Vector3 center, float radius = 2.3f)
 	{
 		AddLote02("hex-base-v02", center, new Vector3(radius, .8f, radius));

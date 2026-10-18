@@ -26,6 +26,7 @@ public sealed record DungeonContext(
 	Control UiRoot,
 	ProgressServices Progress,
 	FallbackFloors Fallback,
+	RoomForms Forms,
 	RewardCatalog Rewards,
 	RewardService Granter,
 	string Nickname,
@@ -46,7 +47,11 @@ public sealed record DungeonContext(
 	BattleMechanics? Mechanics = null)
 {
 	// Muda quando o gerador muda de jeito, para os Andares antigos não valerem para os novos (ADR 0003).
-	public const int GeneratorVersion = 1;
+	// A 2 sorteia a forma de cada Sala e põe as Salas no espaço (ADR 0008); Andares salvos na 1 seguem na 1 (`Version`).
+	public const int GeneratorVersion = 2;
+
+	// A versão deste Nível para esta criança: a em que ela já explorou, ou a atual.
+	public int Version => Progress.Explored.VersionFor(ProfileId, LevelKey, GeneratorVersion);
 
 	public LevelKey LevelKey => new(Discipline, Level);
 

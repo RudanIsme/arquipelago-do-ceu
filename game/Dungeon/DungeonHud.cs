@@ -49,6 +49,8 @@ public partial class DungeonHud : Node
 
 	public event Action? MapSpeechRequested;
 
+	public event Action? MapOpenRequested;
+
 	public event Action<int>? RoomPointed;
 
 	public string Message => message.Text;
@@ -92,6 +94,7 @@ public partial class DungeonHud : Node
 		mapBox.AddChild(floorBar);
 		mapBox.AddChild(floorLabel);
 		mapBox.AddChild(UiKit.BigButton("Ouvir o mapa", () => MapSpeechRequested?.Invoke(), 200));
+		mapBox.AddChild(UiKit.BigButton("Abrir o mapa [M]", () => MapOpenRequested?.Invoke(), 200));
 		panel.AddChild(mapBox);
 		hud.AddChild(panel);
 
@@ -190,6 +193,8 @@ public partial class DungeonHud : Node
 		map?.QueueFree();
 		map = new FloorMap(expedition.Floor, new Godot.Vector2(272, 250)) { Source = expedition };
 		map.RoomPointed += room => RoomPointed?.Invoke(room);
+		map.TapOpens = true;
+		map.Tapped += () => MapOpenRequested?.Invoke();
 		mapBox.AddChild(map);
 		mapBox.MoveChild(map, 0);
 	}
