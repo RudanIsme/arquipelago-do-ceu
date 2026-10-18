@@ -57,6 +57,9 @@ public interface ICombatPresenter
 	// Confere e golpeia. Falso quando a conta não vale (`error` diz por quê) e a montagem deve recomeçar.
 	bool Attack(out string? error);
 
+	// O que a criança desenha para esta peça da mochila (o número, o sinal, a sílaba), ou nulo quando a peça entra direto.
+	string? PieceDrawing(int piece) => null;
+
 	// O pedido curto que a criatura mostra no balão dela; nulo deixa a legenda de sempre.
 	string? Request => null;
 

@@ -20,9 +20,11 @@ public partial class MapScreen : OverlayScreen
 	PanelContainer sheet = null!;
 	CenterContainer holder = null!;
 	bool unpaused;
+	readonly System.Numerics.Vector2 playerAt;
 
-	public MapScreen(Expedition expedition, string title, bool floorDone, bool reduceMotion, Action<int> speakRoom, Action speakMap)
+	public MapScreen(Expedition expedition, string title, bool floorDone, bool reduceMotion, Action<int> speakRoom, Action speakMap, System.Numerics.Vector2 playerAt)
 	{
+		this.playerAt = playerAt;
 		this.expedition = expedition;
 		this.title = title;
 		this.floorDone = floorDone;
@@ -60,6 +62,7 @@ public partial class MapScreen : OverlayScreen
 		box.AddChild(heading);
 
 		var map = new FloorMap(expedition.Floor, new Vector2(760f, 400f)) { Source = expedition, Here = expedition.CurrentRoom, Cleared = new System.Collections.Generic.HashSet<int>(expedition.Cleared), Complete = floorDone };
+		map.SetPlayer(playerAt);
 		map.RoomPointed += room => speakRoom(room);
 		box.AddChild(map);
 

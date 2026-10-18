@@ -86,6 +86,9 @@ public partial class Player : Node3D
 		if (hit is { } point) mover.GoTo(new Vector2(point.X, point.Z));
 	}
 
+	// Anda até um ponto do chão, como um toque faria (o piloto e quem já sabe o ponto, sem passar pela tela).
+	public void WalkToGround(Vector2 ground) => mover.GoTo(ground);
+
 	public override void _Process(double delta)
 	{
 		var steer = Enabled ? MovementController.FromScreen(ToCore(Controls.Direction())) : Vector2.Zero;

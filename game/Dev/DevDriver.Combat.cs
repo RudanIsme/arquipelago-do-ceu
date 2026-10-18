@@ -22,6 +22,8 @@ public partial class DevDriver
 		if (Hud is null) { GD.PushError("Piloto: não há HUD de combate na tela."); return; }
 		(GetTree().Root.FindChild($"Piece_{index}", true, false) as Button)?.EmitSignal(BaseButton.SignalName.Pressed);
 		await Wait(0.3);
+		// Peça que se desenha: o piloto contorna o pontilhado digitando, como a criança sem mouse faria.
+		if (Hud!.Presenter.PieceDrawing(index) is { } drawing) await Write(drawing);
 	}
 
 	public int FightShield() => Fighting?.Session?.Math?.Shield.Remaining ?? -1;

@@ -62,6 +62,7 @@ public sealed class RewardTriggers
 	public static RewardTriggers Default { get; } = new(new IRewardTrigger[]
 	{
 		new RepeatableTrigger("creature-calmed"),
+		new RepeatableTrigger("puzzle-solved"),
 		new RepeatableTrigger("free-floor-complete"),
 		new FloorCompleteTrigger(),
 		new OnceTrigger("item-room", c => $"{c.Discipline}:{c.Level}"),

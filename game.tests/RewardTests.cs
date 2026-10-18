@@ -291,7 +291,7 @@ public sealed class RewardTests : IDisposable
 				for (var floor = 1; floor <= ExpeditionFixtures.Rules.FloorsMax; floor++)
 					Assert.Single(catalog.For(new RewardContext("floor-complete", discipline, level, floor)), r => r.Cosmetic is not null);
 
-		Assert.All(new[] { "creature-calmed", "item-room", "floor-complete", "free-floor-complete" },
+		Assert.All(new[] { "creature-calmed", "puzzle-solved", "item-room", "floor-complete", "free-floor-complete" },
 			trigger => Assert.Contains(catalog.For(new RewardContext(trigger, "matematica", 1, 1)), r => r.Coins > 0));
 	}
 

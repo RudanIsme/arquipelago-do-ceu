@@ -120,9 +120,10 @@ public partial class FloorMap : Control
 			// Cada estado tem forma própria: visto (vencida), arco (Fast travel) e boneco (onde a criança está).
 			if (done) DrawCheck(at + new Vector2(-Radius + 3, -Radius + 5));
 			if (room.Kind.SavesPoint) DrawArch(at + new Vector2(-Radius + 2, Radius - 2));
-			if (Here == room.Id) DrawPerson(at + new Vector2(Radius - 1, Radius - 3));
+			if (Here == room.Id && playerAt is null) DrawPerson(at + new Vector2(Radius - 1, Radius - 3));
 		}
 
+		if (playerAt is { } live) DrawLive(live);
 		if (!complete) return;
 		DrawCircle(new Vector2(18, 18), 16, Colors.Black);
 		DrawCircle(new Vector2(18, 18), 14, Color.FromHtml("#FFD54F"));
@@ -146,6 +147,14 @@ public partial class FloorMap : Control
 		DrawArc(at + new Vector2(0, -2), 6f, Mathf.Pi, Mathf.Tau, 10, Colors.White, 3f, true);
 		DrawLine(at + new Vector2(-6, -2), at + new Vector2(-6, 5), Colors.White, 3f);
 		DrawLine(at + new Vector2(6, -2), at + new Vector2(6, 5), Colors.White, 3f);
+	}
+
+	// O marcador vivo: o boneco da criança com um anel em volta, sempre por cima do mapa.
+	void DrawLive(Vector2 at)
+	{
+		DrawCircle(at, 11f, Colors.Black);
+		DrawCircle(at, 9f, Color.FromHtml("#FFD54F"));
+		DrawPerson(at + new Vector2(0, 2));
 	}
 
 	void DrawPerson(Vector2 at)

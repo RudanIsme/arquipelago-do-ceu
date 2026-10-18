@@ -15,9 +15,22 @@ public class FloorLayoutTests
 	{
 		var plan = deep ? LevelPlan.DeepFloor(number) : new FloorPlan(number, false, number % 2 == 0, false);
 		var floor = FloorGenerator.Generate(Rules, world, "matematica", 1, plan, version);
-		var layout = FloorLayouts.Place(floor, Forms, Seed.Mix(world, "matematica", 1, number, version), varied: version >= 2);
+		var layout = FloorLayouts.Place(floor, Forms, Seed.Mix(world, "matematica", 1, number, version), style: version >= 3 ? LayoutStyle.Compact : version >= 2 ? LayoutStyle.Varied : LayoutStyle.Legacy);
 		Assert.True(layout.IsOk, $"mundo {world}, Andar {number}: {layout.Error}");
 		return floor with { Layout = layout.Value };
+	}
+
+	// A versão 3 aproxima as Salas: os corredores saem bem mais curtos e o Andar continua sempre posicionável.
+	[Fact]
+	public void A_versao_3_tem_corredores_bem_mais_curtos_que_a_2_e_sempre_posiciona()
+	{
+		double Average(int version) => Enumerable.Range(1, 40).SelectMany(world => Enumerable.Range(1, 4).SelectMany(number => Laid((ulong)world, number, version).Layout!.Corridors)).Average(c => c.Cells.Count);
+
+		var compact = Average(3);
+		var spread = Average(2);
+
+		Assert.True(compact < spread * 0.7, $"corredor médio: {compact:0.0} na versão 3 contra {spread:0.0} na 2");
+		Assert.True(compact <= 8, $"corredor médio da versão 3 = {compact:0.0}");
 	}
 
 	[Fact]
@@ -161,7 +174,7 @@ public class FloorLayoutTests
 			{
 				var plan = new FloorPlan(1, item, marco, epic);
 				var floor = ExpeditionFixtures.Fallback.For(plan);
-				var laid = FloorLayouts.Place(floor, Forms, Seed.Mix(world, "matematica", 1, 1, 2), varied: true);
+				var laid = FloorLayouts.Place(floor, Forms, Seed.Mix(world, "matematica", 1, 1, 2), style: LayoutStyle.Varied);
 				Assert.True(laid.IsOk, laid.Error);
 				Assert.True(FloorLayoutValidator.Validate(floor with { Layout = laid.Value }).IsOk);
 			}

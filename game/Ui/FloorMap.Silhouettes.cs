@@ -14,6 +14,7 @@ public partial class FloorMap
 	const float Padding = 16f;
 
 	float unit = 1f;
+	Vector2? playerAt;
 	Vector2 shift;
 
 	// Põe cada Sala na posição do layout, encaixando o Andar inteiro no controle.
@@ -36,6 +37,16 @@ public partial class FloorMap
 	}
 
 	Vector2 Place(HexCell cell) => Project(cell) * unit + shift;
+
+	// Onde a criança está agora, no espaço do Andar: o marcador anda no mapa enquanto ela anda, e não só de Sala em Sala.
+	public void SetPlayer(System.Numerics.Vector2 layoutSpace)
+	{
+		if (floor.Layout is null) return;
+		var next = new Vector2(layoutSpace.X, layoutSpace.Y) * unit + shift;
+		if (playerAt is { } now && now.DistanceTo(next) < 0.5f) return;
+		playerAt = next;
+		QueueRedraw();
+	}
 
 	void DrawSilhouettes()
 	{

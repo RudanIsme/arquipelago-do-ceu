@@ -6,6 +6,11 @@
       "coins": 1
     },
     {
+      "id": "moedas-puzzle",
+      "trigger": "puzzle-solved",
+      "coins": 1
+    },
+    {
       "id": "moedas-sala-do-item",
       "trigger": "item-room",
       "coins": 3

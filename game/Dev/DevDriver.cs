@@ -133,10 +133,44 @@ public partial class DevDriver : Node
 		Input.ParseInputEvent(new InputEventMouseButton { Position = position, GlobalPosition = position, ButtonIndex = MouseButton.Left, Pressed = pressed });
 
 
-	// Anda até perto do Boneco, como a criança faria.
-	public async Task GoNearDummy(int q = 4, int r = 0)
+	// Um hexágono pisável ao lado de um objeto do Lobby (o Boneco, o Álbum, o Portal, o Mestre): o lugar vem dos dados, nunca fixo no piloto.
+	public (int Q, int R) NearObject(string id)
 	{
-		await ClickHex(q, r);
+		var lobby = GetTree().Root.FindChildren("*", "", true, false).OfType<Lobby>().First();
+		var item = lobby.Rules.Objects.First(o => o.Id == id);
+		var cell = new ArquipelagoDoCeu.World.HexCell(item.Q, item.R);
+		var near = cell.Neighbors().FirstOrDefault(lobby.Grid.IsWalkable, cell);
+		return (near.Q, near.R);
+	}
+
+	// Sem janela não há mouse: põe o Personagem ao lado do objeto de uma vez, e o resto (interagir, escolher) usa as ações de sempre.
+	public async Task TeleportNear(string id)
+	{
+		var (q, r) = NearObject(id);
+		var spot = Lobby.HexToWorld(q, r);
+		Player?.PlaceAt(new System.Numerics.Vector2(spot.X, spot.Z));
+		await Wait(0.3);
+	}
+
+	// Clica ao lado de um objeto e espera o Personagem chegar (a ilha é grande: o caminho leva alguns segundos).
+	public async Task GoToObject(string id)
+	{
+		var (q, r) = NearObject(id);
+		var target = Lobby.HexToWorld(q, r);
+		Player?.WalkToGround(new System.Numerics.Vector2(target.X, target.Z));
+		for (var i = 0; i < 80 && Player is { } p && new Godot.Vector2(p.GroundPosition.X - target.X, p.GroundPosition.Y - target.Z).Length() > 0.4f; i++) await Wait(0.25);
+		await Wait(0.3);
+	}
+
+	// Anda até perto do Boneco, como a criança faria; com `q` e `r`, até esse hexágono.
+	public async Task GoNearDummy(int? q = null, int r = 0)
+	{
+		if (q is null)
+		{
+			await GoToObject("boneco");
+			return;
+		}
+		await ClickHex(q.Value, r);
 		await Wait(3.5);
 	}
 

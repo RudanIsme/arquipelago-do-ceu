@@ -32,8 +32,13 @@ static partial class DungeonScenarios
 		d.Expect(Engine.TimeScale >= 1.0, "o tempo volta ao normal depois da leitura");
 		await d.Shot("04-golpe");
 		d.Expect(d.Hud?.Presenter.Pieces.Count > 0 && d.Button("Dica") is not null, "a mochila fica sempre à vista, com as peças");
-		await d.PlayPiece(0);
-		await d.Shot("04b-mochila");
+		(d.GetTree().Root.FindChild("Piece_0", true, false) as Button)?.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.6);
+		d.Expect(d.HasVisible("Siga o pontilhado"), "escolher uma peça da mochila mostra o pontilhado");
+		await d.Shot("04b-mochila-pontilhado");
+		await d.Write(d.Hud!.Presenter.PieceDrawing(0)!);
+		d.Expect(d.Hud?.Presenter.Composing == true || d.Hud is null, "contornar o pontilhado põe a peça na conta");
+		await d.Shot("04c-peca-na-conta");
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
 

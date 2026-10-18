@@ -57,9 +57,9 @@ public sealed class DungeonRewards
 		return note;
 	}
 
-	// As moedas de uma Sala vencida: a criatura acalmada e a Sala do Item.
+	// As moedas de uma Sala vencida: a criatura acalmada, a porta do Puzzle aberta e a Sala do Item.
 	public string? ForRoom(Room room, int floor) =>
-		Join(room.Kind.CalmsCreature ? Reward("creature-calmed") : null, room.HoldsItem ? Reward("item-room", floor) : null);
+		Join(room.Kind.CalmsCreature ? Reward("creature-calmed") : null, room.Kind is { IsDoor: true, NeedsVictory: true } ? Reward("puzzle-solved") : null, room.HoldsItem ? Reward("item-room", floor) : null);
 
 	// Registra o Andar completo uma única vez e diz o que a criança ganhou; falha de gravação não trava ninguém.
 	public string? ForFloor(Expedition expedition)

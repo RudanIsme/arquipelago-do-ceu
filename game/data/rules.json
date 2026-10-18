@@ -103,7 +103,7 @@
       {
         "id": "normal",
         "name": "Normal",
-        "scale": 1.0
+        "scale": 1
       },
       {
         "id": "grande",
@@ -139,7 +139,7 @@
       {
         "id": "normal",
         "name": "Normal",
-        "rate": 1.0
+        "rate": 1
       },
       {
         "id": "rapida",
@@ -209,14 +209,26 @@
         "rechargeSeconds": 0.8
       },
       "creatures": [
-        { "kind": "dummy", "intervalSeconds": 8, "warningSeconds": 1.6 },
-        { "kind": "wild", "intervalSeconds": 7, "warningSeconds": 1.6 },
-        { "kind": "guardian", "intervalSeconds": 6, "warningSeconds": 1.6 }
+        {
+          "kind": "dummy",
+          "intervalSeconds": 8,
+          "warningSeconds": 1.6
+        },
+        {
+          "kind": "wild",
+          "intervalSeconds": 7,
+          "warningSeconds": 1.6
+        },
+        {
+          "kind": "guardian",
+          "intervalSeconds": 6,
+          "warningSeconds": 1.6
+        }
       ]
     },
     "movement": {
       "patrolSpeed": 0.6,
-      "approachSpeed": 1.0,
+      "approachSpeed": 1,
       "patrolRadius": 1.8,
       "approachRadius": 6,
       "stopDistance": 2.2,
@@ -274,11 +286,40 @@
     "interactionReach": 2.2,
     "dayCycleSeconds": 480,
     "islandRadius": 8,
-    "carved": [[3,3], [3,4], [4,2], [4,3], [4,4], [5,1], [5,2], [5,3], [6,-3], [6,-2], [6,-1], [6,0], [6,1], [6,2], [7,-4], [7,-3], [7,-2], [7,-1], [7,0], [7,1], [8,-4], [8,-3], [8,-2], [8,-1], [8,0]],
+    "carved": [],
     "islands": [
-      { "id": "matematica", "q": -13, "r": 6, "radius": 2, "from": [-8, 4], "solid": true },
-      { "id": "portugues", "q": 6, "r": -13, "radius": 2, "from": [4, -8], "solid": true },
-      { "id": "mercador", "q": 0, "r": 13, "radius": 2, "from": [0, 8] }
+      {
+        "id": "matematica",
+        "q": -13,
+        "r": 6,
+        "radius": 2,
+        "from": [
+          -8,
+          4
+        ],
+        "solid": true
+      },
+      {
+        "id": "portugues",
+        "q": 6,
+        "r": -13,
+        "radius": 2,
+        "from": [
+          4,
+          -8
+        ],
+        "solid": true
+      },
+      {
+        "id": "mercador",
+        "q": 0,
+        "r": 13,
+        "radius": 2,
+        "from": [
+          0,
+          8
+        ]
+      }
     ],
     "camera": {
       "size": 28,
@@ -293,7 +334,7 @@
       {
         "id": "matematica",
         "name": "Torre dos Números",
-        "sign": "Aberta: entre pela porta",
+        "sign": "Aberta: chegue perto e entre",
         "model": "torre-numeros-meshy-v01",
         "x": -19.5,
         "z": -0.87
@@ -301,7 +342,7 @@
       {
         "id": "portugues",
         "name": "Torre das Letras",
-        "sign": "Aberta: entre pela porta",
+        "sign": "Aberta: chegue perto e entre",
         "model": "torre-letras-meshy-v01",
         "x": 9,
         "z": -17.32
@@ -336,17 +377,13 @@
         "id": "album",
         "name": "Álbum",
         "prompt": "Abrir o Álbum",
-        "model": "atril",
-        "q": -2,
-        "r": -2
+        "model": "atril"
       },
       {
         "id": "portal",
         "name": "Portal de viagem",
         "prompt": "Usar o portal",
-        "model": "portal",
-        "q": -1,
-        "r": 4
+        "model": "portal"
       },
       {
         "id": "torre-matematica",
@@ -372,31 +409,102 @@
       {
         "id": "mestre",
         "name": "Portal do Desafio mestre",
-        "prompt": "Ver o Desafio mestre",
-        "q": 5,
-        "r": -4
+        "prompt": "Ver o Desafio mestre"
       },
       {
         "id": "boneco",
         "name": "Boneco de treino",
         "prompt": "Atacar o Boneco",
-        "model": "boneco",
-        "q": 3,
-        "r": 1
+        "model": "boneco"
       },
       {
         "id": "guia",
         "name": "Guia",
         "prompt": "Falar com o Guia",
         "model": "guia",
-        "q": 1,
-        "r": 1,
         "lines": [
           "Olá! Eu sou o Guia do Arquipélago do Céu.",
           "Aqui no Lobby você pode se arrumar, olhar o Álbum e viajar pelo portal.",
           "As torres estão em construção. Quando abrirem, é só chegar perto e entrar!"
         ]
       }
-    ]
+    ],
+    "layout": {
+      "lakeRadius": 0.32,
+      "ringRadius": 0.64,
+      "zones": [
+        {
+          "id": "guia",
+          "x": -0.4,
+          "z": -0.45
+        },
+        {
+          "id": "album",
+          "x": 0,
+          "z": -0.78
+        },
+        {
+          "id": "boneco",
+          "x": 0.62,
+          "z": 0.45
+        },
+        {
+          "id": "portal",
+          "x": -0.82,
+          "z": 0.32
+        },
+        {
+          "id": "mestre",
+          "x": 0.8,
+          "z": -0.32
+        }
+      ],
+      "trees": [
+        {
+          "x": 0.85,
+          "z": 0.23
+        },
+        {
+          "x": 0.44,
+          "z": 0.76
+        },
+        {
+          "x": -0.23,
+          "z": 0.85
+        },
+        {
+          "x": -0.62,
+          "z": 0.62
+        },
+        {
+          "x": -0.76,
+          "z": -0.44
+        },
+        {
+          "x": 0.5,
+          "z": 0
+        },
+        {
+          "x": 0.25,
+          "z": 0.43
+        },
+        {
+          "x": -0.13,
+          "z": 0.48
+        },
+        {
+          "x": -0.43,
+          "z": 0.25
+        },
+        {
+          "x": -0.48,
+          "z": -0.13
+        },
+        {
+          "x": 0.25,
+          "z": -0.43
+        }
+      ]
+    }
   }
 }

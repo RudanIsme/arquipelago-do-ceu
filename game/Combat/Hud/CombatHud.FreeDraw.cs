@@ -10,6 +10,8 @@ namespace ArquipelagoDoCeu;
 public partial class CombatHud
 {
 	FreeDrawLayer? layer;
+	// A peça da mochila que a criança escolheu e ainda vai contornar no pontilhado: (índice, o que desenhar).
+	(int Piece, string Drawing)? pending;
 	const int ButtonSize = 56;
 	bool hintShown;
 
@@ -76,9 +78,30 @@ public partial class CombatHud
 	void RefreshGuide()
 	{
 		if (layer is null) return;
+		if (pending is { } waiting)
+		{
+			layer.SetGuide(waiting.Drawing, true);
+			return;
+		}
 		var text = hintShown ? presenter.HintGuide ?? presenter.GuideText : presenter.GuideText;
 		var shown = text is not null && (hintShown || presenter.GuideAlways);
 		layer.SetGuide(text ?? "", shown);
+	}
+
+	// Tocar na peça mostra o pontilhado dela no centro; a peça entra na conta quando a criança o contorna.
+	void AskToTrace(int piece, string drawing)
+	{
+		pending = (piece, drawing);
+		layer!.Clear();
+		RefreshGuide();
+		Notice("Siga o pontilhado.");
+	}
+
+	void DropPending()
+	{
+		pending = null;
+		layer?.Clear();
+		RefreshGuide();
 	}
 
 	void OnRead(TextGuess guess)
@@ -107,6 +130,11 @@ public partial class CombatHud
 				Notice("Fiquei na dúvida. Tente de novo.");
 				return;
 		}
+		if (pending is { } waiting)
+		{
+			TraceChecked(waiting, guess.Text);
+			return;
+		}
 		if (presenter.Write(guess.Text, out var refusal))
 		{
 			rhythm.PlayerAnswered();
@@ -114,6 +142,19 @@ public partial class CombatHud
 		}
 		else if (refusal is not null) Notice(refusal);
 		Refresh();
+	}
+
+	// A peça escolhida foi desenhada: se bate, entra na conta; se não, a criança tenta de novo, sem custo.
+	void TraceChecked((int Piece, string Drawing) waiting, string drawn)
+	{
+		if (!string.Equals(drawn, waiting.Drawing, StringComparison.OrdinalIgnoreCase))
+		{
+			Notice("Quase! Siga o pontilhado.");
+			return;
+		}
+		pending = null;
+		presenter.Place(waiting.Piece);
+		AfterPlace();
 	}
 
 	// Digitar vale como escrever: cada tecla é um símbolo e, na pausa ou no Enter, o jogo lê.

@@ -18,8 +18,17 @@ public sealed record LobbyCell(int Q, int R);
 // `Solid` é a ilha cujo centro não se pisa, por causa da torre que está nele.
 public sealed record LobbyIsland(string Id, int Q, int R, int Radius, int FromQ, int FromR, bool Solid);
 
+// Um ponto da ilha principal, em fração do raio dela (x para leste, z para o sul): assim o desenho acompanha o tamanho da ilha.
+public sealed record LobbySpot(float X, float Z);
+
+// Uma zona do Lobby (de um objeto: o Guia, o Álbum, o treino, o Portal, o Mestre).
+public sealed record LobbyZone(string Id, float X, float Z);
+
+// O desenho em zonas, ajustado à mão: a lagoa no centro, o caminho em anel e as árvores. Raios em fração do raio da ilha.
+public sealed record LobbyLayout(float LakeRadius, float RingRadius, IReadOnlyList<LobbyZone> Zones, IReadOnlyList<LobbySpot> Trees);
+
 public sealed record LobbyRules(float InteractionReach, IReadOnlyList<LobbyPlace> Places, IReadOnlyList<LobbyObject> Objects, CameraRules Camera, float DayCycleSeconds,
-	int IslandRadius, IReadOnlyList<LobbyCell> Carved, IReadOnlyList<LobbyIsland> Islands);
+	int IslandRadius, IReadOnlyList<LobbyCell> Carved, IReadOnlyList<LobbyIsland> Islands, LobbyLayout? Layout = null);
 
 public sealed record TextSizeOption(string Id, string Name, float Scale);
 
@@ -31,7 +40,13 @@ public sealed record SettingsDefaults(string TextSize, bool Voice, bool ReduceMo
 
 public sealed record SettingsRules(IReadOnlyList<TextSizeOption> TextSizes, IReadOnlyList<ControlOption> Controls, IReadOnlyList<VoiceSpeedOption> VoiceSpeeds, SettingsDefaults Defaults);
 
-sealed record LobbyDto(float? InteractionReach, float? DayCycleSeconds, int? IslandRadius, List<int[]?>? Carved, List<IslandDto?>? Islands, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera);
+sealed record LobbyDto(float? InteractionReach, float? DayCycleSeconds, int? IslandRadius, List<int[]?>? Carved, List<IslandDto?>? Islands, List<PlaceDto?>? Places, List<ObjectDto?>? Objects, CameraDto? Camera, LayoutDto? Layout = null);
+
+sealed record LayoutDto(float? LakeRadius, float? RingRadius, List<ZoneDto?>? Zones, List<SpotDto?>? Trees);
+
+sealed record ZoneDto(string? Id, float? X, float? Z);
+
+sealed record SpotDto(float? X, float? Z);
 
 sealed record IslandDto(string? Id, int? Q, int? R, int? Radius, int[]? From, bool? Solid);
 
@@ -74,6 +89,7 @@ static class LobbyChecks
 			return $"Regras inválidas: 'lobby.dayCycleSeconds' deve estar entre {MinDayCycle} e {MaxDayCycle} (veio {lobby.DayCycleSeconds}).";
 		if (lobby.IslandRadius is not (>= 4 and <= 16)) return "Regras inválidas: 'lobby.islandRadius' deve estar entre 4 e 16.";
 		if (CheckIslands(lobby) is { } islandError) return islandError;
+		if (CheckLayout(lobby.Layout) is { } layoutError) return layoutError;
 		if (lobby.Places is null) return Required("lobby.places");
 		if (lobby.Objects is null) return Required("lobby.objects");
 		if (CheckCamera(lobby.Camera) is { } cameraError) return cameraError;
@@ -100,11 +116,14 @@ static class LobbyChecks
 			if (!objectIds.Add(item.Id!)) return Duplicate("objeto", item.Id!, "lobby.objects");
 			if (Blank(item.Name)) return Required($"{path}.name");
 			if (Blank(item.Prompt)) return Required($"{path}.prompt");
-			if (item.Q is null) return Required($"{path}.q");
-			if (item.R is null) return Required($"{path}.r");
+			var inZone = lobby.Layout?.Zones?.Any(z => z?.Id == item.Id) == true;
+			if (item.Q is null && !inZone) return Required($"{path}.q");
+			if (item.R is null && !inZone) return Required($"{path}.r");
+			if (inZone && (item.Q is not null || item.R is not null)) return $"Regras inválidas: '{path}' tem zona em 'lobby.layout.zones' e também q e r; use só um dos dois.";
 			if (item.Lines?.Any(Blank) == true) return Required($"{path}.lines");
 		}
-		return null;
+		var orphan = lobby.Layout?.Zones?.FirstOrDefault(z => z is not null && !objectIds.Contains(z.Id!));
+		return orphan is null ? null : $"Regras inválidas: a zona '{orphan.Id}' de 'lobby.layout.zones' não tem objeto em 'lobby.objects'.";
 	}
 
 	static string? CheckIslands(LobbyDto lobby)
@@ -122,6 +141,22 @@ static class LobbyChecks
 			if (island.Radius is not (>= 1 and <= 4)) return $"Regras inválidas: '{path}.radius' deve estar entre 1 e 4.";
 			if (island.From is not { Length: 2 }) return $"Regras inválidas: '{path}.from' deve ser [q, r], o hexágono da ilha principal de onde sai a ponte.";
 		}
+		return null;
+	}
+
+	// O desenho em zonas é opcional; quando existe, tudo é fração do raio da ilha, entre -1 e 1, e a lagoa fica dentro do anel.
+	static string? CheckLayout(LayoutDto? layout)
+	{
+		if (layout is null) return null;
+		if (layout.LakeRadius is not (> 0f and < 1f)) return "Regras inválidas: 'lobby.layout.lakeRadius' deve estar entre 0 e 1.";
+		if (layout.RingRadius is not (> 0f and < 1f) || layout.RingRadius <= layout.LakeRadius) return "Regras inválidas: 'lobby.layout.ringRadius' deve estar entre 0 e 1 e passar do raio da lagoa.";
+		var ids = new HashSet<string>();
+		foreach (var zone in layout.Zones ?? [])
+		{
+			if (zone is null || Blank(zone.Id) || zone.X is not (>= -1f and <= 1f) || zone.Z is not (>= -1f and <= 1f)) return "Regras inválidas: cada zona de 'lobby.layout.zones' precisa de id, x e z entre -1 e 1.";
+			if (!ids.Add(zone.Id!)) return Duplicate("zona", zone.Id!, "lobby.layout.zones");
+		}
+		if (layout.Trees?.Any(t => t is null || t.X is not (>= -1f and <= 1f) || t.Z is not (>= -1f and <= 1f)) == true) return "Regras inválidas: cada árvore de 'lobby.layout.trees' precisa de x e z entre -1 e 1.";
 		return null;
 	}
 
@@ -144,12 +179,22 @@ static class LobbyChecks
 	public static LobbyRules BuildLobby(LobbyDto lobby) => new(
 		lobby.InteractionReach!.Value,
 		lobby.Places!.Select(p => new LobbyPlace(p!.Id!, p.Name!, p.Sign!, Blank(p.Model) ? null : p.Model, p.X!.Value, p.Z!.Value)).ToList(),
-		lobby.Objects!.Select(o => new LobbyObject(o!.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, o.Q!.Value, o.R!.Value, o.Lines?.Select(l => l!).ToList() ?? [])).ToList(),
+		lobby.Objects!.Select(o => BuildObject(o!, lobby)).ToList(),
 		new CameraRules(lobby.Camera!.Size!.Value, lobby.Camera.MinSize!.Value, lobby.Camera.MaxSize!.Value, lobby.Camera.ZoomStep!.Value, lobby.Camera.FollowSharpness!.Value, lobby.Camera.DeadZone!.Value, lobby.Camera.MaxPan!.Value),
 		lobby.DayCycleSeconds!.Value,
 		lobby.IslandRadius!.Value,
 		(lobby.Carved ?? []).Select(c => new LobbyCell(c![0], c[1])).ToList(),
-		(lobby.Islands ?? []).Select(i => new LobbyIsland(i!.Id!, i.Q!.Value, i.R!.Value, i.Radius!.Value, i.From![0], i.From[1], i.Solid ?? false)).ToList());
+		(lobby.Islands ?? []).Select(i => new LobbyIsland(i!.Id!, i.Q!.Value, i.R!.Value, i.Radius!.Value, i.From![0], i.From[1], i.Solid ?? false)).ToList(),
+		lobby.Layout is null ? null : new LobbyLayout(lobby.Layout.LakeRadius!.Value, lobby.Layout.RingRadius!.Value,
+			(lobby.Layout.Zones ?? []).Select(z => new LobbyZone(z!.Id!, z.X!.Value, z.Z!.Value)).ToList(), (lobby.Layout.Trees ?? []).Select(t => new LobbySpot(t!.X!.Value, t.Z!.Value)).ToList()));
+
+	// Um objeto de zona não traz q e r: o hexágono sai do ponto dele em fração do raio da ilha.
+	static LobbyObject BuildObject(ObjectDto o, LobbyDto lobby)
+	{
+		var zone = lobby.Layout?.Zones?.FirstOrDefault(z => z?.Id == o.Id);
+		var cell = zone is null ? new World.HexCell(o.Q!.Value, o.R!.Value) : World.LobbyPlan.CellOf(zone.X!.Value, zone.Z!.Value, lobby.IslandRadius!.Value);
+		return new LobbyObject(o.Id!, o.Name!, o.Prompt!, Blank(o.Model) ? null : o.Model, cell.Q, cell.R, o.Lines?.Select(l => l!).ToList() ?? []);
+	}
 
 	public static string? CheckSettings(SettingsDto? settings)
 	{

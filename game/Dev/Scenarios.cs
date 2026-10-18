@@ -94,6 +94,23 @@ static class Scenarios
 			case "combate":
 				await DungeonScenarios.Combat(d);
 				break;
+			case "kit-medidas":
+				foreach (var asset in new[] { "hex-base-v02", "margem-reta", "margem-convexa", "margem-concava", "ponte-piso", "ponte-guarda-corpo", "ponte-cabeceira", "rocha-inferior-avaliacao", "grama-tres-pontas-v01" })
+				{
+					var node = GD.Load<PackedScene>($"res://assets/modelos/lote02/{asset}.glb").Instantiate<Node3D>();
+					d.AddChild(node);
+					var box = default(Aabb);
+					var first = true;
+					foreach (var mesh in System.Linq.Enumerable.Cast<MeshInstance3D>(node.FindChildren("*", "MeshInstance3D", true, false)))
+					{
+						var b = mesh.GlobalTransform * mesh.GetAabb();
+						box = first ? b : box.Merge(b);
+						first = false;
+					}
+					GD.Print($"KIT {asset}: pos={box.Position} tamanho={box.Size}");
+					node.QueueFree();
+				}
+				break;
 			case "modais-tempo":
 				await DungeonScenarios.ModalTimes(d);
 				break;
@@ -125,8 +142,7 @@ static class Scenarios
 				await d.Shot("01-visao-geral");
 				break;
 			case "album":
-				await d.ClickHex(-2, -2);
-				await d.Wait(3.2);
+				await d.GoToObject("album");
 				await d.Shot("01-perto-do-album");
 				await d.Press("Abrir o Álbum");
 				await d.Shot("02-album-criaturas");
@@ -136,8 +152,7 @@ static class Scenarios
 				await d.Shot("04-de-volta-ao-lobby");
 				break;
 			case "portal":
-				await d.ClickHex(-1, 4);
-				await d.Wait(3.5);
+				await d.GoToObject("portal");
 				await d.Shot("01-perto-do-portal");
 				await d.Press("Usar o portal");
 				await d.Shot("02-portal");
@@ -145,8 +160,7 @@ static class Scenarios
 				await d.Shot("03-de-volta-ao-lobby");
 				break;
 			case "tecla":
-				await d.ClickHex(-2, -2);
-				await d.Wait(3.2);
+				await d.GoToObject("album");
 				await d.Tap(Controls.Interact);
 				await d.Shot("01-abriu-com-a-tecla");
 				await d.PressKey(Key.Escape);
@@ -228,7 +242,7 @@ static class Scenarios
 				await d.Shot("saiu-do-treino");
 				break;
 			case "bolha":
-				await d.GoNearDummy(4, -2);
+				await d.GoNearDummy();
 				await d.ClickCreature();
 				await d.Press("Começar");
 				await d.PressKey(Key.Escape);

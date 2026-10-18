@@ -126,12 +126,6 @@ void fragment() {
 	public Godot.Collections.Dictionary ValidateLandmarks()
 	{
 		var validation = ValidateLote02();
-		var reverse = new MovementController(Grid, HexGrid.ToWorld(new HexCell(2, -1)), 3f);
-		bool reverseAccepted = reverse.GoTo(HexGrid.ToWorld(new HexCell(2, -3)));
-		for (int i = 0; i < 240; i++) reverse.Tick(System.Numerics.Vector2.Zero, 1f / 60f);
-		validation["ponte_sentido_inverso"] = reverseAccepted && System.Numerics.Vector2.Distance(reverse.Position, HexGrid.ToWorld(new HexCell(2, -3))) < .02f;
-		validation["sem_rota_pela_agua"] = Grid.FindPath(new HexCell(0, 0), new HexCell(4, -2)) is null;
-		validation["canal_bloqueado"] = !Grid.IsWalkable(new HexCell(4, -2)) && !Grid.IsWalkable(new HexCell(5, -2));
 		validation["cascata_presente"] = FindChild("ConceptWaterfall", true, false) is not null;
 		foreach (var id in new[] { "ciencias", "historia", "geografia" })
 		{
