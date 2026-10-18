@@ -30,11 +30,11 @@ public static class Controls
 		Bind(Right, Key.D, Key.Right);
 		// Só a tecla E: Espaço e Enter já acionam o botão em foco.
 		Bind(Interact, Key.E);
-		Bind(Target, Key.F, Key.Tab);
+		Bind(Target, Key.F);
 		Bind(ZoomIn, Key.Pageup);
 		Bind(ZoomOut, Key.Pagedown);
 		Bind(ZoomReset, Key.Home);
-		Bind(Inventory, Key.I);
+		Bind(Inventory, Key.I, Key.Tab);
 		Bind(Map, Key.M);
 		Bind(Run, Key.Shift);
 

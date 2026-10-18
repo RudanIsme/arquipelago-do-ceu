@@ -51,6 +51,22 @@ public partial class Main
 		RefreshDock();
 	}
 
+	// Troca o Papel (o equipamento de cada um vale no Lobby) para o próximo da lista de torres; no meio de uma luta não troca.
+	void SwitchRole()
+	{
+		if (current is null || inDungeon || training.HasTarget || towers.All.Count < 2) return;
+		var ids = towers.All.Select(t => t.Id).ToList();
+		ChooseRole(ids[(System.Math.Max(0, ids.IndexOf(role)) + 1) % ids.Count]);
+		voice.Say($"Papel: {RoleName(role)}.", interrupt: true);
+	}
+
+	// No Inventário a troca fecha a tela e a abre de novo, já com o equipamento do outro Papel.
+	void SwitchRoleFromInventory()
+	{
+		SwitchRole();
+		Callable.From(ShowInventory).CallDeferred();
+	}
+
 	void BuildLobbyHud()
 	{
 		lobbyHud = new LobbyHud(text => voice.Say(text, interrupt: true));
@@ -60,6 +76,7 @@ public partial class Main
 		lobbyHud.SettingsRequested += ShowSettings;
 		lobbyHud.InteractRequested += () => Interact(interactTarget);
 		lobbyHud.InventoryRequested += ShowInventory;
+		lobbyHud.RoleSwitchRequested += SwitchRole;
 		conceptAmbience = new ConceptAmbience(lobby, () => player.ReduceMotion, () => settings.Current.ReduceEffects);
 		lobby.AddChild(conceptAmbience);
 	}
@@ -148,6 +165,7 @@ public partial class Main
 		OwnedGear = () => inventory.OwnedGear(current.Id),
 		HeldItems = HeldItems,
 		Portrait = portrait,
+		SwitchRole = canChangeGear ? SwitchRoleFromInventory : null,
 		Say = text => voice.Say(text, interrupt: true),
 		Changed = ApplyEquipment,
 		CanChangeGear = canChangeGear,

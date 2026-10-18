@@ -133,6 +133,7 @@ public partial class DungeonHud : Node
 	{
 		var built = new Dock();
 		built.SetRole(ctx.RoleName);
+		built.LockRole();
 		built.InventoryRequested += () => ctx.OpenInventory?.Invoke();
 		hud.AddChild(built);
 		return built;

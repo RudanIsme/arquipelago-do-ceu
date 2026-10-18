@@ -28,7 +28,7 @@ public static class ItemToken
 		return box;
 	}
 
-	public static Button Create(string name, Action pressed, string nodeName, int size, string? badge = null, bool dim = false)
+	public static Button Create(string name, Action pressed, string nodeName, int size, string? badge = null, bool dim = false, Texture2D? icon = null)
 	{
 		var button = BookStyle.Button(name, pressed, nodeName, size);
 		button.CustomMinimumSize = new Vector2(size, size);
@@ -38,6 +38,15 @@ public static class ItemToken
 		foreach (var (state, style) in Styles.Value)
 			button.AddThemeStyleboxOverride(state, style);
 		button.TooltipText = name;
+		if (icon is not null)
+		{
+			button.Icon = icon;
+			button.IconAlignment = HorizontalAlignment.Center;
+			button.VerticalIconAlignment = VerticalAlignment.Top;
+			button.ExpandIcon = true;
+			button.AddThemeConstantOverride("icon_max_width", size * 5 / 9);
+			button.AddThemeFontSizeOverride("font_size", 11);
+		}
 		if (dim) button.Modulate = new Color(1f, 1f, 1f, 0.6f);
 		SetBadge(button, badge);
 		return button;

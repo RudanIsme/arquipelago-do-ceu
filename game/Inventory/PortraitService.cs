@@ -73,8 +73,6 @@ public partial class PortraitService : Node
 		character?.ApplyEquipment(loadout);
 	}
 
-	public void Turn(float degrees) => character?.RotateY(Mathf.DegToRad(degrees));
-
 	void Build()
 	{
 		loading = false;

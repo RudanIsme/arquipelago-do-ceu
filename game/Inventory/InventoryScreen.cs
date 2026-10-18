@@ -90,10 +90,12 @@ public partial class InventoryScreen : OverlayScreen
 		row.AddChild(gearButton);
 		row.AddChild(cosmeticsButton);
 		row.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-		var role = BookStyle.Text(host.RoleName, 20);
-		role.AutowrapMode = TextServer.AutowrapMode.Off;
-		var chip = BookStyle.Panel(role);
-		chip.Name = "RoleChip";
+		var chip = BookStyle.Button(host.RoleName, () => { Close(); host.SwitchRole!(); }, "RoleChip", 56);
+		chip.Icon = Icons.For("swap", 28);
+		chip.IconAlignment = HorizontalAlignment.Right;
+		chip.CustomMinimumSize = new Vector2(220, 56);
+		chip.Disabled = host.SwitchRole is null;
+		chip.TooltipText = host.SwitchRole is null ? "Esta torre tem um Papel só" : "Trocar de Papel";
 		row.AddChild(chip);
 		return row;
 	}
@@ -141,6 +143,7 @@ public partial class InventoryScreen : OverlayScreen
 		var comparison = gear ? gearTab.Comparison : cosmeticsTab.Comparison;
 		comparison.SizeFlagsVertical = SizeFlags.ExpandFill;
 		comparisonPanel.AddChild(comparison);
+		comparisonPanel.Visible = false;
 		gearTab.Slots.Visible = gear;
 		if (gear) gearTab.Refresh();
 		else cosmeticsTab.Refresh();
@@ -149,6 +152,7 @@ public partial class InventoryScreen : OverlayScreen
 
 	void RefreshTabs()
 	{
+		comparisonPanel.Visible = onGear ? gearTab.HasSelection : cosmeticsTab.HasSelection;
 		gearButton!.Text = TabText("Inventário", onGear, HasNewGear());
 		cosmeticsButton!.Text = TabText("Cosméticos", !onGear, HasNewCosmetics());
 		gearButton.AddThemeStyleboxOverride("normal", onGear ? BookStyle.Emphasized(BookStyle.Selected) : BookStyle.Box());

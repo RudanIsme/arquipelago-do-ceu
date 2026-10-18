@@ -36,6 +36,8 @@ public sealed partial class CosmeticsTab : Node
 
 	public Control Comparison => comparison;
 
+	public bool HasSelection => selectedId is not null;
+
 	public void Refresh()
 	{
 		foreach (var child in library.GetChildren())
@@ -63,7 +65,7 @@ public sealed partial class CosmeticsTab : Node
 	{
 		var worn = host.Inventory.Worn(host.ProfileId).Contains(cosmetic.Id);
 		var isNew = host.Inventory.IsNew(host.ProfileId, InventoryHost.CosmeticKey(cosmetic.Id));
-		var button = ItemToken.Create(cosmetic.Name, () => Select(cosmetic), "Cosmetic_" + cosmetic.Id, 78, worn ? "✓" : isNew ? "novo" : null);
+		var button = ItemToken.Create(cosmetic.Name, () => Select(cosmetic), "Cosmetic_" + cosmetic.Id, 78, worn ? "✓" : isNew ? "novo" : null, icon: Icons.For(cosmetic.Look?.Kind ?? "star", 48));
 		button.FocusEntered += () => Select(cosmetic);
 		return button;
 	}
@@ -81,7 +83,7 @@ public sealed partial class CosmeticsTab : Node
 		{
 			showLoadout(host.Loadout(host.Worn));
 			setTag("");
-			comparison.AddChild(BookStyle.Text("Escolha um Cosmético para ver como fica.", 18));
+			Updated?.Invoke();
 			return;
 		}
 		var worn = host.Inventory.Worn(host.ProfileId).Contains(cosmetic.Id);

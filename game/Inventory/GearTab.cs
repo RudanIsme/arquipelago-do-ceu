@@ -49,6 +49,9 @@ public sealed partial class GearTab : Node
 
 	public Control Comparison => comparison;
 
+	// Os detalhes só existem com um equipamento escolhido (toque, clique ou foco); passar o mouse só mostra a prévia no Personagem.
+	public bool HasSelection => selected is not null;
+
 	public void Refresh()
 	{
 		worn = host.Worn;
@@ -56,6 +59,7 @@ public sealed partial class GearTab : Node
 		BuildSlots();
 		BuildLibrary();
 		ShowPreview(null);
+		BuildComparison(selected);
 		FocusSelected();
 		Updated?.Invoke();
 	}
@@ -80,7 +84,7 @@ public sealed partial class GearTab : Node
 		var item = host.Catalog.Find(worn.In(slot.Id));
 		var column = new VBoxContainer { CustomMinimumSize = new Vector2(88, 0) };
 		column.AddThemeConstantOverride("separation", 3);
-		var button = ItemToken.Create(item?.Name ?? "vazio", () => { if (item is not null) Select(item); }, "Slot_" + slot.Id, 84);
+		var button = ItemToken.Create(item?.Name ?? "vazio", () => { if (item is not null) Select(item); }, "Slot_" + slot.Id, 84, icon: Icons.For(slot.Id, 56));
 		if (item is null) button.Disabled = true;
 		column.AddChild(button);
 		var label = BookStyle.Text(slot.Name, 16);
@@ -140,7 +144,7 @@ public sealed partial class GearTab : Node
 	Button EntryButton(LibraryEntry entry)
 	{
 		var item = entry.Item;
-		var button = ItemToken.Create(item.Name, () => OnPressed(item), "Gear_" + item.Id, 78, Badge(entry), dim: entry.Locked);
+		var button = ItemToken.Create(item.Name, () => OnPressed(item), "Gear_" + item.Id, 78, Badge(entry), dim: entry.Locked, icon: Icons.For(item.Slot, 48));
 		button.MouseEntered += () => ShowPreview(item);
 		button.MouseExited += () => ShowPreview(null);
 		button.FocusEntered += () => Select(item);
@@ -171,6 +175,7 @@ public sealed partial class GearTab : Node
 		UpdateEntryText(item);
 		Updated?.Invoke();
 		ShowPreview(item);
+		BuildComparison(item);
 		if (changed) host.Say(Spoken(item));
 	}
 
@@ -185,18 +190,13 @@ public sealed partial class GearTab : Node
 	{
 		var shown = item ?? selected;
 		showLoadout(host.Loadout(shown is null ? worn : worn.With(shown.Slot, shown.Id)));
-		BuildComparison(shown);
+		previewTag.Text = shown is null ? "" : $"Prévia: {shown.Name}";
 	}
 
 	void BuildComparison(GearItem? item)
 	{
 		Clear(comparison);
-		previewTag.Text = item is null ? "" : $"Prévia: {item.Name}";
-		if (item is null)
-		{
-			comparison.AddChild(BookStyle.Text("Escolha um equipamento para ver o que muda.", 18));
-			return;
-		}
+		if (item is null) return;
 		comparison.AddChild(BookStyle.Text(item.Name, 24));
 		comparison.AddChild(BookStyle.Text(Subtitle(item), 16));
 		comparison.AddChild(BookStyle.Text(item.Description, 16));

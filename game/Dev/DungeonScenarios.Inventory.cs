@@ -23,6 +23,14 @@ static partial class DungeonScenarios
 		d.Expect(d.HasVisible("Matemático"), "o dock mostra o nome do Papel");
 		port.Progress.Mastery.Record(profile, new ConceptKey("matematica", "contagem"), 1);
 		await d.Shot("01-lobby-com-dock");
+		var roleButton = Named<Button>(d, "RoleButton")!;
+		var firstRole = roleButton.Text;
+		roleButton.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(Named<Button>(d, "RoleButton")!.Text != firstRole, "o botão do Papel no HUD troca entre o Matemático e o Escriba");
+		Named<Button>(d, "RoleButton")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(Named<Button>(d, "RoleButton")!.Text == firstRole, "trocar de novo volta ao primeiro Papel");
 
 		dock!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.8);
@@ -120,6 +128,10 @@ static partial class DungeonScenarios
 		await Measure(d, "Inventário (2ª vez)", () => dock.EmitSignal(BaseButton.SignalName.Pressed), "InventoryScreen");
 		await d.Press("Fechar");
 		await WalkTo(d, 0, 11);
+		await d.PressKey(Key.Tab);
+		await d.Wait(0.5);
+		d.Expect(Named<Control>(d, "InventoryScreen") is not null, "a tecla Tab abre o Inventário");
+		await d.Press("Fechar");
 		await Measure(d, "Mercador (1ª vez)", () => Input.ParseInputEvent(new InputEventAction { Action = Controls.Interact, Pressed = true }), "MerchantScreen");
 		await d.Press("Fechar");
 	}
