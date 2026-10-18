@@ -168,7 +168,17 @@
       5
     ],
     "bagCopies": 2,
-    "slowTimeScale": 0.25,
+    "slowTimeScale": 0.3,
+    "maxTerms": 2,
+    "freeDraw": {
+      "idleSeconds": 0.8,
+      "points": 32,
+      "maxDistance": 0.25,
+      "ambiguityRatio": 0.82,
+      "mergeOverlap": 0.5,
+      "markRatio": 0.15,
+      "guideAlwaysUpToYear": 1
+    },
     "targetRange": 5,
     "operators": [
       "+"
@@ -205,8 +215,8 @@
       ]
     },
     "movement": {
-      "patrolSpeed": 0.35,
-      "approachSpeed": 0.8,
+      "patrolSpeed": 0.6,
+      "approachSpeed": 1.0,
       "patrolRadius": 1.8,
       "approachRadius": 6,
       "stopDistance": 2.2,
@@ -230,6 +240,23 @@
           "+",
           "-"
         ]
+      },
+      {
+        "year": 3,
+        "bagNumbers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          10,
+          20
+        ],
+        "operators": [
+          "+",
+          "-"
+        ],
+        "maxTerms": 3
       }
     ]
   },

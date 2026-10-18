@@ -315,7 +315,7 @@ public class CombatTests
 		var time = new CombatTime(Rules);
 		Assert.Equal(1f, time.Scale);
 
-		time.Begin(calmMode: false);
+		time.Begin();
 		Assert.Equal(Rules.SlowTimeScale, time.Scale);
 
 		time.End();
@@ -323,14 +323,17 @@ public class CombatTests
 	}
 
 	[Fact]
-	public void No_modo_calmo_o_tempo_para_por_completo()
+	public void No_modo_calmo_o_tempo_fica_lento_a_luta_toda_e_volta_ao_normal_ao_sair()
 	{
 		var time = new CombatTime(Rules);
 
-		time.Begin(calmMode: true);
-
-		Assert.Equal(0f, time.Scale);
+		time.Calm(true);
+		Assert.Equal(Rules.SlowTimeScale, time.Scale);
+		time.Begin();
 		time.End();
+		Assert.Equal(Rules.SlowTimeScale, time.Scale);
+
+		time.Calm(false);
 		Assert.Equal(1f, time.Scale);
 	}
 
@@ -340,7 +343,7 @@ public class CombatTests
 		var rules = GameRules.Parse(TestJson.Rules.Replace("\"slowTimeScale\": 0.25", "\"slowTimeScale\": 0.5")).Value!.Combat;
 		var time = new CombatTime(rules);
 
-		time.Begin(calmMode: false);
+		time.Begin();
 
 		Assert.Equal(0.5f, time.Scale);
 	}

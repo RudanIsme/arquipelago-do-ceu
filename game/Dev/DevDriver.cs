@@ -27,7 +27,10 @@ public partial class DevDriver : Node
 
 	public string Arg(string name) => OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith($"--{name}="))?[$"--{name}=".Length..] ?? "";
 
-	public bool HasVisible(string text) => GetTree().Root.FindChildren("*", "Label", true, false).Cast<Label>().Any(l => l.IsVisibleInTree() && l.Text.Contains(text));
+	// Texto na tela, em rótulo da interface ou no balão 3D da criatura.
+	public bool HasVisible(string text) =>
+		GetTree().Root.FindChildren("*", "Label", true, false).Cast<Label>().Any(l => l.IsVisibleInTree() && l.Text.Contains(text))
+		|| GetTree().Root.FindChildren("*", "Label3D", true, false).Cast<Label3D>().Any(l => l.IsVisibleInTree() && l.Text.Contains(text));
 
 	public static void AttachIfRequested(Node parent, PilotPort port)
 	{

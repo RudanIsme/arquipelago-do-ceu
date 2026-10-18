@@ -1,10 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// Os auxiliares do piloto para o combate: jogam como a criança, escolhendo a peça e traçando o que ela pede (digitar vale como traçar).
+// Os auxiliares do piloto para o combate: jogam como a criança. Matemática e Português por sílaba se escrevem digitando (vale como
+// desenhar) ou desenhando com o mouse; o dinheiro e as frases ainda escolhem a peça.
 public partial class DevDriver
 {
 	const double TraceWaitSeconds = 0.8;
@@ -14,36 +16,74 @@ public partial class DevDriver
 	// A luta aberta (a do Treino ou a da Sala da Dungeon): o piloto lê dela a resposta certa, como um professor leria.
 	TrainingArea? Fighting => GetTree().Root.FindChildren("*", "", true, false).OfType<TrainingArea>().FirstOrDefault(a => a.HasTarget);
 
-	// Toca na peça e, se pedido, traça o que ela pede. Sem `trace`, para no começo do traço.
-	public async Task PlayPiece(int index, bool trace = true)
+	// Toca na peça (o dinheiro e as frases ainda escolhem peças).
+	public async Task PlayPiece(int index)
 	{
-		if (Hud is not { } hud) { GD.PushError("Piloto: não há HUD de combate na tela."); return; }
-		var text = hud.Presenter.TraceText(index);
+		if (Hud is null) { GD.PushError("Piloto: não há HUD de combate na tela."); return; }
 		(GetTree().Root.FindChild($"Piece_{index}", true, false) as Button)?.EmitSignal(BaseButton.SignalName.Pressed);
 		await Wait(0.3);
-		if (!trace || text is null) return;
-		foreach (var letter in text) await PressKey((Key)char.ToUpperInvariant(letter));
-		await Wait(TraceWaitSeconds);
 	}
 
 	public int FightShield() => Fighting?.Session?.Math?.Shield.Remaining ?? -1;
 
-	// Joga o nome certo, peça por peça; com `wrong`, troca a última por uma que não é do nome.
+	// Escreve como a criança que digita: cada tecla é um símbolo e, na pausa, o jogo lê.
+	public async Task Write(string text)
+	{
+		foreach (var letter in Plain(text)) await PressKey((Key)letter);
+		await Wait(TraceWaitSeconds + 0.4);
+	}
+
+	// Desenha de verdade, com o mouse, os glifos de `text` lado a lado no meio da tela, pelas trilhas, e espera o jogo ler.
+	public async Task DrawText(string text)
+	{
+		var size = GetViewport().GetVisibleRect().Size;
+		var area = new System.Numerics.Vector2(size.X * 0.5f, size.Y * 0.4f);
+		var row = TrailSource.Shared.GuideRow(text, area, new ArquipelagoDoCeu.Rules.TracingRules(16, 30, 0.8f, 0.35f));
+		if (!row.IsOk) { GD.PushError($"Piloto: sem trilha para '{text}'."); return; }
+		var offset = new Vector2(size.X * 0.25f, size.Y * 0.38f - area.Y / 2f);
+		foreach (var path in row.Value!.Paths!)
+		{
+			var points = path.Points.Select(p => offset + new Vector2(p.X, p.Y)).ToList();
+			Click(points[0], true);
+			foreach (var point in points.Skip(1))
+			{
+				Input.ParseInputEvent(new InputEventMouseMotion { Position = point, GlobalPosition = point, ButtonMask = MouseButtonMask.Left });
+				await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+			}
+			Click(points[^1], false);
+		}
+		await Wait(TraceWaitSeconds + 0.5);
+	}
+
+	// Joga o nome certo; com `wrong`, escreve uma sílaba que não é do nome. Frases ainda escolhem as peças.
 	public async Task PlayName(bool wrong = false)
 	{
 		if (Fighting?.Session?.Name is not { } name) { GD.PushError("Piloto: não há montagem de nome na tela."); return; }
+		if (name.Kind == ArquipelagoDoCeu.Combat.NameKind.Syllables)
+		{
+			await Write(wrong ? name.Pieces.First(p => !name.Name.Contains(p)) : string.Concat(name.Name));
+			return;
+		}
 		var pieces = name.Pieces.ToList();
 		var plan = name.Name.Select(syllable => pieces.IndexOf(syllable)).ToList();
 		if (wrong) plan[^1] = pieces.FindIndex(p => !name.Name.Contains(p));
 		foreach (var index in plan) await PlayPiece(index);
 	}
 
-	// Escreve a palavra do Desafio, letra por letra (só letras sem acento).
+	// Escreve a palavra do Desafio inteira.
 	public async Task PlayWord()
 	{
 		if (Fighting?.Session?.Word is not { } word) { GD.PushError("Piloto: não há escrita de palavra na tela."); return; }
-		var keys = word.Keys.ToList();
-		foreach (var letter in word.Word) await PlayPiece(keys.IndexOf(letter));
+		await Write(word.Word);
+	}
+
+	// Uma resposta de Matemática: a conta de exemplo (ou o número, na conta pronta) e, com `wrong`, uma resposta que não dá o pedido.
+	public async Task PlayMath(bool wrong = false)
+	{
+		if (Fighting is not { Session.Math: { } math } area) { GD.PushError("Piloto: não há luta de Matemática na tela."); return; }
+		var target = math.StartingShield;
+		if (math.Ask == ArquipelagoDoCeu.Combat.MathAsk.Answer) await Write((wrong ? target + 1 : target).ToString(System.Globalization.CultureInfo.InvariantCulture));
+		else await Write(wrong ? $"1+{target}" : math.Example(area.Session!.Rules.MathLevel) ?? $"1+{target}");
 	}
 
 	// Monta o valor do desafio de dinheiro seguindo as sugestões do jogo e confere; com `wrong`, põe a maior nota e confere.
@@ -65,23 +105,14 @@ public partial class DevDriver
 		await Press("Conferir");
 	}
 
-	// Um erro de Matemática: monta a maior conta que a mão deixa. Se ela ainda não passa do escudo (seria um acerto), o erro
-	// vem pela mesma saída da luta, para o roteiro testar a Energia e a travessura sem depender da mão sorteada.
+	// Um erro: escreve uma resposta de Matemática que não dá o pedido, ou paga o valor errado no desafio de dinheiro.
 	public async Task OvershootWithKeys()
 	{
 		if (Fighting?.Session?.Change is not null) { await PlayMoney(wrong: true); await Wait(0.4); return; }
-		if (Fighting is not { Session.Math: { } math } area) { GD.PushError("Piloto: não há luta de Matemática na tela."); return; }
-		var hand = Enumerable.Range(0, math.Bag.Hand.Count).Where(slot => math.Bag.Hand[slot] is not null).OrderByDescending(slot => math.Bag.Hand[slot]).Take(2).ToList();
-		var sum = hand.Sum(slot => math.Bag.Hand[slot]!.Value);
-		if (hand.Count < 2 || sum <= math.Shield.Remaining)
-		{
-			area.Mistake("Passou do valor!", "O Boneco fez uma travessura.");
-			await Wait(0.4);
-			return;
-		}
-		await PlayPiece(hand[0]);
-		await PlayPiece(math.Bag.Hand.Count);
-		await PlayPiece(hand[1]);
+		await PlayMath(wrong: true);
 		await Wait(0.4);
 	}
+
+	static IEnumerable<char> Plain(string text) =>
+		text.Normalize(System.Text.NormalizationForm.FormD).Where(c => char.IsAsciiLetterOrDigit(c) || c is '+' or '-').Select(char.ToUpperInvariant);
 }

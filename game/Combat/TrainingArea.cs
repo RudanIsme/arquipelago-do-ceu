@@ -98,15 +98,13 @@ public partial class TrainingArea : Node
 	public int? EnergyTop { get; set; }
 
 	public bool HasTarget => panel is not null;
+	public Vector2 CreatureGround => motion.Ground;
 	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (panel is null ? 154 : 12); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
 	public bool HitsDummy(Godot.Vector2 screenPoint) => dummy.IsPickedBy(stage.Camera, screenPoint);
 
-	public bool InTargetRange()
-	{
-		return Vector2.Distance(player.GroundPosition, motion.Ground) <= rules.Combat.TargetRange;
-	}
+	public bool InTargetRange() => Vector2.Distance(player.GroundPosition, motion.Ground) <= rules.Combat.TargetRange;
 
 	public void ToggleTarget()
 	{
@@ -164,8 +162,16 @@ public partial class TrainingArea : Node
 		reacting = false;
 		bubbles.Reset();
 		rhythm.Reset();
+		StartTime();
 		UpdateEnergy();
 		dummy.ShowChallenge(session);
+	}
+
+	// O Modo calmo deixa o tempo lento a luta toda.
+	void StartTime()
+	{
+		time.Calm(settings.Current.CalmMode);
+		Engine.TimeScale = time.Scale;
 	}
 
 	// Termina a luta sem mexer na Energia nem na tela dela; vale tanto para vitória quanto para sair da Sala.
@@ -181,6 +187,7 @@ public partial class TrainingArea : Node
 		ownsEnergyView = true;
 		bubbles.Clear();
 		time.End();
+		time.Calm(false);
 		Engine.TimeScale = time.Scale;
 		if (!InDungeon) dummy.Idle();
 	}
@@ -211,6 +218,7 @@ public partial class TrainingArea : Node
 		session = started.Value!;
 		bubbles.Reset();
 		rhythm.Reset();
+		StartTime();
 		energyView = new EnergyView();
 		energyView.LeaveRequested += () => Finish("Treino encerrado. Quando quiser, é só escolher o Boneco de novo.");
 		uiRoot.AddChild(energyView);
@@ -223,8 +231,8 @@ public partial class TrainingArea : Node
 	void OpenPanel()
 	{
 		if (session is null || panel is not null) return;
-		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, () => settings.Current.ReduceMotion, new PanelEvents(
-			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing,
+		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, new PanelEvents(
+			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing, player.WalkTo, text => dummy.Say(text, true), dummy.SetRequest,
 			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
 			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
 
@@ -239,6 +247,7 @@ public partial class TrainingArea : Node
 			panel = null;
 			UpdateEnergyDock();
 			dummy.SetSelected(false);
+			dummy.SetRequest(null);
 			time.End();
 			Engine.TimeScale = time.Scale;
 		}
@@ -253,7 +262,7 @@ public partial class TrainingArea : Node
 
 	void OnComposing(bool composing)
 	{
-		if (composing) time.Begin(settings.Current.CalmMode);
+		if (composing) time.Begin();
 		else time.End();
 		Engine.TimeScale = time.Scale;
 	}
@@ -279,9 +288,7 @@ public partial class TrainingArea : Node
 		}
 
 		dummy.Prank();
-		var prank = outcome.Prank == Prank.Hidden
-			? $"{Creature.Start} fez uma travessura e escondeu uma peça por {rules.Combat.PrankSeconds:0} segundos."
-			: $"{Creature.Start} fez uma travessura e embaralhou as peças.";
+		var prank = AnswerPanels.PrankText(panel, Creature, outcome.Prank, rules.Combat.PrankSeconds);
 		dummy.ShowChallenge(session);
 		AnswerPanels.Refresh(panel);
 
@@ -368,6 +375,7 @@ public partial class TrainingArea : Node
 		energyView = null;
 		dummy.Idle();
 		time.End();
+		time.Calm(false);
 		Engine.TimeScale = time.Scale;
 		if (message.Length == 0) return;
 		notify(message);

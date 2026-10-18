@@ -89,7 +89,8 @@ public partial class Player : Node3D
 	public override void _Process(double delta)
 	{
 		var steer = Enabled ? MovementController.FromScreen(ToCore(Controls.Direction())) : Vector2.Zero;
-		var dt = (float)delta;
+		// A câmera lenta do combate vale para o mundo, não para o Personagem: ele anda no tempo normal.
+		var dt = (float)(Engine.TimeScale > 0.0 ? delta / Engine.TimeScale : delta);
 		var running = Enabled && Godot.Input.IsActionPressed(Controls.Run);
 		var wantsMove = Enabled && (steer != Vector2.Zero || mover.HasDestination);
 		currentSpeed = wantsMove ? Mathf.MoveToward(currentSpeed, (running ? RunSpeed : Speed) * Mathf.Clamp(SpeedMultiplier, 1f, 1.12f), 10f * dt) : 0f;
@@ -99,7 +100,7 @@ public partial class Player : Node3D
 		var effectiveSpeed = dt > 0f ? displacement.Length() / dt : 0f;
 		if (displacement.LengthSquared() > .0000001f) actualFacing = Vector2.Normalize(displacement);
 		Place();
-		Turn((float)delta);
+		Turn(dt);
 		view.SetLocomotion(effectiveSpeed, effectiveSpeed > Speed * 1.15f);
 	}
 

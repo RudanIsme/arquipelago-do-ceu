@@ -30,7 +30,7 @@ static class E2E
 		d.Expect(d.Button("Começar") is not null, "a escolha do treino abriu");
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null && d.Button("Atacar") is null, "o treino de Matemática começou, sem botão de atacar");
-		await d.PlayPiece(0);
+		await d.PlayMath();
 		await d.PressKey(Key.Escape);
 		await d.Press("Sair do treino");
 
@@ -39,7 +39,7 @@ static class E2E
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null && d.Button("Conferir") is null, "o treino de Português começou, sem botão de conferir");
 		await d.PlayName();
-		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "o nome certo libertou a criatura");
+		d.Expect(d.HasVisible("certo") || d.HasVisible("certa"), "o nome certo libertou a criatura");
 		await d.Press("Sair do treino");
 
 		d.Expect(File.ReadAllBytes(save).AsSpan().SequenceEqual(before), "treinar nos dois Papéis não mudou o save");

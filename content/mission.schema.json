@@ -52,7 +52,8 @@
             "properties": {
               "target": { "type": "integer", "minimum": 1 },
               "pieces": { "type": "array", "minItems": 2, "items": { "type": "integer", "minimum": 1 } },
-              "maxPieces": { "type": "integer", "minimum": 2 }
+              "maxPieces": { "type": "integer", "minimum": 2 },
+              "question": { "type": "string", "pattern": "^[0-9]+( [+-] [0-9]+)+$" }
             }
           }
         }

@@ -89,7 +89,7 @@ public partial class Main : Node3D
 		AddChild(lobby);
 		player = new Player(lobby.Grid, lobby.Camera, lobby.GroundHeight) { Visible = false };
 		AddChild(player);
-		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion));
+		AddChild(new CameraController(lobby.Camera, player, rules.Lobby.Camera, () => player.ReduceMotion) { Battle = () => training.HasTarget ? training.CreatureGround : null });
 		AddChild(portrait);
 		portrait.Warm();
 		SetUpTraining();

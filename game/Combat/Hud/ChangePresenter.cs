@@ -42,11 +42,9 @@ sealed class ChangePresenter(ChangeBattle battle, CreatureWords creature, Action
 
 	public bool CanConfirm => battle.Table.Count > 0;
 
-	public string? TraceText(int piece) => null;
 
 	public string Announce(int piece) => battle.Pieces[piece].Name;
 
-	public string TraceLabel(int piece) => battle.Pieces[piece].Name;
 
 	public void Place(int piece)
 	{

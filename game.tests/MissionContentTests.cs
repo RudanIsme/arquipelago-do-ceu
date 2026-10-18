@@ -56,6 +56,18 @@ public class MissionContentTests
 		Assert.Empty(semSolucao);
 	}
 
+	// Missão de conta pronta ("3 + 5 = ?"): a conta mostrada precisa dar o resultado que a criança escreve.
+	[Fact]
+	public void A_conta_pronta_de_uma_Missao_de_compor_numero_da_o_resultado_certo()
+	{
+		var level = new Rules.MathLevel(["+", "-"], 3);
+		var comConta = Loaded.Missions.Where(m => m.Mechanic == "compor_numero" && m.Params.ContainsKey("question")).ToList();
+
+		Assert.NotEmpty(comConta);
+		Assert.All(comConta, m => Assert.Equal(Combat.DrawnKind.Right,
+			Combat.DrawnMath.Judge(m.Params["question"].GetString()!.Replace(" ", ""), m.Params["target"].GetInt32(), Combat.MathAsk.Result, level).Kind));
+	}
+
 	[Fact]
 	public void Dicas_e_explicacao_nao_entregam_nada_vazio_e_a_BNCC_do_1o_ano_esta_no_ano_certo()
 	{
