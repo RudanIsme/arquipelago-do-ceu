@@ -6,7 +6,7 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// A aba Inventário: as caixinhas do que o Personagem veste, a biblioteca de equipamentos e a comparação.
+// A aba Inventário, como no mockup: as caixinhas em volta do Personagem, a biblioteca em grade (equipado, novo, bloqueado) e a comparação.
 // Apontar, tocar ou focar mostra uma prévia; só o botão Equipar (ou Enter no equipamento focado) vale de verdade.
 public sealed partial class GearTab : Node
 {
@@ -14,10 +14,14 @@ public sealed partial class GearTab : Node
 
 	readonly InventoryHost host;
 	readonly Action<EquipmentLoadout> showLoadout;
-	readonly VBoxContainer slots = new() { Name = "Slots" };
+	readonly Control slots = new() { Name = "Slots", MouseFilter = Control.MouseFilterEnum.Ignore };
 	readonly VBoxContainer library = new() { Name = "Library" };
 	readonly VBoxContainer comparison = new() { Name = "Comparison" };
 	readonly Dictionary<string, Button> entryButtons = [];
+	// Onde cada caixinha fica em volta do Personagem (x, y no quadro de 340 px): capacete em cima, armadura à esquerda, acessório à direita.
+	static readonly (float X, float Y)[] SlotSpots = [(126, 6), (8, 170), (244, 170)];
+
+	readonly Label previewTag = BookStyle.Text("", 16);
 	Gear worn = new();
 	int mastery;
 	GearItem? selected;
@@ -28,8 +32,14 @@ public sealed partial class GearTab : Node
 		this.showLoadout = showLoadout;
 		slots.AddThemeConstantOverride("separation", 6);
 		library.AddThemeConstantOverride("separation", 6);
-		comparison.AddThemeConstantOverride("separation", 4);
+		comparison.AddThemeConstantOverride("separation", 8);
+		previewTag.Name = "PreviewTag";
+		previewTag.AutowrapMode = TextServer.AutowrapMode.Off;
+		previewTag.HorizontalAlignment = HorizontalAlignment.Center;
 	}
+
+	// A etiqueta "Prévia: ..." que fica no alto do Personagem.
+	public Control Tag => previewTag;
 
 	public event Action? Updated;
 
@@ -53,42 +63,84 @@ public sealed partial class GearTab : Node
 	void BuildSlots()
 	{
 		Clear(slots);
+		var spot = 0;
 		foreach (var slot in host.Catalog.Slots)
-			slots.AddChild(SlotButton(slot));
+		{
+			var (x, y) = spot < SlotSpots.Length ? SlotSpots[spot] : (8f + (spot - SlotSpots.Length) * 92f, 330f);
+			spot++;
+			var box = SlotBox(slot);
+			box.Position = new Vector2(x, y);
+			slots.AddChild(box);
+		}
 	}
 
-	Button SlotButton(GearSlot slot)
+	// A caixinha do espaço: o equipamento vestido (ou vazio) e, embaixo, o nome do espaço.
+	Control SlotBox(GearSlot slot)
 	{
 		var item = host.Catalog.Find(worn.In(slot.Id));
-		var button = BookStyle.Button($"{slot.Name}: {item?.Name ?? "vazio"}", () => { if (item is not null) Select(item); }, "Slot_" + slot.Id, TargetHeight);
-		button.Alignment = HorizontalAlignment.Left;
-		return button;
+		var column = new VBoxContainer { CustomMinimumSize = new Vector2(88, 0) };
+		column.AddThemeConstantOverride("separation", 3);
+		var button = ItemToken.Create(item?.Name ?? "vazio", () => { if (item is not null) Select(item); }, "Slot_" + slot.Id, 84);
+		if (item is null) button.Disabled = true;
+		column.AddChild(button);
+		var label = BookStyle.Text(slot.Name, 16);
+		label.HorizontalAlignment = HorizontalAlignment.Center;
+		column.AddChild(label);
+		return column;
 	}
 
 	void BuildLibrary()
 	{
 		Clear(library);
 		entryButtons.Clear();
-		library.AddChild(BookStyle.Text("Equipamentos", 22));
+		library.AddChild(Header("Equipamentos", "os usados primeiro"));
+		var grid = Grid();
 		foreach (var entry in host.Library.Entries(worn, mastery, host.OwnedGear()))
-			library.AddChild(EntryButton(entry));
-		library.AddChild(BookStyle.Text("Itens", 22));
+			grid.AddChild(EntryButton(entry));
+		library.AddChild(grid);
 		AddHeldItems();
+		library.AddChild(BookStyle.Text("Passe o mouse ou toque num equipamento para ver o que ele muda. O Personagem já aparece com ele. O cadeado mostra a Maestria que falta e impede de equipar.", 16));
+	}
+
+	internal static Control Header(string title, string note)
+	{
+		var row = new HBoxContainer();
+		var head = BookStyle.Text(title, 22);
+		head.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		head.AutowrapMode = TextServer.AutowrapMode.Off;
+		var side = BookStyle.Text(note, 16);
+		side.AutowrapMode = TextServer.AutowrapMode.Off;
+		row.AddChild(head);
+		row.AddChild(side);
+		return row;
+	}
+
+	internal static GridContainer Grid()
+	{
+		var grid = new GridContainer { Columns = 4 };
+		grid.AddThemeConstantOverride("h_separation", 10);
+		grid.AddThemeConstantOverride("v_separation", 10);
+		return grid;
 	}
 
 	void AddHeldItems()
 	{
 		var held = host.HeldItems();
-		if (held.Count == 0) library.AddChild(BookStyle.Text("Nenhum Item de troca ainda.", 16));
+		library.AddChild(Header("Itens", held.Count == 0 ? "nenhum ainda" : held.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+		var grid = Grid();
 		foreach (var item in held)
-			library.AddChild(BookStyle.Panel(BookStyle.Text($"{item.Name}\n{item.Source}", 16)));
+		{
+			var token = ItemToken.Create(item.Source, () => host.Say($"{item.Name}. {item.Source}."), "Held_" + item.Source, 78);
+			token.TooltipText = item.Name;
+			grid.AddChild(token);
+		}
+		library.AddChild(grid);
 	}
 
 	Button EntryButton(LibraryEntry entry)
 	{
 		var item = entry.Item;
-		var button = BookStyle.Button(EntryText(entry), () => OnPressed(item), "Gear_" + item.Id, TargetHeight);
-		button.Alignment = HorizontalAlignment.Left;
+		var button = ItemToken.Create(item.Name, () => OnPressed(item), "Gear_" + item.Id, 78, Badge(entry), dim: entry.Locked);
 		button.MouseEntered += () => ShowPreview(item);
 		button.MouseExited += () => ShowPreview(null);
 		button.FocusEntered += () => Select(item);
@@ -96,14 +148,12 @@ public sealed partial class GearTab : Node
 		return button;
 	}
 
-	string EntryText(LibraryEntry entry)
+	// O que o cantinho do quadrado diz: equipado, bloqueado (com a Maestria) ou novo. Sempre em texto, nunca só cor.
+	string? Badge(LibraryEntry entry)
 	{
-		var tags = new List<string>();
-		if (entry.Equipped) tags.Add("Equipado");
-		if (entry.Locked) tags.Add($"Bloqueado: Maestria {entry.Item.MinMastery}");
-		if (host.Inventory.IsNew(host.ProfileId, InventoryHost.GearKey(entry.Item.Id))) tags.Add("NOVO");
-		var line = string.Join(" · ", tags.Prepend(host.SlotName(entry.Item.Slot)));
-		return $"{entry.Item.Name}\n{line}";
+		if (entry.Equipped) return "✓";
+		if (entry.Locked) return $"M{entry.Item.MinMastery}";
+		return host.Inventory.IsNew(host.ProfileId, InventoryHost.GearKey(entry.Item.Id)) ? "novo" : null;
 	}
 
 	// Enter no teclado confirma; mouse e toque só selecionam, e o botão Equipar confirma.
@@ -127,7 +177,7 @@ public sealed partial class GearTab : Node
 	void UpdateEntryText(GearItem item)
 	{
 		var entry = host.Library.Entries(worn, mastery, host.OwnedGear()).First(e => e.Item.Id == item.Id);
-		if (entryButtons.TryGetValue(item.Id, out var button)) button.Text = EntryText(entry);
+		if (entryButtons.TryGetValue(item.Id, out var button)) ItemToken.SetBadge(button, Badge(entry));
 	}
 
 	// Mostra no Personagem e no painel o equipamento apontado; sem ele, o escolhido; sem nenhum, o que está vestido.
@@ -141,16 +191,26 @@ public sealed partial class GearTab : Node
 	void BuildComparison(GearItem? item)
 	{
 		Clear(comparison);
+		previewTag.Text = item is null ? "" : $"Prévia: {item.Name}";
 		if (item is null)
 		{
-			comparison.AddChild(BookStyle.Text("Escolha um equipamento para ver o que muda.", 16));
+			comparison.AddChild(BookStyle.Text("Escolha um equipamento para ver o que muda.", 18));
 			return;
 		}
-		comparison.AddChild(BookStyle.Text(item.Name, 22));
+		comparison.AddChild(BookStyle.Text(item.Name, 24));
+		comparison.AddChild(BookStyle.Text(Subtitle(item), 16));
 		comparison.AddChild(BookStyle.Text(item.Description, 16));
 		foreach (var line in ComparisonLines(item))
-			comparison.AddChild(BookStyle.Text(line, 18));
+			comparison.AddChild(BookStyle.Text(line, 19));
+		comparison.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill });
 		comparison.AddChild(Actions(item));
+	}
+
+	// O espaço, o que ele troca e a Maestria pedida.
+	string Subtitle(GearItem item)
+	{
+		var instead = host.Catalog.Find(worn.In(item.Slot)) is { } current && current.Id != item.Id ? $" · troca {current.Name}" : "";
+		return $"{host.SlotName(item.Slot)}{instead} · pede Maestria {item.MinMastery} (você tem {mastery})";
 	}
 
 	IEnumerable<string> ComparisonLines(GearItem item)
@@ -171,6 +231,9 @@ public sealed partial class GearTab : Node
 		var equip = BookStyle.Button(equipped ? "Tirar" : "Equipar", () => { if (equipped) Remove(item); else Equip(item); }, "EquipButton", TargetHeight);
 		equip.Disabled = !host.CanChangeGear || (!equipped && mastery < item.MinMastery);
 		equip.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		var listen = BookStyle.Button("Ouvir", () => host.Say(Spoken(item)), "ListenButton", TargetHeight);
+		listen.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		row.AddChild(listen);
 		row.AddChild(equip);
 		return row;
 	}

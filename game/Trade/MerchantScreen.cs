@@ -15,7 +15,9 @@ public partial class MerchantScreen : OverlayScreen
 	const int TargetHeight = 72;
 
 	readonly MerchantHost host;
-	readonly CharacterPortrait portrait = new();
+	readonly ItemPreview preview;
+	readonly Label previewName = BookStyle.Text("", 20);
+	readonly Label previewDetail = BookStyle.Text("", 16);
 	readonly VBoxContainer list = new() { Name = "MerchantList", SizeFlagsHorizontal = SizeFlags.ExpandFill };
 	readonly Label balance = BookStyle.Text("", 22);
 	readonly HashSet<string> selected = [];
@@ -28,6 +30,9 @@ public partial class MerchantScreen : OverlayScreen
 	{
 		Name = "MerchantScreen";
 		this.host = host;
+		preview = new ItemPreview(() => host.ReduceMotion());
+		previewName.Name = "PreviewName";
+		previewDetail.Name = "PreviewDetail";
 		list.AddThemeConstantOverride("separation", 6);
 		balance.Name = "Balance";
 	}
@@ -82,8 +87,12 @@ public partial class MerchantScreen : OverlayScreen
 	{
 		var body = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
 		body.AddThemeConstantOverride("separation", 16);
-		portrait.CustomMinimumSize = new Vector2(300, 0);
-		body.AddChild(portrait);
+		var side = new VBoxContainer { CustomMinimumSize = new Vector2(250, 0) };
+		side.AddThemeConstantOverride("separation", 8);
+		side.AddChild(preview);
+		side.AddChild(previewName);
+		side.AddChild(previewDetail);
+		body.AddChild(side);
 		var column = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
 		rotateNote = BookStyle.Text("", 16);
 		column.AddChild(rotateNote);
@@ -106,7 +115,15 @@ public partial class MerchantScreen : OverlayScreen
 		AddStock();
 		AddSellable();
 		AddBuyback();
-		portrait.Show(host.TryOn(null));
+		ShowNothing();
+	}
+
+	// Sem oferta apontada o quadrado fica vazio e diz como ver um item.
+	void ShowNothing()
+	{
+		preview.Clear();
+		previewName.Text = "Aponte uma oferta";
+		previewDetail.Text = "Passe o mouse, toque ou use as setas para ver o item aqui.";
 	}
 
 	void RefreshRotate()
@@ -131,8 +148,7 @@ public partial class MerchantScreen : OverlayScreen
 			var button = Row($"{cosmetic.Name}\n{MerchantHost.Coins(offer.Price)} · {state}", "Offer_" + offer.Id);
 			button.Pressed += () => AskBuy(cosmetic, offer.Price, owned.Contains(offer.Id));
 			button.FocusEntered += () => Preview(cosmetic, offer.Price);
-			button.MouseEntered += () => portrait.Show(host.TryOn(offer.Id));
-			button.MouseExited += () => portrait.Show(host.TryOn(null));
+			button.MouseEntered += () => ShowCosmetic(cosmetic, offer.Price);
 			list.AddChild(button);
 		}
 	}
@@ -179,6 +195,9 @@ public partial class MerchantScreen : OverlayScreen
 		button.Disabled = isWorn;
 		button.Pressed += () => ToggleSelected(item);
 		button.FocusEntered += () => host.Say(SellText(item, isWorn).Replace('\n', '.'));
+		var sells = $"Vende por {MerchantHost.Coins(host.Catalog.SellPrice(item.Id))}";
+		button.FocusEntered += () => PreviewGear(item, sells);
+		button.MouseEntered += () => PreviewGear(item, sells);
 		return button;
 	}
 
@@ -194,6 +213,9 @@ public partial class MerchantScreen : OverlayScreen
 			var button = Row($"{item.Name}\nRecomprar por {MerchantHost.Coins(entry.Price)}", "Rebuy_" + entry.Item);
 			button.Pressed += () => AskRebuy(item, entry.Price);
 			button.FocusEntered += () => host.Say($"{item.Name}. Recomprar por {MerchantHost.Coins(entry.Price)}.");
+			var rebuy = $"Recomprar por {MerchantHost.Coins(entry.Price)}";
+			button.FocusEntered += () => PreviewGear(item, rebuy);
+			button.MouseEntered += () => PreviewGear(item, rebuy);
 			list.AddChild(button);
 		}
 	}
@@ -207,8 +229,22 @@ public partial class MerchantScreen : OverlayScreen
 
 	void Preview(Cosmetic cosmetic, int price)
 	{
-		portrait.Show(host.TryOn(cosmetic.Id));
+		ShowCosmetic(cosmetic, price);
 		host.Say($"{cosmetic.Name}. {MerchantHost.Coins(price)}.");
+	}
+
+	void ShowCosmetic(Cosmetic cosmetic, int price)
+	{
+		preview.Show(new EquipmentLoadout(Cosmetics: cosmetic.Look is { } look ? [look] : []));
+		previewName.Text = cosmetic.Name;
+		previewDetail.Text = $"{MerchantHost.Coins(price)} · sem Maestria mínima";
+	}
+
+	void PreviewGear(GearItem item, string price)
+	{
+		preview.Show(EquipmentLooks.For(new Gear().With(item.Slot, item.Id)));
+		previewName.Text = item.Name;
+		previewDetail.Text = $"{price} · Maestria mínima {item.MinMastery}";
 	}
 
 	void ToggleSelected(GearItem item)

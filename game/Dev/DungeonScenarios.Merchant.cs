@@ -25,6 +25,11 @@ static partial class DungeonScenarios
 		await d.Shot("01-mercador");
 
 		var offer = port.Merchant.Stock(profile)[0];
+		Named<Button>(d, "Offer_" + offer.Id)!.GrabFocus();
+		await d.Wait(0.5);
+		d.Expect(Named<Control>(d, "ItemPreview") is not null && Named<Control>(d, "PortraitPicture") is null, "o Mercador mostra o quadrado do item, sem o retrato do Personagem");
+		d.Expect(!string.IsNullOrEmpty(Named<Label>(d, "PreviewDetail")!.Text) && Named<Label>(d, "PreviewDetail")!.Text.Contains("moedas"), "focar uma oferta mostra o preço embaixo do item");
+		await d.Shot("01b-previa-do-item");
 		Named<Button>(d, "Offer_" + offer.Id)!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
 		d.Expect(Named<Control>(d, "PaymentDialog") is not null && d.Button("Eu pago") is not null && d.Button("Pagar sozinho") is not null, "comprar pergunta como pagar: Eu pago ou Pagar sozinho");

@@ -106,6 +106,9 @@ public partial class Main
 		notice.Visible = !inDungeon && current is null;
 	}
 
+	// O retrato único do Personagem: carrega em segundo plano ao entrar no Lobby e só renderiza com um modal aberto.
+	readonly PortraitService portrait = new() { Name = "PortraitService" };
+
 	void RefreshDock()
 	{
 		var count = current is null ? 0 : NewInventoryKeys().Count();
@@ -144,6 +147,7 @@ public partial class Main
 		OwnedCosmetics = () => rewardService.Cosmetics(current.Id),
 		OwnedGear = () => inventory.OwnedGear(current.Id),
 		HeldItems = HeldItems,
+		Portrait = portrait,
 		Say = text => voice.Say(text, interrupt: true),
 		Changed = ApplyEquipment,
 		CanChangeGear = canChangeGear,

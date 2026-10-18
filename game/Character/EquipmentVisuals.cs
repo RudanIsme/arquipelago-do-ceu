@@ -12,6 +12,14 @@ public partial class EquipmentVisuals : Node3D
 	readonly Dictionary<string, Transform3D> bind = new();
 	readonly List<(Node3D Node, int Bone, Transform3D Offset)> mounts = new();
 	public int VisiblePartCount { get; private set; }
+	bool standalone;
+
+	// Mostra só as peças, sem corpo nem ossos: é a prévia de um item sozinho.
+	public void ShowAlone(EquipmentLoadout loadout)
+	{
+		standalone = true;
+		Apply(loadout);
+	}
 	public string ArmorId { get; private set; } = "original";
 	public string HelmetId { get; private set; } = "none";
 	public void Initialize(Node3D source, Skeleton3D skeleton)
@@ -112,7 +120,8 @@ public partial class EquipmentVisuals : Node3D
 	Node3D Mount(string bone, string label)
 	{
 		var node = new Node3D { Name = label + "_" + bone }; AddChild(node);
-		mounts.Add((node, rig.FindBone(bone), bind[bone])); return node;
+		if (!standalone) mounts.Add((node, rig.FindBone(bone), bind[bone]));
+		return node;
 	}
 	static StandardMaterial3D Material(string html, bool metallic) => new() { AlbedoColor = Color.FromHtml(html), Metallic = metallic ? .48f : 0, Roughness = metallic ? .38f : .86f };
 	MeshInstance3D Plate(Node3D parent, string name, Vector3 pos, Vector3 size, Material mat)

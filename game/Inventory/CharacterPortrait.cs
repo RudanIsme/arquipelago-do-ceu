@@ -3,71 +3,49 @@ using Godot;
 
 namespace ArquipelagoDoCeu;
 
-// O Personagem num visor próprio, para a prévia do Inventário. Usa um mundo 3D à parte: nunca mexe no Personagem do jogo.
+// O retrato do Personagem dentro de uma tela: só mostra a imagem do PortraitService, que é único e dorme quando nenhuma tela o usa.
 public partial class CharacterPortrait : VBoxContainer
 {
 	const float TurnDegrees = 35f;
-	const int TargetHeight = 72;
+	const int TargetHeight = 44;
 
-	SpectrumCharacter? character;
-	Camera3D? camera;
-	SubViewport? viewport;
-	EquipmentLoadout pending = new();
+	readonly PortraitService service;
+	readonly TextureRect picture = new() { Name = "PortraitPicture", ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered, SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(120, 200) };
+	EquipmentLoadout? last;
 
-	public CharacterPortrait()
+	public CharacterPortrait(PortraitService service)
 	{
 		Name = "CharacterPortrait";
+		this.service = service;
+	}
+
+	public override void _EnterTree()
+	{
+		service.Built += ShowTexture;
+		service.Acquire();
 	}
 
 	public override void _Ready()
 	{
-		var container = new SubViewportContainer { Stretch = true, SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(240, 300) };
-		AddChild(container);
-		viewport = new SubViewport { Size = new Vector2I(280, 440), OwnWorld3D = true, RenderTargetUpdateMode = SubViewport.UpdateMode.Always, Msaa3D = Viewport.Msaa.Msaa2X };
-		container.AddChild(viewport);
-		BuildScene(viewport);
+		AddChild(picture);
 		AddChild(BuildTurnButtons());
+		ShowTexture();
+		if (last is not null) service.Show(last);
 	}
 
-	public override void _Process(double delta)
+	public override void _ExitTree()
 	{
-		if (camera is null || viewport is null || viewport.Size.X <= 0) return;
-		camera.Size = Mathf.Max(2.05f, 1.25f * viewport.Size.Y / viewport.Size.X);
+		service.Built -= ShowTexture;
+		service.Release();
 	}
 
 	public void Show(EquipmentLoadout loadout)
 	{
-		pending = loadout;
-		character?.ApplyEquipment(pending);
+		last = loadout;
+		service.Show(loadout);
 	}
 
-	void BuildScene(SubViewport parent)
-	{
-		var world = new Node3D();
-		parent.AddChild(world);
-		world.AddChild(Background());
-		world.AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-35, -35, 0), LightEnergy = 1.7f });
-		world.AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-20, 145, 0), LightEnergy = 0.6f });
-		character = new SpectrumCharacter { Name = "PortraitCharacter", ReduceMotion = true };
-		world.AddChild(character);
-		character.ApplyEquipment(pending);
-		character.SetLocomotion(0, false);
-		camera = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = 2.05f, Position = new Vector3(1.8f, 1.15f, 3.5f), Current = true };
-		world.AddChild(camera);
-		camera.LookAt(new Vector3(0, 0.8f, 0));
-	}
-
-	static WorldEnvironment Background() => new()
-	{
-		Environment = new Godot.Environment
-		{
-			BackgroundMode = Godot.Environment.BGMode.Color,
-			BackgroundColor = Color.FromHtml("#E4D2A6"),
-			AmbientLightSource = Godot.Environment.AmbientSource.Color,
-			AmbientLightColor = Colors.White,
-			AmbientLightEnergy = 0.75f,
-		},
-	};
+	void ShowTexture() => picture.Texture = service.Texture;
 
 	HBoxContainer BuildTurnButtons()
 	{
@@ -79,7 +57,7 @@ public partial class CharacterPortrait : VBoxContainer
 
 	Button Turn(string text, float degrees, string name)
 	{
-		var button = BookStyle.Button(text, () => character?.RotateY(Mathf.DegToRad(degrees)), name, TargetHeight);
+		var button = BookStyle.Button(text, () => service.Turn(degrees), name, TargetHeight);
 		button.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 		return button;
 	}

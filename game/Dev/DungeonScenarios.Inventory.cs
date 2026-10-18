@@ -50,7 +50,7 @@ static partial class DungeonScenarios
 		Named<Button>(d, "EquipButton")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.4);
 		d.Expect(port.Gear.Get(profile, "matematica").In("armor") == "scout", "Equipar veste de verdade");
-		d.Expect(HasButtonText(d, "Armadura: Explorador"), "a caixinha do espaço mostra o equipamento");
+		d.Expect(Named<Button>(d, "Slot_armor")!.Text.Contains("Explorador"), "a caixinha do espaço mostra o equipamento");
 
 		await d.Press("Fechar");
 		d.Expect(Named<Control>(d, "InventoryScreen") is null, "Fechar volta ao Lobby");
@@ -66,8 +66,11 @@ static partial class DungeonScenarios
 		await d.Wait(0.5);
 		await d.Shot("05-cosmeticos");
 		Named<Button>(d, "Cosmetic_matematica-1-1")!.EmitSignal(BaseButton.SignalName.Pressed);
+		await d.Wait(0.4);
+		d.Expect(d.HasVisible("Só muda a aparência."), "tocar num Cosmético só mostra a prévia e o painel");
+		Named<Button>(d, "WearButton")!.EmitSignal(BaseButton.SignalName.Pressed);
 		await d.Wait(0.5);
-		d.Expect(HasButtonText(d, "Vestido ✓"), "o Cosmético vestido aparece marcado");
+		d.Expect(Named<Button>(d, "WearButton")!.Text == "Tirar", "o Cosmético vestido vira Tirar");
 		d.Expect(port.Gear.Get(profile, "matematica").In("armor") == "scout", "vestir um Cosmético não mexe no equipamento");
 		await d.Shot("06-cosmetico-vestido");
 		await d.Press("Fechar");
@@ -102,6 +105,38 @@ static partial class DungeonScenarios
 
 	static bool HasButtonText(DevDriver d, string text) =>
 		d.GetTree().Root.FindChildren("*", "Button", true, false).OfType<Button>().Any(b => b.IsVisibleInTree() && b.Text.Contains(text, System.StringComparison.Ordinal));
+
+	// Cenário `modais-tempo`: quanto leva para o Inventário e o Mercador aparecerem (a abertura e os quadros até a tela desenhar).
+	// A primeira abertura depois de entrar no Lobby é a que mais pesava.
+	public static async Task ModalTimes(DevDriver d)
+	{
+		await EnsureProfile(d);
+		await d.Wait(1.0);
+		var dock = Named<Button>(d, "InventoryButton")!;
+		await Measure(d, "Inventário (1ª vez)", () => dock.EmitSignal(BaseButton.SignalName.Pressed), "InventoryScreen");
+		d.Expect(Named<PortraitService>(d, "PortraitService") is { Sleeping: false }, "com o Inventário aberto o retrato renderiza");
+		await d.Press("Fechar");
+		d.Expect(Named<PortraitService>(d, "PortraitService") is { Sleeping: true }, "fechar o modal desliga a renderização do retrato");
+		await Measure(d, "Inventário (2ª vez)", () => dock.EmitSignal(BaseButton.SignalName.Pressed), "InventoryScreen");
+		await d.Press("Fechar");
+		await WalkTo(d, 0, 11);
+		await Measure(d, "Mercador (1ª vez)", () => Input.ParseInputEvent(new InputEventAction { Action = Controls.Interact, Pressed = true }), "MerchantScreen");
+		await d.Press("Fechar");
+	}
+
+	static async Task Measure(DevDriver d, string label, System.Action open, string screenName)
+	{
+		var start = Time.GetTicksUsec();
+		open();
+		var opened = Time.GetTicksUsec();
+		for (var i = 0; i < 400 && Named<Control>(d, screenName) is null; i++) await d.ToSignal(d.GetTree(), SceneTree.SignalName.ProcessFrame);
+		var shown = Time.GetTicksUsec();
+		await d.ToSignal(d.GetTree(), SceneTree.SignalName.ProcessFrame);
+		await d.ToSignal(d.GetTree(), SceneTree.SignalName.ProcessFrame);
+		var drawn = Time.GetTicksUsec();
+		GD.Print($"MODAL {label}: abrir {(opened - start) / 1000.0:0} ms, apareceu {(shown - start) / 1000.0:0} ms, 2 quadros depois {(drawn - start) / 1000.0:0} ms");
+		d.Expect(Named<Control>(d, screenName) is not null, $"{label} abriu");
+	}
 
 	static T? Named<T>(DevDriver d, string name) where T : Node =>
 		d.GetTree().Root.FindChildren(name, "", true, false).OfType<T>().FirstOrDefault(n => n.IsInsideTree() && !n.IsQueuedForDeletion() && (n is not CanvasItem item || item.IsVisibleInTree()));

@@ -34,6 +34,9 @@ public sealed class InventoryHost
 
 	public required Func<IReadOnlyList<HeldItem>> HeldItems { get; init; }
 
+	// O retrato único do Personagem, que as telas só mostram.
+	public required PortraitService Portrait { get; init; }
+
 	public required Action<string> Say { get; init; }
 
 	// Chamado quando o que o Personagem veste mudou de verdade (equipar, tirar, vestir um Cosmético).

@@ -94,6 +94,9 @@ static class Scenarios
 			case "combate":
 				await DungeonScenarios.Combat(d);
 				break;
+			case "modais-tempo":
+				await DungeonScenarios.ModalTimes(d);
+				break;
 			case "inventario":
 				await DungeonScenarios.Inventory(d);
 				break;
