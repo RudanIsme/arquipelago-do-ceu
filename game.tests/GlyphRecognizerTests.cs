@@ -97,4 +97,16 @@ public class GlyphRecognizerTests
 		Assert.Equal("7", Recognizer.Recognize(seven, Digits).Glyph);
 		Assert.DoesNotContain(Recognizer.Rank(seven, "ABC").Select(r => r.Glyph), g => g == "7");
 	}
+
+	// Um 3 de verdade, feito de um traço só com o topo reto: o 8 e o 5 chegam perto, mas o 3 não pode ficar em dúvida.
+	[Fact]
+	public void Um_3_de_topo_reto_feito_num_traco_so_e_reconhecido()
+	{
+		Vector2[] points = [new(810, 305), new(900, 303), new(950, 315), new(970, 350), new(955, 400), new(900, 428), new(850, 432), new(900, 438), new(975, 465), new(1010, 520), new(985, 565), new(930, 590), new(860, 590), new(800, 575)];
+
+		var guess = Recognizer.Recognize([points], Digits);
+
+		Assert.Equal(GuessKind.Sure, guess.Kind);
+		Assert.Equal("3", guess.Glyph);
+	}
 }

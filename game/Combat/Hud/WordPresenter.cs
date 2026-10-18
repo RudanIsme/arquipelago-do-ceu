@@ -14,6 +14,8 @@ sealed class WordPresenter(WordBattle battle, Action<WordResult> checkedWord, bo
 
 	public bool FreeDraw => true;
 
+	public string? Request => Assembled;
+
 	public string DrawAllowed => "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 	public string? GuideText => Remainder;

@@ -15,7 +15,7 @@ static partial class DungeonScenarios
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null, "o treino de Matemática abriu a HUD de combate");
 		d.Expect(d.Button("Atacar") is null && d.Button("Conferir") is null, "não existe botão de atacar nem de conferir");
-		d.Expect(d.HasVisible("Escudo:") && d.HasVisible("Escreva uma conta"), "o pedido fica na HUD e não há bolsa");
+		d.Expect(d.Button("Dica") is not null && d.Button("Apagar") is not null, "a HUD é só uma fileira de botões: o pedido fica no balão da criatura");
 		await d.Shot("01-hud-matematica");
 
 		var before = d.Player!.GroundPosition;
@@ -41,7 +41,7 @@ static partial class DungeonScenarios
 		d.Expect(d.Hud?.Presenter is NamePresenter, "o Escriba abriu a HUD do nome, sem painel");
 		await d.Shot("05-hud-nome");
 		await d.PlayName();
-		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "o último traço conferiu o nome e libertou a criatura");
+		d.Expect(d.HasVisible("certo") || d.HasVisible("certa"), "o último traço conferiu o nome e libertou a criatura");
 		await d.Shot("06-nome-certo");
 		await d.Press("Sair do treino");
 	}
@@ -88,7 +88,7 @@ static partial class DungeonScenarios
 		await d.Press("Dica");
 		await d.Shot("01-hud-palavra-letra-sugerida");
 		await d.PlayWord();
-		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "a última letra traçada conferiu a palavra");
+		d.Expect(d.HasVisible("certo") || d.HasVisible("certa"), "a última letra traçada conferiu a palavra");
 		await d.Shot("02-palavra-certa");
 		await d.Press("Sair do treino");
 

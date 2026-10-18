@@ -67,7 +67,7 @@ O canto inferior esquerdo do HUD, com o botão do Inventário (e o selo "novo", 
 O caminho de traço de um número, sinal ou letra, na ordem de escrita, com início numerado e seta. Serve de modelo para o Desenho livre reconhecer o que a criança escreveu e de pontilhado-guia na Dica.
 
 **HUD de combate**:
-O que fica na tela durante a luta, sem painel que abra por cima. Hoje mostra o pedido e os botões; decidido, no #187: só a Energia e o ícone da mochila, com o pedido no balão da criatura.
+O que fica na tela durante a luta, sem painel que abra por cima. Hoje é só a Energia e uma fileira baixa de botões; o pedido e os recados ficam no balão da criatura. Falta o ícone da mochila (#187).
 
 **Desenho livre**:
 A criança escreve números, sinais e letras em qualquer lugar da tela, com a cena visível. O jogo reconhece sozinho, sem IA e sem rede, comparando com as Trilhas; levantar o dedo e esperar cerca de 0,8 s fecha o desenho, e o fim dele ataca (não há botão Atacar). Enquanto ela desenha o mundo fica em 0,3× e o Personagem anda no tempo normal. Ambiguidade nunca custa Energia: o jogo pede para escrever de novo.

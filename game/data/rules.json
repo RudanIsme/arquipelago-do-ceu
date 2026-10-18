@@ -174,7 +174,7 @@
       "idleSeconds": 0.8,
       "points": 32,
       "maxDistance": 0.2,
-      "ambiguityRatio": 0.85,
+      "ambiguityRatio": 0.88,
       "mergeOverlap": 0.5,
       "markRatio": 0.15,
       "guideAlwaysUpToYear": 1
@@ -215,8 +215,8 @@
       ]
     },
     "movement": {
-      "patrolSpeed": 0.35,
-      "approachSpeed": 0.8,
+      "patrolSpeed": 0.6,
+      "approachSpeed": 1.0,
       "patrolRadius": 1.8,
       "approachRadius": 6,
       "stopDistance": 2.2,

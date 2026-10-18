@@ -98,6 +98,7 @@ public partial class TrainingArea : Node
 	public int? EnergyTop { get; set; }
 
 	public bool HasTarget => panel is not null;
+	public Vector2 CreatureGround => motion.Ground;
 	void UpdateEnergyDock() { if (energyView is not null) energyView.OffsetTop = EnergyTop ?? (panel is null ? 154 : 12); }
 
 	// Clicar na criatura a escolhe: o raio do clique passa perto do centro do Boneco.
@@ -231,7 +232,7 @@ public partial class TrainingArea : Node
 	{
 		if (session is null || panel is not null) return;
 		var opened = AnswerPanels.Create(session, rules, voice, InTargetRange, Creature, rhythm, new PanelEvents(
-			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing, player.WalkTo,
+			reactions.Attacked, reactions.NameChecked, reactions.WordChecked, reactions.ChangeChecked, OnComposing, player.WalkTo, text => dummy.Say(text, true), dummy.SetRequest,
 			Hint: () => { if (session is not null) Tell($"Dica: {session.Hint()}"); },
 			Read: () => { if (session is not null) Tell(session.Mission.Prompt); }));
 
@@ -246,6 +247,7 @@ public partial class TrainingArea : Node
 			panel = null;
 			UpdateEnergyDock();
 			dummy.SetSelected(false);
+			dummy.SetRequest(null);
 			time.End();
 			Engine.TimeScale = time.Scale;
 		}

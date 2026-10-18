@@ -13,6 +13,8 @@ public sealed record PanelEvents(
 	Action<ChangeResult> ChangeChecked,
 	Action<bool> Composing,
 	Action<Godot.Vector2> Tapped,
+	Action<string> Said,
+	Action<string?> Requested,
 	Action Hint,
 	Action Read);
 
@@ -23,6 +25,8 @@ public static class AnswerPanels
 	{
 		var hud = new CombatHud(Presenter(session, rules, creature, events), rules.Combat, voice, rhythm, inTargetRange, creature);
 		hud.Tapped += events.Tapped;
+		hud.Said += events.Said;
+		hud.Requested += events.Requested;
 		hud.ComposingChanged += events.Composing;
 		hud.HintRequested += events.Hint;
 		hud.ReadRequested += events.Read;

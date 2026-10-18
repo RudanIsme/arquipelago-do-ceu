@@ -14,6 +14,8 @@ sealed class MathPresenter(TrainingBattle battle, CombatRules rules, CreatureWor
 {
 	public bool FreeDraw => true;
 
+	public string? Request => battle.Ask == MathAsk.Answer ? $"{battle.Question} = ?" : $"Faça {battle.StartingShield}";
+
 	public string DrawAllowed => DrawnMath.Allowed(battle.Ask, rules.MathLevel);
 
 	// Resultado pedido: o número da criatura é o alvo e a criança faz a conta. Conta pronta: o número é a resposta e não aparece.

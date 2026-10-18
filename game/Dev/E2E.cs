@@ -39,7 +39,7 @@ static class E2E
 		await d.Press("Começar");
 		d.Expect(d.Hud is not null && d.Button("Conferir") is null, "o treino de Português começou, sem botão de conferir");
 		await d.PlayName();
-		d.Expect(d.HasVisible("libertada") || d.HasVisible("certa"), "o nome certo libertou a criatura");
+		d.Expect(d.HasVisible("certo") || d.HasVisible("certa"), "o nome certo libertou a criatura");
 		await d.Press("Sair do treino");
 
 		d.Expect(File.ReadAllBytes(save).AsSpan().SequenceEqual(before), "treinar nos dois Papéis não mudou o save");

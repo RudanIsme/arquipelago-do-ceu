@@ -76,7 +76,7 @@ public partial class CombatHud : OverlayScreen
 	// Uma mensagem escrita que também é dita pela voz: toda instrução tem as duas versões.
 	public void Tell(string text)
 	{
-		SetMessage(text);
+		if (layer is null) SetMessage(text);
 		voice.Say(text, interrupt: true);
 	}
 
@@ -92,16 +92,18 @@ public partial class CombatHud : OverlayScreen
 	{
 		layer?.Clear();
 		presenter.Cancel();
+		Requested?.Invoke(null);
 		Close();
 	}
 
 	// Embaixo, sobre a cena: o pedido e a bolsa (ou, no desenho livre, só os botões).
 	Control BuildBottom()
 	{
+		if (presenter.FreeDraw) return BuildCompactBar();
 		var column = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkEnd, MouseFilter = MouseFilterEnum.Ignore };
 		column.AddThemeConstantOverride("separation", 8);
 		column.AddChild(BuildRequest());
-		column.AddChild(presenter.FreeDraw ? BuildDrawBar() : BuildTray());
+		column.AddChild(BuildTray());
 		var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
 		row.AddThemeConstantOverride("separation", 8);
 		row.AddChild(column);
@@ -170,6 +172,7 @@ public partial class CombatHud : OverlayScreen
 		if (!presenter.FreeDraw) RefreshPieces();
 		undo.Disabled = !presenter.Composing && layer?.IsActive != true;
 		RefreshGuide();
+		Requested?.Invoke(presenter.Request);
 		NotifyComposing();
 	}
 

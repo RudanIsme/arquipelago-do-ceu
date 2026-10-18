@@ -43,6 +43,7 @@ public partial class TrainingDummy : Node3D
 	int captionValue;
 	// Na conta pronta ("3 + 5 = ?") o número do escudo é a resposta e não aparece: a criatura mostra a conta.
 	string? question;
+	string? request;
 	public void SetCaptionContext(bool compact, bool near)
 	{
 		if (compactCaption == compact && captionNear == near) return;
@@ -55,7 +56,15 @@ public partial class TrainingDummy : Node3D
 			? (compactCaption ? RestingCompact : $"{Title}\n{RestingHint}")
 			: (compactCaption ? Shown : $"{Title}\n{Shown}");
 	}
-	string Shown => question is null ? $"{unit}: {captionValue}" : $"{question} = ?";
+	string Shown => request ?? (question is null ? $"{unit}: {captionValue}" : $"{question} = ?");
+
+	// O pedido da luta, no balão sobre a criatura; nulo volta à legenda de sempre.
+	public void SetRequest(string? text)
+	{
+		request = text;
+		shieldLabel.FontSize = text is null ? 96 : 200;
+		UpdateCaption();
+	}
 	int startingShield = 1;
 	string unit = "Escudo";
 	readonly Node3D creature = new() { Visible = false };

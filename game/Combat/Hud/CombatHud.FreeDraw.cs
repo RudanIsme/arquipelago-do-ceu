@@ -12,6 +12,11 @@ public partial class CombatHud
 	FreeDrawLayer? layer;
 	bool hintShown;
 
+	// O que a criatura diz em voz e em texto (o balão dela) e o pedido que ela mostra, ou nulo para voltar ao normal.
+	public event Action<string>? Said;
+
+	public event Action<string?>? Requested;
+
 	// Um toque curto no vazio não é traço: o Personagem anda até ali.
 	public event Action<Vector2>? Tapped;
 
@@ -23,16 +28,28 @@ public partial class CombatHud
 		layer.ActiveChanged += _ => NotifyComposing();
 	}
 
-	// No desenho livre não há bolsa: só o que a criança escreveu e os botões.
-	Control BuildDrawBar()
+	// No desenho livre a HUD é só uma fileira baixa de botões: o pedido e os recados ficam no balão da criatura.
+	Control BuildCompactBar()
 	{
-		var column = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-		column.AddThemeConstantOverride("separation", 8);
-		column.AddChild(assembled);
-		column.AddChild(BuildActions());
-		var panel = BookStyle.Panel(column);
-		panel.Name = "DrawBar";
-		return panel;
+		undo = BookStyle.Button("Apagar", Undo, "Undo", PieceSize);
+		var bar = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+		bar.AddThemeConstantOverride("separation", 8);
+		bar.AddChild(undo);
+		bar.AddChild(BookStyle.Button("Dica", AskHint, "Hint", PieceSize));
+		bar.AddChild(BookStyle.Button("Ouvir", () => ReadRequested?.Invoke(), "Read", PieceSize));
+		bar.AddChild(BookStyle.Button("Soltar alvo", Abandon, "Release", PieceSize));
+		bar.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterBottom, LayoutPresetMode.Minsize);
+		bar.OffsetBottom = -Margin;
+		bar.GrowVertical = GrowDirection.Begin;
+		bar.GrowHorizontal = GrowDirection.Both;
+		return bar;
+	}
+
+	// Um aviso curto: no balão da criatura e em voz.
+	void Notice(string text)
+	{
+		Said?.Invoke(text);
+		voice.Say(text, interrupt: true);
 	}
 
 	void AskHint()
@@ -55,26 +72,26 @@ public partial class CombatHud
 	{
 		if (presenter.Resolved)
 		{
-			Tell(presenter.ResolvedText);
+			Notice(presenter.ResolvedText);
 			return;
 		}
 		if (!inRange())
 		{
-			Tell($"Chegue mais perto {creature.Of} para atacar.");
+			Notice($"Chegue mais perto {creature.Of} para atacar.");
 			return;
 		}
 		if (!rhythm.PlayerReady)
 		{
-			Tell("Espere um instante e escreva de novo.");
+			Notice("Espere um instante.");
 			return;
 		}
 		switch (guess.Kind)
 		{
 			case GuessKind.Unknown:
-				Tell("Não consegui ler. Escreva de novo, sem pressa. Isso não custa Energia.");
+				Notice("Não consegui ler. Tente de novo.");
 				return;
 			case GuessKind.Ambiguous:
-				Tell("Fiquei na dúvida do que você escreveu. Escreva de novo, mais devagar. Isso não custa Energia.");
+				Notice("Fiquei na dúvida. Tente de novo.");
 				return;
 		}
 		if (presenter.Write(guess.Text, out var refusal))
@@ -82,7 +99,7 @@ public partial class CombatHud
 			rhythm.PlayerAnswered();
 			hintShown = false;
 		}
-		else if (refusal is not null) Tell(refusal);
+		else if (refusal is not null) Notice(refusal);
 		Refresh();
 	}
 

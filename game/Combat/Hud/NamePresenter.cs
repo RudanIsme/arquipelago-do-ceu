@@ -13,6 +13,8 @@ sealed class NamePresenter(NameBattle battle, Action<NameVerdict> checkedName, b
 	// As sílabas se escrevem desenhando, uma por vez ou o nome inteiro; frases e lacunas seguem escolhendo a peça.
 	public bool FreeDraw => battle.Kind == NameKind.Syllables;
 
+	public string? Request => FreeDraw ? DrawnSlots() : null;
+
 	public string DrawAllowed => "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 	public string? GuideText => battle.NextSyllable?.ToUpperInvariant();

@@ -57,6 +57,9 @@ public interface ICombatPresenter
 	// Confere e golpeia. Falso quando a conta não vale (`error` diz por quê) e a montagem deve recomeçar.
 	bool Attack(out string? error);
 
+	// O pedido curto que a criatura mostra no balão dela; nulo deixa a legenda de sempre.
+	string? Request => null;
+
 	// Matemática e Português por sílaba se escrevem desenhando em qualquer lugar da tela, sem bolsa nem painel.
 	bool FreeDraw => false;
 
