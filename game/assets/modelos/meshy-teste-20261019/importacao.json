@@ -1,0 +1,417 @@
+{
+  "source_manifest": "meshy-lote20-20261019/INTEGRACAO-MANIFESTO-VERSOES.json (manifesto de entrega externa)",
+  "mapping_ref": "origin/feat/199-folha-de-pedidos-meshy",
+  "mapping_commit": "0834c507ea0a2f492c107d88d3433203fd731a10",
+  "gameplay_enabled_only_with": "--meshy-test",
+  "source_files_untouched": true,
+  "assets": [
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-base/v04/automato-base-idle.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-base-idle.glb",
+      "source_sha256": "af6615f73678fc5ea2b8d4efc35da1337116e00f042a44e8957a41dd49c6454a",
+      "destination_sha256": "dbddf8865b168008e19095c504b0e17171ce86f98e5e87d944f2b7a0a3131d50",
+      "triangles": 2470,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 195624
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-base/v04/automato-base-walk.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-base-walk.glb",
+      "source_sha256": "beb4cde0aac9f77cab2277886063e7d4d6c7ae99f739e0e51922aef82f4032a6",
+      "destination_sha256": "9eac43ed209974811d574ce03ec07a93b567b78dbd2ec507c11700441afb489d",
+      "triangles": 2470,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 195416
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/livro-com-pernas/v04/livro-com-pernas-idle.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/livro-com-pernas-idle.glb",
+      "source_sha256": "dbfdbd53dc53caab4966fef349f2c12b88e591fb2911b62ac62fec82f88b0299",
+      "destination_sha256": "1143bac417fc918dff5a089b0d9ef2f783a68552e2e2fc7c4938855a2cd3163e",
+      "triangles": 2063,
+      "bones": 4,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          928,
+          1024
+        ],
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 472144
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/livro-com-pernas/v04/livro-com-pernas-walk.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/livro-com-pernas-walk.glb",
+      "source_sha256": "b0ae24eaa3d750d206e20ed3295e822091c03076451e1abf2955e3fee7abb9ce",
+      "destination_sha256": "64243d4c17f1498198402cac44c4d745956eb24dcf5df3c4781347125bf68c87",
+      "triangles": 2063,
+      "bones": 4,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          928,
+          1024
+        ],
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 471936
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-pesado/v01/automato-pesado-idle.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-pesado-idle.glb",
+      "source_sha256": "8b6c52801c6282782e816c7963e2e9f3970ead2ba6f5e992f84a0a15605d655f",
+      "destination_sha256": "d930e0160982cad9a4886ea56b5060490b8cc76dce11be71fe1473cdd9beb953",
+      "triangles": 2470,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 199204
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-pesado/v01/automato-pesado-walk.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-pesado-walk.glb",
+      "source_sha256": "2365cbf7bb1b1d5da44a1580cbe1867171361acc206392d96270e38248472de2",
+      "destination_sha256": "7e3f57bdb352d3148028ecfad404fab19b87113f0f66713da6814a428fff7a28",
+      "triangles": 2470,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 198996
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-cristal/v01/automato-cristal-idle.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-cristal-idle.glb",
+      "source_sha256": "076722406c81f814057e1b3036dfa5add193f0d6dc249b8bb14afa204a55a2c0",
+      "destination_sha256": "2ffb9cef618b3aade951d029a4421cdd1ba47f42c5ad5a7d354b4a1fc3fc0b0d",
+      "triangles": 2128,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 178472
+    },
+    {
+      "source": "meshy-lote20-20261019/corrected-local-v01/criaturas/automato-cristal/v01/automato-cristal-walk.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-cristal-walk.glb",
+      "source_sha256": "28a39ee54add36a50125213ee7bf2436b9ab0edd65905b63a48e30ea46487b69",
+      "destination_sha256": "d4cb5d5337f3b62ad024057652535a32b62dd6a8c8d05796bfe1adb3538561d6",
+      "triangles": 2128,
+      "bones": 11,
+      "animations": [
+        "Animation"
+      ],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 178264
+    },
+    {
+      "source": "meshy-lote20-20261019/models/criaturas/automato-voador/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/automato-voador.glb",
+      "source_sha256": "6fb0fa2fd1e3e7131dcbfc4d5eddf6d24139a319ba10582c02f2d23e93774e03",
+      "destination_sha256": "39d7c5aea70366f90eae241b880628444e984c88f340f37b022e378a657aec21",
+      "triangles": 2530,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 392696
+    },
+    {
+      "source": "meshy-lote20-20261019/models/criaturas/papel-fantasma/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/papel-fantasma.glb",
+      "source_sha256": "2fa8e045e522dd14972d6afd3e1777ba17de2c6790a69ab3a7bbc8bc3601d00d",
+      "destination_sha256": "6a5fa42236290ceeba0b3da6888726d7e0f270f68c16e5a4abf45787abbe54fb",
+      "triangles": 2537,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 272152
+    },
+    {
+      "source": "meshy-lote20-20261019/models/criaturas/pergaminho/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/pergaminho.glb",
+      "source_sha256": "c8e56e5695d2fd654b1f237c6886f026dfd8199cc76eb20727edf6cb2f9d3e0b",
+      "destination_sha256": "950fcf53eba441366759543e94a5b4e3882589c1b58b2f21696e7dc8b62e7b41",
+      "triangles": 2601,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 348868
+    },
+    {
+      "source": "meshy-lote20-20261019/models/criaturas/tinta-roxa/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/criaturas/tinta-roxa.glb",
+      "source_sha256": "24d36d81664eba829ee474a5b9842e726760f424b236fddc4eebedd81e4b52ec",
+      "destination_sha256": "2d246d142e323963af0e6f2554a7ca73e7658737a78a34d1100f889e537732d3",
+      "triangles": 2588,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "bytes": 194128
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/porta-arco/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/porta-arco.glb",
+      "source_sha256": "03053a155d23b637806695845143caa0b88ae31098975eb10fd2d139ed4a9907",
+      "destination_sha256": "193ba60f214cb8b675a3ecf3baa745923c93770e968d096f44158141ba681155",
+      "triangles": 1012,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 155304
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/escada-pedra/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/escada-pedra.glb",
+      "source_sha256": "bd822f1b0e101693b3631c04a3294cb5de5f4e1a155db59a09994f896cdca562",
+      "destination_sha256": "9948c2655f9cc476ac790daed1848e834f88d8bd3835993d2fa3d4a4b99ecb18",
+      "triangles": 1174,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 144432
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/fonte-descanso/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/fonte-descanso.glb",
+      "source_sha256": "e8cb087b6f56a166fe1d2446c2a6fef56e37c8ed0dd742639aee8bc6afde518c",
+      "destination_sha256": "83aca689986474ce38f52e6c112f14d065b624fa0858121650ded7d188776bcf",
+      "triangles": 1037,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 159648
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/parede-baixa/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/parede-baixa.glb",
+      "source_sha256": "7dfc82a0c95f5e27f389884994311fefe195d5b421b511c7d6587a04084484ac",
+      "destination_sha256": "390fc0c58feef5f4aaa25b72ac0184ec449a5549795e34e3250849ae3dba4f3b",
+      "triangles": 202,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 72248
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/pilar-torre/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/pilar-torre.glb",
+      "source_sha256": "aa60fcb37ef64604b15a8d895dc9e5e9a5948709f23877f1399a8f3ec83bdabd",
+      "destination_sha256": "819cf7fdc7bcfbfaa3e59ee1f0dd1e8214b0252962fd4540f5d0d29405f33757",
+      "triangles": 260,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 63032
+    },
+    {
+      "source": "meshy-lote20-20261019/models/cenario/pedestal-mestre/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/cenario/pedestal-mestre.glb",
+      "source_sha256": "95c6f8b02656d3532d0bad61523470d18c8c45281e1c5fc59df84f37209baac8",
+      "destination_sha256": "544c051a2e26f9da481b12ee675501ee92e218f372e96c5a6f45ae3430392aad",
+      "triangles": 1428,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 182072
+    },
+    {
+      "source": "meshy-lote20-20261019/models/obstaculos/caixote-madeira/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/obstaculos/caixote-madeira.glb",
+      "source_sha256": "db4833ae1d6ab9bcee45aa6c632a68372a6dde1c88df7e52cfc0480c41df6db6",
+      "destination_sha256": "9eefa6dfe5cd54f5e6f46f322fa6189b8acf79dd2d4a6e24b4b2bc8a341994d3",
+      "triangles": 362,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 94292
+    },
+    {
+      "source": "meshy-lote20-20261019/models/obstaculos/pilha-de-livros/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/obstaculos/pilha-de-livros.glb",
+      "source_sha256": "91654b965b4f2fadbc835499cba4bde2e21f017308f86c55069dfb41d1204d82",
+      "destination_sha256": "aa7d53024b369f4818204f44efc6169b13ad1af42e0bbdfa7881ef6a01dd3b01",
+      "triangles": 473,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 124704
+    },
+    {
+      "source": "meshy-lote20-20261019/models/obstaculos/pilha-de-engrenagens/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/obstaculos/pilha-de-engrenagens.glb",
+      "source_sha256": "10997636283a88d4248943759c74cf8ac2ed2b5328860e294793660b9bf7fe4c",
+      "destination_sha256": "a543707f4f7966bc31cbf03aec702774a09f71a59ea437c3b571418e54c57ed0",
+      "triangles": 520,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 117788
+    },
+    {
+      "source": "meshy-lote20-20261019/models/itens/orbe-de-numero/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/itens/orbe-de-numero.glb",
+      "source_sha256": "035aa93942117599dc7dad725c246d602783a7b96bf37008d2e93a992e6de335",
+      "destination_sha256": "d4a70f1e89df60a6f73b584a1537267610515e4dd8717c09e0cd7225601bd0e0",
+      "triangles": 314,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 44924
+    },
+    {
+      "source": "meshy-lote20-20261019/models/itens/medalhao-engrenagem/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/itens/medalhao-engrenagem.glb",
+      "source_sha256": "c84f2c6fe0d23b7c3c5bf5ce41d80d2573a1717bfd693b22a9f21efcc8451a22",
+      "destination_sha256": "aaa8a6d59a636ffa2add03e38fcea7e77888a80c7b7e61629f744446f3ff01a0",
+      "triangles": 314,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 72908
+    },
+    {
+      "source": "meshy-lote20-20261019/models/itens/placa-de-letra/model.glb",
+      "destination": "game/assets/modelos/meshy-teste-20261019/itens/placa-de-letra.glb",
+      "source_sha256": "25b05246e301e80a5691482d6593ec5aa2168c8382b224cc2bda2a2834fb440e",
+      "destination_sha256": "f5fd36f5bda196d45a6768f2bf0b14c5614ac2142baea3ffd8315ae5bfbc132a",
+      "triangles": 280,
+      "bones": 0,
+      "animations": [],
+      "albedo_dimensions": [
+        [
+          512,
+          512
+        ]
+      ],
+      "bytes": 73856
+    }
+  ]
+}

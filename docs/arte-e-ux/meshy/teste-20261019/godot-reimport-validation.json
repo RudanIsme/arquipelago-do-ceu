@@ -1,0 +1,273 @@
+{
+	"assets": 20,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"glbs": 24,
+	"results": [
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-base",
+			"bones": 11,
+			"clip": "idle",
+			"duration": 2.04166674613953,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.696287, 0.010338, -0.371814)",
+				"size": "(1.397129, 1.903245, 1.083652)"
+			},
+			"triangles": 2470
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-base",
+			"bones": 11,
+			"clip": "walk",
+			"duration": 1.04166662693024,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.696287, 0.010338, -0.371814)",
+				"size": "(1.397129, 1.903245, 1.083652)"
+			},
+			"triangles": 2470
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/livro-com-pernas",
+			"bones": 4,
+			"clip": "idle",
+			"duration": 2.04166674613953,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.860033, -0.950142, -0.333792)",
+				"size": "(1.720775, 1.90042, 0.668701)"
+			},
+			"triangles": 2063
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/livro-com-pernas",
+			"bones": 4,
+			"clip": "walk",
+			"duration": 1.04166662693024,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.860033, -0.950142, -0.333792)",
+				"size": "(1.720775, 1.90042, 0.668701)"
+			},
+			"triangles": 2063
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-pesado",
+			"bones": 11,
+			"clip": "idle",
+			"duration": 2.04166674613953,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.915311, 0.010338, -0.387541)",
+				"size": "(2.099302, 1.507812, 0.982777)"
+			},
+			"triangles": 2470
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-pesado",
+			"bones": 11,
+			"clip": "walk",
+			"duration": 1.04166662693024,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.915311, 0.010338, -0.387541)",
+				"size": "(2.099302, 1.507812, 0.982777)"
+			},
+			"triangles": 2470
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-cristal",
+			"bones": 11,
+			"clip": "idle",
+			"duration": 2.04166674613953,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.730197, 0.010338, -0.371287)",
+				"size": "(1.460394, 1.582069, 1.096326)"
+			},
+			"triangles": 2128
+		},
+		{
+			"animation": "Animation",
+			"asset": "criaturas/automato-cristal",
+			"bones": 11,
+			"clip": "walk",
+			"duration": 1.04166662693024,
+			"finite": true,
+			"loop_endpoint_pose_max_delta": 0.0,
+			"samples": 49,
+			"source_bounds_y_up": {
+				"min": "(-0.730197, 0.010338, -0.371287)",
+				"size": "(1.460394, 1.582069, 1.096326)"
+			},
+			"triangles": 2128
+		},
+		{
+			"asset": "criaturas/automato-voador",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.886465, -0.951622, -0.462163)",
+				"size": "(1.772402, 1.9023, 0.921877)"
+			},
+			"triangles": 2530
+		},
+		{
+			"asset": "criaturas/papel-fantasma",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.949646, -0.930286, -0.727074)",
+				"size": "(1.898525, 1.844591, 1.453478)"
+			},
+			"triangles": 2537
+		},
+		{
+			"asset": "criaturas/pergaminho",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.908856, -0.951415, -0.243705)",
+				"size": "(1.814745, 1.901171, 0.479585)"
+			},
+			"triangles": 2601
+		},
+		{
+			"asset": "criaturas/tinta-roxa",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.951776, -0.64143, -0.923012)",
+				"size": "(1.902691, 1.281382, 1.846962)"
+			},
+			"triangles": 2588
+		},
+		{
+			"asset": "cenario/porta-arco",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.950789, -0.789597, -0.23679)",
+				"size": "(1.900768, 1.572439, 0.470498)"
+			},
+			"triangles": 1012
+		},
+		{
+			"asset": "cenario/escada-pedra",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.673329, -0.623564, -0.949698)",
+				"size": "(1.346537, 1.220686, 1.899841)"
+			},
+			"triangles": 1174
+		},
+		{
+			"asset": "cenario/fonte-descanso",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.756763, -0.456811, -0.944958)",
+				"size": "(1.513176, 0.909066, 1.891853)"
+			},
+			"triangles": 1037
+		},
+		{
+			"asset": "cenario/parede-baixa",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.95078, -0.295483, -0.163246)",
+				"size": "(1.900745, 0.59015, 0.324987)"
+			},
+			"triangles": 202
+		},
+		{
+			"asset": "cenario/pilar-torre",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.455564, -0.951683, -0.437146)",
+				"size": "(0.910194, 1.902438, 0.89075)"
+			},
+			"triangles": 260
+		},
+		{
+			"asset": "cenario/pedestal-mestre",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.948957, -0.227629, -0.949634)",
+				"size": "(1.89687, 0.456541, 1.898154)"
+			},
+			"triangles": 1428
+		},
+		{
+			"asset": "obstaculos/caixote-madeira",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.944098, -0.949775, -0.94638)",
+				"size": "(1.887878, 1.896521, 1.893115)"
+			},
+			"triangles": 362
+		},
+		{
+			"asset": "obstaculos/pilha-de-livros",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.800375, -0.94692, -0.486844)",
+				"size": "(1.606564, 1.893259, 1.015739)"
+			},
+			"triangles": 473
+		},
+		{
+			"asset": "obstaculos/pilha-de-engrenagens",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.949769, -0.427291, -0.085728)",
+				"size": "(1.900465, 0.851194, 0.177115)"
+			},
+			"triangles": 520
+		},
+		{
+			"asset": "itens/orbe-de-numero",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.945001, -0.949606, -0.938207)",
+				"size": "(1.893525, 1.888966, 1.885745)"
+			},
+			"triangles": 314
+		},
+		{
+			"asset": "itens/medalhao-engrenagem",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.598201, -0.947816, -0.179164)",
+				"size": "(1.193391, 1.891817, 0.348846)"
+			},
+			"triangles": 314
+		},
+		{
+			"asset": "itens/placa-de-letra",
+			"clip": "",
+			"source_bounds_y_up": {
+				"min": "(-0.936265, -0.928069, -0.348206)",
+				"size": "(1.879995, 1.866079, 0.691561)"
+			},
+			"triangles": 280
+		}
+	],
+	"scope": "Godot reimport, mesh counts, Y-up bounds, skeleton poses across 49 samples and loop endpoints. Gameplay collision and root motion remain logical game systems; no naturalness approval inferred."
+}

@@ -90,6 +90,14 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		}
 	}
 
+	public void SetMeshyCreature(string discipline)
+	{
+		if (!MeshyAssets.Enabled) return;
+		creatureModel?.QueueFree();
+		creatureModel = new MeshyCreature(discipline == "matematica" ? "criaturas/automato-base" : "criaturas/livro-com-pernas") { Follow = Creature };
+		AddChild(creatureModel);
+	}
+
 	Node3D? creatureModel;
 	readonly MeshInstance3D barrier = new()
 	{
@@ -238,18 +246,25 @@ public partial class DungeonWorld : Node3D, ICombatStage
 		var material = new StandardMaterial3D { AlbedoColor = tint, Roughness = 0.8f };
 		var along = way.LengthSquared() > 0.0001f ? way.Normalized() : Vector3.Forward;
 		var side = new Vector3(-along.Z, 0f, along.X) * 0.8f;
-		foreach (var offset in new[] { side, -side })
+		if (MeshyAssets.Enabled) MeshyAssets.Add(room, "cenario/porta-arco", door.Ground, 1.9f, 3.0f, Mathf.Atan2(along.X, along.Z));
+		foreach (var offset in MeshyAssets.Enabled ? System.Array.Empty<Vector3>() : new[] { side, -side })
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.28f, PillarHeight, 0.28f) }, MaterialOverride = material, Position = door.Ground + offset + new Vector3(0f, PillarHeight / 2f, 0f) });
 		var across = Mathf.Atan2(side.X, side.Z) - Mathf.Pi / 2f;
-		room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.9f, 0.26f, 0.3f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight + 0.1f, 0f), Rotation = new Vector3(0f, across, 0f) });
+		if (!MeshyAssets.Enabled) room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.9f, 0.26f, 0.3f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight + 0.1f, 0f), Rotation = new Vector3(0f, across, 0f) });
 		if (door.Locked)
 			room.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.5f, PillarHeight - 0.1f, 0.18f) }, MaterialOverride = material, Position = door.Ground + new Vector3(0f, PillarHeight / 2f, 0f), Rotation = new Vector3(0f, across, 0f) });
-		AddSign(door.Label, door.Ground + new Vector3(0f, PillarHeight + 0.95f, 0f), 40);
+		AddSign(door.Label, door.Ground + new Vector3(0f, (MeshyAssets.Enabled ? 3.6f : PillarHeight + 0.95f), 0f), 40);
 	}
 
 	// O Descanso é uma fonte no centro da Sala; ela escurece depois de usada.
 	void AddFountain(bool used)
 	{
+		if (MeshyAssets.Enabled)
+		{
+			MeshyAssets.Add(room, "cenario/fonte-descanso", Vector3.Zero, 1.8f, 1.7f);
+			AddSign(used ? "Descanso usado" : "Descanso • fonte provisória", new Vector3(0f, 2f, 0f), 28);
+			return;
+		}
 		var water = new StandardMaterial3D { AlbedoColor = used ? Color.FromHtml("#7E7A99") : Color.FromHtml("#BA9BEA"), Roughness = 0.4f };
 		room.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 1.1f, BottomRadius = 1.2f, Height = 0.5f }, MaterialOverride = water, Position = new Vector3(0f, 0.25f, 0f) });
 		room.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.45f, Height = 0.9f }, MaterialOverride = water, Position = new Vector3(0f, 0.9f, 0f) });
@@ -257,6 +272,12 @@ public partial class DungeonWorld : Node3D, ICombatStage
 
 	void AddStairs(bool down)
 	{
+		if (MeshyAssets.Enabled)
+		{
+			MeshyAssets.Add(room, "cenario/escada-pedra", Vector3.Zero, 1.7f, 1.2f, down ? Mathf.Pi : 0f);
+			if (down) AddSign("Escada para baixo", new Vector3(0f, 2.1f, 0f), 36);
+			return;
+		}
 		var material = new StandardMaterial3D { AlbedoColor = FloorMap.ColorOf(RoomTypes.Exit), Roughness = 0.8f };
 		if (down) AddSign("Escada para baixo", new Vector3(0f, 3.4f, 0f), 40);
 		for (var step = 0; step < 4; step++)

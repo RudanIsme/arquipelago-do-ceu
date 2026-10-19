@@ -195,7 +195,11 @@ public partial class Lobby : Node3D, ICombatStage
 					model.AddChild(new GuideIdle(model, () => ReduceMotion));
 			}
 			else if (item.Id.StartsWith("torre-")) top = TowerBaseHeight;
-			else if (item.Id == "mestre") top = AddHall(ground, item.Name);
+			else if (item.Id == "mestre")
+			{
+				top = AddHall(ground, item.Name);
+				if (MeshyAssets.Enabled) MeshyAssets.Add(this, "cenario/pedestal-mestre", ground, 3f, 0.6f);
+			}
 			else if (item.Id == "mercador") top = AddStall(ground, item.Name);
 			var marker = new MeshInstance3D
 			{

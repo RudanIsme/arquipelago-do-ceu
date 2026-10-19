@@ -1,0 +1,162 @@
+[
+  {
+    "Asset": "criaturas/automato-base",
+    "Name": "Autômato base",
+    "Use": "Torre dos Números • criatura",
+    "Status": "APROVADO • v04",
+    "Note": "2470 tris • 11 ossos • idle / caminhada",
+    "Animated": true
+  },
+  {
+    "Asset": "criaturas/livro-com-pernas",
+    "Name": "Livro com pernas",
+    "Use": "Torre das Letras • criatura",
+    "Status": "APROVADO • v04",
+    "Note": "2063 tris • 4 ossos • idle / caminhada",
+    "Animated": true
+  },
+  {
+    "Asset": "criaturas/automato-pesado",
+    "Name": "Autômato pesado",
+    "Use": "Torre dos Números • variação",
+    "Status": "RASCUNHO • v01",
+    "Note": "2470 tris • 11 ossos • idle / caminhada • revisão visual pendente",
+    "Animated": true
+  },
+  {
+    "Asset": "criaturas/automato-cristal",
+    "Name": "Autômato cristal",
+    "Use": "Torre dos Números • variação",
+    "Status": "RASCUNHO • v01",
+    "Note": "2128 tris • 11 ossos • idle / caminhada • revisão visual pendente",
+    "Animated": true
+  },
+  {
+    "Asset": "criaturas/automato-voador",
+    "Name": "Autômato voador",
+    "Use": "Torre dos Números • variação",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Helice/corpo/escudo reconheciveis; centro creme do escudo virou bronze-escuro e superficies muito metalicas. Sem falha estrutural grande observada nesta triagem.",
+    "Animated": false
+  },
+  {
+    "Asset": "criaturas/papel-fantasma",
+    "Name": "Papel fantasma",
+    "Use": "Torre das Letras • criatura",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Olhos vazios/escavados permanecem no clay sem mapas; pupilas/reflexos da referencia ausentes. Metallic quase zero, portanto nao e o mesmo problema dos automatos.",
+    "Animated": false
+  },
+  {
+    "Asset": "criaturas/pergaminho",
+    "Name": "Pergaminho",
+    "Use": "Torre das Letras • variação",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Estrutura do pergaminho preservada; olhos viraram volumes salientes e brilho/relevo mais fortes. Nao classificar como correcao apenas de roughness.",
+    "Animated": false
+  },
+  {
+    "Asset": "criaturas/tinta-roxa",
+    "Name": "Tinta roxa",
+    "Use": "Torre das Letras • variação",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Silhueta geral preservada; olhos com relevo/brilho e base mais irregular. Aparencia/normal e detalhe de superficie predominam.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/porta-arco",
+    "Name": "Porta em arco",
+    "Use": "Portas entre salas",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Arco preservado; ornamento tambem aparece atras. Detalhes simplificados; nao aprovado visualmente.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/escada-pedra",
+    "Name": "Escada de pedra",
+    "Use": "Escadas de Andar",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Degraus e base preservados; detalhes de blocos simplificados. Escala e fidelidade fina pendentes.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/fonte-descanso",
+    "Name": "Fonte de Descanso",
+    "Use": "Salas de Descanso",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Corpo principal e almofada preservados; agua corrente da referencia nao foi reproduzida de forma legivel. Exige avaliar componente de agua/VFX, nao apenas brilho.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/parede-baixa",
+    "Name": "Parede baixa",
+    "Use": "Cenário das torres",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Silhueta preservada. Parte da alvenaria e principalmente textura, coerente com meta baixa; validacao visual final pendente.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/pilar-torre",
+    "Name": "Pilar da torre",
+    "Use": "Cenário das torres",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Pilar/base/capitel preservados na triagem; acabamento e proporcao fina ainda sem aprovacao.",
+    "Animated": false
+  },
+  {
+    "Asset": "cenario/pedestal-mestre",
+    "Name": "Pedestal mestre",
+    "Use": "Desafio mestre no Lobby",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Degraus circulares preservados; detalhe superior e acabamento precisam revisao obliqua/fidelidade fina. Escala relativa nao calibrada.",
+    "Animated": false
+  },
+  {
+    "Asset": "obstaculos/caixote-madeira",
+    "Name": "Caixote de madeira",
+    "Use": "Obstáculo • posição não definida",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Render local enquadrado mostra a caixa inteira; thumbnail Meshy estava cortado. Nao foi detectada perda estrutural grande; relevos/tabuas simplificados.",
+    "Animated": false
+  },
+  {
+    "Asset": "obstaculos/pilha-de-livros",
+    "Name": "Pilha de livros",
+    "Use": "Obstáculo • posição não definida",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Volumes, capas e paginas deformados com laminas/arestas esticadas; permanece no clay. Nao resolve apenas com material.",
+    "Animated": false
+  },
+  {
+    "Asset": "obstaculos/pilha-de-engrenagens",
+    "Name": "Pilha de engrenagens",
+    "Use": "Obstáculo • posição não definida",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Base circular e suporte vertical ausentes; somente conjunto de engrenagens foi gerado. Brilho tambem exagerado.",
+    "Animated": false
+  },
+  {
+    "Asset": "itens/orbe-de-numero",
+    "Name": "Orbe de número",
+    "Use": "Item de Matemática",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Silhueta esferica preservada; costuras/ondulacoes muito mais fortes em PBR que no clay. Participacao forte dos mapas; geometria facetada de baixa contagem ainda precisa revisao pontual.",
+    "Animated": false
+  },
+  {
+    "Asset": "itens/medalhao-engrenagem",
+    "Name": "Medalhão engrenagem",
+    "Use": "Item de Matemática",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Medalhao e corrente reconheciveis; brilho/metal escuro e simplificacao dos elos. Sem falha estrutural grande observada nesta triagem.",
+    "Animated": false
+  },
+  {
+    "Asset": "itens/placa-de-letra",
+    "Name": "Placa de letra",
+    "Use": "Item de Letras",
+    "Status": "PROVISÓRIO • original rejeitado",
+    "Note": "Forma principal preservada; metal/verniz e relevo da madeira excessivos comparados a referencia.",
+    "Animated": false
+  }
+]

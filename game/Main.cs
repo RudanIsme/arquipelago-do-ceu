@@ -107,6 +107,7 @@ public partial class Main : Node3D
 		}
 		if (OS.IsDebugBuild()) DevDriver.AttachIfRequested(this, new PilotPort(progress, rewardService, gear, inventory, merchant, RefreshDock, master, training, () => current?.Id ?? "", UnlockedLevel));
 		CallDeferred(nameof(InstallPullTest));
+		CallDeferred(nameof(InstallMeshyTest));
 
 		GD.Print("Cena inicial pronta.");
 	}

@@ -94,9 +94,9 @@ public partial class DungeonRun : Node
 	public override void _Ready()
 	{
 		AddChild(world);
+		world.SetMeshyCreature(ctx.Discipline);
 		world.Camera.MakeCurrent();
 		world.Name = "Dungeon";
-
 		player = new Player(world.Grid, world.Camera, world.HeightAt);
 		ctx.ConfigurePlayer(player);
 		AddChild(player);

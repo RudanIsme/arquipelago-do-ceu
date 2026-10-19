@@ -19,6 +19,7 @@ public static class SaveOpener
 	{
 		// O teste de ponta a ponta fecha e reabre o jogo no mesmo save, então `--save=` aponta um arquivo que fica de uma execução para a outra.
 		if (OS.IsDebugBuild() && OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--save="))?["--save=".Length..] is { Length: > 0 } fixedPath) return fixedPath;
+		if (MeshyAssets.Enabled) return "user://meshy-teste-20261019.json";
 		if (!OS.IsDebugBuild() || !OS.GetCmdlineUserArgs().Any(a => a.StartsWith("--driver="))) return SavePath;
 		DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(PilotSavePath));
 		if (FileAccess.FileExists(SavePath)) DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(SavePath), ProjectSettings.GlobalizePath(PilotSavePath));
